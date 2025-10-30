@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Row, Col, Form, Button } from "react-bootstrap";
 import axios from "axios";
 
-export default function CustomerEligibilityForm({ customerId, onEligibilityChange  }) {
+export default function CustomerEligibilityForm({ customerId, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt }) {
   const [formData, setFormData] = useState({
     customer_id: customerId || 0,
     gross_salary_amt: "",
@@ -119,16 +119,25 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
       console.log("res.data: ",res.data);
       console.log("is_eligible_for_loan: ",res.data.data.is_eligible_for_loan);
       setMessage("✅ Eligibility calculated successfully!");
-      // const isEligible = res.data.data.is_eligible_for_loan === 1 && formData.customer_id !== 0;
-      const isEligible = res.data.data.is_eligible_for_loan === 1;
+      const isEligible = res.data.data.is_eligible_for_loan === 1 && formData.customer_id !== 0;
+      const isTruelyEligible = res.data.data.is_eligible_for_loan === 1;
       if (typeof onEligibilityChange === "function") {
         onEligibilityChange(isEligible);
+      }
+      if (typeof onEligibilityChangeTruely === "function") {
+        onEligibilityChangeTruely(isTruelyEligible);
+      }
+      if (typeof proposedPvaAmt === "function") {
+        proposedPvaAmt(formData.proposed_pva_amt);
       }
     } catch (error) {
       console.error(error);
       setMessage("❌ Error calculating eligibility.");
       if (typeof onEligibilityChange === "function") {
         onEligibilityChange(false);
+      }
+      if (typeof onEligibilityChangeTruely === "function") {
+        onEligibilityChangeTruely(false);
       }
     }
   };
@@ -235,7 +244,7 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
                 />
               </Form.Group>
             </Col>
-            <Col md={6}>
+            <Col md={3}>
               <Form.Group>
                 <Form.Label>Current Fincorp Deduction (PGK)</Form.Label>
                 <Form.Control
@@ -247,7 +256,7 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
                 />
               </Form.Group>
             </Col>
-            <Col md={6}>
+            <Col md={3}>
               <Form.Group>
                 <Form.Label>Other Deductions (PGK)</Form.Label>
                 <Form.Control
@@ -258,11 +267,8 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
                   onChange={handleChange}
                 />
               </Form.Group>
-            </Col>
-          </Row>
-        </fieldset>
-        <Row className="g-3 mt-2">
-          <Col md={3}>
+            </Col> 
+            <Col md={3}>
             <Form.Group>
               <Form.Label>Temporary Allowances (PGK)</Form.Label>
               <Form.Control
@@ -286,7 +292,8 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
               />
             </Form.Group>
           </Col>
-        </Row>
+          </Row>
+        </fieldset>
 
         <div className="mt-4 text-end">
           <Button variant="primary" type="button" onClick={handleCheckEligibility}>

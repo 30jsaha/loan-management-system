@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\LoanApplication as Loan;
 use App\Models\Customer;
+use App\Models\LoanSetting;
 //log
 use Illuminate\Support\Facades\Log;
 
@@ -35,7 +36,8 @@ class LoanController extends Controller
             // 'organisation_id' => 'required|exists:organisation_master,id',
             'customer_id' => 'required|exists:customers,id',
 
-            'loan_type' => 'required|in:New,Consolidation,Rollover,Top-Up',
+            // 'loan_type' => 'required|in:New,Consolidation,Rollover,Top-Up',
+            'loan_type' => 'required|integer|min:0',
             'purpose' => 'nullable|in:Tuition,Living,Medical,Appliance,Car,Travel,HomeImprovement,Other',
             'other_purpose_text' => 'nullable|string|max:255',
 
@@ -100,8 +102,6 @@ class LoanController extends Controller
             ], 500);
         }
     }
-
-
     /**
      * Display the specified resource.
      */
@@ -148,5 +148,16 @@ class LoanController extends Controller
         $loan = Loan::findOrFail($id);
         $loan->delete();
         return response()->json(['message' => 'Loan deleted successfully.']);
+    }
+    public function loan_types($cid)
+    {
+        //$cid is customer id, get the organisation_id from customer, and then get loan types for that organisation
+        $customer = Customer::find($cid);
+        if (!$customer) {
+            return response()->json(['error' => 'Customer not found.'], 404);
+        }
+        $organisation_id = $customer->organisation_id;
+        $loanSettings = LoanSetting::where('org_id', $organisation_id)->get();
+        return response()->json($loanSettings);
     }
 }

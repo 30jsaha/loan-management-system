@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/{id}/approve', [LoanController::class, 'approve']);
     Route::post('/loans/{id}/reject', [LoanController::class, 'reject']);
     Route::delete('/loans/{id}', [LoanController::class, 'destroy']);
+    Route::get('/loan-types/{cid}', [LoanController::class, 'loan_types']);
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);
@@ -61,3 +62,4 @@ Route::get('/customers', [CustomerController::class, 'index']);
 Route::get('/customers/{id}', [CustomerController::class, 'show']);
 Route::post('/customers/{id}', [CustomerController::class, 'update']);
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
+

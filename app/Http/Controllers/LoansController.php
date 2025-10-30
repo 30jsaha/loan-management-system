@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\LoanSetting;
 
 class LoansController extends Controller
 {
@@ -18,6 +19,7 @@ class LoansController extends Controller
     public function create()
     {
         // return Loan::all();
-        return inertia('Loans/Create'); // points to resources/js/Pages/Loans/Create.jsx
+        $loan_settings = LoanSetting::all();
+        return inertia('Loans/Create', ['loan_settings' => $loan_settings]); // points to resources/js/Pages/Loans/Create.jsx
     }
 }

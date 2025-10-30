@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from 'react';
+import { use, useCallback, useEffect, useState, props } from 'react';
 import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
@@ -11,12 +11,19 @@ import CustomerForm from '@/Components/CustomerForm';
 //icon pack
 import { ArrowLeft } from "lucide-react";
 
-export default function Create({ auth }) {
+export default function Create({ auth, loan_settings }) {
     const [isEligible, setIsEligible] = useState(false);
+    const [recProposedPvaAmt, setRecProposedPvaAmt] = useState(0);
+    const [isTruelyEligible, setIsTruelyEligible] = useState(false);
     const [isFormDirty, setIsFormDirty] = useState(false);
     const [customers, setCustomers] = useState([]);
     const [companies, setCompanies] = useState([]);
     const [organisations, setOrganisations] = useState([]);
+    const [loanTypes, setLoanTypes] = useState([]);
+    // const [loanSettings, setLoanSettings] = useState(JSON.stringify(loan_settings, null, 2));
+    const [loanSettings, setLoanSettings] = useState(loan_settings);
+
+    // setLoanSettings(loan_settings);
     // const [tempCusFormData, settempCusFormData] = useState({
     const [formData, setFormData] = useState({
         cus_id: 0,
@@ -119,6 +126,21 @@ export default function Create({ auth }) {
                 console.error('There was an error fetching the customers!', error);
             });
     }, []);
+    const fetchLoanTypes = useCallback(async () => {
+        try {
+            const res = await axios.get(`/api/loan-types/${loanFormData.customer_id}`);
+            setLoanTypes(res.data);
+        } catch (error) {
+            console.error('There was an error fetching the loan types!', error);
+        }
+    }, [loanFormData.customer_id]);
+
+    useEffect(()=>{
+        if (loanFormData.customer_id !== 0 && loanFormData.customer_id !== "") {
+            fetchLoanTypes();
+        }
+    },[fetchLoanTypes]);
+
     const handleChange = (e) => {
         setIsFormDirty(false);
         const { name, value } = e.target;
@@ -136,6 +158,102 @@ export default function Create({ auth }) {
         e.preventDefault();
         setIsFormDirty(true);
         setMessage('');
+        if (loanFormData.customer_id === "" || loanFormData.customer_id === 0) {
+            setMessage('❌ Please select a customer before submitting the loan application.');
+            return;
+        }
+        if (Number(loanFormData.loan_amount_applied) > Number(recProposedPvaAmt)) {
+            setMessage(`❌ Loan Amount Applied exceeds the Recommended PVA Amount of PGK ${recProposedPvaAmt}. Please adjust accordingly.`);
+            return;
+        } 
+        // else {
+        //     if (Number(loanFormData.loan_amount_applied) < Number(recProposedPvaAmt)) {
+        //         //check if the amount is divisable by 50
+        //         if (loanFormData.loan_amount_applied % loan_settings.amt_multiplier !== 0) {
+        //             setMessage('❌ Loan Amount Applied must be in multiples of PGK 50. Please adjust accordingly.');
+        //             return;
+        //         }
+        //     }
+        // }
+        if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+            // Find selected loan setting based on loan type
+            const selectedLoanSetting = loanSettings.find(
+                (ls) => ls.id === Number(loanFormData.loan_type)
+            );
+
+            console.log("loanSettings:", loanSettings);
+            console.log("loanFormData.loan_type:", loanFormData.loan_type);
+            console.log("selectedLoanSetting:", selectedLoanSetting);
+            // return;
+            if (selectedLoanSetting) {
+                const {
+                    amt_multiplier,
+                    min_loan_amount,
+                    max_loan_amount,
+                    min_loan_term_months,
+                    max_loan_term_months,
+                    interest_rate,
+                    min_interest_rate,
+                    max_interest_rate
+                } = selectedLoanSetting;
+
+                const tenureMonths = loanFormData.tenure_fortnight * 0.5;
+                const appliedAmount = Number(loanFormData.loan_amount_applied);
+                const multiplier = Number(amt_multiplier);
+                // --- Validations ---
+                if (!Number.isFinite(appliedAmount) || !Number.isFinite(multiplier)) {
+                    setMessage("❌ Invalid input. Please enter numeric values.");
+                    return;
+                }
+
+                // Check if the applied amount is fully divisible by the multiplier
+                if (appliedAmount % multiplier !== 0) {
+                    setMessage(
+                        `❌ Loan Amount Applied must be in multiples of PGK ${multiplier} for the selected Loan Type. Please adjust accordingly.`
+                    );
+                    return;
+                }
+
+                if (Number(loanFormData.loan_amount_applied) < Number(min_loan_amount)) {
+                    setMessage(
+                        `❌ Loan Amount Applied must be at least PGK ${min_loan_amount} for the selected Loan Type. Please adjust accordingly.`
+                    );
+                    return;
+                }
+
+                if (Number(loanFormData.loan_amount_applied) > Number(max_loan_amount)) {
+                    setMessage(
+                        `❌ Loan Amount Applied must not exceed PGK ${max_loan_amount} for the selected Loan Type. Please adjust accordingly.`
+                    );
+                    return;
+                }
+
+                if (tenureMonths < Number(min_loan_term_months)) {
+                    setMessage(
+                        `❌ Loan Tenure must be at least ${min_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`
+                    );
+                    return;
+                }
+
+                if (tenureMonths > Number(max_loan_term_months)) {
+                    setMessage(
+                        `❌ Loan Tenure must not exceed ${max_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`
+                    );
+                    return;
+                }
+
+                if (
+                    interest_rate < Number(loanFormData.interest_rate) ||
+                    interest_rate > Number(loanFormData.interest_rate)
+                ) {
+                    setMessage(
+                        `❌ Interest Rate must not be greater or lesser than ${interest_rate}% for the selected Loan Type. Please adjust accordingly.`
+                    );
+                    return;
+                }
+            }
+        }
+
 
         try {
             const res = await axios.post('/api/loans', loanFormData);
@@ -284,6 +402,12 @@ export default function Create({ auth }) {
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">New Loan Application</h2>}
         >
+        
+            {/*  map the loan_settings passed from controller for debugging */}
+            {/* <pre>
+                {JSON.stringify(loan_settings, null, 2)}
+            </pre>
+            <p>max_loan_amount: {`${loan_settings.max_loan_amount}`}</p> */}
             <Head title="New Loan Application" />
             <Alert key="primary" variant="primary">
                 Please go through the tabs to complete the loan application.
@@ -385,7 +509,24 @@ export default function Create({ auth }) {
                                                 className="form-select"
                                                 name="customer_id"
                                                 value={loanFormData.customer_id || ""}  // ✅ always non-null
-                                                onChange={loanHandleChange}
+                                                onChange={(e) => {
+                                                    // Always call your main handler first
+                                                    loanHandleChange(e);
+
+                                                    // Extract selected value
+                                                    const selectedValue = e.target.value;
+                                                    fetchLoanTypes();
+                                                    // Check if value is not null or 0
+                                                    if (selectedValue && selectedValue !== "0") {
+                                                        // Check your custom condition
+                                                        if (isTruelyEligible) {
+                                                            setIsEligible(true);
+                                                        }
+                                                    } else {
+                                                        // Optional: reset eligibility when no customer selected
+                                                        setIsEligible(false);
+                                                    }
+                                                }}
                                                 required
                                             >
                                                 <option value="">Select Customer</option>
@@ -416,6 +557,8 @@ export default function Create({ auth }) {
                                         <CustomerEligibilityForm
                                             customerId={loanFormData.customer_id}
                                             onEligibilityChange={(eligible) => setIsEligible(eligible)}
+                                            onEligibilityChangeTruely={(isTruelyEligible) => setIsTruelyEligible(isTruelyEligible)}
+                                            proposedPvaAmt={(recProposedPvaAmt) => setRecProposedPvaAmt(recProposedPvaAmt)}
                                         />
                                     </div>
                                 </fieldset>
@@ -424,11 +567,50 @@ export default function Create({ auth }) {
                                     <div className="row mb-3">
                                         <div className="col-md-4">
                                             <label className="form-label">Loan Type</label>
-                                            <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="loan_type" value={loanFormData.loan_type || ""} onChange={loanHandleChange}>
-                                                <option>New</option>
-                                                <option>Consolidation</option>
-                                                <option>Rollover</option>
-                                                <option>Top-Up</option>
+                                            <select 
+                                                className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50":""}`} 
+                                                name="loan_type" value={loanFormData.loan_type || ""} 
+                                                onChange={(e)=>{
+                                                    loanHandleChange(e);
+                                                    //fetch loan settings based on selected loan type
+                                                    const selectedLoanTypeId = e.target.value;
+
+                                                    if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+                                                        // Find selected loan setting based on loan type
+                                                        const selectedLoanSetting = loanSettings.find(
+                                                            (ls) => ls.id === Number(selectedLoanTypeId)
+                                                        );
+
+                                                        console.log("loanSettings:", loanSettings);
+                                                        console.log("loanFormData.loan_type:", loanFormData.loan_type);
+                                                        console.log("selectedLoanSetting:", selectedLoanSetting);
+                                                        // return;
+                                                        if (selectedLoanSetting) {
+                                                            const {
+                                                                process_fees,
+                                                                interest_rate,
+                                                            } = selectedLoanSetting;
+
+                                                            // Auto-fill processing fee and interest rate
+                                                            setLoanFormData((prev) => ({
+                                                                ...prev,
+                                                                processing_fee: process_fees,
+                                                                interest_rate: interest_rate,
+                                                            }));
+                                                            //make the form read-only and disabled for these two fields
+                                                            document.querySelector('input[name="processing_fee"]').readOnly = true;
+                                                            document.querySelector('input[name="interest_rate"]').readOnly = true;
+                                                            document.querySelector('input[name="processing_fee"]').disabled = true;
+                                                            document.querySelector('input[name="interest_rate"]').disabled = true;
+                                                        }
+                                                    }
+                                                }}
+                                                required
+                                            >
+                                                (<option value="">Select Loan Type</option>
+                                                {loanTypes.map((lt) => (
+                                                    <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
+                                                ))}
                                             </select>
                                         </div>
 
@@ -463,7 +645,7 @@ export default function Create({ auth }) {
 
                                         <div className="col-md-3">
                                             <label className="form-label">Tenure (Fortnight)</label>
-                                            <input type="number" className="form-control" name={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50":""}`} value={loanFormData.tenure_fortnight} onChange={loanHandleChange} required />
+                                            <input type="number" step="0.01" name="tenure_fortnight" className={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50":""}`} value={loanFormData.tenure_fortnight} onChange={loanHandleChange} required />
                                         </div>
 
                                         <div className="col-md-3">
