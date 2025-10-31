@@ -139,6 +139,9 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
       if (typeof onEligibilityChangeTruely === "function") {
         onEligibilityChangeTruely(false);
       }
+      if (typeof proposedPvaAmt === "function") {
+        proposedPvaAmt(formData.proposed_pva_amt);
+      }
     }
   };
 

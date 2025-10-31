@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import Logo from '../../images/logo.png';
+import Logo from '../../images/aa logo.png';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
@@ -23,7 +23,7 @@ export default function Authenticated({ user, header, children }) {
                                         className="max-w-full object-contain"
                                         src={Logo}
                                         alt="Loan Management System"
-                                        style={{width: '6rem'}}
+                                        style={{width: '4rem'}}
                                     />
                                 </Link>
                             </div>

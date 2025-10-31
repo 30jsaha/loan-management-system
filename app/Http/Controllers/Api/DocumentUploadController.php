@@ -99,14 +99,27 @@ class DocumentUploadController extends Controller
     /**
      * Download a document
      */
+    // public function download($id)
+    // {
+    //     $document = DocumentUpload::findOrFail($id);
+
+    //     if (!Storage::disk('public')->exists($document->file_path)) {
+    //         return response()->json(['message' => 'File not found.'], 404);
+    //     }
+
+    //     return Storage::disk('public')->download($document->file_path, $document->file_name);
+    // }
     public function download($id)
     {
         $document = DocumentUpload::findOrFail($id);
 
-        if (!Storage::disk('public')->exists($document->file_path)) {
+        // Build the full storage path for the public disk
+        $fullPath = storage_path('app/public/' . $document->file_path);
+
+        if (!file_exists($fullPath)) {
             return response()->json(['message' => 'File not found.'], 404);
         }
 
-        return Storage::disk('public')->download($document->file_path, $document->file_name);
+        return response()->download($fullPath, $document->file_name);
     }
 }

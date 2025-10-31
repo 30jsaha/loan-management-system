@@ -11,7 +11,7 @@ export default function Guest({ children }) {
                 {/* Left side — Logo */}
                 <div className="w-full md:w-1/2 bg-gray-50 flex justify-center items-center p-8">
                     <Link href="/">
-                        <MainLogo/>
+                        <MainLogo width='12rem'/>
                     </Link>
                 </div>
 

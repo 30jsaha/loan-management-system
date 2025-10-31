@@ -17,8 +17,10 @@ class LoanController extends Controller
      */
     public function index()
     {
-        return Loan::orderBy('id', 'desc')->get();
+        // return Loan::orderBy('id', 'desc')->alongwith('customer')->get();
         // return inertia('Loans/Index'); // points to resources/js/Pages/Loans/Index.jsx
+        return Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        ->orderBy('id','desc')->get();
     }
     public function create()
     {
@@ -45,6 +47,8 @@ class LoanController extends Controller
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
             'emi_amount' => 'nullable|numeric|min:0',
+            'total_repay_amt' => 'nullable|numeric|min:0',
+            'total_interest_amt' => 'nullable|numeric|min:0',
             'interest_rate' => 'nullable|numeric|min:0|max:100',
             'processing_fee' => 'nullable|numeric|min:0',
             'grace_period_days' => 'nullable|integer|min:0',
@@ -85,6 +89,8 @@ class LoanController extends Controller
             $validated['status'] = $validated['status'] ?? 'Pending';
             $validated['approved_date'] = $validated['approved_date'] ?? null;
             $validated['higher_approved_date'] = $validated['higher_approved_date'] ?? null;
+            $validated['total_repay_amt'] = $validated['total_repay_amt'] ?? null;
+            $validated['total_interest_amt'] = $validated['total_interest_amt'] ?? null;
 
             // Create loan application
             $loan = Loan::create($validated);

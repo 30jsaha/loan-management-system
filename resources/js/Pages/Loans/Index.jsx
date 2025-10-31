@@ -82,9 +82,10 @@ export default function Index({ auth }) {
                                     <thead className="bg-gray-100 text-gray-800 uppercase text-xs font-semibold">
                                         <tr>
                                             <th className="border px-4 py-3 text-left">#</th>
-                                            <th className="border px-4 py-3 text-left">Type</th>
-                                            <th className="border px-4 py-3 text-left">Purpose</th>
-                                            <th className="border px-4 py-3 text-left">Amount</th>
+                                            <th className="border px-4 py-3 text-left">Details</th>
+                                            <th className="border px-4 py-3 text-left">Company Details</th>
+                                            <th className="border px-4 py-3 text-left">Organisation Details</th>
+                                            <th className="border px-4 py-3 text-left">Amount Details</th>
                                             <th className="border px-4 py-3 text-left">Status</th>
                                             <th className="border px-4 py-3 text-left">Created At</th>
                                             <th className="border px-4 py-3 text-center">Actions</th>
@@ -97,12 +98,24 @@ export default function Index({ auth }) {
                                                 className="hover:bg-gray-50 transition"
                                             >
                                                 <td className="border px-4 py-2">{index + 1}</td>
-                                                <td className="border px-4 py-2">{loan.loan_type}</td>
                                                 <td className="border px-4 py-2">
-                                                    {loan.purpose || "-"}
+                                                    <strong>Type: </strong>{loan.loan_settings.loan_desc}<br/>
+                                                    <strong>Purpose: </strong>{loan.purpose || "-"}
                                                 </td>
                                                 <td className="border px-4 py-2">
-                                                    K {parseFloat(loan.loan_amount_applied).toLocaleString()}
+                                                    <strong>Name: </strong>{loan.company.company_name}<br/>
+                                                    <strong>Contact: </strong>{loan.company.contact_no || "-"}<br/>
+                                                    <strong>Email: </strong>{loan.company.email || "-"}
+                                                </td>
+                                                <td className="border px-4 py-2">
+                                                    <strong>Name: </strong>{loan.organisation.organisation_name}<br/>
+                                                    <strong>Contact: </strong>{loan.organisation.contact_no || "-"}<br/>
+                                                    <strong>Email: </strong>{loan.organisation.email || "-"}
+                                                </td>
+                                                <td className="border px-4 py-2">
+                                                    <strong>Amount Applied:</strong>&nbsp;PGK {parseFloat(loan.loan_amount_applied).toLocaleString()}<br/>
+                                                    <strong>Tenure Fortnight:</strong>&nbsp;{parseFloat(loan.tenure_fortnight).toLocaleString()}<br/>
+                                                    <strong>EMI Amount:</strong>&nbsp;{(loan.emi_amount != null) ? `PGK ${parseFloat(loan.emi_amount).toLocaleString()}` : 0.00}
                                                 </td>
                                                 <td className="border px-4 py-2">
                                                     <span

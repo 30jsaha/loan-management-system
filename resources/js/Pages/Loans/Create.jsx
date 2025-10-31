@@ -91,6 +91,7 @@ export default function Create({ auth, loan_settings }) {
     const [step, setStep] = useState(1);
     const [tempCustomerId, setTempCustomerId] = useState(null);
     const isEmpty = (obj) => Object.keys(obj).length === 0;
+
     useBeforeUnload(isFormDirty, formData);
     const fetchCustomers = async () => {
         try {
@@ -396,6 +397,37 @@ export default function Create({ auth, loan_settings }) {
     const handleStep = (stepNumber) => () => {
         setStep(stepNumber);
     };
+    // Function to calculate repayment details
+    const calculateRepaymentDetails = () => {
+        const { loan_amount_applied, interest_rate, tenure_fortnight } = loanFormData;
+
+        // Convert to float for safety
+        const loanAmount = parseFloat(loan_amount_applied) || 0;
+        const rate = parseFloat(interest_rate) || 0;
+        const term = parseFloat(tenure_fortnight) || 0;
+
+        // Apply Excel formulas:
+        // Total Interest = C4 * D4 / 100 * E4
+        const totalInterest = loanAmount * rate / 100 * term;
+
+        // Total Repay = F4 + C4
+        const totalRepay = totalInterest + loanAmount;
+
+        // Repay per FN = G4 / E4
+        const repayPerFN = term > 0 ? totalRepay / term : 0;
+
+        // Update loanFormData state
+        setLoanFormData(prev => ({
+            ...prev,
+            total_interest_amt: totalInterest.toFixed(2),
+            total_repay_amt: totalRepay.toFixed(2),
+            emi_amount: repayPerFN.toFixed(2),
+        }));
+    };
+    // Recalculate repayment details whenever relevant fields change
+    // useEffect(() => {
+    //     calculateRepaymentDetails();
+    // }, [loanFormData.loan_amount_applied, loanFormData.interest_rate, loanFormData.tenure_fortnight]);
 
     return (
         <AuthenticatedLayout
@@ -640,12 +672,31 @@ export default function Create({ auth, loan_settings }) {
                                     <div className="row mb-3">
                                         <div className="col-md-3">
                                             <label className="form-label">Loan Amount Applied</label>
-                                            <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="loan_amount_applied" value={loanFormData.loan_amount_applied} onChange={loanHandleChange} required />
+                                            <input 
+                                                type="number" step="0.01" 
+                                                className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="loan_amount_applied" 
+                                                value={loanFormData.loan_amount_applied}
+                                                onChange={(e) => {
+                                                loanHandleChange(e);
+                                                }}
+                                                onKeyUp={calculateRepaymentDetails}
+                                                required
+                                            />
                                         </div>
 
                                         <div className="col-md-3">
                                             <label className="form-label">Tenure (Fortnight)</label>
-                                            <input type="number" step="0.01" name="tenure_fortnight" className={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50":""}`} value={loanFormData.tenure_fortnight} onChange={loanHandleChange} required />
+                                            <input 
+                                                type="number" step="0.01" 
+                                                name="tenure_fortnight" 
+                                                className={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50":""}`} 
+                                                value={loanFormData.tenure_fortnight}
+                                                onChange={(e) => {
+                                                loanHandleChange(e);
+                                                }}
+                                                onKeyUp={calculateRepaymentDetails}
+                                                required
+                                            />
                                         </div>
 
                                         <div className="col-md-3">
@@ -658,6 +709,28 @@ export default function Create({ auth, loan_settings }) {
                                             <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="processing_fee" value={loanFormData.processing_fee} onChange={loanHandleChange} />
                                         </div>
                                     </div>
+
+                                    {loanFormData.total_interest_amt && (
+                                    <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id='repayDetailsDiv'>
+                                        <fieldset className="fldset w-full">
+                                            <legend className="font-semibold">Repayment Details</legend>
+                                            <div className="row mt-3">
+                                                <div className="col-md-3">
+                                                    <label className="form-label fw-bold">Total Interest (PGK)</label>
+                                                    <div>{loanFormData.total_interest_amt}</div>
+                                                </div>
+                                                <div className="col-md-3">
+                                                    <label className="form-label fw-bold">Total Repay (PGK)</label>
+                                                    <div>{loanFormData.total_repay_amt}</div>
+                                                </div>
+                                                <div className="col-md-3">
+                                                    <label className="form-label fw-bold">Repay per FN (PGK)</label>
+                                                    <div>{loanFormData.emi_amount}</div>
+                                                </div>
+                                            </div>
+                                        </fieldset>
+                                    </div>
+                                    )}
 
                                     <div className="row mb-3">
                                         <div className="col-md-4">
