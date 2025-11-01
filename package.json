@@ -21,6 +21,7 @@
     },
     "dependencies": {
         "agrippa": "^2.0.4",
+        "animate.css": "^4.1.1",
         "bootstrap": "^5.3.8",
         "lucide-react": "^0.546.0",
         "react-bootstrap": "^2.10.10",

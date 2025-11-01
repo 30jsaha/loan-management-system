@@ -38,6 +38,7 @@ class CustomerController extends Controller
         // Validate incoming request data
         $validated = $request->validate([
             'company_id' => 'required|integer|exists:company_master,id',
+            'user_id' => 'nullable|integer|default:0',
             'organisation_id' => 'required|integer|exists:organisation_master,id',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
@@ -56,6 +57,18 @@ class CustomerController extends Controller
             'monthly_salary' => 'nullable|numeric',
             'work_location' => 'nullable|string|max:100',
             'status' => 'nullable|in:Active,Inactive',
+            'payroll_number' => 'nullable|string|max:150',
+            'home_province' => 'nullable|string',
+            'district_village' => 'nullable|string',
+            'spouse_full_name' => 'nullable|string|max:150',
+            'spouse_contact' => 'nullable|string|max:50',
+            'employer_department' => 'nullable|string|max:200',
+            'employer_address' => 'nullable|string',
+            'work_district' => 'nullable|string',
+            'work_province' => 'nullable|string|max:100',
+            'immediate_supervisor' => 'nullable|string|max:100',
+            'years_at_current_employer' => 'nullable|integer|min:0',
+            'net_salary' => 'nullable|numeric',
         ]);
         $validated['user_id'] = $request->user()->id;
         //check if email, phone, employee_no already exists
@@ -110,6 +123,18 @@ class CustomerController extends Controller
             'monthly_salary' => 'nullable|numeric',
             'work_location' => 'nullable|string|max:100',
             'status' => 'nullable|in:Active,Inactive',
+            'payroll_number' => 'nullable|string|max:150',
+            'home_province' => 'nullable|string',
+            'district_village' => 'nullable|string',
+            'spouse_full_name' => 'nullable|string|max:150',
+            'spouse_contact' => 'nullable|string|max:50',
+            'employer_department' => 'nullable|string|max:200',
+            'employer_address' => 'nullable|string',
+            'work_district' => 'nullable|string',
+            'work_province' => 'nullable|string|max:100',
+            'immediate_supervisor' => 'nullable|string|max:100',
+            'years_at_current_employer' => 'nullable|integer|min:0',
+            'net_salary' => 'nullable|numeric',
         ]);
         // Find the customer by ID
         $customer = Customer::find($id);

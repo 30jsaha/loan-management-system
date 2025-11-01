@@ -1,170 +1,165 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { router } from '@inertiajs/react';
+import { router } from "@inertiajs/react";
+import { Row, Col, Form, Button, ProgressBar } from "react-bootstrap";
 
 const LoanDocumentsUpload = ({ loanFormData }) => {
-  const [isdaSignedFile, setIsdaSignedFile] = useState(null);
-  const [docType, setDocType] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [files, setFiles] = useState([]); // each: { docType, file, progress }
   const [message, setMessage] = useState("");
-  // const navigate = useNavigate();
+  const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = (e) => {
+  const allowedDocs = [
+    "ID",
+    "Payslip",
+    "BankStatement",
+    "EmploymentLetter",
+    "ResumptionSheet",
+    "ISDA_Signed",
+    "LoanForm_Scanned",
+  ];
+
+  const handleFileChange = (e, docType) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // ✅ File type and size validation
-    const validExtensions = ["application/pdf"];
-    if (!validExtensions.includes(file.type)) {
-      setMessage("❌ Only PDF files are allowed.");
-      setIsdaSignedFile(null);
+    if (file.type !== "application/pdf") {
+      setMessage(`❌ ${docType}: Only PDF files are allowed.`);
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
-      // 5MB limit
-      setMessage("❌ File size exceeds 5 MB limit.");
-      setIsdaSignedFile(null);
+      setMessage(`❌ ${docType}: File size exceeds 5 MB limit.`);
       return;
     }
 
-    setIsdaSignedFile(file);
-    setMessage("");
+    setFiles((prev) => {
+      const filtered = prev.filter((f) => f.docType !== docType);
+      return [...filtered, { docType, file, progress: 0 }];
+    });
   };
 
-  // const handleUpload = async (e) => {
-  //   e.preventDefault();
-
-  //   if (!isdaSignedFile) {
-  //     setMessage("⚠️ Please select a PDF file to upload.");
-  //     return;
-  //   }
-
-  //   if (!docType) {
-  //     setMessage("⚠️ Please select a document type.");
-  //     return;
-  //   }
-
-  //   const formData = new FormData();
-  //   formData.append("document", isdaSignedFile);
-  //   formData.append("doc_type", docType);
-  //   formData.append("loan_application_id", loanFormData.id || "");
-  //   formData.append("customer_id", loanFormData.customer_id || "");
-  //   formData.append("company_id", loanFormData.company_id || "");
-
-  //   try {
-  //     setUploading(true);
-  //     const res = await axios.post("/api/document-upload", formData, {
-  //       headers: { "Content-Type": "multipart/form-data" },
-  //       withCredentials: true,
-  //     });
-  //     setMessage("✅ File uploaded successfully!");
-  //     console.log("Upload response:", res.data);
-  //   } catch (error) {
-  //     console.error(error);
-  //     setMessage("❌ Upload failed. Please try again.");
-  //   } finally {
-  //     setUploading(false);
-  //   }
-  // };
-  
-
-  const handleUpload = async (e) => {
+  const handleUploadAll = async (e) => {
     e.preventDefault();
 
-    if (!isdaSignedFile) {
-      setMessage("❌ Please select a file before uploading.");
+    if (files.length === 0) {
+      setMessage("⚠️ Please select at least one document to upload.");
       return;
     }
-
-    // Check file type and size before uploading
-    if (isdaSignedFile.type !== "application/pdf") {
-      setMessage("❌ Only PDF files are allowed.");
-      return;
-    }
-
-    if (isdaSignedFile.size > 5 * 1024 * 1024) {
-      setMessage("❌ File size must be under 5MB.");
-      return;
-    }
-
-    if (!docType) {
-      setMessage("⚠️ Please select a document type.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", isdaSignedFile); // <-- IMPORTANT: Laravel expects 'file'
-    formData.append("doc_type", docType);
-    formData.append("loan_id", loanFormData.id || "");
-    formData.append("customer_id", loanFormData.customer_id || "");
-    formData.append("company_id", loanFormData.company_id || "");
-    // formData.append("notes", notes);
 
     try {
-      const res = await axios.post("/api/document-upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setMessage("✅ Document uploaded successfully!");
-      console.log("Upload response:", res.data);
-      // navigate(route('loan-edit', { loan: loanFormData.id }));
-      setTimeout(() => router.visit(route('loans')), 1000);
+      setUploading(true);
+      for (const f of files) {
+        const formData = new FormData();
+        formData.append("file", f.file);
+        formData.append("doc_type", f.docType);
+        formData.append("loan_id", loanFormData.id || "");
+        formData.append("customer_id", loanFormData.customer_id || "");
+
+        await axios.post("/api/document-upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+          onUploadProgress: (progressEvent) => {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setFiles((prev) =>
+              prev.map((fileObj) =>
+                fileObj.docType === f.docType
+                  ? { ...fileObj, progress: percent }
+                  : fileObj
+              )
+            );
+          },
+        });
+      }
+
+      setMessage("✅ All documents uploaded successfully!");
+      setTimeout(() => router.visit(route("loans")), 1000);
     } catch (error) {
       console.error("Upload error:", error);
-      if (error.response?.data?.message) {
-        setMessage("❌ " + error.response.data.message);
-      } else {
-        setMessage("❌ Failed to upload document.");
-      }
+      setMessage("❌ Failed to upload some documents. Please try again.");
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
     <div className="p-4 border rounded bg-light">
-      <h5 className="mb-3">📄 Upload Supporting Documents</h5>
-      <form onSubmit={handleUpload}>
-        <div className="mb-3">
-          <label className="form-label">Document Type</label>
-          <select
-            className="form-select"
-            value={docType}
-            onChange={(e) => setDocType(e.target.value)}
-            required
-          >
-            <option value="">Select Document Type</option>
-            <option value="ID">ID</option>
-            <option value="Payslip">Payslip</option>
-            <option value="BankStatement">Bank Statement</option>
-            <option value="EmploymentLetter">Employment Letter</option>
-            <option value="ResumptionSheet">Resumption Sheet</option>
-            <option value="ISDA_Signed">ISDA Signed</option>
-            <option value="LoanForm_Scanned">Loan Form (Scanned)</option>
-            <option value="ConsentVideo">Consent Video</option>
-            <option value="Other">Other</option>
-          </select>
+      <h5 className="mb-3 d-flex align-items-center gap-2">
+        📄 Upload Supporting Documents
+      </h5>
+
+      {message && (
+        <div
+          className={`mb-4 p-3 rounded ${
+            message.startsWith("✅")
+              ? "bg-success bg-opacity-10 text-success"
+              : message.startsWith("⚠️")
+              ? "bg-warning bg-opacity-10 text-warning"
+              : "bg-danger bg-opacity-10 text-danger"
+          }`}
+        >
+          {message}
         </div>
+      )}
 
-        <div className="mb-3">
-          <label className="form-label">Upload PDF</label>
-          <input
-            type="file"
-            accept=".pdf"
-            className="form-control"
-            onChange={handleFileChange}
-            required
-          />
-        </div>
+      <Form onSubmit={handleUploadAll}>
+        {allowedDocs.map((doc) => {
+          const fileObj = files.find((f) => f.docType === doc);
+          return (
+            <div key={doc} className="mb-4 pb-3 border-bottom">
+              <Form.Label className="fw-medium text-secondary mb-2">
+                {doc.replace(/_/g, " ")}
+              </Form.Label>
 
-        {message && <div className="alert alert-info">{message}</div>}
+              <Row className="align-items-center">
+                <Col md={6}>
+                  <Form.Control
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => handleFileChange(e, doc)}
+                  />
+                </Col>
 
-        <button
+                {fileObj && (
+                  <Col md={6} className="d-flex align-items-center gap-3">
+                    <embed
+                      src={URL.createObjectURL(fileObj.file)}
+                      type="application/pdf"
+                      width="160"
+                      height="180"
+                      className="border rounded shadow-sm"
+                    />
+                    <div>
+                      <div className="fw-semibold text-dark small">
+                        {fileObj.file.name}
+                      </div>
+                      <div className="text-muted small mb-1">
+                        {(fileObj.file.size / 1024).toFixed(1)} KB
+                      </div>
+                      <ProgressBar
+                        now={fileObj.progress}
+                        label={`${fileObj.progress}%`}
+                        variant="info"
+                        animated
+                        style={{ height: "8px" }}
+                      />
+                    </div>
+                  </Col>
+                )}
+              </Row>
+            </div>
+          );
+        })}
+
+        <Button
           type="submit"
-          className="bg-green-600 text-white px-4 py-2 rounded text-end"
+          variant="success"
+          className="mt-3"
           disabled={uploading || !loanFormData.id}
         >
-          {uploading ? "Uploading..." : "Upload Document & Finish"}
-        </button>
-      </form>
+          {uploading ? "Uploading..." : "Upload All Documents & Finish"}
+        </Button>
+      </Form>
     </div>
   );
 };

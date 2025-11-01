@@ -447,11 +447,11 @@ export default function CustomerForm({
                     <label className="block text-gray-700 font-medium">Status</label>
                     <select
                         name="status"
-                        value={formData.status || ""}
+                        value={formData.status || "Active"}
                         onChange={handleChange}
                         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                     >
-                        <option value="Active" selected>Active</option>
+                        <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                     </select>
                 </div>

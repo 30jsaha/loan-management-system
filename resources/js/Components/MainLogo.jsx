@@ -1,10 +1,11 @@
-import Logo from '../../images/logo.png';
+import Logo from '../../images/aa logo.png';
 
-export default function MainLogo({width="64"}) {
+export default function MainLogo({width}) {
     return (
         <img
-            className={`w-${width} max-w-full object-contain`}
+            className={`w-64 max-w-full object-contain`}
             src={Logo}
+            style={{width: `${width} !important`}}
             alt="Loan Management System"
         />
     );
