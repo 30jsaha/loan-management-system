@@ -85,7 +85,7 @@ class DocumentUploadController extends Controller
         $document = DocumentUpload::findOrFail($id);
         $document->update([
             'verification_status' => $validated['verification_status'],
-            'verified_by' => auth()->user()->name ?? 'System',
+            'verified_by' => auth()->user()->id ?? 0,
             'verified_on' => now(),
             'notes' => $validated['notes'] ?? $document->notes,
         ]);

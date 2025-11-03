@@ -32,7 +32,7 @@ export default function Authenticated({ user, header, children }) {
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')}>
                                     Dashboard
                                 </NavLink>
-                                <NavLink href={route('loans')} active={route().current('loans') || route().current('loan-create') || route().current('loan-view')}>
+                                <NavLink href={route('loans')} active={route().current('loans') || route().current('loan-create') || route().current('loan.view')}>
                                     Loans
                                 </NavLink>
                                 <NavLink href={route('customers')} active={route().current('customers') || route().current('customer.create') || route().current('customer.view')}>
@@ -145,7 +145,7 @@ export default function Authenticated({ user, header, children }) {
                         <ResponsiveNavLink href={route('dashboard')} active={route().current('dashboard')}>
                             Dashboard
                         </ResponsiveNavLink>
-                        <ResponsiveNavLink href={route('loans')} active={route().current('loans') || route().current('loan-create') || route().current('loan-view')}>
+                        <ResponsiveNavLink href={route('loans')} active={route().current('loans') || route().current('loan-create') || route().current('loan.view')}>
                             Loans
                         </ResponsiveNavLink>
                         <ResponsiveNavLink href={route('customers')} active={route().current('customers') || route().current('customers') || route().current('customer.view')}>
