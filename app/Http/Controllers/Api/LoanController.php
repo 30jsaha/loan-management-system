@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\LoanSetting;
 //log
 use Illuminate\Support\Facades\Log;
+use Exception;
 
 class LoanController extends Controller
 {
@@ -113,8 +114,13 @@ class LoanController extends Controller
      */
     public function show(string $id)
     {
-        $loan = Loan::findOrFail($id);
+        // $loan = Loan::findOrFail($id);
+        // return response()->json($loan);
+
+        $loan = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        ->orderBy('id','desc')->findOrFail($id);
         return response()->json($loan);
+
     }
 
     public function approve($id)
@@ -166,4 +172,55 @@ class LoanController extends Controller
         $loanSettings = LoanSetting::where('org_id', $organisation_id)->get();
         return response()->json($loanSettings);
     }
+    public function uploadConsentVideo(Request $request)
+    {
+        $validated = $request->validate([
+            'loan_id' => 'required|exists:loan_applications,id',
+            'video_consent' => 'required|file|mimetypes:video/mp4|max:20480', // 20MB
+        ]);
+
+        try {
+            $file = $request->file('video_consent');
+            $path = $file->store('uploads/video_consents', 'public');
+
+            $loan = Loan::find($validated['loan_id']);
+            $loan->video_consent_path = '/storage/' . $path;
+            $loan->video_consent_file_name = $file->getClientOriginalName();
+            $loan->video_consent_upload_date = now()->toDateString();
+            $loan->video_consent_uploaded_by_user_id = auth()->user()->id;
+            $loan->save();
+
+            return response()->json([
+                'message' => '✅ Video consent uploaded successfully.',
+                'path' => $loan->video_consent_path,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => '❌ Upload failed.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function uploadIsdaSigned(Request $request)
+    {
+        $validated = $request->validate([
+            'loan_id' => 'required|exists:loan_applications,id',
+            'isda_signed_upload' => 'required|file|mimes:pdf|max:5120',
+        ]);
+
+        $file = $request->file('isda_signed_upload');
+        $path = $file->store('uploads/isda_signed', 'public');
+
+        $loan = Loan::find($validated['loan_id']);
+        $loan->isda_signed_upload_path = '/storage/' . $path;
+        $loan->save();
+
+        return response()->json([
+            'message' => '✅ ISDA signed document uploaded successfully.',
+            'path' => $loan->isda_signed_upload_path,
+        ], 201);
+    }
+
+
 }
