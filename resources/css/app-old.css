@@ -34,6 +34,10 @@ a {
     padding-right: 50px !important;
 }
 
+.swal2-actions button {
+    margin-left: 5px;
+}
+
 /* ========== UNDERLINE INPUT ========== */
 .underline-field {
   border: none;
@@ -443,7 +447,7 @@ a {
 }
 
 .official-table input[type="text"] {
-  width: 100%;     
+  width: 100%;
   border: none;
   outline: none;
   background: transparent;
@@ -451,38 +455,9 @@ a {
   font-size: 13px;
 }
 
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  #print-area, #print-area * {
-    visibility: visible;
-  }
-  #print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 794px !important;
-  }
+/* ------------------------------------------ */
 
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
- 
-  .header-bar {
-    display: none !important;
-  }
-
-
+.maxAllowPva
+{
+  color: rgb(23 211 65) !important;
 }
-
-.a4-page {
-    width: 210mm;
-    min-height: 297mm;
-    padding: 10mm;
-    margin: auto;
-    background: white;
-    box-sizing: border-box;
-}
-
