@@ -3,68 +3,70 @@ import { Link } from "@inertiajs/react";
 import { ArrowLeft } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
-export default function LoanDetailsPage({ auth }) {
+export default function LoanDetailsPage({ auth, approved_loans }) {
   // Demo data
-  const loan = {
-    "id": 11,
-    "company_id": 1,
-    "customer_id": 17,
-    "organisation_id": 1,
-    "loan_type": 2,
-    "purpose": "Medical",
-    "loan_amount_applied": 5000,
-    "tenure_fortnight": 40,
-    "interest_rate": 20,
-    "processing_fee": 20,
-    "bank_name": "demo bank",
-    "bank_branch": "demo branch",
-    "bank_account_no": "873456568686",
-    "status": "Approved",
-    "approved_by": "Jyotirmoy Saha",
-    "approved_date": "2025-10-29 10:49:40",
-    "customer": {
-      "first_name": "dsfdsbv",
-      "last_name": "dfbfdb",
-      "gender": "Male",
-      "dob": "1986-02-01",
-      "phone": "8523857410",
-      "email": "new1e@email.com",
-      "present_address": "demo",
-      "permanent_address": "demo",
-      "employee_no": "EMP1885",
-      "designation": "Sales Person",
-      "employment_type": "Permanent",
-      "date_joined": "2004-05-06",
-      "monthly_salary": "852.00",
-      "work_location": "png"
-    },
-    "organisation": {
-      "organisation_name": "Central Government",
-      "sector_type": "Education",
-      "address": "Waigani, Port Moresby",
-      "contact_no": "+675-312-1000",
-      "email": "contact@gov.pg"
-    },
-    "documents": [
-      {
-        "id": 6,
-        "doc_type": "EmploymentLetter",
-        "file_name": "Website PSD Template.pdf",
-        "file_path": "uploads/documents/METs15Hnj4jEQydamIFjy2fhRD4MgqtNdhAPUK6A.pdf",
-        "uploaded_by": "Jyotirmoy Saha",
-        "verification_status": "Pending"
-      }
-    ],
-    "loan_settings": {
-      "loan_desc": "Consolidation"
-    },
-    "company": {
-      "company_name": "Agro Advance Aben Ltd.",
-      "address": "Downtown Business Center, Port Moresby",
-      "contact_no": "+675-320-1234",
-      "email": "info@pacificfinance.pg"
-    }
-  };
+  // const loan = {
+  //   "id": 11,
+  //   "company_id": 1,
+  //   "customer_id": 17,
+  //   "organisation_id": 1,
+  //   "loan_type": 2,
+  //   "purpose": "Medical",
+  //   "loan_amount_applied": 5000,
+  //   "tenure_fortnight": 40,
+  //   "interest_rate": 20,
+  //   "processing_fee": 20,
+  //   "bank_name": "demo bank",
+  //   "bank_branch": "demo branch",
+  //   "bank_account_no": "873456568686",
+  //   "status": "Approved",
+  //   "approved_by": "Jyotirmoy Saha",
+  //   "approved_date": "2025-10-29 10:49:40",
+  //   "customer": {
+  //     "first_name": "dsfdsbv",
+  //     "last_name": "dfbfdb",
+  //     "gender": "Male",
+  //     "dob": "1986-02-01",
+  //     "phone": "8523857410",
+  //     "email": "new1e@email.com",
+  //     "present_address": "demo",
+  //     "permanent_address": "demo",
+  //     "employee_no": "EMP1885",
+  //     "designation": "Sales Person",
+  //     "employment_type": "Permanent",
+  //     "date_joined": "2004-05-06",
+  //     "monthly_salary": "852.00",
+  //     "work_location": "png"
+  //   },
+  //   "organisation": {
+  //     "organisation_name": "Central Government",
+  //     "sector_type": "Education",
+  //     "address": "Waigani, Port Moresby",
+  //     "contact_no": "+675-312-1000",
+  //     "email": "contact@gov.pg"
+  //   },
+  //   "documents": [
+  //     {
+  //       "id": 6,
+  //       "doc_type": "EmploymentLetter",
+  //       "file_name": "Website PSD Template.pdf",
+  //       "file_path": "uploads/documents/METs15Hnj4jEQydamIFjy2fhRD4MgqtNdhAPUK6A.pdf",
+  //       "uploaded_by": "Jyotirmoy Saha",
+  //       "verification_status": "Pending"
+  //     }
+  //   ],
+  //   "loan_settings": {
+  //     "loan_desc": "Consolidation"
+  //   },
+  //   "company": {
+  //     "company_name": "Agro Advance Aben Ltd.",
+  //     "address": "Downtown Business Center, Port Moresby",
+  //     "contact_no": "+675-320-1234",
+  //     "email": "info@pacificfinance.pg"
+  //   }
+  // };
+
+  // const loan= approved_loans;
 
   // ✅ Safe destructuring
   const {
@@ -72,7 +74,7 @@ export default function LoanDetailsPage({ auth }) {
     organisation = {},
     company = {},
     documents = [],
-  } = loan;
+  } = approved_loans;
 
   return (
     <AuthenticatedLayout
@@ -112,46 +114,46 @@ export default function LoanDetailsPage({ auth }) {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6 text-sm">
             <div>
               <span className="font-semibold">Loan Type:</span>{" "}
-              {loan.loan_settings?.loan_desc || "N/A"}
+              {approved_loans.loan_settings?.loan_desc || "N/A"}
             </div>
             <div>
-              <span className="font-semibold">Purpose:</span> {loan.purpose}
+              <span className="font-semibold">Purpose:</span> {approved_loans.purpose}
             </div>
             <div>
               <span className="font-semibold">Loan Amount Applied:</span>{" "}
-              {loan.loan_amount_applied}
+              {approved_loans.loan_amount_applied}
             </div>
             <div>
               <span className="font-semibold">Tenure:</span>{" "}
-              {loan.tenure_fortnight} Fortnights
+              {approved_loans.tenure_fortnight} Fortnights
             </div>
             <div>
               <span className="font-semibold">Interest Rate:</span>{" "}
-              {loan.interest_rate}%
+              {approved_loans.interest_rate}%
             </div>
             <div>
               <span className="font-semibold">Status:</span>{" "}
               <span
                 className={`px-2 py-0.5 rounded text-xs ${
-                  loan.status === "Approved"
+                  approved_loans.status === "Approved"
                     ? "bg-green-100 text-green-700"
                     : "bg-yellow-100 text-yellow-700"
                 }`}
               >
-                {loan.status}
+                {approved_loans.status}
               </span>
             </div>
             <div>
               <span className="font-semibold">Approved By:</span>{" "}
-              {loan.approved_by}
+              {approved_loans.approved_by}
             </div>
             <div>
               <span className="font-semibold">Approved Date:</span>{" "}
-              {new Date(loan.approved_date).toLocaleString()}
+              {new Date(approved_loans.approved_date).toLocaleString()}
             </div>
             <div>
               <span className="font-semibold">Processing Fee:</span>{" "}
-              {loan.processing_fee}
+              {approved_loans.processing_fee}
             </div>
           </div>
 

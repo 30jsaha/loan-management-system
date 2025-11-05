@@ -44,9 +44,14 @@ Route::get('/loans', [LoansController::class, 'index'])
 Route::middleware('auth')->get('/loans/create', [LoansController::class, 'create'])
     ->middleware(['auth', 'verified'])
     ->name('loan-create');
+
 Route::middleware('auth')->get('/loans/emi-collection', [LoansController::class, 'loan_emi_list'])
     ->middleware(['auth', 'verified'])
     ->name('loan.emi');
+
+Route::middleware(['auth', 'verified'])->prefix('loans')->name('loan.')->group(function () {
+    Route::get('/emi-collection-details/{id}', [LoansController::class, 'loan_emi_details'])->name('emi-details');
+});
 
 // Route::middleware('auth')->get('/customers/dept-database', [LoansController::class, 'show_dept_cust_list'])
 //     ->middleware(['auth', 'verified'])

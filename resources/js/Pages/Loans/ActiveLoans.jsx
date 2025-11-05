@@ -3,59 +3,59 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
 import { ArrowLeft } from "lucide-react";
 
-export default function ActiveLoans({ auth }) {
+export default function ActiveLoans({ auth, approved_loans }) {
   // Demo approved loans data
-  const approved_loans = [{
-    "id": 11,
-    "company_id": 1,
-    "customer_id": 17,
-    "organisation_id": 1,
-    "loan_type": 2,
-    "purpose": "Medical",
-    "loan_amount_applied": 5000,
-    "emi_amount": 250,
-    "tenure_fortnight": 40,
-    "interest_rate": 20,
-    "processing_fee": 20,
-    "bank_name": "demo bank",
-    "bank_branch": "demo branch",
-    "bank_account_no": "873456568686",
-    "status": "Approved",
-    "approved_by": "Jyotirmoy Saha",
-    "approved_date": "2025-10-29 10:49:40",
-    "customer": {
-      "first_name": "dsfdsbv",
-      "last_name": "dfbfdb",
-      "gender": "Male",
-      "dob": "1986-02-01",
-      "phone": "8523857410",
-      "email": "new1e@email.com",
-      "present_address": "demo",
-      "permanent_address": "demo",
-      "employee_no": "EMP1885",
-      "designation": "Sales Person",
-      "employment_type": "Permanent",
-      "date_joined": "2004-05-06",
-      "monthly_salary": "852.00",
-      "work_location": "png"
-    },
-    "organisation": {
-      "organisation_name": "Central Government",
-      "sector_type": "Education",
-      "address": "Waigani, Port Moresby",
-      "contact_no": "+675-312-1000",
-      "email": "contact@gov.pg"
-    },
-    "loan_settings": {
-      "loan_desc": "Consolidation"
-    },
-    "company": {
-      "company_name": "Agro Advance Aben Ltd.",
-      "address": "Downtown Business Center, Port Moresby",
-      "contact_no": "+675-320-1234",
-      "email": "info@pacificfinance.pg"
-    }
-  }];
+//   const approved_loans = [{
+//     "id": 11,
+//     "company_id": 1,
+//     "customer_id": 17,
+//     "organisation_id": 1,
+//     "loan_type": 2,
+//     "purpose": "Medical",
+//     "loan_amount_applied": 5000,
+//     "emi_amount": 250,
+//     "tenure_fortnight": 40,
+//     "interest_rate": 20,
+//     "processing_fee": 20,
+//     "bank_name": "demo bank",
+//     "bank_branch": "demo branch",
+//     "bank_account_no": "873456568686",
+//     "status": "Approved",
+//     "approved_by": "Jyotirmoy Saha",
+//     "approved_date": "2025-10-29 10:49:40",
+//     "customer": {
+//       "first_name": "dsfdsbv",
+//       "last_name": "dfbfdb",
+//       "gender": "Male",
+//       "dob": "1986-02-01",
+//       "phone": "8523857410",
+//       "email": "new1e@email.com",
+//       "present_address": "demo",
+//       "permanent_address": "demo",
+//       "employee_no": "EMP1885",
+//       "designation": "Sales Person",
+//       "employment_type": "Permanent",
+//       "date_joined": "2004-05-06",
+//       "monthly_salary": "852.00",
+//       "work_location": "png"
+//     },
+//     "organisation": {
+//       "organisation_name": "Central Government",
+//       "sector_type": "Education",
+//       "address": "Waigani, Port Moresby",
+//       "contact_no": "+675-312-1000",
+//       "email": "contact@gov.pg"
+//     },
+//     "loan_settings": {
+//       "loan_desc": "Consolidation"
+//     },
+//     "company": {
+//       "company_name": "Agro Advance Aben Ltd.",
+//       "address": "Downtown Business Center, Port Moresby",
+//       "contact_no": "+675-320-1234",
+//       "email": "info@pacificfinance.pg"
+//     }
+//   }];
 
   return (
       
@@ -128,7 +128,7 @@ export default function ActiveLoans({ auth }) {
 
                   {/* Collect EMI Button */}
                   <Link
-                    href={`/loan/show/${loan.id}`}
+                    href={route("loan.emi-details", { id: loan.id })}
                     className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-md text-sm"
                   >
                     Collect EMI

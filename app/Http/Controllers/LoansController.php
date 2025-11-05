@@ -36,6 +36,19 @@ class LoansController extends Controller
             'approved_loans' => $approvedLoans,
         ]);
     }
+    public function loan_emi_details(Request $request, $id)
+    {
+        $perPage = (int) $request->get('per_page', 15);
+
+        $approvedLoans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        ->where('status','Approved')
+        ->where('id',$id)
+        ->orderBy('approved_date','desc')->get();
+
+        return inertia('Loans/LoanDetails', [
+            'approved_loans' => $approvedLoans,
+        ]);
+    }
     public function show_dept_cust_list(Request $request)
     {
         $perPage = (int) $request->get('per_page', 15);
