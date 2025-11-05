@@ -45,6 +45,20 @@ Route::middleware('auth')->get('/loans/create', [LoansController::class, 'create
     ->middleware(['auth', 'verified'])
     ->name('loan-create');
 
+Route::middleware('auth')->get('/loans/emi-collection', [LoansController::class, 'loan_emi_list'])
+    ->middleware(['auth', 'verified'])
+    ->name('loan.emi');
+
+Route::middleware(['auth', 'verified'])->prefix('loans')->name('loan.')->group(function () {
+    Route::get('/emi-collection-details/{id}', [LoansController::class, 'loan_emi_details'])->name('emi-details');
+});
+
+// Route::middleware('auth')->get('/customers/dept-database', [LoansController::class, 'show_dept_cust_list'])
+//     ->middleware(['auth', 'verified'])
+//     ->name('customer.dept');
+
+Route::middleware('auth')->get('/customers/dept-database', fn() => Inertia::render('Customers/DeptDatabase'))->name('customer.dept');
+
 Route::middleware('auth')->get('/loans/{id}', function ($id) {
     return Inertia::render('Loans/View', ['loanId' => $id]);
 })->name('loan.view');

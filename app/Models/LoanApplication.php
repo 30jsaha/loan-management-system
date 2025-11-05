@@ -21,11 +21,12 @@ class LoanApplication extends Model
         'loan_type','purpose','other_purpose_text',
         'loan_amount_applied','loan_amount_approved',
         'tenure_fortnight','emi_amount','interest_rate',
+        'elegible_amount','total_repay_amt','total_interest_amt',
         'processing_fee','grace_period_days','disbursement_date',
         'bank_name','bank_branch','bank_account_no',
         'status','approved_by','approved_date',
         'higher_approved_by','higher_approved_date',
-        'isda_generated_path','isda_signed_upload_path','remarks'
+        'isda_generated_path','isda_signed_upload_path','remarks','is_elegible'
     ];
 
     public function customer(){ return $this->belongsTo(Customer::class); }

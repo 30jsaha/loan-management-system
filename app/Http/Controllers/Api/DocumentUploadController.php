@@ -33,10 +33,10 @@ class DocumentUploadController extends Controller
                 'loan_id' => $validated['loan_id'] ?? null,
                 'customer_id' => $validated['customer_id'] ?? null,
                 'doc_type' => $validated['doc_type'],
-                'doc_type' => "EmploymentLetter",
                 'file_name' => $originalName,
                 'file_path' => $filePath,
                 'uploaded_by' => auth()->user()->name ?? 'System',
+                'uploaded_by_user_id' => auth()->user()->id,
                 'uploaded_on' => now(),
                 'notes' => $validated['notes'] ?? null,
             ]);

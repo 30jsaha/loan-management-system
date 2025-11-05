@@ -7,6 +7,7 @@ export default function CustomerForm({
   setFormData, 
   companies, 
   organisations, 
+  allCustMast,
   onNext, 
   setMessage,
   setIsFormDirty
@@ -55,11 +56,11 @@ export default function CustomerForm({
                     <div className="grid grid-cols-1 gap-4 mt-3">
                         {/* --- Company & Organisation --- */}
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
+                            <div style={{display: "none"}}>
                                 <label className="block text-gray-700 font-medium">Company <ImportantField /></label>
                                 <select
                                 name="company_id"
-                                value={formData.company_id || ""}
+                                value={1}
                                 onChange={handleChange}
                                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                                 required
@@ -68,6 +69,38 @@ export default function CustomerForm({
                                 {companies.map((company) => (
                                     <option key={company.id} value={company.id}>
                                     {company.company_name}
+                                    </option>
+                                ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-gray-700 font-medium">EMP Code <ImportantField /></label>
+                                <select
+                                name="employee_no"
+                                value={formData.employee_no || ""}
+                                onChange={(e)=>{
+                                    handleChange(e);
+                                    const selectedEmp = allCustMast.find(emp => emp.emp_code === e.target.value);
+                                    if(selectedEmp){
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            first_name: selectedEmp.cust_name.split(' ')[0] || '',
+                                            last_name: selectedEmp.cust_name.split(' ').slice(1).join(' ') || '',
+                                            phone: selectedEmp.phone || '',
+                                            email: selectedEmp.email || '',
+                                            monthly_salary: selectedEmp.gross_pay || '',
+                                            net_salary: selectedEmp.net_pay || '',
+                                            organisation_id: selectedEmp.organization_id || 0
+                                        }));
+                                    }
+                                }}
+                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                required
+                                >
+                                <option value="">-- Select EMP --</option>
+                                {allCustMast.map((emp) => (
+                                    <option key={emp.emp_code} value={emp.emp_code}>
+                                    {emp.emp_code} - {emp.cust_name}
                                     </option>
                                 ))}
                                 </select>
@@ -289,7 +322,7 @@ export default function CustomerForm({
                             required
                             />
                         </div>
-                        <div>
+                        {/* <div>
                             <label className="block text-gray-700 font-medium">Employee No <ImportantField /></label>
                             <input
                             type="text"
@@ -299,7 +332,7 @@ export default function CustomerForm({
                             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                             required
                             />
-                        </div>
+                        </div> */}
                     </div>
                     <div className="grid grid-cols-2 gap-4 mt-3">
                         <div>

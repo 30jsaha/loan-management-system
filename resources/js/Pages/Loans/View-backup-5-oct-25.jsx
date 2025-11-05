@@ -1,10 +1,10 @@
 import { use, useEffect, useState, useCallback } from "react";
 import { router, Head, Link } from "@inertiajs/react";
-import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs, ProgressBar, Modal } from "react-bootstrap";
+import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs, ProgressBar } from "react-bootstrap";
 import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 //icon pack
-import { ArrowLeft, Download, Eye } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 
 export default function View({ auth, loanId }) {
     const [loan, setLoan] = useState(null);
@@ -18,33 +18,6 @@ export default function View({ auth, loanId }) {
     const [pdfPreview, setPdfPreview] = useState(null);
     const [uploadProgress, setUploadProgress] = useState({ video: 0, pdf: 0 });
 
-    const [showModal, setShowModal] = useState(false);
-    const [selectedDoc, setSelectedDoc] = useState(null);
-    // Open modal with selected document
-    const openDocModal = (doc) => {
-        setSelectedDoc(doc);
-        setShowModal(true);
-    };
-
-    // Close modal
-    const closeDocModal = () => {
-        setShowModal(false);
-        setSelectedDoc(null);
-        // refresh loan data from parent if required
-        //window.location.reload(); // optional — replace with prop callback if available
-        axios
-            .get(`/api/loans/${loanId}`)
-            .then((res) => {
-                setLoan(res.data);
-                setLoading(false);
-                console.log(res.data);
-            })
-            .catch((error) => {
-                console.error(error);
-                setMessage("❌ Failed to load loan details.");
-                setLoading(false);
-            });
-    };
 
     axios.defaults.withCredentials = true;
 
@@ -297,151 +270,59 @@ export default function View({ auth, loanId }) {
                                         <legend className="font-semibold mb-2">Uploaded Documents</legend>
                                         {loan.documents.length > 0 ? (
                                             <table className="w-full border-collapse border border-gray-300 text-sm">
-                                            <thead className="bg-gray-100 text-center">
-                                                <tr>
-                                                <th className="border p-2">Document Type</th>
-                                                <th className="border p-2">File Name</th>
-                                                <th className="border p-2">Uploaded At</th>
-                                                <th className="border p-2">Uploaded By</th>
-                                                <th className="border p-2">View</th>
-                                                <th className="border p-2">Download</th>
-                                                {(auth.user.is_admin == 1) && (
-                                                    <th className="border p-2">Verify</th>
-                                                )}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {loan.documents.map((doc) => (
-                                                <tr key={doc.id} className="hover:bg-gray-50 transition">
-                                                    <td className="border p-2">{doc.doc_type}</td>
-                                                    <td className="border p-2">{doc.file_name}</td>
-                                                    <td className="border p-2">
-                                                    {new Date(doc.uploaded_on).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="border p-2">
-                                                        {doc.uploaded_by}
-                                                    </td>
-
-                                                    {/* View Button */}
-                                                    <td className="border p-2 text-center">
-                                                    <button
-                                                        onClick={() => openDocModal(doc)}
-                                                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                    >
-                                                        <Eye size={16} /> View
-                                                    </button>
-                                                    </td>
-                                                    {/* Download Button */}
-                                                    <td className="border p-2 text-center">
-                                                    <a
-                                                        href={route("document-upload.download", { id: doc.id })}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                    >
-                                                        Download <Download size={16} />
-                                                    </a>
-                                                    </td>
-
-                                                    {/* Verify / Reject */}
-                                                    {(auth.user.is_admin == 1) && (
-                                                        <td className="border p-2 text-center">
-                                                        {doc.verification_status === "Verified" ? (
-                                                            <span className="text-green-600 font-semibold">
-                                                            Verified ✅
-                                                            </span>
-                                                        ) : doc.verification_status === "Rejected" ? (
-                                                            <span className="text-red-600 font-semibold">
-                                                            Rejected ❌
-                                                            </span>
-                                                        ) : (
-                                                            <div className="flex gap-2 justify-center">
-                                                            <button
-                                                                onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                            >
-                                                                Verify
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                            >
-                                                                Reject
-                                                            </button>
-                                                            </div>
-                                                        )}
-                                                        </td>
-                                                    )}
-                                                </tr>
-                                                ))}
-                                            </tbody>
+                                                <thead>
+                                                    <tr>
+                                                        <th className="border p-2">Document Type</th>
+                                                        <th className="border p-2">File Name</th>
+                                                        <th className="border p-2">Uploaded At</th>
+                                                        <th className="border p-2">Download</th>
+                                                        <th className="border p-2">Verify</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {loan.documents.map((doc) => (
+                                                        <tr key={doc.id}>
+                                                            <td className="border p-2">{doc.doc_type}</td>
+                                                            <td className="border p-2">{doc.file_name}</td>
+                                                            <td className="border p-2">{new Date(doc.uploaded_on).toLocaleDateString()}</td>
+                                                            <td className="border p-2">
+                                                                <a
+                                                                    href={route('document-upload.download', { id: doc.id })}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-blue-600 hover:underline text-primary"
+                                                                >
+                                                                    Download
+                                                                    <Download size={16} className="inline-block ms-1" />
+                                                                </a>
+                                                            </td>
+                                                            <td className="border p-2 text-center">
+                                                                {doc.verification_status == "Verified" ? (
+                                                                    <span className="text-green-600 font-semibold">Verified ✅</span>
+                                                                ) : (
+                                                                <div className="flex gap-2 justify-center">
+                                                                    <button
+                                                                        onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                    >
+                                                                        Verify
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                    >
+                                                                        Reject
+                                                                    </button>
+                                                                </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
                                             </table>
                                         ) : (
                                             <p>No documents uploaded.</p>
                                         )}
-
-                                        {/* Modal for viewing document */}
-                                        <Modal
-                                            show={showModal}
-                                            onHide={closeDocModal}
-                                            size="xl"
-                                            centered
-                                            dialogClassName="max-w-[900px]"
-                                        >
-                                            <Modal.Header closeButton>
-                                            <Modal.Title>
-                                                {selectedDoc?.doc_type} — {selectedDoc?.file_name}
-                                            </Modal.Title>
-                                            </Modal.Header>
-
-                                            <Modal.Body>
-                                            {selectedDoc?.file_path && selectedDoc.file_name.endsWith(".pdf") ? (
-                                                <iframe
-                                                src={`/storage/${selectedDoc.file_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                width="100%"
-                                                height="600"
-                                                className="rounded border shadow-sm"
-                                                title={selectedDoc.file_name}
-                                                />
-                                            ) : selectedDoc?.file_path?.endsWith(".mp4") ? (
-                                                <video
-                                                width="100%"
-                                                height="auto"
-                                                controls
-                                                src={`/storage/${selectedDoc.file_path}`}
-                                                className="rounded border shadow-sm"
-                                                />
-                                            ) : (
-                                                <p className="text-gray-500 text-center">
-                                                Preview not available for this file type.
-                                                </p>
-                                            )}
-                                            </Modal.Body>
-
-                                            <Modal.Footer>
-                                            <Button
-                                                variant="success"
-                                                onClick={async () => {
-                                                await handleVerifyDoc(selectedDoc.id, "Verified");
-                                                closeDocModal();
-                                                }}
-                                            >
-                                                Approve
-                                            </Button>
-                                            <Button
-                                                variant="danger"
-                                                onClick={async () => {
-                                                await handleVerifyDoc(selectedDoc.id, "Rejected");
-                                                closeDocModal();
-                                                }}
-                                            >
-                                                Reject
-                                            </Button>
-                                            <Button variant="secondary" onClick={closeDocModal}>
-                                                Close
-                                            </Button>
-                                            </Modal.Footer>
-                                        </Modal>
                                     </fieldset>
                                 </Col>
                                 {/* --- Video Consent Upload / Preview --- */}

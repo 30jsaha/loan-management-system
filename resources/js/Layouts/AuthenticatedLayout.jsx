@@ -32,12 +32,91 @@ export default function Authenticated({ user, header, children }) {
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')}>
                                     Dashboard
                                 </NavLink>
-                                <NavLink href={route('loans')} active={route().current('loans') || route().current('loan-create') || route().current('loan.view')}>
-                                    Loans
-                                </NavLink>
-                                <NavLink href={route('customers')} active={route().current('customers') || route().current('customer.create') || route().current('customer.view')}>
+                                <div
+                                    className={`ms-3 relative pt-3 ${
+                                        route().current('loans') ||
+                                        route().current('loan-create') ||
+                                        route().current('loan.view') ||
+                                        route().current('loan.emi')
+                                            ? 'text-blue-600 font-semibold' // Active style
+                                            : 'text-gray-500'
+                                    }`}
+                                >
+                                    <Dropdown>
+                                        <Dropdown.Trigger>
+                                            <span className="inline-flex rounded-md">
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex items-center px-3 py-2 border-transparent text-sm leading-4 font-medium rounded-md bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
+                                                >
+                                                    Loans
+                                                    <svg
+                                                        className="ms-2 -me-0.5 h-4 w-4"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 20 20"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path
+                                                            fillRule="evenodd"
+                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                            clipRule="evenodd"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </span>
+                                        </Dropdown.Trigger>
+
+                                        <Dropdown.Content>
+                                            <Dropdown.Link href={route('loans')}>Loan Applications</Dropdown.Link>
+                                            <Dropdown.Link href={route('loan-create')}>+ New Loan</Dropdown.Link>
+                                            <Dropdown.Link href={route('loan.emi')}>EMI Collection</Dropdown.Link>
+                                        </Dropdown.Content>
+                                    </Dropdown>
+                                </div>
+                                <div
+                                    className={`ms-3 relative pt-3 ${
+                                        route().current('customers') ||
+                                        route().current('customer.create') ||
+                                        route().current('customer.view') ||
+                                        route().current('customer.dept')
+                                            ? 'text-blue-600 font-semibold' // Active style
+                                            : 'text-gray-500'
+                                    }`}
+                                >
+                                    <Dropdown>
+                                        <Dropdown.Trigger>
+                                            <span className="inline-flex rounded-md">
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex items-center px-3 py-2 border-transparent text-sm leading-4 font-medium rounded-md bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
+                                                >
+                                                    Customers
+                                                    <svg
+                                                        className="ms-2 -me-0.5 h-4 w-4"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 20 20"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path
+                                                            fillRule="evenodd"
+                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                            clipRule="evenodd"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </span>
+                                        </Dropdown.Trigger>
+
+                                        <Dropdown.Content>
+                                            <Dropdown.Link href={route('customers')}>All Customers</Dropdown.Link>
+                                            <Dropdown.Link href={route('customer.create')}>+ New Customer</Dropdown.Link>
+                                            <Dropdown.Link href={route('customer.dept')}>Dept Saved Customers</Dropdown.Link>
+                                        </Dropdown.Content>
+                                    </Dropdown>
+                                </div>
+                                {/* <NavLink href={route('customers')} active={route().current('customers') || route().current('customer.create') || route().current('customer.view')}>
                                     Customers
-                                </NavLink>
+                                </NavLink> */}
                                 <div className="ms-3 relative pt-3">
                                     <Dropdown>
                                         <Dropdown.Trigger>

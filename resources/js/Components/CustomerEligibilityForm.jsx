@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
 import { Row, Col, Form, Button } from "react-bootstrap";
 import axios from "axios";
+//swal
+import Swal from "sweetalert2";
 
-export default function CustomerEligibilityForm({ customerId, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt }) {
+export default function CustomerEligibilityForm({ customerId, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, eleigibleAmount }) {
   const [formData, setFormData] = useState({
     customer_id: customerId || 0,
     gross_salary_amt: "",
@@ -130,6 +132,9 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
       if (typeof proposedPvaAmt === "function") {
         proposedPvaAmt(formData.proposed_pva_amt);
       }
+      if (typeof eleigibleAmount === "function") {
+        eleigibleAmount(parseFloat(res.data.data.max_allowable_pva_amt));
+      }
     } catch (error) {
       console.error(error);
       setMessage("❌ Error calculating eligibility.");
@@ -141,6 +146,9 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
       }
       if (typeof proposedPvaAmt === "function") {
         proposedPvaAmt(formData.proposed_pva_amt);
+      }
+      if (typeof eleigibleAmount === "function") {
+        eleigibleAmount(parseFloat(res.data.data.max_allowable_pva_amt));
       }
     }
   };
@@ -190,20 +198,6 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
                 name="current_net_pay_amt"
                 value={formData.current_net_pay_amt}
                 onChange={handleChange}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group>
-              <Form.Label>Proposed PVA (PGK)</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                name="proposed_pva_amt"
-                value={formData.proposed_pva_amt}
-                onChange={handleChange}
-                //border highlight
-                style={{border:"solid 2px green"}}
               />
             </Form.Group>
           </Col>
@@ -297,12 +291,29 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
           </Col>
           </Row>
         </fieldset>
-
-        <div className="mt-4 text-end">
-          <Button variant="primary" type="button" onClick={handleCheckEligibility}>
-            Check Eligibility
-          </Button>
-        </div>
+        <Row className="mt-3">
+          <Col md={8}>
+            <Form.Group>
+              <Form.Label>Proposed PVA (PGK)</Form.Label>
+              <Form.Control
+                type="number"
+                step="0.01"
+                name="proposed_pva_amt"
+                value={formData.proposed_pva_amt}
+                onChange={handleChange}
+                //border highlight
+                style={{border:"solid 2px green"}}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={4} className="text-right">
+            <div className="mt-4 text-end">
+              <Button variant="primary" type="button" onClick={handleCheckEligibility}>
+                Check Eligibility
+              </Button>
+            </div>
+          </Col>
+        </Row>
 
       {result && (
         <div className="mt-6 border-t pt-4">
@@ -333,7 +344,7 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
             </div>
 
             <div className="p-3 bg-gray-50 rounded shadow-sm">
-              <strong>Max Allowable PVA:</strong>
+              <strong className="font-weight-bold maxAllowPva">Max Allowable PVA:</strong>
               <div className="text-gray-800">
                 PGK {Number(result.max_allowable_pva_amt).toFixed(2)}
               </div>

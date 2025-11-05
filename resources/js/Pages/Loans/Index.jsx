@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link, Head, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Card, Container, Row, Col, Alert, Spinner } from "react-bootstrap";
+import Swal from 'sweetalert2'
 
 import { Pencil, Eye, Trash2 } from "lucide-react";
 
@@ -29,17 +30,64 @@ export default function Index({ auth }) {
         }
     };
 
+    // const handleDelete = async (id) => {
+    //     // if (!confirm("Are you sure you want to delete this loan application?")) return;
+    //     // try {
+    //     //     await axios.delete(`/api/loans/${id}`);
+    //     //     setMessage("✅ Loan deleted successfully!");
+    //     //     fetchLoans();
+    //     // } catch (error) {
+    //     //     console.error(error);
+    //     //     setMessage("❌ Failed to delete loan.");
+    //     // }
+    //     });
+    // };
+
     const handleDelete = async (id) => {
-        if (!confirm("Are you sure you want to delete this loan application?")) return;
-        try {
-            await axios.delete(`/api/loans/${id}`);
-            setMessage("✅ Loan deleted successfully!");
-            fetchLoans();
-        } catch (error) {
-            console.error(error);
-            setMessage("❌ Failed to delete loan.");
+        const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: "btn btn-success",
+                cancelButton: "btn btn-danger"
+            },
+            buttonsStyling: false
+        });
+
+        const result = await swalWithBootstrapButtons.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, delete it!",
+            cancelButtonText: "No, cancel!",
+            reverseButtons: true
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await axios.delete(`/api/loans/${id}`);
+                await fetchLoans(); // Wait for refresh
+                swalWithBootstrapButtons.fire({
+                    title: "Deleted!",
+                    text: "Your data has been deleted.",
+                    icon: "success"
+                });
+            } catch (error) {
+                console.error(error);
+                swalWithBootstrapButtons.fire({
+                    title: "Error!",
+                    text: "Failed to delete loan.",
+                    icon: "error"
+                });
+            }
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            swalWithBootstrapButtons.fire({
+                title: "Cancelled",
+                text: "Your data is safe :)",
+                icon: "error"
+            });
         }
     };
+
 
     return (
         <AuthenticatedLayout
@@ -86,6 +134,7 @@ export default function Index({ auth }) {
                                             <th className="border px-4 py-3 text-left">Company Details</th>
                                             <th className="border px-4 py-3 text-left">Organisation Details</th>
                                             <th className="border px-4 py-3 text-left">Amount Details</th>
+                                            <th className="border px-4 py-3 text-left">Elegibility</th>
                                             <th className="border px-4 py-3 text-left">Status</th>
                                             <th className="border px-4 py-3 text-left">Created At</th>
                                             <th className="border px-4 py-3 text-center">Actions</th>
@@ -99,7 +148,7 @@ export default function Index({ auth }) {
                                             >
                                                 <td className="border px-4 py-2">{index + 1}</td>
                                                 <td className="border px-4 py-2">
-                                                    <strong>Type: </strong>{loan.loan_settings.loan_desc}<br/>
+                                                    <strong>Type: </strong>{(loan.loan_settings) ? loan.loan_settings.loan_desc : "-"}<br/>
                                                     <strong>Purpose: </strong>{loan.purpose || "-"}
                                                 </td>
                                                 <td className="border px-4 py-2">
@@ -116,6 +165,20 @@ export default function Index({ auth }) {
                                                     <strong>Amount Applied:</strong>&nbsp;PGK {parseFloat(loan.loan_amount_applied).toLocaleString()}<br/>
                                                     <strong>Tenure Fortnight:</strong>&nbsp;{parseFloat(loan.tenure_fortnight).toLocaleString()}<br/>
                                                     <strong>EMI Amount:</strong>&nbsp;{(loan.emi_amount != null) ? `PGK ${parseFloat(loan.emi_amount).toLocaleString()}` : 0.00}
+                                                </td>
+                                                <td className="border px-4 py-2 text-start">
+                                                    <span
+                                                        className={`px-2 py-1 full text-xs font-semibold ${
+                                                            loan.is_elegible === 1
+                                                                ? "bg-green-100 text-green-700"
+                                                                : loan.is_elegible === 0
+                                                                ? "bg-red-100 text-red-700"
+                                                                : "bg-yellow-100 text-yellow-700"
+                                                        }`}
+                                                    >
+                                                        {(loan.is_elegible == 1) ? "Elegible" : "Not Elegible"}
+                                                    </span><br/>
+                                                    <strong>Elegible Amount:</strong>&nbsp;{(loan.elegible_amount != null) ? parseFloat(loan.elegible_amount).toLocaleString() : 0}
                                                 </td>
                                                 <td className="border px-4 py-2">
                                                     <span

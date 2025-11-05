@@ -15,7 +15,7 @@ class CompanyMasterSeeder extends Seeder
     {
         CompanyMaster::insert([
             [
-                'company_name' => 'Pacific Finance Ltd.',
+                'company_name' => 'Agro Advance Aben Ltd.',
                 'address' => 'Downtown Business Center, Port Moresby',
                 'contact_no' => '+675-320-1234',
                 'email' => 'info@pacificfinance.pg',
@@ -23,17 +23,7 @@ class CompanyMasterSeeder extends Seeder
                 'currency_symbol' => 'K',
                 'base_interest_rate' => 12.5,
                 'active_status' => 'Y',
-            ],
-            [
-                'company_name' => 'Highlands Credit Union',
-                'address' => 'Main Street, Mt. Hagen',
-                'contact_no' => '+675-321-5678',
-                'email' => 'support@highlandscredit.pg',
-                'currency' => 'PGK',
-                'currency_symbol' => 'K',
-                'base_interest_rate' => 10.0,
-                'active_status' => 'Y',
-            ],
+            ]
         ]);
     }
 }

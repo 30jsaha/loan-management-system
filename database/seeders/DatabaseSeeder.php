@@ -22,7 +22,8 @@ class DatabaseSeeder extends Seeder
             CompanyMasterSeeder::class,
             OrganisationMasterSeeder::class,
             CustomerSeeder::class,
-            LoanSettingSeeder::class
+            LoanSettingSeeder::class,
+            AllCustMastSeeder::class,
         ]);
     }
 }
