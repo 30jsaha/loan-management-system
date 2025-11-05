@@ -45,17 +45,21 @@ export default function Create({ auth }) {
   const [organisations, setOrganisations] = useState([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [allCustMast, setAllCustMast] = useState([]);
+  const [isFormDirty, setIsFormDirty] = useState(false);
 
   // ✅ Fetch companies & organisations
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [compRes, orgRes] = await Promise.all([
+        const [compRes, orgRes, allCM] = await Promise.all([
           axios.get("/api/company-list"),
           axios.get("/api/organisation-list"),
+          axios.get("/api/all-cust-list"),
         ]);
         setCompanies(compRes.data);
         setOrganisations(orgRes.data);
+        setAllCustMast(allCM.data);
       } catch (error) {
         console.error("Error loading company/org data:", error);
         setMessage("⚠️ Failed to load company or organisation list.");
@@ -122,7 +126,9 @@ export default function Create({ auth }) {
                 setFormData={setFormData}
                 companies={companies}
                 organisations={organisations}
+                allCustMast={allCustMast}
                 setMessage={setMessage}
+                setIsFormDirty={setIsFormDirty}
                 onNext={handleNext} // ✅ triggered after save
               />
             )}
