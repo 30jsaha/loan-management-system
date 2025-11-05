@@ -325,185 +325,162 @@ export default function View({ auth, loanId }) {
                                         )}
                                     </fieldset>
                                 </Col>
-                                {loan.video_consent_path == null ? (
-                                    <Row className="g-4">
-                                    {/* --- Video Upload --- */}
-                                        <Col md={12}>
-                                            <fieldset className="fldset mb-4">
-                                            <legend className="font-semibold mb-2">Video Consent</legend>
-                                            <Form.Group>
-                                                <Form.Label>Upload Consent Video (MP4 only)</Form.Label>
-                                                <Form.Control
-                                                type="file"
-                                                accept="video/mp4"
-                                                onChange={(e) => {
-                                                    const file = e.target.files[0];
-                                                    if (file) {
-                                                        setVideoFile(file);
-                                                        setVideoPreview(URL.createObjectURL(file));
-                                                    }
-                                                }}
-                                                />
-                                                <Form.Text className="text-muted">Max size: 20MB</Form.Text>
-                                            </Form.Group>
-
-                                            {videoPreview && (
-                                                <div className="mt-3 border rounded p-2 bg-gray-50">
-                                                <video
-                                                    width="100%"
-                                                    height="auto"
-                                                    controls
-                                                    src={videoPreview}
-                                                    className="rounded shadow-sm"
-                                                >
-                                                    Your browser does not support video.
-                                                </video>
-                                                </div>
-                                            )}
-
-                                            {uploadProgress.video > 0 && (
-                                                <ProgressBar
-                                                now={uploadProgress.video}
-                                                label={`${uploadProgress.video}%`}
-                                                animated
-                                                variant={uploadProgress.video < 100 ? "info" : "success"}
-                                                className="mt-3"
-                                                />
-                                            )}
-
-                                            <Button
-                                                className="mt-3 bg-blue-600 hover:bg-blue-700 text-white"
-                                                onClick={() => handleUpload("video")}
-                                                disabled={!videoFile}
-                                            >
-                                                {uploadProgress.video > 0 && uploadProgress.video < 100
-                                                ? "Uploading..."
-                                                : "Upload Video Consent"}
-                                            </Button>
-                                            </fieldset>
-                                        </Col>
-
-                                        {/* Message area */}
-                                        {message && (
-                                            <div
-                                            className={`mt-2 p-2 rounded text-center ${
-                                                message.startsWith("✅")
-                                                ? "bg-green-100 text-green-700"
-                                                : message.startsWith("⚠️")
-                                                ? "bg-yellow-100 text-yellow-700"
-                                                : "bg-red-100 text-red-700"
-                                            }`}
-                                            >
-                                            {message}
-                                            </div>
+                                {/* --- Video Consent Upload / Preview --- */}
+                                <Row className="g-4 align-items-start mb-5">
+                                <Col md={6}>
+                                    <fieldset className="fldset mb-4">
+                                    <legend className="font-semibold mb-3 flex items-center justify-between">
+                                        <span>🎥 Video Consent</span>
+                                        {loan.video_consent_path && (
+                                        <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
                                         )}
-                                    </Row>
-                                ) : (
-                                <Row className="g-4">
-                                    <Col md={8} className="text-center">
-                                        <fieldset className="fldset mb-4">
-                                        <legend className="font-semibold mb-2">Video Consent</legend>
-                                        <video width="100%" height="auto" controls>
-                                            <source src={loan.video_consent_path} type="video/mp4" />
-                                            Your browser does not support the video tag.
-                                        </video>
-                                        </fieldset>
-                                    </Col>
-                                </Row>
-                                )}
-                                {loan.isda_signed_upload_path == null ? (
-                                    <Row className="g-4">
-                                        {/* --- ISDA Signed Upload (PDF) --- */}
-                                    <Col md={12}>
-                                        <fieldset className="fldset mb-4">
-                                        <legend className="font-semibold mb-2">ISDA Signed Document</legend>
-                                        <Form.Group>
-                                            <Form.Label>Upload Signed ISDA (PDF only)</Form.Label>
-                                            <Form.Control
-                                            type="file"
-                                            accept="application/pdf"
-                                            onChange={(e) => {
-                                                const file = e.target.files[0];
-                                                if (file) {
-                                                setPdfFile(file);
-                                                setPdfPreview(URL.createObjectURL(file));
-                                                }
-                                            }}
-                                            />
-                                            <Form.Text className="text-muted">Max size: 5MB</Form.Text>
-                                        </Form.Group>
+                                    </legend>
 
-                                        {pdfPreview && (
-                                            <div className="mt-3 border rounded p-2 bg-gray-50">
-                                            <iframe
-                                                src={pdfPreview}
-                                                width="100%"
-                                                height="400"
-                                                className="rounded shadow-sm"
-                                                title="PDF Preview"
-                                            />
-                                            </div>
-                                        )}
+                                    <Form.Group>
+                                        <Form.Label className="font-medium">Upload Consent Video (MP4 only)</Form.Label>
+                                        <Form.Control
+                                        type="file"
+                                        accept="video/mp4"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                            setVideoFile(file);
+                                            setVideoPreview(URL.createObjectURL(file));
+                                            }
+                                        }}
+                                        />
+                                        <Form.Text className="text-muted">Max size: 20MB</Form.Text>
+                                    </Form.Group>
 
-                                        {uploadProgress.pdf > 0 && (
-                                            <ProgressBar
-                                            now={uploadProgress.pdf}
-                                            label={`${uploadProgress.pdf}%`}
-                                            animated
-                                            variant={uploadProgress.pdf < 100 ? "info" : "success"}
-                                            className="mt-3"
-                                            />
-                                        )}
+                                    <Button
+                                        className="mt-3 bg-blue-600 hover:bg-blue-700 text-white"
+                                        onClick={() => handleUpload("video")}
+                                        disabled={!videoFile}
+                                    >
+                                        {uploadProgress.video > 0 && uploadProgress.video < 100
+                                        ? "Uploading..."
+                                        : loan.video_consent_path
+                                        ? "Replace Video Consent"
+                                        : "Upload Video Consent"}
+                                    </Button>
 
-                                        <Button
-                                            className="mt-3 bg-green-600 hover:bg-green-700 text-white"
-                                            onClick={() => handleUpload("pdf")}
-                                            disabled={!pdfFile}
+                                    {uploadProgress.video > 0 && (
+                                        <ProgressBar
+                                        now={uploadProgress.video}
+                                        label={`${uploadProgress.video}%`}
+                                        animated
+                                        variant={uploadProgress.video < 100 ? "info" : "success"}
+                                        className="mt-3"
+                                        />
+                                    )}
+                                    </fieldset>
+                                </Col>
+
+                                <Col md={6}>
+                                    {(videoPreview || loan.video_consent_path) && (
+                                    <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                        <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                        <video
+                                        width="100%"
+                                        height="auto"
+                                        controls
+                                        src={videoPreview || loan.video_consent_path}
+                                        className="rounded shadow-sm"
                                         >
-                                            {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
-                                            ? "Uploading..."
-                                            : "Upload ISDA Signed"}
-                                        </Button>
-                                        </fieldset>
-                                    </Col>
+                                        Your browser does not support video.
+                                        </video>
+                                    </div>
+                                    )}
+                                </Col>
+                                </Row>
 
-                                        {/* Message area */}
-                                        {message && (
-                                            <div
-                                            className={`mt-2 p-2 rounded text-center ${
-                                                message.startsWith("✅")
-                                                ? "bg-green-100 text-green-700"
-                                                : message.startsWith("⚠️")
-                                                ? "bg-yellow-100 text-yellow-700"
-                                                : "bg-red-100 text-red-700"
-                                            }`}
-                                            >
-                                            {message}
-                                            </div>
+                                {/* --- ISDA Signed Upload / Preview --- */}
+                                <Row className="g-4 align-items-start mb-5">
+                                <Col md={6}>
+                                    <fieldset className="fldset mb-4">
+                                    <legend className="font-semibold mb-3 flex items-center justify-between">
+                                        <span>📄 ISDA Signed Document</span>
+                                        {loan.isda_signed_upload_path && (
+                                        <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
                                         )}
-                                    </Row>
-                                ) : (
-                                    <Row className="g-4">
-                                        <Col md={8} className="text-center">
-                                            <fieldset className="fldset mb-4">
-                                            <legend className="font-semibold mb-2">ISDA Signed Document</legend>
-                                            <iframe
-                                                src={`${loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                width="100%"
-                                                height="500"
-                                                className="rounded shadow-sm border"
-                                                style={{
-                                                border: "1px solid #ddd",
-                                                borderRadius: "8px",
-                                                overflow: "hidden"
-                                                }}
-                                                title="ISDA Signed Document"
-                                            />
-                                            </fieldset>
-                                        </Col>
-                                    </Row>
+                                    </legend>
 
+                                    <Form.Group>
+                                        <Form.Label className="font-medium">Upload Signed ISDA (PDF only)</Form.Label>
+                                        <Form.Control
+                                        type="file"
+                                        accept="application/pdf"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                            setPdfFile(file);
+                                            setPdfPreview(URL.createObjectURL(file));
+                                            }
+                                        }}
+                                        />
+                                        <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                    </Form.Group>
+
+                                    <Button
+                                        className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                        onClick={() => handleUpload("pdf")}
+                                        disabled={!pdfFile}
+                                    >
+                                        {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
+                                        ? "Uploading..."
+                                        : loan.isda_signed_upload_path
+                                        ? "Replace ISDA Signed PDF"
+                                        : "Upload ISDA Signed PDF"}
+                                    </Button>
+
+                                    {uploadProgress.pdf > 0 && (
+                                        <ProgressBar
+                                        now={uploadProgress.pdf}
+                                        label={`${uploadProgress.pdf}%`}
+                                        animated
+                                        variant={uploadProgress.pdf < 100 ? "info" : "success"}
+                                        className="mt-3"
+                                        />
+                                    )}
+                                    </fieldset>
+                                </Col>
+
+                                <Col md={6}>
+                                    {(pdfPreview || loan.isda_signed_upload_path) && (
+                                    <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                        <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                        <iframe
+                                        src={`${pdfPreview || loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                        width="100%"
+                                        height="500"
+                                        className="rounded shadow-sm border"
+                                        style={{
+                                            border: "1px solid #ddd",
+                                            borderRadius: "8px",
+                                            overflow: "hidden",
+                                        }}
+                                        title="ISDA Signed Document"
+                                        />
+                                    </div>
+                                    )}
+                                </Col>
+                                </Row>
+
+                                {/* --- Message area --- */}
+                                {message && (
+                                <div
+                                    className={`mt-3 p-2 rounded text-center transition-all ${
+                                    message.startsWith("✅")
+                                        ? "bg-green-100 text-green-700"
+                                        : message.startsWith("⚠️")
+                                        ? "bg-yellow-100 text-yellow-700"
+                                        : "bg-red-100 text-red-700"
+                                    }`}
+                                >
+                                    {message}
+                                </div>
                                 )}
+
                                 {(auth.user.is_admin == 1) && (
                                     <Col md={12}>
                                         {(loan.status === "Pending" ) && (

@@ -30,6 +30,7 @@ Route::get('/loans', [LoanController::class, 'index'])->name('loans.index');
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/loans', [LoanController::class, 'index']);
     Route::post('/loans', [LoanController::class, 'store']);
+    Route::post('/loans-not-elegible', [LoanController::class, 'store_not_elegible']);
     Route::post('/loans/upload-consent-video', [LoanController::class, 'uploadConsentVideo']);
     Route::post('/loans/upload-isda-signed', [LoanController::class, 'uploadIsdaSigned']);
     Route::get('/loans/{id}', [LoanController::class, 'show']);
@@ -65,4 +66,6 @@ Route::get('/customers', [CustomerController::class, 'index']);
 Route::get('/customers/{id}', [CustomerController::class, 'show']);
 Route::post('/customers/{id}', [CustomerController::class, 'update']);
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
+
+Route::middleware('auth:sanctum')->get('/all-cust-list', [CustomerController::class, 'all_cust_list']);
 

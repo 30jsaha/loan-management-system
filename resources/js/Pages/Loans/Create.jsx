@@ -1,7 +1,7 @@
 import { use, useCallback, useEffect, useState, props } from 'react';
 import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import useBeforeUnload from '@/Components/useBeforeUnload';
@@ -10,14 +10,17 @@ import CustomerEligibilityForm from '@/Components/CustomerEligibilityForm';
 import CustomerForm from '@/Components/CustomerForm';
 //icon pack
 import { ArrowLeft } from "lucide-react";
+import Swal from 'sweetalert2';
 
 export default function Create({ auth, loan_settings }) {
     const [isEligible, setIsEligible] = useState(false);
     const [recProposedPvaAmt, setRecProposedPvaAmt] = useState(0);
+    const [recEleigibleAmount, setRecEleigibleAmount] = useState(0);
     const [isTruelyEligible, setIsTruelyEligible] = useState(false);
     const [isFormDirty, setIsFormDirty] = useState(false);
     const [customers, setCustomers] = useState([]);
     const [companies, setCompanies] = useState([]);
+    const [allCustMast, setAllCustMast] = useState([]);
     const [organisations, setOrganisations] = useState([]);
     const [loanTypes, setLoanTypes] = useState([]);
     // const [loanSettings, setLoanSettings] = useState(JSON.stringify(loan_settings, null, 2));
@@ -27,8 +30,8 @@ export default function Create({ auth, loan_settings }) {
     // const [tempCusFormData, settempCusFormData] = useState({
     const [formData, setFormData] = useState({
         cus_id: 0,
-        company_id: "",
-        organisation_id: "",
+        company_id: 1,
+        organisation_id: 0,
         first_name: "",
         last_name: "",
         gender: "",
@@ -60,19 +63,23 @@ export default function Create({ auth, loan_settings }) {
     });
     const [loanFormData, setLoanFormData] = useState({
         // company_id: "",
-        customer_id: "",
+        customer_id: 0,
         // organisation_id: "",
-        loan_type: "New",
+        loan_type: 0,
         purpose: "",
         other_purpose_text: "",
-        loan_amount_applied: "",
-        tenure_fortnight: "",
-        interest_rate: "",
-        processing_fee: "",
+        loan_amount_applied: 0.00,
+        tenure_fortnight: 0,
+        interest_rate: 0.00,
+        processing_fee: 0.00,
+        total_interest_amt: 0.00,
+        total_repay_amt: 0.00,
+        emi_amount: 0.00,
         bank_name: "",
         bank_branch: "",
         bank_account_no: "",
         remarks: "",
+        elegible_amount: recEleigibleAmount || 0.00,
     });
     const [loanDocumentFormData, setLoanDocumentFormData] = useState({
         loan_id: "",
@@ -111,6 +118,17 @@ export default function Create({ auth, loan_settings }) {
             .then((res)=>res.json())
             .then(data => {
                 setCompanies(data);
+            })
+            .catch(error => {
+                console.error('There was an error fetching the companies!', error);
+            });
+    }, []);
+    useEffect(() => {
+        // Fetch Companies from the API
+        fetch('/api/all-cust-list')
+            .then((res)=>res.json())
+            .then(data => {
+                setAllCustMast(data);
             })
             .catch(error => {
                 console.error('There was an error fetching the customers!', error);
@@ -161,10 +179,20 @@ export default function Create({ auth, loan_settings }) {
         setMessage('');
         if (loanFormData.customer_id === "" || loanFormData.customer_id === 0) {
             setMessage('❌ Please select a customer before submitting the loan application.');
+            Swal.fire({
+                title: "Warning !",
+                text: "Please select a customer before submitting the loan application.",
+                icon: "warning"
+            });
             return;
         }
         if (Number(loanFormData.loan_amount_applied) > Number(recProposedPvaAmt)) {
             setMessage(`❌ Loan Amount Applied exceeds the Recommended PVA Amount of PGK ${recProposedPvaAmt}. Please adjust accordingly.`);
+            Swal.fire({
+                title: "Warning !",
+                text: `Loan Amount Applied exceeds the Recommended PVA Amount of PGK ${recProposedPvaAmt}. Please adjust accordingly.`,
+                icon: "warning"
+            });
             return;
         } 
         // else {
@@ -199,11 +227,16 @@ export default function Create({ auth, loan_settings }) {
                 } = selectedLoanSetting;
 
                 const tenureMonths = loanFormData.tenure_fortnight * 0.5;
-                const appliedAmount = Number(loanFormData.loan_amount_applied);
+                const appliedAmount = parseFloat(loanFormData.loan_amount_applied);
                 const multiplier = Number(amt_multiplier);
                 // --- Validations ---
                 if (!Number.isFinite(appliedAmount) || !Number.isFinite(multiplier)) {
                     setMessage("❌ Invalid input. Please enter numeric values.");
+                    Swal.fire({
+                        title: "Warning !",
+                        text: "Invalid input. Please enter numeric values.",
+                        icon: "warning"
+                    });
                     return;
                 }
 
@@ -212,20 +245,35 @@ export default function Create({ auth, loan_settings }) {
                     setMessage(
                         `❌ Loan Amount Applied must be in multiples of PGK ${multiplier} for the selected Loan Type. Please adjust accordingly.`
                     );
+                    Swal.fire({
+                        title: "Warning !",
+                        text: `Loan Amount Applied must be in multiples of PGK ${multiplier} for the selected Loan Type. Please adjust accordingly.`,
+                        icon: "warning"
+                    });
                     return;
                 }
 
-                if (Number(loanFormData.loan_amount_applied) < Number(min_loan_amount)) {
+                if (parseFloat(loanFormData.loan_amount_applied) < parseFloat(min_loan_amount)) {
                     setMessage(
                         `❌ Loan Amount Applied must be at least PGK ${min_loan_amount} for the selected Loan Type. Please adjust accordingly.`
                     );
+                    Swal.fire({
+                        title: "Warning !",
+                        text: `Loan Amount Applied must be at least PGK ${min_loan_amount} for the selected Loan Type. Please adjust accordingly.`,
+                        icon: "warning"
+                    });
                     return;
                 }
 
-                if (Number(loanFormData.loan_amount_applied) > Number(max_loan_amount)) {
+                if (parseFloat(loanFormData.loan_amount_applied) > parseFloat(max_loan_amount)) {
                     setMessage(
                         `❌ Loan Amount Applied must not exceed PGK ${max_loan_amount} for the selected Loan Type. Please adjust accordingly.`
                     );
+                    Swal.fire({
+                        title: "Warning !",
+                        text: `Loan Amount Applied must not exceed PGK ${max_loan_amount} for the selected Loan Type. Please adjust accordingly.`,
+                        icon: "warning"
+                    });
                     return;
                 }
 
@@ -233,6 +281,11 @@ export default function Create({ auth, loan_settings }) {
                     setMessage(
                         `❌ Loan Tenure must be at least ${min_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`
                     );
+                    Swal.fire({
+                        title: "Warning !",
+                        text: `Loan Tenure must be at least ${min_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`,
+                        icon: "warning"
+                    });
                     return;
                 }
 
@@ -240,6 +293,11 @@ export default function Create({ auth, loan_settings }) {
                     setMessage(
                         `❌ Loan Tenure must not exceed ${max_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`
                     );
+                    Swal.fire({
+                        title: "Warning !",
+                        text: `Loan Tenure must not exceed ${max_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`,
+                        icon: "warning"
+                    });
                     return;
                 }
 
@@ -250,6 +308,11 @@ export default function Create({ auth, loan_settings }) {
                     setMessage(
                         `❌ Interest Rate must not be greater or lesser than ${interest_rate}% for the selected Loan Type. Please adjust accordingly.`
                     );
+                    Swal.fire({
+                        title: "Warning !",
+                        text: `Interest Rate must not be greater or lesser than ${interest_rate}% for the selected Loan Type. Please adjust accordingly.`,
+                        icon: "warning"
+                    });
                     return;
                 }
             }
@@ -257,8 +320,22 @@ export default function Create({ auth, loan_settings }) {
 
 
         try {
+            loanFormData.loan_amount_applied = parseFloat(loanFormData.loan_amount_applied);
+            loanFormData.tenure_fortnight = parseFloat(loanFormData.tenure_fortnight);
+            // loanFormData.total_interest_amt = parseFloat(loanFormData.total_interest_amt);
+            // loanFormData.total_repay_amt = parseFloat(loanFormData.total_repay_amt)
+
+            console.log("loanFormData before submit", loanFormData);
+            console.log(typeof(loanFormData.loan_amount_applied));
+            
+            // return;
             const res = await axios.post('/api/loans', loanFormData);
             setMessage('✅ Loan application data saved successfully!');
+            Swal.fire({
+                title: "Success",
+                text: "Loan application data saved successfully!",
+                icon: "success"
+            });
             const savedLoan = res.data.loan;
             setLoanFormData({
                 id: savedLoan.id,
@@ -268,10 +345,10 @@ export default function Create({ auth, loan_settings }) {
                 loan_type: savedLoan.loan_type,
                 purpose: savedLoan.purpose || "",
                 other_purpose_text: savedLoan.other_purpose_text || "",
-                loan_amount_applied: savedLoan.loan_amount_applied || "",
-                tenure_fortnight: savedLoan.tenure_fortnight || "",
-                interest_rate: savedLoan.interest_rate || "",
-                processing_fee: savedLoan.processing_fee || "",
+                loan_amount_applied: savedLoan.loan_amount_applied || 0.00,
+                tenure_fortnight: savedLoan.tenure_fortnight || 0,
+                interest_rate: savedLoan.interest_rate || 0.00,
+                processing_fee: savedLoan.processing_fee || 0.00,
                 bank_name: savedLoan.bank_name || "",
                 bank_branch: savedLoan.bank_branch || "",
                 bank_account_no: savedLoan.bank_account_no || "",
@@ -314,6 +391,11 @@ export default function Create({ auth, loan_settings }) {
         } catch (error) {
             console.error(error);
             setMessage('❌ Failed to save. Please check your input.');
+            Swal.fire({
+                title: "Error !",
+                text: message,
+                icon: "error"
+            });
         }
     };
     // const handleNext = async (e) => {
@@ -419,16 +501,92 @@ export default function Create({ auth, loan_settings }) {
         // Update loanFormData state
         setLoanFormData(prev => ({
             ...prev,
-            total_interest_amt: totalInterest.toFixed(2),
-            total_repay_amt: totalRepay.toFixed(2),
-            emi_amount: repayPerFN.toFixed(2),
+            total_interest_amt: parseFloat(totalInterest),
+            total_repay_amt: parseFloat(totalRepay),
+            emi_amount: parseFloat(repayPerFN),
         }));
     };
     // Recalculate repayment details whenever relevant fields change
     // useEffect(() => {
     //     calculateRepaymentDetails();
     // }, [loanFormData.loan_amount_applied, loanFormData.interest_rate, loanFormData.tenure_fortnight]);
+    const handleNotElegibleSubmit = async (e) => {
+        e.preventDefault();
+        setIsFormDirty(true);
+        setMessage('');
 
+        if (loanFormData.customer_id === "" || loanFormData.customer_id === 0) {
+            setMessage('❌ Please select a customer before submitting the loan application.');
+            Swal.fire({
+                title: "Warning !",
+                text: "Please select a customer before submitting the loan application.",
+                icon: "warning"
+            });
+            return;
+        }
+
+        try {
+            loanFormData.loan_amount_applied = (recProposedPvaAmt!=0) ? parseFloat(recProposedPvaAmt): parseFloat(loanFormData.loan_amount_applied);
+            loanFormData.is_elegible = 0;
+            
+            // return;
+            const res = await axios.post('/api/loans-not-elegible', loanFormData);
+            setMessage('✅ Loan application data saved successfully!');
+            Swal.fire({
+                title: "Success",
+                text: "Sent for approval!",
+                icon: "success"
+            });
+            const savedLoan = res.data.loan;
+            setLoanFormData({
+                id: savedLoan.id,
+                // company_id: savedLoan.company_id,
+                customer_id: savedLoan.customer_id,
+                // organisation_id: savedLoan.organisation_id,
+                loan_type: savedLoan.loan_type,
+                purpose: savedLoan.purpose || "",
+                other_purpose_text: savedLoan.other_purpose_text || "",
+                loan_amount_applied: savedLoan.loan_amount_applied || 0.00,
+                tenure_fortnight: savedLoan.tenure_fortnight || 0,
+                interest_rate: savedLoan.interest_rate || 0.00,
+                processing_fee: savedLoan.processing_fee || 0.00,
+                bank_name: savedLoan.bank_name || "",
+                bank_branch: savedLoan.bank_branch || "",
+                bank_account_no: savedLoan.bank_account_no || "",
+                remarks: savedLoan.remarks || "",
+            });
+            setFormData({
+                company_id: "",
+                organisation_id: "",
+                first_name: "",
+                last_name: "",
+                gender: "",
+                dob: "",
+                marital_status: "",
+                no_of_dependents: "",
+                phone: "",
+                email: "",
+                present_address: "",
+                permanent_address: "",
+                employee_no: "",
+                designation: "",
+                employment_type: "",
+                date_joined: "",
+                monthly_salary: "",
+                work_location: "",
+            });
+            // setStep(3); // Move to next tab
+            setTimeout(() => router.visit(route("loans")), 1000);
+        } catch (error) {
+            console.error(error);
+            setMessage('❌ Failed to save. Please check your input.');
+            Swal.fire({
+                title: "Error !",
+                text: "Failed to sent approval",
+                icon: "error"
+            });
+        }
+    }
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -505,6 +663,7 @@ export default function Create({ auth, loan_settings }) {
                                     setFormData={setFormData}
                                     companies={companies}
                                     organisations={organisations}
+                                    allCustMast={allCustMast}
                                     setMessage={setMessage}
                                     setIsFormDirty={setIsFormDirty}
                                     onNext={(savedCustomer) => {
@@ -590,9 +749,25 @@ export default function Create({ auth, loan_settings }) {
                                             customerId={loanFormData.customer_id}
                                             onEligibilityChange={(eligible) => setIsEligible(eligible)}
                                             onEligibilityChangeTruely={(isTruelyEligible) => setIsTruelyEligible(isTruelyEligible)}
-                                            proposedPvaAmt={(recProposedPvaAmt) => setRecProposedPvaAmt(recProposedPvaAmt)}
+                                            proposedPvaAmt={(recProposedPvaAmt) => {
+                                                setRecProposedPvaAmt(recProposedPvaAmt);
+                                                setLoanFormData((prev) => ({ ...prev, loan_amount_applied: recProposedPvaAmt }));
+                                            }}
+                                            eleigibleAmount={(recEleigibleAmount) => {
+                                                setRecEleigibleAmount(recEleigibleAmount);
+                                                setLoanFormData((prev) => ({ ...prev, elegible_amount: parseFloat(recEleigibleAmount) }));
+                                            }}
                                         />
                                     </div>
+                                    {(!isEligible && recEleigibleAmount != 0) ? (
+                                        <Row>
+                                            <Col md={12} className='text-center'>
+                                                <Button variant="primary" type="button" onClick={handleNotElegibleSubmit}>
+                                                    Make Elegible
+                                                </Button>
+                                            </Col>
+                                        </Row>
+                                    ) : ("")}
                                 </fieldset>
                                 <fieldset className="fldset" disabled={!isEligible}>
                                     <legend className="font-semibold">Loan Details</legend>
@@ -601,7 +776,7 @@ export default function Create({ auth, loan_settings }) {
                                             <label className="form-label">Loan Type</label>
                                             <select 
                                                 className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50":""}`} 
-                                                name="loan_type" value={loanFormData.loan_type || ""} 
+                                                name="loan_type" value={loanFormData.loan_type}
                                                 onChange={(e)=>{
                                                     loanHandleChange(e);
                                                     //fetch loan settings based on selected loan type
@@ -626,8 +801,8 @@ export default function Create({ auth, loan_settings }) {
                                                             // Auto-fill processing fee and interest rate
                                                             setLoanFormData((prev) => ({
                                                                 ...prev,
-                                                                processing_fee: process_fees,
-                                                                interest_rate: interest_rate,
+                                                                processing_fee: parseFloat(process_fees),
+                                                                interest_rate: parseFloat(interest_rate)
                                                             }));
                                                             //make the form read-only and disabled for these two fields
                                                             document.querySelector('input[name="processing_fee"]').readOnly = true;
@@ -637,12 +812,12 @@ export default function Create({ auth, loan_settings }) {
                                                         }
                                                     }
                                                 }}
-                                                required
+                                                // required
                                             >
                                                 (<option value="">Select Loan Type</option>
                                                 {loanTypes.map((lt) => (
                                                     <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
-                                                ))}
+                                                ))})
                                             </select>
                                         </div>
 
@@ -717,15 +892,15 @@ export default function Create({ auth, loan_settings }) {
                                             <div className="row mt-3">
                                                 <div className="col-md-3">
                                                     <label className="form-label fw-bold">Total Interest (PGK)</label>
-                                                    <div>{loanFormData.total_interest_amt}</div>
+                                                    <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
                                                 </div>
                                                 <div className="col-md-3">
                                                     <label className="form-label fw-bold">Total Repay (PGK)</label>
-                                                    <div>{loanFormData.total_repay_amt}</div>
+                                                    <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
                                                 </div>
                                                 <div className="col-md-3">
                                                     <label className="form-label fw-bold">Repay per FN (PGK)</label>
-                                                    <div>{loanFormData.emi_amount}</div>
+                                                    <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
                                                 </div>
                                             </div>
                                         </fieldset>

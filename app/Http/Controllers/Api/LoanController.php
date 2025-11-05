@@ -47,9 +47,10 @@ class LoanController extends Controller
             'loan_amount_applied' => 'required|numeric|min:0',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
-            'emi_amount' => 'nullable|numeric|min:0',
-            'total_repay_amt' => 'nullable|numeric|min:0',
-            'total_interest_amt' => 'nullable|numeric|min:0',
+            'emi_amount' => 'nullable|numeric',
+            'elegible_amount' => 'nullable|numeric',
+            'total_repay_amt' => 'nullable|numeric',
+            'total_interest_amt' => 'nullable|numeric',
             'interest_rate' => 'nullable|numeric|min:0|max:100',
             'processing_fee' => 'nullable|numeric|min:0',
             'grace_period_days' => 'nullable|integer|min:0',
@@ -88,11 +89,84 @@ class LoanController extends Controller
 
             // Default values for unset fields
             $validated['status'] = $validated['status'] ?? 'Pending';
-            $validated['approved_date'] = $validated['approved_date'] ?? null;
-            $validated['higher_approved_date'] = $validated['higher_approved_date'] ?? null;
-            $validated['total_repay_amt'] = $validated['total_repay_amt'] ?? null;
-            $validated['total_interest_amt'] = $validated['total_interest_amt'] ?? null;
+            // dd($validated);
+            // exit;
+            // Create loan application
+            $loan = Loan::create($validated);
 
+            return response()->json([
+                'message' => 'Loan application created successfully.',
+                'loan' => $loan,
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('LoanApplication store error: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Unable to create loan application.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function store_not_elegible(Request $request)
+    {
+        $validated = $request->validate([
+            // 'company_id' => 'required|exists:company_master,id',
+            // 'organisation_id' => 'required|exists:organisation_master,id',
+            'customer_id' => 'required|exists:customers,id',
+
+            // 'loan_type' => 'required|in:New,Consolidation,Rollover,Top-Up',
+            'loan_type' => 'nullable|integer|min:0',
+            'purpose' => 'nullable|in:Tuition,Living,Medical,Appliance,Car,Travel,HomeImprovement,Other',
+            'other_purpose_text' => 'nullable|string|max:255',
+
+            'loan_amount_applied' => 'required|numeric|min:0',
+            'loan_amount_approved' => 'nullable|numeric|min:0',
+            'tenure_fortnight' => 'integer',
+            'emi_amount' => 'nullable|numeric',
+            'elegible_amount' => 'nullable|numeric',
+            'total_repay_amt' => 'nullable|numeric',
+            'total_interest_amt' => 'nullable|numeric',
+            'interest_rate' => 'nullable|numeric|min:0|max:100',
+            'processing_fee' => 'nullable|numeric|min:0',
+            'grace_period_days' => 'nullable|integer|min:0',
+
+            'disbursement_date' => 'nullable|date',
+            'bank_name' => 'nullable|string|max:100',
+            'bank_branch' => 'nullable|string|max:100',
+            'bank_account_no' => 'nullable|string|max:50',
+
+            'status' => 'nullable|in:Pending,Verified,Approved,HigherApproval,Disbursed,Closed',
+
+            'approved_by' => 'nullable|string|max:100',
+            'approved_date' => 'nullable|date',
+            'higher_approved_by' => 'nullable|string|max:100',
+            'higher_approved_date' => 'nullable|date',
+
+            'remarks' => 'nullable|string',
+            'is_elegible' => 'integer|min:0',
+
+            // PDF upload validation
+            'isda_signed_upload' => 'nullable|file|mimes:pdf|max:2048', // 2 MB max
+        ]);
+
+        try {
+            // Handle file upload (PDF)
+            if ($request->hasFile('isda_signed_upload')) {
+                $file = $request->file('isda_signed_upload');
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('uploads/isda_signed_docs', $filename, 'public');
+                $validated['isda_signed_upload_path'] = '/storage/' . $path;
+            }
+
+            //get the company_id and organisation_id from customer_id
+            $customer = Customer::find($validated['customer_id']);
+            $validated['company_id'] = $customer->company_id;
+            $validated['organisation_id'] = $customer->organisation_id;
+
+            // Default values for unset fields
+            $validated['status'] = $validated['status'] ?? 'Pending';
+            // dd($validated);
+            // exit;
             // Create loan application
             $loan = Loan::create($validated);
 

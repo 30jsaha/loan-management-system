@@ -21,6 +21,7 @@ class DocumentUpload extends Model
         'file_name',
         'file_path',
         'uploaded_by',
+        'uploaded_by_user_id',
         'uploaded_on',
         'verified_by',
         'verified_on',

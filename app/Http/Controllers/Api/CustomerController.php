@@ -43,7 +43,7 @@ class CustomerController extends Controller
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'email' => 'required|email|max:100',
-            'gender' => 'required|in:Male,Female,Other',
+            'gender' => 'nullable|in:Male,Female,Other',
             'dob' => 'nullable|date',
             'marital_status' => 'nullable|in:Single,Married,Divorced,Widowed',
             'no_of_dependents' => 'nullable|integer|min:0',
@@ -255,7 +255,7 @@ class CustomerController extends Controller
         $max_allowable_pva = $net_50_percent_available + $current_fincorp_deduction + $other_deductions - 0.01;
         $net_based_on_proposed_pva = $total_net_salary - $proposed_pva;
         $shortage = $max_allowable_pva - $proposed_pva;
-        $is_eligible = $max_allowable_pva > 0 ? 1 : 0;
+        $is_eligible = $max_allowable_pva > $proposed_pva ? 1 : 0;
 
         $round2 = fn($v) => round((float)$v, 2);
 
@@ -306,5 +306,14 @@ class CustomerController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function all_cust_list()
+    {
+        // Fetch all customers from all_cust_master table
+        $customers = DB::table('all_cust_master')->get();
+
+        // Return the customers as a JSON response
+        return response()->json($customers);
     }
 }

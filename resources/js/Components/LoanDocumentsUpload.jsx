@@ -7,7 +7,6 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
   const [files, setFiles] = useState([]); // each: { docType, file, progress }
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
-
   const allowedDocs = [
     "ID",
     "Payslip",
@@ -53,7 +52,8 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
         formData.append("doc_type", f.docType);
         formData.append("loan_id", loanFormData.id || "");
         formData.append("customer_id", loanFormData.customer_id || "");
-
+        console.log("doc form data", formData);
+        // return;
         await axios.post("/api/document-upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
           withCredentials: true,
@@ -106,6 +106,9 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
         {allowedDocs.map((doc) => {
           const fileObj = files.find((f) => f.docType === doc);
           return (
+          <>
+            <input type="hidden" name="doc_type" value={doc || ""} />
+
             <div key={doc} className="mb-4 pb-3 border-bottom">
               <Form.Label className="fw-medium text-secondary mb-2">
                 {doc.replace(/_/g, " ")}
@@ -148,6 +151,7 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
                 )}
               </Row>
             </div>
+          </>
           );
         })}
 
