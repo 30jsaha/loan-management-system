@@ -44,6 +44,9 @@ Route::get('/loans', [LoansController::class, 'index'])
 Route::middleware('auth')->get('/loans/create', [LoansController::class, 'create'])
     ->middleware(['auth', 'verified'])
     ->name('loan-create');
+Route::middleware('auth')->get('/loans/emi-collection', [LoansController::class, 'loan_emi_list'])
+    ->middleware(['auth', 'verified'])
+    ->name('loan.emi');
 
 Route::middleware('auth')->get('/loans/{id}', function ($id) {
     return Inertia::render('Loans/View', ['loanId' => $id]);

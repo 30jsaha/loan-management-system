@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\LoanSetting;
+use App\Models\LoanApplication as Loan;
 
 class LoansController extends Controller
 {
@@ -21,5 +22,17 @@ class LoansController extends Controller
         // return Loan::all();
         $loan_settings = LoanSetting::all();
         return inertia('Loans/Create', ['loan_settings' => $loan_settings]); // points to resources/js/Pages/Loans/Create.jsx
+    }
+    public function loan_emi_list(Request $request)
+    {
+        $perPage = (int) $request->get('per_page', 15);
+
+        $approvedLoans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        ->where('status','Approved')
+        ->orderBy('approved_date','desc')->get();
+
+        return inertia('Loans/ActiveLoans', [
+            'approved_loans' => $approvedLoans,
+        ]);
     }
 }
