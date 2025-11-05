@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\OrganisationController;
 use App\Http\Controllers\Api\LoanTempCustomerController;
 use App\Http\Controllers\Api\DocumentUploadController;
+use App\Http\Controllers\Api\AllCustController;
 use App\Models\LoanTempCustomer;
 /*
 |--------------------------------------------------------------------------
@@ -68,4 +69,7 @@ Route::post('/customers/{id}', [CustomerController::class, 'update']);
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
 
 Route::middleware('auth:sanctum')->get('/all-cust-list', [CustomerController::class, 'all_cust_list']);
+
+Route::middleware('auth:sanctum')->get('/all-dept-cust-list', [AllCustController::class, 'index']);
+Route::middleware('auth:sanctum')->post('/all-dept-cust-store', [AllCustController::class, 'store']);
 

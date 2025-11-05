@@ -48,6 +48,12 @@ Route::middleware('auth')->get('/loans/emi-collection', [LoansController::class,
     ->middleware(['auth', 'verified'])
     ->name('loan.emi');
 
+// Route::middleware('auth')->get('/customers/dept-database', [LoansController::class, 'show_dept_cust_list'])
+//     ->middleware(['auth', 'verified'])
+//     ->name('customer.dept');
+
+Route::middleware('auth')->get('/customers/dept-database', fn() => Inertia::render('Customers/DeptDatabase'))->name('customer.dept');
+
 Route::middleware('auth')->get('/loans/{id}', function ($id) {
     return Inertia::render('Loans/View', ['loanId' => $id]);
 })->name('loan.view');
@@ -57,7 +63,6 @@ Route::middleware('auth')->get('/loans/{id}/edit', fn($id) => Inertia::render('L
 //customers routes
 Route::middleware('auth')->get('/customers', fn() => Inertia::render('Customers/Index'))->name('customers');
 Route::middleware('auth')->get('/customers/create', fn() => Inertia::render('Customers/Create'))->name('customer.create');
-Route::middleware('auth')->get('/customers/dept-database', fn() => Inertia::render('Customers/DeptDatabase'))->name('customer.dept');
 Route::middleware('auth')->get('/customers/{id}', fn($id) => Inertia::render('Customers/View', ['customerId' => $id]))->name('customer.view');
 Route::middleware('auth')->get('/customers/{id}/edit', fn($id) => Inertia::render('Customers/Edit', ['customerId' => $id]))->name('customer.edit');
 // Loan Calculator route

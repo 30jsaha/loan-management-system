@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\LoanSetting;
 use App\Models\LoanApplication as Loan;
+use App\Models\allCustMaster;
 
 class LoansController extends Controller
 {
@@ -33,6 +34,16 @@ class LoansController extends Controller
 
         return inertia('Loans/ActiveLoans', [
             'approved_loans' => $approvedLoans,
+        ]);
+    }
+    public function show_dept_cust_list(Request $request)
+    {
+        $perPage = (int) $request->get('per_page', 15);
+
+        $allCust = allCustMaster::all();
+
+        return inertia('Loans/ActiveLoans', [
+            'allDeptCust' => json_encode($allCust),
         ]);
     }
 }
