@@ -4,7 +4,7 @@ import { X, Upload, Eye } from "lucide-react";
 import { Button, ProgressBar, Modal } from "react-bootstrap";
 import toast, { Toaster } from 'react-hot-toast';
 
-export default function LoanDocumentsUpload({ loanFormData }) {
+const LoanDocumentsUpload = ({ loanFormData }) => {
   const allowedDocs = [
     "ID",
     "Payslip",
@@ -350,3 +350,5 @@ export default function LoanDocumentsUpload({ loanFormData }) {
     </div>
   );
 }
+
+export default LoanDocumentsUpload;

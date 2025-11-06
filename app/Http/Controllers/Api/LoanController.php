@@ -296,5 +296,42 @@ class LoanController extends Controller
         ], 201);
     }
 
+    public function validateLoan(Request $request)
+    {
+        $request->validate([
+            'loan_setting_id' => 'required|exists:loan_settings,id',
+            'amount' => 'required|numeric|min:200',
+            'term' => 'required|integer|min:1',
+        ]);
+
+        $loanSetting = \App\Models\LoanSetting::find($request->loan_setting_id);
+
+        // Fetch the tier that matches the loan amount
+        $tier = \App\Models\LoanTierRule::where('loan_setting_id', $loanSetting->id)
+            ->where('min_amount', '<=', $request->amount)
+            ->where('max_amount', '>=', $request->amount)
+            ->first();
+
+        if (!$tier) {
+            return response()->json([
+                'valid' => false,
+                'message' => '❌ No matching loan tier found for this amount.',
+            ], 400);
+        }
+
+        // Validate term range
+        if ($request->term < $tier->min_term_fortnight || $request->term > $tier->max_term_fortnight) {
+            return response()->json([
+                'valid' => false,
+                'message' => "❌ For PGK {$tier->min_amount}–{$tier->max_amount}, term must be between {$tier->min_term_fortnight}–{$tier->max_term_fortnight} FN.",
+            ], 400);
+        }
+
+        return response()->json([
+            'valid' => true,
+            'message' => '✅ Loan amount and term are valid according to rules.',
+        ]);
+    }
+
 
 }

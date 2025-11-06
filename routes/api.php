@@ -75,3 +75,6 @@ Route::middleware('auth:sanctum')->post('/all-dept-cust-store', [AllCustControll
 Route::middleware('auth:sanctum')->put('/all-dept-cust-update/{id}', [AllCustController::class, 'update']);
 Route::middleware('auth:sanctum')->delete('/all-dept-cust-delete/{id}', [AllCustController::class, 'destroy']);
 
+Route::post('/validate-loan-tier', [LoanController::class, 'validateLoan'])
+    ->middleware('auth:sanctum');
+

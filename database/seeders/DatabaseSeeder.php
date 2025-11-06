@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             CustomerSeeder::class,
             LoanSettingSeeder::class,
             AllCustMastSeeder::class,
+            LoanTierRulesSeeder::class,
         ]);
     }
 }
