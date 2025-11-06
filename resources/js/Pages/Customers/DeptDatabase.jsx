@@ -3,6 +3,8 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head } from "@inertiajs/react";
 import axios from "axios";
 import { Table, Form, Button, Row, Col, Card } from "react-bootstrap";
+import toast, { Toaster } from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 export default function DeptDatabase({ auth }) {
   const [formData, setFormData] = useState({
@@ -15,7 +17,6 @@ export default function DeptDatabase({ auth }) {
   });
 
   const [customers, setCustomers] = useState([]);
-  const [message, setMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
   // New state to track recently updated row
@@ -45,24 +46,23 @@ export default function DeptDatabase({ auth }) {
     try {
       if (isEditing && formData.id) {
         await axios.put(`/api/all-dept-cust-update/${formData.id}`, formData);
-        setMessage("✅ Customer updated successfully!");
+        toast('Customer updated successfully!');
 
         // Flash green for 2s after update
         setRecentlyUpdatedId(formData.id);
         setTimeout(() => {
           setRecentlyUpdatedId(null);
-          setMessage(""); // Clear the success message after 2 seconds
         }, 2000);
       } else {
         await axios.post("/api/all-dept-cust-store", formData);
-        setMessage("✅ Customer added successfully!");
+        toast('Customer added successfully!');
       }
 
       resetForm();
       fetchCustomers();
     } catch (error) {
       console.error("Error saving customer:", error);
-      setMessage("❌ Failed to save customer data!");
+      toast('Failed to save customer data!');
     }
   };
 
@@ -77,20 +77,53 @@ export default function DeptDatabase({ auth }) {
       gross_pay: customer.gross_pay,
     });
     setIsEditing(true);
-    setMessage("✏️ Editing mode enabled.");
+    toast('Editing mode enabled');
   };
 
   // Delete record
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this record?")) return;
-    try {
-      await axios.delete(`/api/all-dept-cust-delete/${id}`);
-      setMessage("🗑️ Customer deleted successfully!");
-      fetchCustomers();
-    } catch (error) {
-      console.error("Error deleting record:", error);
-      setMessage("❌ Failed to delete record!");
-    }
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#22c55e',
+      cancelButtonColor: '#gray',
+      confirmButtonText: 'Yes, delete it!',
+      background: '#ffffff',
+      customClass: {
+        popup: 'rounded-lg',
+        confirmButton: 'bg-green-500 hover:bg-green-600',
+        cancelButton: 'bg-gray-400 hover:bg-gray-500'
+      }
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axios.delete(`/api/all-dept-cust-delete/${id}`);
+          fetchCustomers();
+          Swal.fire({
+            title: 'Deleted!',
+            text: 'Record has been deleted.',
+            icon: 'success',
+            confirmButtonColor: '#22c55e',
+            customClass: {
+              confirmButton: 'bg-green-500 hover:bg-green-600'
+            }
+          });
+        } catch (error) {
+          console.error("Error deleting record:", error);
+            Swal.fire({
+              title: 'Error!',
+              text: 'Failed to delete record.',
+              icon: 'error',
+              confirmButtonColor: '#22c55e',
+              customClass: {
+                confirmButton: 'bg-green-500 hover:bg-green-600'
+              }
+            });
+        }
+      }
+    });
   };
 
   // Reset form after add/update
@@ -104,7 +137,6 @@ export default function DeptDatabase({ auth }) {
       gross_pay: "",
     });
     setIsEditing(false);
-    setMessage(""); // Clear the message
   };
 
   return (
@@ -119,26 +151,26 @@ export default function DeptDatabase({ auth }) {
       <Head title="Customer Department Database" />
 
       <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: '#22c55e',
+              color: '#fff',
+              padding: '16px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              marginTop: '100px'
+            },
+            duration: 3000,
+          }}
+        />
         {/* FORM SECTION */}
         <Card className="shadow-sm border-0 mb-4">
           <Card.Body>
             <h4 className="mb-4 text-gray-700">
               {isEditing ? "Edit Customer Record" : "Add New Customer Record"}
             </h4>
-
-            {message && (
-              <div
-                className={`mb-3 p-2 rounded text-center ${
-                  message.startsWith("✅") || message.startsWith("✏️")
-                    ? "bg-green-100 text-green-700"
-                    : message.startsWith("🗑️")
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {message}
-              </div>
-            )}
 
             <Form onSubmit={handleSubmit}>
               <Row className="g-3">
@@ -300,7 +332,7 @@ export default function DeptDatabase({ auth }) {
                           <td className="text-secondary">{c.phone}</td>
                           <td className="text-secondary">{c.email}</td>
                           <td className="fw-semibold text-success">
-                            ₹ {parseFloat(c.gross_pay || 0).toFixed(2)}
+                            {parseFloat(c.gross_pay || 0).toFixed(2)}
                           </td>
                           <td className="text-muted small">
                             {c.created_at
