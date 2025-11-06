@@ -1,80 +1,44 @@
 import React from "react";
-import { Link } from "@inertiajs/react";
+import { usePage, Link } from "@inertiajs/react";
 import { ArrowLeft } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
 export default function LoanDetailsPage({ auth, approved_loans }) {
-  // Demo data
-  // const loan = {
-  //   "id": 11,
-  //   "company_id": 1,
-  //   "customer_id": 17,
-  //   "organisation_id": 1,
-  //   "loan_type": 2,
-  //   "purpose": "Medical",
-  //   "loan_amount_applied": 5000,
-  //   "tenure_fortnight": 40,
-  //   "interest_rate": 20,
-  //   "processing_fee": 20,
-  //   "bank_name": "demo bank",
-  //   "bank_branch": "demo branch",
-  //   "bank_account_no": "873456568686",
-  //   "status": "Approved",
-  //   "approved_by": "Jyotirmoy Saha",
-  //   "approved_date": "2025-10-29 10:49:40",
-  //   "customer": {
-  //     "first_name": "dsfdsbv",
-  //     "last_name": "dfbfdb",
-  //     "gender": "Male",
-  //     "dob": "1986-02-01",
-  //     "phone": "8523857410",
-  //     "email": "new1e@email.com",
-  //     "present_address": "demo",
-  //     "permanent_address": "demo",
-  //     "employee_no": "EMP1885",
-  //     "designation": "Sales Person",
-  //     "employment_type": "Permanent",
-  //     "date_joined": "2004-05-06",
-  //     "monthly_salary": "852.00",
-  //     "work_location": "png"
-  //   },
-  //   "organisation": {
-  //     "organisation_name": "Central Government",
-  //     "sector_type": "Education",
-  //     "address": "Waigani, Port Moresby",
-  //     "contact_no": "+675-312-1000",
-  //     "email": "contact@gov.pg"
-  //   },
-  //   "documents": [
-  //     {
-  //       "id": 6,
-  //       "doc_type": "EmploymentLetter",
-  //       "file_name": "Website PSD Template.pdf",
-  //       "file_path": "uploads/documents/METs15Hnj4jEQydamIFjy2fhRD4MgqtNdhAPUK6A.pdf",
-  //       "uploaded_by": "Jyotirmoy Saha",
-  //       "verification_status": "Pending"
-  //     }
-  //   ],
-  //   "loan_settings": {
-  //     "loan_desc": "Consolidation"
-  //   },
-  //   "company": {
-  //     "company_name": "Agro Advance Aben Ltd.",
-  //     "address": "Downtown Business Center, Port Moresby",
-  //     "contact_no": "+675-320-1234",
-  //     "email": "info@pacificfinance.pg"
-  //   }
-  // };
+  // Get loan id from URL
+  const page = usePage();
+  const currentUrl = page.url; 
 
-  // const loan= approved_loans;
+  // Convert id from string → number (for comparison)
+  const parts = currentUrl.split("/");
+  const loanId = parseInt(parts[parts.length - 1]);
 
-  // ✅ Safe destructuring
+  // Find the specific loan from the array
+  const loan = approved_loans.find((l) => l.id === loanId);
+
+  // If no loan found → show error message
+  if (!loan) {
+    return (
+      <AuthenticatedLayout user={auth.user}>
+        <div className="min-h-screen flex flex-col items-center justify-center text-gray-700">
+          <h2 className="text-2xl font-semibold mb-2">Loan Not Found</h2>
+          <Link
+            href={route("dashboard")}
+            className="text-blue-600 underline text-sm"
+          >
+            Back to Dashboard
+          </Link>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
+  // Safe destructuring
   const {
     customer = {},
     organisation = {},
     company = {},
     documents = [],
-  } = approved_loans;
+  } = loan;
 
   return (
     <AuthenticatedLayout
@@ -108,52 +72,51 @@ export default function LoanDetailsPage({ auth, approved_loans }) {
               {company.contact_no} | {company.email}
             </p>
           </div>
-          
-          {/* (rest of component stays same) */}
-           {/* --- Loan Overview --- */}
+
+          {/* --- Loan Overview --- */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6 text-sm">
             <div>
               <span className="font-semibold">Loan Type:</span>{" "}
-              {approved_loans.loan_settings?.loan_desc || "N/A"}
+              {loan.loan_settings?.loan_desc || "N/A"}
             </div>
             <div>
-              <span className="font-semibold">Purpose:</span> {approved_loans.purpose}
+              <span className="font-semibold">Purpose:</span> {loan.purpose}
             </div>
             <div>
               <span className="font-semibold">Loan Amount Applied:</span>{" "}
-              {approved_loans.loan_amount_applied}
+              {loan.loan_amount_applied}
             </div>
             <div>
               <span className="font-semibold">Tenure:</span>{" "}
-              {approved_loans.tenure_fortnight} Fortnights
+              {loan.tenure_fortnight} Fortnights
             </div>
             <div>
               <span className="font-semibold">Interest Rate:</span>{" "}
-              {approved_loans.interest_rate}%
+              {loan.interest_rate}%
             </div>
             <div>
               <span className="font-semibold">Status:</span>{" "}
               <span
                 className={`px-2 py-0.5 rounded text-xs ${
-                  approved_loans.status === "Approved"
+                  loan.status === "Approved"
                     ? "bg-green-100 text-green-700"
                     : "bg-yellow-100 text-yellow-700"
                 }`}
               >
-                {approved_loans.status}
+                {loan.status}
               </span>
             </div>
             <div>
               <span className="font-semibold">Approved By:</span>{" "}
-              {approved_loans.approved_by}
+              {loan.approved_by}
             </div>
             <div>
               <span className="font-semibold">Approved Date:</span>{" "}
-              {new Date(approved_loans.approved_date).toLocaleString()}
+              {new Date(loan.approved_date).toLocaleString()}
             </div>
             <div>
               <span className="font-semibold">Processing Fee:</span>{" "}
-              {approved_loans.processing_fee}
+              {loan.processing_fee}
             </div>
           </div>
 
@@ -232,7 +195,7 @@ export default function LoanDetailsPage({ auth, approved_loans }) {
           {/* --- Documents --- */}
           <div className="border-t border-gray-200 pt-4">
             <h4 className="font-semibold text-base mb-3">Documents</h4>
-            {documents && documents.length > 0 ? (
+            {documents.length > 0 ? (
               <table className="w-full border-collapse border border-gray-300 text-sm">
                 <thead className="bg-gray-100">
                   <tr>
