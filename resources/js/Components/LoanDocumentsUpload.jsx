@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { router } from "@inertiajs/react";
-import { Row, Col, Form, Button, ProgressBar } from "react-bootstrap";
+import { X, Upload, Eye } from "lucide-react";
+import { Button, ProgressBar, Modal } from "react-bootstrap";
+import toast, { Toaster } from 'react-hot-toast';
 
-const LoanDocumentsUpload = ({ loanFormData }) => {
-  const [files, setFiles] = useState([]); // each: { docType, file, progress }
-  const [message, setMessage] = useState("");
-  const [uploading, setUploading] = useState(false);
+export default function LoanDocumentsUpload({ loanFormData }) {
   const allowedDocs = [
     "ID",
     "Payslip",
@@ -17,155 +15,338 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
     "LoanForm_Scanned",
   ];
 
-  const handleFileChange = (e, docType) => {
+  const [files, setFiles] = useState({});
+  const [progress, setProgress] = useState({});
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState({});
+
+  const handleViewDocument = (doc) => {
+    setSelectedDoc(doc);
+    setShowModal(true);
+  };
+
+  const handleFileSelect = (e, docType) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.type !== "application/pdf") {
-      setMessage(`❌ ${docType}: Only PDF files are allowed.`);
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setMessage(`❌ ${docType}: File size exceeds 5 MB limit.`);
+    if (
+      ![
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+      ].includes(file.type)
+    ) {
+      setMessage((prev) => ({
+        ...prev,
+        [docType]: "❌ Only .pdf, .docx, or .txt files allowed.",
+      }));
       return;
     }
 
-    setFiles((prev) => {
-      const filtered = prev.filter((f) => f.docType !== docType);
-      return [...filtered, { docType, file, progress: 0 }];
-    });
+    if (file.size > 20 * 1024 * 1024) {
+      setMessage((prev) => ({
+        ...prev,
+        [docType]: "⚠️ File exceeds 20MB limit.",
+      }));
+      return;
+    }
+
+    setFiles((prev) => ({ ...prev, [docType]: file }));
+    setProgress((prev) => ({ ...prev, [docType]: 0 }));
+    setMessage((prev) => ({ ...prev, [docType]: "" }));
   };
 
-  const handleUploadAll = async (e) => {
-    e.preventDefault();
-
-    if (files.length === 0) {
-      setMessage("⚠️ Please select at least one document to upload.");
-      return;
-    }
+  const handleUpload = async (docType) => {
+    const file = files[docType];
+    if (!file) return;
 
     try {
       setUploading(true);
-      for (const f of files) {
-        const formData = new FormData();
-        formData.append("file", f.file);
-        formData.append("doc_type", f.docType);
-        formData.append("loan_id", loanFormData.id || "");
-        formData.append("customer_id", loanFormData.customer_id || "");
-        console.log("doc form data", formData);
-        // return;
-        await axios.post("/api/document-upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-          withCredentials: true,
-          onUploadProgress: (progressEvent) => {
-            const percent = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            setFiles((prev) =>
-              prev.map((fileObj) =>
-                fileObj.docType === f.docType
-                  ? { ...fileObj, progress: percent }
-                  : fileObj
-              )
-            );
-          },
-        });
-      }
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("doc_type", docType);
+      formData.append("loan_id", loanFormData?.id || "");
+      formData.append("customer_id", loanFormData?.customer_id || "");
 
-      setMessage("✅ All documents uploaded successfully!");
-      setTimeout(() => router.visit(route("loans")), 1000);
+      await axios.post("/api/document-upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true,
+        onUploadProgress: (e) => {
+          const percent = Math.round((e.loaded * 100) / e.total);
+          setProgress((prev) => ({ ...prev, [docType]: percent }));
+        },
+      });
+
+      setUploadedFiles((prev) => ({ ...prev, [docType]: true }));
+      setMessage((prev) => ({
+        ...prev,
+        [docType]: "✅ Uploaded successfully!",
+      }));
+      // show toast for success
+      try { toast.success(`${docType} uploaded successfully!`); } catch (e) {}
     } catch (error) {
-      console.error("Upload error:", error);
-      setMessage("❌ Failed to upload some documents. Please try again.");
+      console.error("Upload failed:", error);
+      setMessage((prev) => ({
+        ...prev,
+        [docType]: "❌ Upload failed. Try again.",
+      }));
     } finally {
       setUploading(false);
     }
   };
 
+  const handleUploadAll = async (e) => {
+    e.preventDefault();
+    if (Object.keys(files).length === 0) return alert("Please select files first!");
+
+    setUploading(true);
+    for (const docType of Object.keys(files)) {
+      await handleUpload(docType);
+    }
+    setUploading(false);
+  };
+
   return (
-    <div className="p-4 border rounded bg-light">
-      <h5 className="mb-3 d-flex align-items-center gap-2">
+    <div className="p-5 bg-gray-50 min-h-screen">
+      <h4 className="fw-semibold text-dark mb-4 text-center">
         📄 Upload Supporting Documents
-      </h5>
+      </h4>
+      <Toaster position="top-center" />
 
-      {message && (
-        <div
-          className={`mb-4 p-3 rounded ${
-            message.startsWith("✅")
-              ? "bg-success bg-opacity-10 text-success"
-              : message.startsWith("⚠️")
-              ? "bg-warning bg-opacity-10 text-warning"
-              : "bg-danger bg-opacity-10 text-danger"
-          }`}
-        >
-          {message}
-        </div>
-      )}
-
-      <Form onSubmit={handleUploadAll}>
-        {allowedDocs.map((doc) => {
-          const fileObj = files.find((f) => f.docType === doc);
-          return (
-          <>
-            <input type="hidden" name="doc_type" value={doc || ""} />
-
-            <div key={doc} className="mb-4 pb-3 border-bottom">
-              <Form.Label className="fw-medium text-secondary mb-2">
-                {doc.replace(/_/g, " ")}
-              </Form.Label>
-
-              <Row className="align-items-center">
-                <Col md={6}>
-                  <Form.Control
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => handleFileChange(e, doc)}
+      <form onSubmit={handleUploadAll}>
+        {/* Document Cards Grid */}
+  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 justify-items-center mb-3">
+          {allowedDocs.map((doc) => (
+            <div
+              key={doc}
+              className="bg-white rounded-4 shadow-sm border border-gray-200 p-3 w-[530px] transition-all duration-300 transform hover:shadow-lg hover:-translate-y-1"
+            >
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h6 className="fw-semibold mb-0 text-gray-700">
+                  {doc.replace(/_/g, " ")}
+                </h6>
+                {files[doc] && (
+                  <X
+                    className="text-muted cursor-pointer"
+                    size={18}
+                    onClick={() => {
+                      const updated = { ...files };
+                      delete updated[doc];
+                      setFiles(updated);
+                      setProgress((prev) => ({ ...prev, [doc]: 0 }));
+                      setUploadedFiles((prev) => {
+                        const newState = { ...prev };
+                        delete newState[doc];
+                        return newState;
+                      });
+                    }}
                   />
-                </Col>
-
-                {fileObj && (
-                  <Col md={6} className="d-flex align-items-center gap-3">
-                    <embed
-                      src={URL.createObjectURL(fileObj.file)}
-                      type="application/pdf"
-                      width="160"
-                      height="180"
-                      className="border rounded shadow-sm"
-                    />
-                    <div>
-                      <div className="fw-semibold text-dark small">
-                        {fileObj.file.name}
-                      </div>
-                      <div className="text-muted small mb-1">
-                        {(fileObj.file.size / 1024).toFixed(1)} KB
-                      </div>
-                      <ProgressBar
-                        now={fileObj.progress}
-                        label={`${fileObj.progress}%`}
-                        variant="info"
-                        animated
-                        style={{ height: "8px" }}
-                      />
-                    </div>
-                  </Col>
                 )}
-              </Row>
-            </div>
-          </>
-          );
-        })}
+              </div>
 
-        <Button
-          type="submit"
-          variant="success"
-          className="mt-3"
-          disabled={uploading || !loanFormData.id}
-        >
-          {uploading ? "Uploading..." : "Upload All Documents & Finish"}
-        </Button>
-      </Form>
+              {/* Upload box or preview */}
+              {!files[doc] ? (
+                <div className="border border-2 border-dashed rounded-4 d-flex flex-column justify-content-center align-items-center py-6 bg-light hover:bg-gray-100 transition-all duration-300 transform hover:border-blue-400 position-relative" style={{minHeight: 220}}>
+                  <Upload size={48} className="text-secondary mb-3" />
+                  <p className="fw-semibold text-dark mb-1">
+                    Click to upload or drag and drop
+                  </p>
+                  <p className="text-muted small mb-0">
+                    Upload .txt, .docx, or .pdf (MAX 20MB)
+                  </p>
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,.txt"
+                    onChange={(e) => handleFileSelect(e, doc)}
+                    className="position-absolute top-0 start-0 end-0 bottom-0 opacity-0"
+                    style={{ cursor: "pointer" }}
+                  />
+                </div>
+              ) : (
+                <div className="border rounded-4 p-2 bg-light">
+                  {files[doc].type === 'application/pdf' ? (
+                    <div className="text-center">
+                      <div className="position-relative">
+                        <embed
+                          src={URL.createObjectURL(files[doc])}
+                          type="application/pdf"
+                          width="480"
+                          height="200"
+                          className="border rounded shadow-sm"
+                        />
+                        <div 
+                          className="position-absolute bottom-0 start-0 w-100 d-flex align-items-center px-3 py-2 cursor-pointer"
+                          style={{ 
+                            background: 'linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.6))',
+                            borderBottomLeftRadius: '0.375rem',
+                            borderBottomRightRadius: '0.375rem'
+                          }}
+                          onClick={() => handleViewDocument(files[doc])}
+                        >
+                          <div className="d-flex align-items-center gap-2">
+                            <Eye size={28} className="hover:scale-110 transition-transform text-blue" />
+                            <span className="font-bold text-black">View</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
+                          <div className="fw-semibold text-dark small text-truncate" style={{maxWidth: '100%'}} title={files[doc].name}>
+                            {files[doc].name}
+                          </div>
+                        </div>
+                        <div className="text-muted small mb-2">{(files[doc].size/1024/1024).toFixed(2)} MB</div>
+                        {(progress[doc] || 0) < 100 && (
+                          <ProgressBar
+                            now={progress[doc] || 0}
+                            label={`${progress[doc] || 0}%`}
+                            variant="success"
+                            animated
+                            style={{ height: "8px" }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center p-3">
+                      <i className="bi bi-file-earmark-text text-secondary fs-2"></i>
+                      <div className="d-flex align-items-center justify-content-center gap-2">
+                        <div className="fw-semibold text-dark small mt-2 text-truncate" style={{maxWidth: '80%'}} title={files[doc].name}>
+                          {files[doc].name}
+                        </div>
+                        <Button
+                          variant="link"
+                          className="p-0 text-primary mt-2"
+                          onClick={() => handleViewDocument(files[doc])}
+                        >
+                          <Eye size={16} />
+                        </Button>
+                      </div>
+                      <div className="text-muted small mb-1">{(files[doc].size/1024/1024).toFixed(2)} MB</div>
+                      {(progress[doc] || 0) < 100 && (
+                        <ProgressBar
+                          now={progress[doc] || 0}
+                          label={`${progress[doc] || 0}%`}
+                          variant="success"
+                          animated
+                          className="mt-2"
+                          style={{ height: "8px" }}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Message */}
+              {message[doc] && !message[doc].startsWith("✅") && (
+                <div
+                  className={`mt-2 p-2 rounded text-center small ${
+                    message[doc].startsWith("⚠️")
+                      ? "bg-warning bg-opacity-10 text-warning"
+                      : "bg-danger bg-opacity-10 text-danger"
+                  }`}
+                >
+                  {message[doc]}
+                </div>
+              )}
+
+              {/* Buttons */}
+              <div className="d-flex justify-content-between gap-2 mt-3">
+                <Button
+                  variant="outline-secondary"
+                  className="px-4 rounded-pill fw-medium w-50"
+                  onClick={() => {
+                    const updated = { ...files };
+                    delete updated[doc];
+                    setFiles(updated);
+                    setProgress((prev) => ({ ...prev, [doc]: 0 }));
+                  }}
+                  disabled={uploading}
+                >
+                  Remove
+                </Button>
+
+                <Button
+                  className="px-4 rounded-pill fw-medium w-50 text-white"
+                  onClick={() => handleUpload(doc)}
+                  disabled={uploading || !files[doc]}
+                  style={{
+                    backgroundColor: uploading ? "#38bdf8cc" : uploadedFiles[doc] ? "#22c55e" : "#38bdf8",
+                    border: "none",
+                  }}
+                >
+                  {uploading ? "Uploading..." : uploadedFiles[doc] ? "Uploaded" : "Upload"}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Final Upload All Button */}
+        <div className="text-center mt-5">
+          <Button
+            type="submit"
+            variant="success"
+            className="px-5 py-2 fw-semibold rounded-pill shadow-sm"
+            disabled={uploading || !loanFormData.id}
+            style={{
+              backgroundColor: uploading ? "#22c55ecc" : "#22c55e",
+              border: "none",
+            }}
+          >
+            {uploading ? "Uploading..." : "Upload All Documents & Finish"}
+          </Button>
+        </div>
+      </form>
+
+      {/* Document View Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title className="text-dark">
+            {selectedDoc?.name}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-0">
+          {selectedDoc?.type === 'application/pdf' ? (
+            <embed
+              src={selectedDoc ? URL.createObjectURL(selectedDoc) : ''}
+              type="application/pdf"
+              width="100%"
+              height="600px"
+              className="border-0"
+            />
+          ) : (
+            <div className="p-4 text-center">
+              <i className="bi bi-file-earmark-text text-secondary fs-1"></i>
+              <p className="mt-3 mb-0">
+                This file type can't be previewed. Please download to view.
+              </p>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
+            Close
+          </Button>
+          <a
+            href={selectedDoc ? URL.createObjectURL(selectedDoc) : ''}
+            download={selectedDoc?.name}
+            className="btn btn-primary"
+          >
+            Download
+          </a>
+        </Modal.Footer>
+      </Modal>
+
+      <style jsx>{`
+        .border-dashed {
+          border-style: dashed !important;
+        }
+      `}</style>
     </div>
   );
-};
-
-export default LoanDocumentsUpload;
+}
