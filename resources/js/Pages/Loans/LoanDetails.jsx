@@ -1,9 +1,37 @@
-import React from "react";
+import React, { useState } from "react";
 import { usePage, Link } from "@inertiajs/react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
+function DocumentViewerModal({ isOpen, onClose, documentUrl }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h3 className="text-lg font-semibold">Document Viewer</h3>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-full"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="flex-1 p-4">
+          <iframe
+            src={documentUrl}
+            className="w-full h-full rounded border"
+            title="Document Viewer"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LoanDetailsPage({ auth, approved_loans }) {
+  const [selectedDoc, setSelectedDoc] = useState(null);
   // Get loan id from URL
   const page = usePage();
   const currentUrl = page.url; 
@@ -214,14 +242,28 @@ export default function LoanDetailsPage({ auth, approved_loans }) {
                       <td className="border border-gray-300 p-2">{doc.uploaded_by}</td>
                       <td className="border border-gray-300 p-2">{doc.verification_status}</td>
                       <td className="border border-gray-300 p-2 text-center">
-                        <a
-                          href={`/${doc.file_path}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
+                        <button
+                          onClick={() => setSelectedDoc(doc)}
+                          className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
                         >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="lucide lucide-eye"
+                            aria-hidden="true"
+                          >
+                            <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
                           View
-                        </a>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -233,6 +275,13 @@ export default function LoanDetailsPage({ auth, approved_loans }) {
           </div>
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={!!selectedDoc}
+        onClose={() => setSelectedDoc(null)}
+        documentUrl={selectedDoc ? `/storage/${selectedDoc.file_path}` : ''}
+      />
     </AuthenticatedLayout>
   );
 }
