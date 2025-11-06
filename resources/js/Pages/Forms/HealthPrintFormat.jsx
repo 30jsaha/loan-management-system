@@ -230,74 +230,73 @@ export default function DeductionVariationForm({ auth, data }) {
       </div>
 
       {/* Print Styles */}
-      {/* Print Styles */}
-<style>{`
-    @media print {
-        @page {
-            size: A4 portrait;
-            margin: 10mm; /* This is your page margin */
-        }
+      <style>{`
+          @media print {
+              @page {
+                  size: A4 portrait;
+                  margin: 6mm; /* This is your page margin */
+              }
 
-        html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100%;
-            height: 100%;
-            background: white !important;
-        }
+              html, body {
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  width: 100%;
+                  height: 100%;
+                  background: white !important;
+              }
 
-        /* --- FIX 1: Hide everything by default --- */
-        body * {
-            visibility: hidden;
-        }
+              /* --- FIX 1: Hide everything by default --- */
+              body * {
+                  visibility: hidden;
+              }
 
-        .no-print {
-            display: none !important;
-        }
+              .no-print {
+                  display: none !important;
+              }
 
-        /* --- FIX 2: ONLY show the printable area and its contents --- */
-        #printable-area, #printable-area * {
-            visibility: visible;
-        }
+              /* --- FIX 2: ONLY show the printable area and its contents --- */
+              #printable-area, #printable-area * {
+                  visibility: visible;
+              }
 
-        /* --- FIX 3: Position the area to fill the page --- */
-        #printable-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important; /* Remove screen padding (p-8) */
-            box-shadow: none !important;
-        }
+              /* --- FIX 3: Position the area to fill the page --- */
+              #printable-area {
+                  position: absolute;
+                  left: 0;
+                  top: 0;
+                  width: 100%;
+                  max-width: 100% !important;
+                  margin: 0 !important;
+                  padding: 0 !important; /* Remove screen padding (p-8) */
+                  box-shadow: none !important;
+              }
 
-        /* --- FIX 4: Corrected typo (!G -> !important) --- */
-        * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
+              /* --- FIX 4: Corrected typo (!G -> !important) --- */
+              * {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+              }
 
-        /* Your color-forcing rules (these are correct) */
-        .bg-red-600 {
-            background-color: #dc2626 !important;
-        }
+              /* Your color-forcing rules (these are correct) */
+              .bg-red-600 {
+                  background-color: #dc2626 !important;
+              }
 
-        .text-white {
-            color: white !important;
-        }
+              .text-white {
+                  color: white !important;
+              }
 
-        .bg-gray-100 {
-            background-color: #f3f4f6 !important;
-        }
-    }
+              .bg-gray-100 {
+                  background-color: #f3f4f6 !important;
+              }
+          }
 
-    @media screen {
-        body {
-            background: #f3f4f6;
-        }
-    }
-`}</style>
+          @media screen {
+              body {
+                  background: #f3f4f6;
+              }
+          }
+      `}</style>
     </div> 
     </AuthenticatedLayout>
     

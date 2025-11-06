@@ -33,7 +33,7 @@ function DocumentViewerModal({ isOpen, onClose, documentUrl }) {
       </motion.div>
     </AnimatePresence>
   );
-}
+} 
 
 export default function ActiveLoans({ auth, approved_loans }) {
   const [selectedLoan, setSelectedLoan] = useState(null);
@@ -245,8 +245,24 @@ export default function ActiveLoans({ auth, approved_loans }) {
                           <td className="border p-2 text-center">
                             <button
                               onClick={() => setSelectedDoc(doc)}
-                              className="text-blue-600 underline hover:text-blue-800"
+                              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
                             >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="lucide lucide-eye"
+                                aria-hidden="true"
+                              >
+                                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                              </svg>
                               View
                             </button>
                           </td>

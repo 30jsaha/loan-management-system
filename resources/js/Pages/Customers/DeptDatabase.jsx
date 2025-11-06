@@ -18,7 +18,10 @@ export default function DeptDatabase({ auth }) {
   const [message, setMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  // Fetch all customers on page load
+  // New state to track recently updated row
+  const [recentlyUpdatedId, setRecentlyUpdatedId] = useState(null);
+
+  // Fetch all customers on load
   useEffect(() => {
     fetchCustomers();
   }, []);
@@ -32,26 +35,29 @@ export default function DeptDatabase({ auth }) {
     }
   };
 
-  // Handle form field changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle Add or Update
+  // Add / Update record
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (isEditing && formData.id) {
-        // Update existing record
         await axios.put(`/api/all-dept-cust-update/${formData.id}`, formData);
         setMessage("✅ Customer updated successfully!");
+
+        // Flash green for 2s after update
+        setRecentlyUpdatedId(formData.id);
+        setTimeout(() => {
+          setRecentlyUpdatedId(null);
+          setMessage(""); // Clear the success message after 2 seconds
+        }, 2000);
       } else {
-        // Add new record
         await axios.post("/api/all-dept-cust-store", formData);
         setMessage("✅ Customer added successfully!");
       }
 
-      // Reset form and refresh table
       resetForm();
       fetchCustomers();
     } catch (error) {
@@ -60,7 +66,7 @@ export default function DeptDatabase({ auth }) {
     }
   };
 
-  // Edit record - load into form
+  // Edit record
   const handleEdit = (customer) => {
     setFormData({
       id: customer.id,
@@ -98,6 +104,7 @@ export default function DeptDatabase({ auth }) {
       gross_pay: "",
     });
     setIsEditing(false);
+    setMessage(""); // Clear the message
   };
 
   return (
@@ -112,6 +119,7 @@ export default function DeptDatabase({ auth }) {
       <Head title="Customer Department Database" />
 
       <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* FORM SECTION */}
         <Card className="shadow-sm border-0 mb-4">
           <Card.Body>
             <h4 className="mb-4 text-gray-700">
@@ -228,66 +236,161 @@ export default function DeptDatabase({ auth }) {
           </Card.Body>
         </Card>
 
-        {/* Table Section */}
-        <Card className="shadow-sm">
-          <Card.Body>
-            <h5 className="mb-3 text-gray-700">Existing Customer Records</h5>
+        {/* TABLE SECTION */}
+        <Card className="shadow-sm border-0 rounded-3">
+          <Card.Body className="p-4">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="fw-semibold text-gray-800 mb-0">
+                <i className="bi bi-people-fill me-2 text-success"></i>
+                Existing Customer Records
+              </h5>
+              <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
+                Total: {customers.length}
+              </span>
+            </div>
+
             {customers.length === 0 ? (
-              <p>No records found.</p>
+              <div className="text-center py-4 text-muted fst-italic">
+                <i className="bi bi-info-circle me-2"></i>No records found.
+              </div>
             ) : (
-              <div className="table-responsive">
-                <Table bordered hover size="sm" className="align-middle">
-                  <thead className="table-success">
+              <div className="table-responsive border rounded-3 shadow-sm">
+                <Table bordered hover size="sm" className="align-middle mb-0 border-0">
+                  <thead
+                    className="table-success"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, rgba(16,185,129,0.9) 0%, rgba(5,150,105,0.9) 100%)",
+                      color: "white",
+                    }}
+                  >
                     <tr>
-                      <th>#</th>
+                      <th className="py-2 text-center">#</th>
                       <th>Name</th>
                       <th>Employee Code</th>
                       <th>Phone</th>
                       <th>Email</th>
                       <th>Gross Pay</th>
                       <th>Created</th>
-                      <th>Actions</th>
+                      <th className="text-center">Actions</th>
                     </tr>
                   </thead>
+
                   <tbody>
-                    {customers.map((c, index) => (
-                      <tr key={c.id}>
-                        <td>{index + 1}</td>
-                        <td>{c.cust_name}</td>
-                        <td>{c.emp_code}</td>
-                        <td>{c.phone}</td>
-                        <td>{c.email}</td>
-                        <td>{parseFloat(c.gross_pay || 0).toFixed(2)}</td>
-                        <td>
-                          {c.created_at
-                            ? new Date(c.created_at).toLocaleDateString()
-                            : "—"}
-                        </td>
-                        <td className="text-center">
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => handleEdit(c)}
-                            className="me-2"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDelete(c.id)}
-                          >
-                            Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {customers.map((c, index) => {
+                      const isActiveRow = isEditing && formData.id === c.id;
+                      return (
+                        <tr
+                          key={c.id}
+                          className={`table-row-hover ${
+                            isActiveRow
+                              ? "editing-row"
+                              : recentlyUpdatedId === c.id
+                              ? "updated-row"
+                              : ""
+                          }`}
+                          style={{
+                            transition: "all 0.2s ease",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <td className="text-center text-muted fw-semibold">{index + 1}</td>
+                          <td className="fw-semibold text-gray-800">{c.cust_name}</td>
+                          <td className="text-secondary">{c.emp_code}</td>
+                          <td className="text-secondary">{c.phone}</td>
+                          <td className="text-secondary">{c.email}</td>
+                          <td className="fw-semibold text-success">
+                            ₹ {parseFloat(c.gross_pay || 0).toFixed(2)}
+                          </td>
+                          <td className="text-muted small">
+                            {c.created_at
+                              ? new Date(c.created_at).toLocaleDateString()
+                              : "—"}
+                          </td>
+                          <td className="text-center">
+                            <Button
+                              variant="outline-success"
+                              size="sm"
+                              onClick={() => handleEdit(c)}
+                              className="me-2 fw-semibold border-1 rounded-pill px-3"
+                              style={{ transition: "all 0.2s ease" }}
+                            >
+                              <i className="bi bi-pencil-square me-1"></i>Edit
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => handleDelete(c.id)}
+                              className="fw-semibold border-1 rounded-pill px-3"
+                            >
+                              <i className="bi bi-trash3 me-1"></i>Delete
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </Table>
               </div>
             )}
           </Card.Body>
         </Card>
+
+        {/* Styles */}
+        <style jsx>{`
+          .text-gray-800 {
+            color: #2d3748;
+          }
+
+          .text-gray-700 {
+            color: #4a5568;
+          }
+
+          .table-row-hover:hover {
+            background-color: #f0fdf4 !important;
+            transform: scale(1.005);
+          }
+
+          .active-edit-row {
+            background-color: #dcfce7 !important;
+            border-left: 4px solid #16a34a !important;
+            transform: scale(1.01);
+          }
+
+          .updated-row {
+            background-color: #86efac !important; /* bright green flash */
+            animation: fadeOut 2s ease-in-out forwards;
+          }
+
+          @keyframes fadeOut {
+            0% {
+              background-color: #86efac;
+            }
+            100% {
+              background-color: white;
+            }
+          }
+
+          .badge.bg-success-subtle {
+            background-color: rgba(16, 185, 129, 0.1) !important;
+          }
+
+          .editing-row {
+            background-color: #dcfce7 !important; /* soft green background */
+            border-left: 4px solid #16a34a !important; /* bright green border */
+            transform: scale(1.01);
+          }
+
+          .editing-row td {
+            background-color: #dcfce7 !important;
+          }
+
+        .updated-row {
+          background-color: #86efac !important; /* success green flash */
+          animation: fadeOut 2s ease-in-out forwards;
+        }
+
+        `}</style>
       </div>
     </AuthenticatedLayout>
   );
