@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class allCustMaster extends Model
+class AllCustMaster extends Model
 {
     use HasFactory;
 
     protected $table="all_cust_master";
 
     protected $fillable = [
-        'all_cust_master',
+        'cust_name',
         'emp_code',
         'phone',
         'email',

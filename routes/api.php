@@ -72,4 +72,6 @@ Route::middleware('auth:sanctum')->get('/all-cust-list', [CustomerController::cl
 
 Route::middleware('auth:sanctum')->get('/all-dept-cust-list', [AllCustController::class, 'index']);
 Route::middleware('auth:sanctum')->post('/all-dept-cust-store', [AllCustController::class, 'store']);
+Route::middleware('auth:sanctum')->put('/all-dept-cust-update/{id}', [AllCustController::class, 'update']);
+Route::middleware('auth:sanctum')->delete('/all-dept-cust-delete/{id}', [AllCustController::class, 'destroy']);
 

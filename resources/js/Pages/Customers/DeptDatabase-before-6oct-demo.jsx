@@ -6,7 +6,6 @@ import { Table, Form, Button, Row, Col, Card } from "react-bootstrap";
 
 export default function DeptDatabase({ auth }) {
   const [formData, setFormData] = useState({
-    id: null,
     cust_name: "",
     emp_code: "",
     phone: "",
@@ -16,9 +15,7 @@ export default function DeptDatabase({ auth }) {
 
   const [customers, setCustomers] = useState([]);
   const [message, setMessage] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Fetch all customers on page load
+  // Fetch existing customer data
   useEffect(() => {
     fetchCustomers();
   }, []);
@@ -32,72 +29,29 @@ export default function DeptDatabase({ auth }) {
     }
   };
 
-  // Handle form field changes
+  // Handle form changes
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle Add or Update
+  // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (isEditing && formData.id) {
-        // Update existing record
-        await axios.put(`/api/all-dept-cust-update/${formData.id}`, formData);
-        setMessage("✅ Customer updated successfully!");
-      } else {
-        // Add new record
-        await axios.post("/api/all-dept-cust-store", formData);
-        setMessage("✅ Customer added successfully!");
-      }
-
-      // Reset form and refresh table
-      resetForm();
-      fetchCustomers();
+      const res = await axios.post("/api/all-dept-cust-store", formData);
+      setMessage("✅ Customer added successfully!");
+      setFormData({
+        cust_name: "",
+        emp_code: "",
+        phone: "",
+        email: "",
+        gross_pay: "",
+      });
+      fetchCustomers(); // refresh list
     } catch (error) {
       console.error("Error saving customer:", error);
       setMessage("❌ Failed to save customer data!");
     }
-  };
-
-  // Edit record - load into form
-  const handleEdit = (customer) => {
-    setFormData({
-      id: customer.id,
-      cust_name: customer.cust_name,
-      emp_code: customer.emp_code,
-      phone: customer.phone,
-      email: customer.email,
-      gross_pay: customer.gross_pay,
-    });
-    setIsEditing(true);
-    setMessage("✏️ Editing mode enabled.");
-  };
-
-  // Delete record
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this record?")) return;
-    try {
-      await axios.delete(`/api/all-dept-cust-delete/${id}`);
-      setMessage("🗑️ Customer deleted successfully!");
-      fetchCustomers();
-    } catch (error) {
-      console.error("Error deleting record:", error);
-      setMessage("❌ Failed to delete record!");
-    }
-  };
-
-  // Reset form after add/update
-  const resetForm = () => {
-    setFormData({
-      id: null,
-      cust_name: "",
-      emp_code: "",
-      phone: "",
-      email: "",
-      gross_pay: "",
-    });
-    setIsEditing(false);
   };
 
   return (
@@ -114,17 +68,13 @@ export default function DeptDatabase({ auth }) {
       <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Card className="shadow-sm border-0 mb-4">
           <Card.Body>
-            <h4 className="mb-4 text-gray-700">
-              {isEditing ? "Edit Customer Record" : "Add New Customer Record"}
-            </h4>
+            <h4 className="mb-4 text-gray-700">Add New Customer Record</h4>
 
             {message && (
               <div
                 className={`mb-3 p-2 rounded text-center ${
-                  message.startsWith("✅") || message.startsWith("✏️")
+                  message.startsWith("✅")
                     ? "bg-green-100 text-green-700"
-                    : message.startsWith("🗑️")
-                    ? "bg-yellow-100 text-yellow-700"
                     : "bg-red-100 text-red-700"
                 }`}
               >
@@ -201,27 +151,13 @@ export default function DeptDatabase({ auth }) {
                   </Form.Group>
                 </Col>
 
-                <Col md={2} className="d-flex align-items-end gap-2">
+                <Col md={2} className="d-flex align-items-end">
                   <Button
                     type="submit"
-                    className={`${
-                      isEditing
-                        ? "bg-green-600 hover:bg-green-700"
-                        : "bg-blue-600 hover:bg-blue-700"
-                    } text-white px-4`}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4"
                   >
-                    {isEditing ? "Update" : "Add"}
+                    Add
                   </Button>
-
-                  {isEditing && (
-                    <Button
-                      variant="secondary"
-                      className="text-white bg-gray-500"
-                      onClick={resetForm}
-                    >
-                      Cancel
-                    </Button>
-                  )}
                 </Col>
               </Row>
             </Form>
@@ -237,7 +173,7 @@ export default function DeptDatabase({ auth }) {
             ) : (
               <div className="table-responsive">
                 <Table bordered hover size="sm" className="align-middle">
-                  <thead className="table-success">
+                  <thead className="table-light">
                     <tr>
                       <th>#</th>
                       <th>Name</th>
@@ -246,7 +182,6 @@ export default function DeptDatabase({ auth }) {
                       <th>Email</th>
                       <th>Gross Pay</th>
                       <th>Created</th>
-                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -262,23 +197,6 @@ export default function DeptDatabase({ auth }) {
                           {c.created_at
                             ? new Date(c.created_at).toLocaleDateString()
                             : "—"}
-                        </td>
-                        <td className="text-center">
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => handleEdit(c)}
-                            className="me-2"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDelete(c.id)}
-                          >
-                            Delete
-                          </Button>
                         </td>
                       </tr>
                     ))}
