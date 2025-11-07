@@ -97,6 +97,37 @@ export default function View({ auth, loanId }) {
     };
 
       // --- Upload handler for both ---
+    // const handleUpload = async (type) => {
+    //     let file = type === "video" ? videoFile : type === "pdf1" ? pdfFile1 : pdfFile;
+    //     if (!file) {
+    //         setMessage(`⚠️ Please select a ${type === "video" ? "video" : "PDF"} first.`);
+    //         return;
+    //     }
+
+    //     const formData = new FormData();
+    //     formData.append("loan_id", loan.id);
+    //     formData.append(type === "video" ? "video_consent" : type === "pdf" ? "isda_signed_upload": "org_signed_upload", file);
+
+    //     try {
+    //         const res = await axios.post(
+    //             `/api/loans/upload-${type === "video" ? "consent-video" : type === "pdf" ? "isda-signed" : "org-signed"}`,
+    //             formData,
+    //             {
+    //                 headers: { "Content-Type": "multipart/form-data" },
+    //                 onUploadProgress: (progressEvent) => {
+    //                     const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+    //                     setUploadProgress((prev) => ({ ...prev, [type]: percent }));
+    //                 },
+    //             }
+    //         );
+    //         setMessage(`✅ ${type === "video" ? "Video" : "PDF"} uploaded successfully!`);
+    //         console.log(res.data);
+    //     } catch (error) {
+    //         console.error(error);
+    //         setMessage(`❌ Failed to upload ${type === "video" ? "video" : "PDF"}.`);
+    //     }
+    // };
+
     const handleUpload = async (type) => {
         let file = type === "video" ? videoFile : type === "pdf1" ? pdfFile1 : pdfFile;
         if (!file) {
@@ -106,27 +137,64 @@ export default function View({ auth, loanId }) {
 
         const formData = new FormData();
         formData.append("loan_id", loan.id);
-        formData.append(type === "video" ? "video_consent" : type === "pdf" ? "isda_signed_upload": "org_signed_upload", file);
+        formData.append(
+            type === "video"
+                ? "video_consent"
+                : type === "pdf"
+                ? "isda_signed_upload"
+                : "org_signed_upload",
+            file
+        );
 
         try {
             const res = await axios.post(
-                `/api/loans/upload-${type === "video" ? "consent-video" : type === "pdf" ? "isda-signed" : "org-signed"}`,
+                `/api/loans/upload-${
+                    type === "video" ? "consent-video" : type === "pdf" ? "isda-signed" : "org-signed"
+                }`,
                 formData,
                 {
-                headers: { "Content-Type": "multipart/form-data" },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                    setUploadProgress((prev) => ({ ...prev, [type]: percent }));
-                },
+                    headers: { "Content-Type": "multipart/form-data" },
+                    onUploadProgress: (progressEvent) => {
+                        const percent = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        );
+                        setUploadProgress((prev) => ({ ...prev, [type]: percent }));
+                    },
                 }
             );
+
+            // ✅ Success feedback
             setMessage(`✅ ${type === "video" ? "Video" : "PDF"} uploaded successfully!`);
-            console.log(res.data);
+
+            // ✅ Reset progress after short delay for better UX
+            setTimeout(() => {
+                setUploadProgress((prev) => ({ ...prev, [type]: 0 }));
+            }, 1500);
+
+            // ✅ Clear the file and preview
+            if (type === "video") {
+                setVideoFile(null);
+                setVideoPreview(null);
+            } else if (type === "pdf") {
+                setPdfFile(null);
+                setPdfPreview(null);
+            } else {
+                setPdfFile1(null);
+                setPdfPreview1(null);
+            }
+
+            // ✅ Refresh loan data to show updated file path
+            const updatedLoan = await axios.get(`/api/loans/${loanId}`);
+            setLoan(updatedLoan.data);
+
         } catch (error) {
             console.error(error);
             setMessage(`❌ Failed to upload ${type === "video" ? "video" : "PDF"}.`);
+            // reset progress on error
+            setUploadProgress((prev) => ({ ...prev, [type]: 0 }));
         }
     };
+
 
     if (loading) {
         return (
