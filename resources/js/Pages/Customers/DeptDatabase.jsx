@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head } from "@inertiajs/react";
 import axios from "axios";
-import { Table, Form, Button, Row, Col, Card } from "react-bootstrap";
-import toast, { Toaster } from 'react-hot-toast';
-import Swal from 'sweetalert2';
+import toast, { Toaster } from "react-hot-toast";
+import Swal from "sweetalert2";
+import { Search, SortAlphaDown, SortAlphaUp } from "react-bootstrap-icons";
+import { Pencil, Trash2 } from "lucide-react";
 
 export default function DeptDatabase({ auth }) {
   const [formData, setFormData] = useState({
@@ -18,11 +19,13 @@ export default function DeptDatabase({ auth }) {
 
   const [customers, setCustomers] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-
-  // New state to track recently updated row
   const [recentlyUpdatedId, setRecentlyUpdatedId] = useState(null);
 
-  // Fetch all customers on load
+  const [searchName, setSearchName] = useState("");
+  const [searchDate, setSearchDate] = useState("");
+  const [sortField, setSortField] = useState("cust_name");
+  const [sortOrder, setSortOrder] = useState("asc");
+
   useEffect(() => {
     fetchCustomers();
   }, []);
@@ -40,93 +43,65 @@ export default function DeptDatabase({ auth }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Add / Update record
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      toast.dismiss();
+
       if (isEditing && formData.id) {
         await axios.put(`/api/all-dept-cust-update/${formData.id}`, formData);
-        toast('Customer updated successfully!');
-
-        // Flash green for 2s after update
+        toast.success("Customer updated successfully!");
         setRecentlyUpdatedId(formData.id);
-        setTimeout(() => {
-          setRecentlyUpdatedId(null);
-        }, 2000);
+        setTimeout(() => setRecentlyUpdatedId(null), 2000);
       } else {
         await axios.post("/api/all-dept-cust-store", formData);
-        toast('Customer added successfully!');
+        toast.success("Customer added successfully!");
       }
 
       resetForm();
       fetchCustomers();
     } catch (error) {
-      console.error("Error saving customer:", error);
-      toast('Failed to save customer data!');
+      console.error("Error saving:", error);
+      toast.error("❌ Failed to save customer data!");
     }
   };
 
-  // Edit record
-  const handleEdit = (customer) => {
-    setFormData({
-      id: customer.id,
-      cust_name: customer.cust_name,
-      emp_code: customer.emp_code,
-      phone: customer.phone,
-      email: customer.email,
-      gross_pay: customer.gross_pay,
-    });
+  const handleEdit = (c) => {
+    setFormData(c);
     setIsEditing(true);
-    toast('Editing mode enabled');
+    toast.dismiss();
+    toast("Editing mode enabled", {
+      style: {
+        background: "#16a34a",
+        color: "white",
+        fontWeight: 500,
+      },
+    });
   };
 
-  // Delete record
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     Swal.fire({
-      title: 'Are you sure?',
+      title: "Are you sure?",
       text: "You won't be able to revert this!",
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: '#22c55e',
-      cancelButtonColor: '#gray',
-      confirmButtonText: 'Yes, delete it!',
-      background: '#ffffff',
-      customClass: {
-        popup: 'rounded-lg',
-        confirmButton: 'bg-green-500 hover:bg-green-600',
-        cancelButton: 'bg-gray-400 hover:bg-gray-500'
-      }
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it!",
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
           await axios.delete(`/api/all-dept-cust-delete/${id}`);
           fetchCustomers();
-          Swal.fire({
-            title: 'Deleted!',
-            text: 'Record has been deleted.',
-            icon: 'success',
-            confirmButtonColor: '#22c55e',
-            customClass: {
-              confirmButton: 'bg-green-500 hover:bg-green-600'
-            }
-          });
+          Swal.fire("Deleted!", "Record has been deleted.", "success");
         } catch (error) {
           console.error("Error deleting record:", error);
-            Swal.fire({
-              title: 'Error!',
-              text: 'Failed to delete record.',
-              icon: 'error',
-              confirmButtonColor: '#22c55e',
-              customClass: {
-                confirmButton: 'bg-green-500 hover:bg-green-600'
-              }
-            });
+          Swal.fire("Error!", "Failed to delete record.", "error");
         }
       }
     });
   };
 
-  // Reset form after add/update
   const resetForm = () => {
     setFormData({
       id: null,
@@ -139,6 +114,26 @@ export default function DeptDatabase({ auth }) {
     setIsEditing(false);
   };
 
+  const filteredData = customers.filter((c) => {
+    const matchName = c.cust_name
+      ?.toLowerCase()
+      .includes(searchName.toLowerCase());
+    const matchDate = searchDate
+      ? new Date(c.created_at).toLocaleDateString() ===
+        new Date(searchDate).toLocaleDateString()
+      : true;
+    return matchName && matchDate;
+  });
+
+  const sortedData = [...filteredData].sort((a, b) => {
+    const valA = a[sortField] || "";
+    const valB = b[sortField] || "";
+    return sortOrder === "asc" ? (valA > valB ? 1 : -1) : valA < valB ? 1 : -1;
+  });
+
+  const toggleSortOrder = () =>
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+
   return (
     <AuthenticatedLayout
       user={auth.user}
@@ -149,280 +144,223 @@ export default function DeptDatabase({ auth }) {
       }
     >
       <Head title="Customer Department Database" />
+      <Toaster position="top-center" />
 
-      <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Toaster 
-          position="top-center"
-          toastOptions={{
-            style: {
-              background: '#22c55e',
-              color: '#fff',
-              padding: '16px',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-              marginTop: '100px'
-            },
-            duration: 3000,
-          }}
-        />
+      <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* FORM SECTION */}
-        <Card className="shadow-sm border-0 mb-4">
-          <Card.Body>
-            <h4 className="mb-4 text-gray-700">
-              {isEditing ? "Edit Customer Record" : "Add New Customer Record"}
-            </h4>
+        <div className="bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
+          <h4 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            {isEditing ? (
+              <>
+                <i className="bi bi-pencil-square text-green-600"></i> Edit
+                Customer
+              </>
+            ) : (
+              <>
+                <i className="bi bi-person-plus-fill text-blue-600"></i> Add
+                Customer
+              </>
+            )}
+          </h4>
 
-            <Form onSubmit={handleSubmit}>
-              <Row className="g-3">
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Customer Name</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="cust_name"
-                      value={formData.cust_name}
-                      onChange={handleChange}
-                      placeholder="Enter customer name"
-                      required
-                    />
-                  </Form.Group>
-                </Col>
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"
+          >
+            {["cust_name", "emp_code", "phone", "email", "gross_pay"].map(
+              (field) => (
+                <input
+                  key={field}
+                  type={
+                    field === "email"
+                      ? "email"
+                      : field === "gross_pay"
+                      ? "number"
+                      : "text"
+                  }
+                  name={field}
+                  value={formData[field]}
+                  onChange={handleChange}
+                  placeholder={
+                    {
+                      cust_name: "Customer Name",
+                      emp_code: "Employee Code",
+                      phone: "Phone",
+                      email: "Email",
+                      gross_pay: "Gross Pay (PGK)",
+                    }[field]
+                  }
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              )
+            )}
 
-                <Col md={3}>
-                  <Form.Group>
-                    <Form.Label>Employee Code</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="emp_code"
-                      value={formData.emp_code}
-                      onChange={handleChange}
-                      placeholder="EMP001"
-                    />
-                  </Form.Group>
-                </Col>
+            <div className="flex items-end gap-2">
+              <button
+                type="submit"
+                className={`${
+                  isEditing
+                    ? "bg-emerald-600 hover:bg-emerald-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                } text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200`}
+              >
+                {isEditing ? "Update" : "Add"}
+              </button>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
 
-                <Col md={3}>
-                  <Form.Group>
-                    <Form.Label>Phone</Form.Label>
-                    <Form.Control
-                      type="text"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="7001234567"
-                    />
-                  </Form.Group>
-                </Col>
-
-                <Col md={4}>
-                  <Form.Group>
-                    <Form.Label>Email</Form.Label>
-                    <Form.Control
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="example@email.com"
-                    />
-                  </Form.Group>
-                </Col>
-
-                <Col md={3}>
-                  <Form.Group>
-                    <Form.Label>Gross Pay (PGK)</Form.Label>
-                    <Form.Control
-                      type="number"
-                      step="0.01"
-                      name="gross_pay"
-                      value={formData.gross_pay}
-                      onChange={handleChange}
-                      placeholder="0.00"
-                    />
-                  </Form.Group>
-                </Col>
-
-                <Col md={2} className="d-flex align-items-end gap-2">
-                  <Button
-                    type="submit"
-                    className={`${
-                      isEditing
-                        ? "bg-green-600 hover:bg-green-700"
-                        : "bg-blue-600 hover:bg-blue-700"
-                    } text-white px-4`}
-                  >
-                    {isEditing ? "Update" : "Add"}
-                  </Button>
-
-                  {isEditing && (
-                    <Button
-                      variant="secondary"
-                      className="text-white bg-gray-500"
-                      onClick={resetForm}
-                    >
-                      Cancel
-                    </Button>
-                  )}
-                </Col>
-              </Row>
-            </Form>
-          </Card.Body>
-        </Card>
-
-        {/* TABLE SECTION */}
-        <Card className="shadow-sm border-0 rounded-3">
-          <Card.Body className="p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="fw-semibold text-gray-800 mb-0">
-                <i className="bi bi-people-fill me-2 text-success"></i>
-                Existing Customer Records
-              </h5>
-              <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
-                Total: {customers.length}
-              </span>
+        {/* FILTER BAR */}
+        <div className="bg-white shadow rounded-2xl p-4 border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+              <Search className="mx-2 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search by Name"
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                className="w-full px-2 py-2 focus:outline-none"
+              />
             </div>
 
-            {customers.length === 0 ? (
-              <div className="text-center py-4 text-muted fst-italic">
-                <i className="bi bi-info-circle me-2"></i>No records found.
-              </div>
-            ) : (
-              <div className="table-responsive border rounded-3 shadow-sm">
-                <Table bordered hover size="sm" className="align-middle mb-0 border-0">
-                  <thead
-                    className="table-success"
-                    style={{
-                      background:
-                        "linear-gradient(90deg, rgba(16,185,129,0.9) 0%, rgba(5,150,105,0.9) 100%)",
-                      color: "white",
-                    }}
+            <input
+              type="date"
+              value={searchDate}
+              onChange={(e) => setSearchDate(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+
+            <select
+              value={sortField}
+              onChange={(e) => setSortField(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            >
+              <option value="cust_name">Sort by Name</option>
+              <option value="created_at">Sort by Date</option>
+            </select>
+
+            <button
+              onClick={toggleSortOrder}
+              className="flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-100 transition-all duration-200"
+            >
+              {sortOrder === "asc" ? (
+                <>
+                  <SortAlphaDown /> Asc
+                </>
+              ) : (
+                <>
+                  <SortAlphaUp /> Desc
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* TABLE SECTION */}
+        <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+          {/* Customer Records Header */}
+          <div className="flex justify-between items-center p-3 bg-gradient-to-r from-emerald-100 via-emerald-50 to-teal-50 rounded-t-2xl shadow-sm border-b border-emerald-200">
+            <h5 className="text-lg font-semibold text-gray-800 flex items-center gap-2 tracking-wide">
+              <i className="bi bi-people-fill text-emerald-600 text-xl"></i>
+              <span className="bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">
+                Customer Records
+              </span>
+            </h5>
+            <span className="bg-emerald-200/60 text-emerald-800 font-semibold px-4 py-1.5 rounded-full text-sm shadow-inner border border-emerald-300/60">
+              Total: {sortedData.length}
+            </span>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-left border-collapse">
+              <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
+                <tr className="divide-x divide-white/20">
+                  {[
+                    "#",
+                    "Name",
+                    "Emp Code",
+                    "Phone",
+                    "Email",
+                    "Gross Pay",
+                    "Date",
+                    "Actions",
+                  ].map((h, i) => (
+                    <th
+                      key={i}
+                      className={`px-4 py-3 font-semibold text-[0.95rem] uppercase tracking-wide ${
+                        i === 0 ? "rounded-tl-xl" : i === 7 ? "rounded-tr-xl" : ""
+                      }`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-100">
+                {sortedData.map((c, i) => (
+                  <tr
+                    key={c.id}
+                    className={`transition-all duration-300 ${
+                      formData.id === c.id && isEditing
+                        ? "bg-emerald-50 border-l-4 border-emerald-500 shadow-inner"
+                        : recentlyUpdatedId === c.id
+                        ? "bg-emerald-100/60"
+                        : "hover:bg-emerald-50"
+                    }`}
                   >
-                    <tr>
-                      <th className="py-2 text-center">#</th>
-                      <th>Name</th>
-                      <th>Employee Code</th>
-                      <th>Phone</th>
-                      <th>Email</th>
-                      <th>Gross Pay</th>
-                      <th>Created</th>
-                      <th className="text-center">Actions</th>
-                    </tr>
-                  </thead>
+                    <td className="px-4 py-3">{i + 1}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-800">
+                      {c.cust_name}
+                    </td>
+                    <td className="px-4 py-3">{c.emp_code}</td>
+                    <td className="px-4 py-3">{c.phone}</td>
+                    <td className="px-4 py-3">{c.email}</td>
+                    <td className="px-4 py-3 text-emerald-700 font-semibold">
+                      {parseFloat(c.gross_pay || 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {c.created_at
+                        ? new Date(c.created_at).toLocaleDateString()
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-center flex justify-center gap-3">
+                      {/* Edit Button */}
+                      <button
+                        onClick={() => handleEdit(c)}
+                        className="p-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-md transition-all duration-300 shadow-sm hover:shadow-md focus:ring-2 focus:ring-amber-400 focus:outline-none"
+                        title="Edit Customer"
+                      >
+                        <Pencil size={18} strokeWidth={2.2} />
+                      </button>
 
-                  <tbody>
-                    {customers.map((c, index) => {
-                      const isActiveRow = isEditing && formData.id === c.id;
-                      return (
-                        <tr
-                          key={c.id}
-                          className={`table-row-hover ${
-                            isActiveRow
-                              ? "editing-row"
-                              : recentlyUpdatedId === c.id
-                              ? "updated-row"
-                              : ""
-                          }`}
-                          style={{
-                            transition: "all 0.2s ease",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <td className="text-center text-muted fw-semibold">{index + 1}</td>
-                          <td className="fw-semibold text-gray-800">{c.cust_name}</td>
-                          <td className="text-secondary">{c.emp_code}</td>
-                          <td className="text-secondary">{c.phone}</td>
-                          <td className="text-secondary">{c.email}</td>
-                          <td className="fw-semibold text-success">
-                            {parseFloat(c.gross_pay || 0).toFixed(2)}
-                          </td>
-                          <td className="text-muted small">
-                            {c.created_at
-                              ? new Date(c.created_at).toLocaleDateString()
-                              : "—"}
-                          </td>
-                          <td className="text-center">
-                            <Button
-                              variant="outline-success"
-                              size="sm"
-                              onClick={() => handleEdit(c)}
-                              className="me-2 fw-semibold border-1 rounded-pill px-3"
-                              style={{ transition: "all 0.2s ease" }}
-                            >
-                              <i className="bi bi-pencil-square me-1"></i>Edit
-                            </Button>
-                            <Button
-                              variant="outline-danger"
-                              size="sm"
-                              onClick={() => handleDelete(c.id)}
-                              className="fw-semibold border-1 rounded-pill px-3"
-                            >
-                              <i className="bi bi-trash3 me-1"></i>Delete
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table>
-              </div>
-            )}
-          </Card.Body>
-        </Card>
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        className="p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-md transition-all duration-300 shadow-sm hover:shadow-md focus:ring-2 focus:ring-red-400 focus:outline-none"
+                        title="Delete Customer"
+                      >
+                        <Trash2 size={18} strokeWidth={2.2} />
+                      </button>
+                    </td>
 
-        {/* Styles */}
-        <style jsx>{`
-          .text-gray-800 {
-            color: #2d3748;
-          }
-
-          .text-gray-700 {
-            color: #4a5568;
-          }
-
-          .table-row-hover:hover {
-            background-color: #f0fdf4 !important;
-            transform: scale(1.005);
-          }
-
-          .active-edit-row {
-            background-color: #dcfce7 !important;
-            border-left: 4px solid #16a34a !important;
-            transform: scale(1.01);
-          }
-
-          .updated-row {
-            background-color: #86efac !important; /* bright green flash */
-            animation: fadeOut 2s ease-in-out forwards;
-          }
-
-          @keyframes fadeOut {
-            0% {
-              background-color: #86efac;
-            }
-            100% {
-              background-color: white;
-            }
-          }
-
-          .badge.bg-success-subtle {
-            background-color: rgba(16, 185, 129, 0.1) !important;
-          }
-
-          .editing-row {
-            background-color: #dcfce7 !important; /* soft green background */
-            border-left: 4px solid #16a34a !important; /* bright green border */
-            transform: scale(1.01);
-          }
-
-          .editing-row td {
-            background-color: #dcfce7 !important;
-          }
-
-        .updated-row {
-          background-color: #86efac !important; /* success green flash */
-          animation: fadeOut 2s ease-in-out forwards;
-        }
-
-        `}</style>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </AuthenticatedLayout>
   );
