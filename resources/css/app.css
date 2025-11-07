@@ -493,3 +493,13 @@ table thead
   background: #22c55e !important; 
   color: #fff !important;
 }
+
+.dropdown-nav-active
+{
+  border-bottom: solid 2px rgb(37 99 235 / var(--tw-text-opacity, 1));
+}
+.dropdown-nav-a-active
+{
+  --tw-bg-opacity: 1;
+  background-color: rgb(243 244 246 / var(--tw-bg-opacity, 1));
+}

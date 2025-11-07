@@ -37,8 +37,9 @@ export default function Authenticated({ user, header, children }) {
                                         route().current('loans') ||
                                         route().current('loan-create') ||
                                         route().current('loan.view') ||
-                                        route().current('loan.emi')
-                                            ? 'text-blue-600 font-semibold' // Active style
+                                        route().current('loan.emi') ||
+                                        route().current('loan.settings')
+                                            ? 'dropdown-nav-active' // Active style
                                             : 'text-gray-500'
                                     }`}
                                 >
@@ -67,9 +68,10 @@ export default function Authenticated({ user, header, children }) {
                                         </Dropdown.Trigger>
 
                                         <Dropdown.Content>
-                                            <Dropdown.Link href={route('loans')}>Loan Applications</Dropdown.Link>
-                                            <Dropdown.Link href={route('loan-create')}>+ New Loan</Dropdown.Link>
-                                            <Dropdown.Link href={route('loan.emi')}>EMI Collection</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('loans') ? 'dropdown-nav-a-active' : ''}`} href={route('loans')}>Loan Applications</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('loan-create') ? 'dropdown-nav-a-active' : ''}`} href={route('loan-create')}>+ New Loan</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('loan.emi') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.emi')}>EMI Collection</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('loan.settings') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.settings')}>Loan Settings</Dropdown.Link>
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>
@@ -79,7 +81,7 @@ export default function Authenticated({ user, header, children }) {
                                         route().current('customer.create') ||
                                         route().current('customer.view') ||
                                         route().current('customer.dept')
-                                            ? 'text-blue-600 font-semibold' // Active style
+                                            ? 'dropdown-nav-active' // Active style
                                             : 'text-gray-500'
                                     }`}
                                 >
@@ -108,9 +110,9 @@ export default function Authenticated({ user, header, children }) {
                                         </Dropdown.Trigger>
 
                                         <Dropdown.Content>
-                                            <Dropdown.Link href={route('customers')}>All Customers</Dropdown.Link>
-                                            <Dropdown.Link href={route('customer.create')}>+ New Customer</Dropdown.Link>
-                                            <Dropdown.Link href={route('customer.dept')}>Dept Saved Customers</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('customers') ? 'dropdown-nav-a-active' : ''}`} href={route('customers')}>All Customers</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('customer.create') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.create')}>+ New Customer</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('customer.dept') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.dept')}>Dept Saved Customers</Dropdown.Link>
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>
