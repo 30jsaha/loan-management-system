@@ -26,7 +26,12 @@ class LoanApplication extends Model
         'bank_name','bank_branch','bank_account_no',
         'status','approved_by','approved_date',
         'higher_approved_by','higher_approved_date',
-        'isda_generated_path','isda_signed_upload_path','remarks','is_elegible'
+        'isda_generated_path','isda_signed_upload_path','isada_upload_date',
+        'isada_upload_by','org_signed_upload_path','org_signed_upload_date',
+        'org_signed_upload_by','video_consent_file_name','video_consent_path',
+        'video_consent_upload_date','video_consent_uploaded_by_user_id',
+        'client_status','any_existing_loan','existing_loan_amt','existing_loan_id',
+        'remarks','is_elegible'
     ];
 
     public function customer(){ return $this->belongsTo(Customer::class); }

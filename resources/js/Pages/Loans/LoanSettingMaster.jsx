@@ -4,7 +4,7 @@ import { Head, Link } from "@inertiajs/react";
 
 import {ArrowLeft} from "lucide-react";
 
-function LoanSettingMaster({auth}) {
+function LoanSettingMaster({auth, loan_settings}) {
 
     return(
         <AuthenticatedLayout

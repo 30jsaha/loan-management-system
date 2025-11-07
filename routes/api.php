@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans-not-elegible', [LoanController::class, 'store_not_elegible']);
     Route::post('/loans/upload-consent-video', [LoanController::class, 'uploadConsentVideo']);
     Route::post('/loans/upload-isda-signed', [LoanController::class, 'uploadIsdaSigned']);
+    Route::post('/loans/upload-org-signed', [LoanController::class, 'uploadOrgSigned']);
     Route::get('/loans/{id}', [LoanController::class, 'show']);
     Route::post('/loans/{id}/approve', [LoanController::class, 'approve']);
     Route::post('/loans/{id}/reject', [LoanController::class, 'reject']);

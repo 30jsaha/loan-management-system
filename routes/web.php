@@ -82,6 +82,11 @@ Route::get('/loan-application-form', function () {
 // Route::get('/loan-application-form', fn()=> Inertia::render('Forms/LoanApplicationForm'))->middleware(['auth', 'verified'])->name('loan.application.form');
 Route::get('/health-form', fn()=> Inertia::render('Forms/HealthPrintFormat'))->middleware(['auth', 'verified'])->name('loan.health.form');
 Route::get('/edu-form', fn()=> Inertia::render('Forms/EduPrintFormat'))->middleware(['auth', 'verified'])->name('loan.edu.form');
-Route::get('/loan-settings', fn()=> Inertia::render('Loans/LoanSettingMaster'))->middleware(['auth', 'verified'])->name('loan.settings');
+
+// Route::get('/loan-settings', fn()=> Inertia::render('Loans/LoanSettingMaster'))->middleware(['auth', 'verified'])->name('loan.settings');
+
+Route::middleware('auth')->get('/loan-settings', [LoansController::class, 'loan_setting_index'])
+    ->middleware(['auth', 'verified'])
+    ->name('loan.settings');
 
 require __DIR__.'/auth.php';

@@ -24,6 +24,12 @@ class LoansController extends Controller
         $loan_settings = LoanSetting::all();
         return inertia('Loans/Create', ['loan_settings' => $loan_settings]); // points to resources/js/Pages/Loans/Create.jsx
     }
+    public function loan_setting_index()
+    {
+        // return Loan::all();
+        $loan_settings = LoanSetting::all();
+        return inertia('Loans/LoanSettingMaster', ['loan_settings' => $loan_settings]); // points to resources/js/Pages/Loans/Create.jsx
+    }
     public function loan_emi_list(Request $request)
     {
         $perPage = (int) $request->get('per_page', 15);

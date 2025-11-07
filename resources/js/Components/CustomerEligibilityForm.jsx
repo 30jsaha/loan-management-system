@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Row, Col, Form, Button } from "react-bootstrap";
 import axios from "axios";
 //swal
@@ -19,6 +19,17 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
     other_deductions_amt: "",
     proposed_pva_amt: "",
   });
+
+  // 🧠 Keep formData.customer_id in sync with the parent prop
+  useEffect(() => {
+    if (customerId && customerId !== formData.customer_id) {
+      setFormData((prev) => ({
+        ...prev,
+        customer_id: customerId,
+      }));
+      console.log("✅ Updated customer_id in Eligibility Form:", customerId);
+    }
+  }, [customerId]);
 
   const grossSalaryRef = useRef(null);
   const tempAllowancesRef = useRef(null);

@@ -899,24 +899,7 @@ export default function Create({ auth, loan_settings }) {
                                                 name="loan_amount_applied"
                                                 value={loanFormData.loan_amount_applied}
                                                 onChange={(e) => loanHandleChange(e)}
-                                                onKeyUp={(e) => {
-                                                    const selectedLoanSetting = loanSettings.find(
-                                                        (ls) => ls.id === Number(loanFormData.loan_type)
-                                                    );
-
-                                                    const errs = validateLoanAmountAndTerm(
-                                                        e.target.value,
-                                                        loanFormData.tenure_fortnight,
-                                                        selectedLoanSetting
-                                                    );
-
-                                                    if (errs.length > 0) {
-                                                        setMessage(errs.join(" "));
-                                                    } else {
-                                                        setMessage("");
-                                                        calculateRepaymentDetails();
-                                                    }
-                                                }}
+                                                onKeyUp={calculateRepaymentDetails}
                                                 required
                                                 />
                                         </div>
@@ -929,24 +912,7 @@ export default function Create({ auth, loan_settings }) {
                                                 className={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50":""}`} 
                                                 value={loanFormData.tenure_fortnight}
                                                 onChange={(e) => loanHandleChange(e)}
-                                                onKeyUp={(e) => {
-                                                    const selectedLoanSetting = loanSettings.find(
-                                                        (ls) => ls.id === Number(loanFormData.loan_type)
-                                                    );
-
-                                                    const errs = validateLoanAmountAndTerm(
-                                                        loanFormData.loan_amount_applied,
-                                                        e.target.value,
-                                                        selectedLoanSetting
-                                                    );
-
-                                                    if (errs.length > 0) {
-                                                        setMessage(errs.join(" "));
-                                                    } else {
-                                                        setMessage("");
-                                                        calculateRepaymentDetails();
-                                                    }
-                                                }}
+                                                onKeyUp={calculateRepaymentDetails}
                                                 required
                                             />
                                         </div>

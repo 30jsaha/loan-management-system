@@ -1,6 +1,6 @@
 import { use, useEffect, useState, useCallback } from "react";
 import { router, Head, Link } from "@inertiajs/react";
-import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs, ProgressBar, Modal } from "react-bootstrap";
+import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs, ProgressBar, Modal, Spinner } from "react-bootstrap";
 import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 //icon pack
@@ -14,9 +14,11 @@ export default function View({ auth, loanId }) {
 
     const [videoFile, setVideoFile] = useState(null);
     const [pdfFile, setPdfFile] = useState(null);
+    const [pdfFile1, setPdfFile1] = useState(null);
     const [videoPreview, setVideoPreview] = useState(null);
     const [pdfPreview, setPdfPreview] = useState(null);
-    const [uploadProgress, setUploadProgress] = useState({ video: 0, pdf: 0 });
+    const [pdfPreview1, setPdfPreview1] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState({ video: 0, pdf: 0, pdf1:0 });
 
     const [showModal, setShowModal] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState(null);
@@ -96,19 +98,19 @@ export default function View({ auth, loanId }) {
 
       // --- Upload handler for both ---
     const handleUpload = async (type) => {
-        let file = type === "video" ? videoFile : pdfFile;
+        let file = type === "video" ? videoFile : type === "pdf1" ? pdfFile1 : pdfFile;
         if (!file) {
-        setMessage(`⚠️ Please select a ${type === "video" ? "video" : "PDF"} first.`);
-        return;
+            setMessage(`⚠️ Please select a ${type === "video" ? "video" : "PDF"} first.`);
+            return;
         }
 
         const formData = new FormData();
         formData.append("loan_id", loan.id);
-        formData.append(type === "video" ? "video_consent" : "isda_signed_upload", file);
+        formData.append(type === "video" ? "video_consent" : type === "pdf" ? "isda_signed_upload": "org_signed_upload", file);
 
         try {
             const res = await axios.post(
-                `/api/loans/upload-${type === "video" ? "consent-video" : "isda-signed"}`,
+                `/api/loans/upload-${type === "video" ? "consent-video" : type === "pdf" ? "isda-signed" : "org-signed"}`,
                 formData,
                 {
                 headers: { "Content-Type": "multipart/form-data" },
@@ -129,7 +131,11 @@ export default function View({ auth, loanId }) {
     if (loading) {
         return (
             <AuthenticatedLayout user={auth.user}>
-                <div className="p-6 text-gray-700">Loading loan details...</div>
+                {/* <div className="p-6 text-gray-700">Loading loan details...</div> */}
+                <div className="text-center py-5">
+                    <Spinner animation="border" variant="primary" />
+                    <p className="mt-2 text-gray-600">Loading loan details...</p>
+                </div>
             </AuthenticatedLayout>
         );
     }    
@@ -579,6 +585,77 @@ export default function View({ auth, loanId }) {
                                             overflow: "hidden",
                                         }}
                                         title="ISDA Signed Document"
+                                        />
+                                    </div>
+                                    )}
+                                </Col>
+                                </Row>
+                                {/* --- Organization Signed Upload / Preview --- */}
+                                <Row className="g-4 align-items-start mb-5">
+                                <Col md={6}>
+                                    <fieldset className="fldset mb-4">
+                                    <legend className="font-semibold mb-3 flex items-center justify-between">
+                                        <span>📄 Organization Signed Document</span>
+                                        {loan.org_signed_upload_path && (
+                                        <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                        )}
+                                    </legend>
+
+                                    <Form.Group>
+                                        <Form.Label className="font-medium">Upload Signed Organization Standard (PDF only)</Form.Label>
+                                        <Form.Control
+                                        type="file"
+                                        accept="application/pdf"
+                                        onChange={(e) => {
+                                            const file1 = e.target.files[0];
+                                            if (file1) {
+                                            setPdfFile1(file1);
+                                            setPdfPreview1(URL.createObjectURL(file1));
+                                            }
+                                        }}
+                                        />
+                                        <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                    </Form.Group>
+
+                                    <Button
+                                        className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                        onClick={() => handleUpload("pdf1")}
+                                        disabled={!pdfFile1}
+                                    >
+                                        {uploadProgress.pdf1 > 0 && uploadProgress.pdf1 < 100
+                                        ? "Uploading..."
+                                        : loan.org_signed_upload_path
+                                        ? "Replace Organization Signed PDF"
+                                        : "Upload Organization Signed PDF"}
+                                    </Button>
+
+                                    {uploadProgress.pdf1 > 0 && (
+                                        <ProgressBar
+                                        now={uploadProgress.pdf1}
+                                        label={`${uploadProgress.pdf1}%`}
+                                        animated
+                                        variant={uploadProgress.pdf1 < 100 ? "info" : "success"}
+                                        className="mt-3"
+                                        />
+                                    )}
+                                    </fieldset>
+                                </Col>
+
+                                <Col md={6}>
+                                    {(pdfPreview1 || loan.org_signed_upload_path) && (
+                                    <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                        <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                        <iframe
+                                        src={`${pdfPreview1 || loan.org_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                        width="100%"
+                                        height="500"
+                                        className="rounded shadow-sm border"
+                                        style={{
+                                            border: "1px solid #ddd",
+                                            borderRadius: "8px",
+                                            overflow: "hidden",
+                                        }}
+                                        title="Organization Signed Document"
                                         />
                                     </div>
                                     )}

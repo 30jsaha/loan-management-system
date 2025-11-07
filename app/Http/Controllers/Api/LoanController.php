@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\LoanApplication as Loan;
 use App\Models\Customer;
 use App\Models\LoanSetting;
+use App\Models\LoanTierRule;
 //log
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -295,6 +296,25 @@ class LoanController extends Controller
             'path' => $loan->isda_signed_upload_path,
         ], 201);
     }
+    public function uploadOrgSigned(Request $request)
+    {
+        $validated = $request->validate([
+            'loan_id' => 'required|exists:loan_applications,id',
+            'org_signed_upload' => 'required|file|mimes:pdf|max:5120',
+        ]);
+
+        $file = $request->file('org_signed_upload');
+        $path = $file->store('uploads/isda_signed', 'public');
+
+        $loan = Loan::find($validated['loan_id']);
+        $loan->org_signed_upload_path = '/storage/' . $path;
+        $loan->save();
+
+        return response()->json([
+            'message' => '✅ Organization signed document uploaded successfully.',
+            'path' => $loan->org_signed_upload_path,
+        ], 201);
+    }
 
     public function validateLoan(Request $request)
     {
@@ -304,10 +324,10 @@ class LoanController extends Controller
             'term' => 'required|integer|min:1',
         ]);
 
-        $loanSetting = \App\Models\LoanSetting::find($request->loan_setting_id);
+        $loanSetting = LoanSetting::find($request->loan_setting_id);
 
         // Fetch the tier that matches the loan amount
-        $tier = \App\Models\LoanTierRule::where('loan_setting_id', $loanSetting->id)
+        $tier = LoanTierRule::where('loan_setting_id', $loanSetting->id)
             ->where('min_amount', '<=', $request->amount)
             ->where('max_amount', '>=', $request->amount)
             ->first();
@@ -316,7 +336,7 @@ class LoanController extends Controller
             return response()->json([
                 'valid' => false,
                 'message' => '❌ No matching loan tier found for this amount.',
-            ], 400);
+            ], 200);
         }
 
         // Validate term range
@@ -324,13 +344,13 @@ class LoanController extends Controller
             return response()->json([
                 'valid' => false,
                 'message' => "❌ For PGK {$tier->min_amount}–{$tier->max_amount}, term must be between {$tier->min_term_fortnight}–{$tier->max_term_fortnight} FN.",
-            ], 400);
+            ], 200);
         }
 
         return response()->json([
             'valid' => true,
             'message' => '✅ Loan amount and term are valid according to rules.',
-        ]);
+        ], 200);
     }
 
 
