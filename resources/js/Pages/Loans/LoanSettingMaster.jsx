@@ -24,7 +24,7 @@ function LoanSettingMaster({auth, loan_settings}) {
             >
                 <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
             </Link>
-            </div>
+            </div> 
         </div>
         </AuthenticatedLayout>
     );
@@ -32,3 +32,7 @@ function LoanSettingMaster({auth, loan_settings}) {
 }
 
 export default LoanSettingMaster;
+
+
+
+

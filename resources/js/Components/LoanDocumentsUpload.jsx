@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { X, Upload, Eye } from "lucide-react";
 import { Button, ProgressBar, Modal } from "react-bootstrap";
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from "react-hot-toast";
 
 const LoanDocumentsUpload = ({ loanFormData }) => {
   const allowedDocs = [
@@ -85,8 +85,7 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
         ...prev,
         [docType]: "✅ Uploaded successfully!",
       }));
-      // show toast for success
-      try { toast.success(`${docType} uploaded successfully!`); } catch (e) {}
+      toast.success(`${docType} uploaded successfully!`);
     } catch (error) {
       console.error("Upload failed:", error);
       setMessage((prev) => ({
@@ -100,7 +99,8 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
 
   const handleUploadAll = async (e) => {
     e.preventDefault();
-    if (Object.keys(files).length === 0) return alert("Please select files first!");
+    if (Object.keys(files).length === 0)
+      return alert("Please select files first!");
 
     setUploading(true);
     for (const docType of Object.keys(files)) {
@@ -110,19 +110,19 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
   };
 
   return (
-    <div className="p-5 bg-gray-50 min-h-screen">
-      <h4 className="fw-semibold text-dark mb-4 text-center">
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+      <h4 className="fw-semibold text-dark mb-4 text-center text-lg sm:text-xl">
         📄 Upload Supporting Documents
       </h4>
       <Toaster position="top-center" />
 
       <form onSubmit={handleUploadAll}>
-        {/* Document Cards Grid */}
-  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 justify-items-center mb-3">
+        {/* Responsive Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 justify-items-center mb-3">
           {allowedDocs.map((doc) => (
             <div
               key={doc}
-              className="bg-white rounded-4 shadow-sm border border-gray-200 p-3 w-[530px] transition-all duration-300 transform hover:shadow-lg hover:-translate-y-1"
+              className="bg-white rounded-4 shadow-sm border border-gray-200 p-3 w-full sm:w-[500px] md:w-[520px] lg:w-[530px] transition-all duration-300 transform hover:shadow-lg hover:-translate-y-1"
             >
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <h6 className="fw-semibold mb-0 text-gray-700">
@@ -147,14 +147,16 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
                 )}
               </div>
 
-              {/* Upload box or preview */}
               {!files[doc] ? (
-                <div className="border border-2 border-dashed rounded-4 d-flex flex-column justify-content-center align-items-center py-6 bg-light hover:bg-gray-100 transition-all duration-300 transform hover:border-blue-400 position-relative" style={{minHeight: 220}}>
+                <div
+                  className="border border-2 border-dashed rounded-4 d-flex flex-column justify-content-center align-items-center py-6 bg-light hover:bg-gray-100 transition-all duration-300 transform hover:border-blue-400 position-relative w-full"
+                  style={{ minHeight: 220 }}
+                >
                   <Upload size={48} className="text-secondary mb-3" />
-                  <p className="fw-semibold text-dark mb-1">
+                  <p className="fw-semibold text-dark mb-1 text-center text-sm sm:text-base">
                     Click to upload or drag and drop
                   </p>
-                  <p className="text-muted small mb-0">
+                  <p className="text-muted small mb-0 text-center">
                     Upload .txt, .docx, or .pdf (MAX 20MB)
                   </p>
                   <input
@@ -166,39 +168,48 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
                   />
                 </div>
               ) : (
-                <div className="border rounded-4 p-2 bg-light">
-                  {files[doc].type === 'application/pdf' ? (
-                    <div className="text-center">
-                      <div className="position-relative">
+                <div className="border rounded-4 p-2 bg-light w-full overflow-hidden">
+                  {files[doc].type === "application/pdf" ? (
+                    <div className="text-center w-full">
+                      <div className="position-relative w-full">
                         <embed
                           src={URL.createObjectURL(files[doc])}
                           type="application/pdf"
-                          width="480"
+                          width="100%"
                           height="200"
-                          className="border rounded shadow-sm"
+                          className="border rounded shadow-sm w-full"
                         />
-                        <div 
-                          className="position-absolute bottom-0 start-0 w-100 d-flex align-items-center px-3 py-2 cursor-pointer"
-                          style={{ 
-                            background: 'linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.6))',
-                            borderBottomLeftRadius: '0.375rem',
-                            borderBottomRightRadius: '0.375rem'
+                        <div
+                          className="position-absolute bottom-0 start-0 w-100 d-flex align-items-center justify-content-center px-3 py-2 cursor-pointer"
+                          style={{
+                            background:
+                              "linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.6))",
+                            borderBottomLeftRadius: "0.375rem",
+                            borderBottomRightRadius: "0.375rem",
                           }}
                           onClick={() => handleViewDocument(files[doc])}
                         >
                           <div className="d-flex align-items-center gap-2">
-                            <Eye size={28} className="hover:scale-110 transition-transform text-blue" />
+                            <Eye
+                              size={28}
+                              className="hover:scale-110 transition-transform text-blue"
+                            />
                             <span className="font-bold text-black">View</span>
                           </div>
                         </div>
                       </div>
                       <div className="mt-2">
                         <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
-                          <div className="fw-semibold text-dark small text-truncate" style={{maxWidth: '100%'}} title={files[doc].name}>
+                          <div
+                            className="fw-semibold text-dark small text-truncate w-full sm:w-4/5"
+                            title={files[doc].name}
+                          >
                             {files[doc].name}
                           </div>
                         </div>
-                        <div className="text-muted small mb-2">{(files[doc].size/1024/1024).toFixed(2)} MB</div>
+                        <div className="text-muted small mb-2">
+                          {(files[doc].size / 1024 / 1024).toFixed(2)} MB
+                        </div>
                         {(progress[doc] || 0) < 100 && (
                           <ProgressBar
                             now={progress[doc] || 0}
@@ -214,7 +225,10 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
                     <div className="text-center p-3">
                       <i className="bi bi-file-earmark-text text-secondary fs-2"></i>
                       <div className="d-flex align-items-center justify-content-center gap-2">
-                        <div className="fw-semibold text-dark small mt-2 text-truncate" style={{maxWidth: '80%'}} title={files[doc].name}>
+                        <div
+                          className="fw-semibold text-dark small mt-2 text-truncate w-full sm:w-4/5"
+                          title={files[doc].name}
+                        >
                           {files[doc].name}
                         </div>
                         <Button
@@ -225,7 +239,9 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
                           <Eye size={16} />
                         </Button>
                       </div>
-                      <div className="text-muted small mb-1">{(files[doc].size/1024/1024).toFixed(2)} MB</div>
+                      <div className="text-muted small mb-1">
+                        {(files[doc].size / 1024 / 1024).toFixed(2)} MB
+                      </div>
                       {(progress[doc] || 0) < 100 && (
                         <ProgressBar
                           now={progress[doc] || 0}
@@ -241,7 +257,6 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
                 </div>
               )}
 
-              {/* Message */}
               {message[doc] && !message[doc].startsWith("✅") && (
                 <div
                   className={`mt-2 p-2 rounded text-center small ${
@@ -254,44 +269,57 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
                 </div>
               )}
 
-              {/* Buttons */}
-              <div className="d-flex justify-content-between gap-2 mt-3">
+              <div className="flex flex-col sm:flex-row justify-between gap-2 mt-3">
                 <Button
-                  variant="outline-secondary"
-                  className="px-4 rounded-pill fw-medium w-50"
-                  onClick={() => {
-                    const updated = { ...files };
-                    delete updated[doc];
-                    setFiles(updated);
-                    setProgress((prev) => ({ ...prev, [doc]: 0 }));
-                  }}
-                  disabled={uploading}
-                >
+                    variant="outline-secondary"
+                    className="px-4 rounded-pill fw-medium w-full sm:w-1/2"
+                    onClick={() => {
+                      // make it work exactly like the ❌ cross icon
+                      const updated = { ...files };
+                      delete updated[doc];
+                      setFiles(updated);
+                      setProgress((prev) => ({ ...prev, [doc]: 0 }));
+                      setUploadedFiles((prev) => {
+                        const newState = { ...prev };
+                        delete newState[doc];
+                        return newState;
+                      });
+                    }}
+                    disabled={uploading}
+                  >
                   Remove
                 </Button>
 
+
                 <Button
-                  className="px-4 rounded-pill fw-medium w-50 text-white"
+                  className="px-3 sm:px-4 rounded-pill fw-medium w-full sm:w-1/2 text-white"
                   onClick={() => handleUpload(doc)}
                   disabled={uploading || !files[doc]}
                   style={{
-                    backgroundColor: uploading ? "#38bdf8cc" : uploadedFiles[doc] ? "#22c55e" : "#38bdf8",
+                    backgroundColor: uploading
+                      ? "#38bdf8cc"
+                      : uploadedFiles[doc]
+                      ? "#22c55e"
+                      : "#38bdf8",
                     border: "none",
                   }}
                 >
-                  {uploading ? "Uploading..." : uploadedFiles[doc] ? "Uploaded" : "Upload"}
+                  {uploading
+                    ? "Uploading..."
+                    : uploadedFiles[doc]
+                    ? "Uploaded"
+                    : "Upload"}
                 </Button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Final Upload All Button */}
         <div className="text-center mt-5">
           <Button
             type="submit"
             variant="success"
-            className="px-5 py-2 fw-semibold rounded-pill shadow-sm"
+            className="px-5 py-2 fw-semibold rounded-pill shadow-sm w-full sm:w-auto"
             disabled={uploading || !loanFormData.id}
             style={{
               backgroundColor: uploading ? "#22c55ecc" : "#22c55e",
@@ -303,17 +331,21 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
         </div>
       </form>
 
-      {/* Document View Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        size="lg"
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title className="text-dark">
             {selectedDoc?.name}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="p-0">
-          {selectedDoc?.type === 'application/pdf' ? (
+          {selectedDoc?.type === "application/pdf" ? (
             <embed
-              src={selectedDoc ? URL.createObjectURL(selectedDoc) : ''}
+              src={selectedDoc ? URL.createObjectURL(selectedDoc) : ""}
               type="application/pdf"
               width="100%"
               height="600px"
@@ -333,7 +365,7 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
             Close
           </Button>
           <a
-            href={selectedDoc ? URL.createObjectURL(selectedDoc) : ''}
+            href={selectedDoc ? URL.createObjectURL(selectedDoc) : ""}
             download={selectedDoc?.name}
             className="btn btn-primary"
           >
@@ -349,6 +381,6 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
       `}</style>
     </div>
   );
-}
+};
 
 export default LoanDocumentsUpload;
