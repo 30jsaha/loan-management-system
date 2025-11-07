@@ -353,5 +353,9 @@ class LoanController extends Controller
         ], 200);
     }
 
-
+    public function get_all_loan_setting_data ()
+    {
+        $loan = LoanSetting::all();
+        return response()->json($loan);
+    }
 }

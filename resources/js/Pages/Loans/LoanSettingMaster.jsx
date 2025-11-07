@@ -1,10 +1,30 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
 
 import {ArrowLeft} from "lucide-react";
 
 function LoanSettingMaster({auth, loan_settings}) {
+
+    const [loanSetting, setLoanSetting] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [message, setMessage] = useState("");
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            const res = await axios.get("/api/loans");
+            setLoanSetting(res.data);
+        } catch (error) {
+            console.error(error);
+            setMessage("❌ Failed to load loan setting data.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return(
         <AuthenticatedLayout
@@ -24,6 +44,25 @@ function LoanSettingMaster({auth, loan_settings}) {
             >
                 <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
             </Link>
+            </div>
+
+            <div className="max-w-4xl mx-auto bg-white p-4 rounded shadow">
+              {message && (
+                <div className="mb-4 text-red-600">
+                  {message}
+                </div>
+              )}
+
+              {loading ? (
+                <div className="text-gray-600">Loading...</div>
+              ) : (
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Loan Setting Data</h3>
+                  <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto whitespace-pre-wrap">
+                    {JSON.stringify(loanSetting, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
         </div>
         </AuthenticatedLayout>
