@@ -50,12 +50,12 @@ export default function DeptDatabase({ auth }) {
 
       if (isEditing && formData.id) {
         await axios.put(`/api/all-dept-cust-update/${formData.id}`, formData);
-        toast.success("✅ Customer updated successfully!");
+        toast.success("Customer updated successfully!");
         setRecentlyUpdatedId(formData.id);
         setTimeout(() => setRecentlyUpdatedId(null), 2000);
       } else {
         await axios.post("/api/all-dept-cust-store", formData);
-        toast.success("✅ Customer added successfully!");
+        toast.success("Customer added successfully!");
       }
 
       resetForm();
