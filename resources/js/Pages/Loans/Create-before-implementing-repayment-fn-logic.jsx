@@ -25,7 +25,7 @@ export default function Create({ auth, loan_settings }) {
     const [loanTypes, setLoanTypes] = useState([]);
     // const [loanSettings, setLoanSettings] = useState(JSON.stringify(loan_settings, null, 2));
     const [loanSettings, setLoanSettings] = useState(loan_settings);
-    console.log("loanSettings: ", loanSettings);
+
     // setLoanSettings(loan_settings);
     // const [tempCusFormData, settempCusFormData] = useState({
     const [formData, setFormData] = useState({
@@ -97,7 +97,6 @@ export default function Create({ auth, loan_settings }) {
     const [message, setMessage] = useState('');
     const [step, setStep] = useState(1);
     const [tempCustomerId, setTempCustomerId] = useState(null);
-    const [isChecking, setIsChecking] = useState(false);
     const isEmpty = (obj) => Object.keys(obj).length === 0;
 
     useBeforeUnload(isFormDirty, formData);
@@ -174,65 +173,10 @@ export default function Create({ auth, loan_settings }) {
         const { name, value } = e.target;
         setLoanDocumentFormData((prev) => ({ ...prev, [name]: value }));
     };
-    const validateLoanAmountAndTerm = (amount, term, selectedLoanSetting) => {
-        const errors = [];
-        const amt = parseFloat(amount);
-        const fn = parseInt(term);
-
-        if (!selectedLoanSetting) {
-            errors.push("⚠️ Loan configuration missing. Please select a valid loan type.");
-            return errors;
-        }
-
-        const {
-            min_loan_amount,
-            max_loan_amount,
-            min_loan_term_months,
-            max_loan_term_months,
-            amt_multiplier,
-            tier1_min_amount, tier1_max_amount, tier1_min_term, tier1_max_term,
-            tier2_min_amount, tier2_max_amount, tier2_min_term, tier2_max_term,
-            tier3_min_amount, tier3_max_amount, tier3_min_term, tier3_max_term,
-            tier4_min_amount, tier4_max_amount, tier4_min_term, tier4_max_term
-        } = selectedLoanSetting;
-
-        // --- Base DB Config Validation ---
-        if (amt < min_loan_amount || amt > max_loan_amount) {
-            errors.push(`❌ Loan amount must be between PGK ${min_loan_amount} and PGK ${max_loan_amount}.`);
-        }
-
-        if (amt % amt_multiplier !== 0) {
-            errors.push(`❌ Loan amount must be in multiples of PGK ${amt_multiplier}.`);
-        }
-
-        if (fn < min_loan_term_months || fn > max_loan_term_months) {
-            errors.push(`❌ Tenure (FN) must be between ${min_loan_term_months} and ${max_loan_term_months}.`);
-        }
-
-        // --- Dynamic Tier Validation from DB ---
-        const tiers = [
-            { min: tier1_min_amount, max: tier1_max_amount, termMin: tier1_min_term, termMax: tier1_max_term },
-            { min: tier2_min_amount, max: tier2_max_amount, termMin: tier2_min_term, termMax: tier2_max_term },
-            { min: tier3_min_amount, max: tier3_max_amount, termMin: tier3_min_term, termMax: tier3_max_term },
-            { min: tier4_min_amount, max: tier4_max_amount, termMin: tier4_min_term, termMax: tier4_max_term },
-        ];
-
-        tiers.forEach((tier) => {
-            if (amt >= tier.min && amt <= tier.max) {
-                if (fn < tier.termMin || fn > tier.termMax) {
-                    errors.push(`❌ For PGK ${tier.min}–${tier.max}, FN must be between ${tier.termMin}–${tier.termMax}.`);
-                }
-            }
-        });
-
-        return errors;
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsFormDirty(true);
         setMessage('');
-        setIsChecking(true);
         if (loanFormData.customer_id === "" || loanFormData.customer_id === 0) {
             setMessage('❌ Please select a customer before submitting the loan application.');
             Swal.fire({
@@ -269,21 +213,6 @@ export default function Create({ auth, loan_settings }) {
             console.log("loanSettings:", loanSettings);
             console.log("loanFormData.loan_type:", loanFormData.loan_type);
             console.log("selectedLoanSetting:", selectedLoanSetting);
-
-            // const validationErrors = validateLoanAmountAndTerm(
-            //     loanFormData.loan_amount_applied,
-            //     loanFormData.tenure_fortnight,
-            //     selectedLoanSetting
-            // );
-
-            // if (validationErrors.length > 0) {
-            //     Swal.fire({
-            //         title: "Validation Error",
-            //         html: validationErrors.join("<br>"),
-            //         icon: "warning",
-            //     });
-            //     return;
-            // }
             // return;
             if (selectedLoanSetting) {
                 const {
@@ -391,29 +320,6 @@ export default function Create({ auth, loan_settings }) {
 
 
         try {
-            const selectedLoanSetting = loanSettings.find(
-                (ls) => ls.id === Number(loanFormData.loan_type)
-            );
-
-            const payload = {
-                loan_setting_id: selectedLoanSetting.id,
-                amount: loanFormData.loan_amount_applied,
-                term: loanFormData.tenure_fortnight,
-            };
-
-            // Inline spinner while validating
-            const validateRes = await axios.post('/api/validate-loan-tier', payload);
-
-            if (!validateRes.data.valid) {
-                setMessage(validateRes.data.message);
-                Swal.fire({
-                    title: "Validation Error",
-                    text: `${validateRes.data.message}`,
-                    icon: "warning",
-                });
-                setIsChecking(false);
-                return;
-            }
             loanFormData.loan_amount_applied = parseFloat(loanFormData.loan_amount_applied);
             loanFormData.tenure_fortnight = parseFloat(loanFormData.tenure_fortnight);
             // loanFormData.total_interest_amt = parseFloat(loanFormData.total_interest_amt);
@@ -422,7 +328,7 @@ export default function Create({ auth, loan_settings }) {
             console.log("loanFormData before submit", loanFormData);
             console.log(typeof(loanFormData.loan_amount_applied));
             
-            return;
+            // return;
             const res = await axios.post('/api/loans', loanFormData);
             setMessage('✅ Loan application data saved successfully!');
             Swal.fire({
@@ -487,14 +393,70 @@ export default function Create({ auth, loan_settings }) {
             setMessage('❌ Failed to save. Please check your input.');
             Swal.fire({
                 title: "Error !",
-                text: "Failed to save. Please check your input.",
+                text: message,
                 icon: "error"
             });
-        } finally {
-            setIsChecking(false);
         }
-
     };
+    // const handleNext = async (e) => {
+    //     e.preventDefault();
+    //     setIsFormDirty(false);
+    //     try {
+    //         //check if cus_id is zero or null, if not then we'll edit the customer instead of creating new
+    //         var res,savedCustomer;
+    //         if (formData.cus_id && formData.cus_id !== 0) {
+    //             //editing existing customer
+    //             res = await axios.post(`/api/edit-new-customer-for-new-loan/${formData.cus_id}`, formData, { withCredentials: true });
+    //             await fetchCustomers();
+    //             savedCustomer = res.data.customer;
+    //             // setMessage('✅ Customer data updated. Please proceed to the loan application form.');
+    //         } else {
+    //             //creating new customer
+    //             res = await axios.post('/api/save-new-customer-for-new-loan', formData, { withCredentials: true });
+    //             await fetchCustomers();
+    //             savedCustomer = res.data.customer;
+    //             //only set cus_id when creating new customer, rest fields will be left as filled                
+    //             setFormData((prev) => ({
+    //                 ...prev,
+    //                 cus_id: savedCustomer.id
+    //             }));
+    //         }
+    //         const cusId = savedCustomer.id;
+    //         // const savedCustomer = res.data.customer;
+    //         console.log("savedCustomer:",savedCustomer);
+    //         setTempCustomerId(res.data.temp_customer_id);
+    //         // const cleanData = Object.fromEntries(
+    //         //     Object.entries({'customer_id': tempCustomerId}).map(([k, v]) => [k, v ?? ""])
+    //         // );
+    //         // setLoanFormData(cleanData);
+    //         console.log("saved customer temp data:",res.data);
+    //         setLoanFormData(prev => ({
+    //             ...prev,
+    //             customer_id: cusId,
+    //             company_id: savedCustomer.company_id || "",
+    //             organisation_id: savedCustomer.organisation_id || "",
+    //             loan_type: "New",
+    //             purpose: "",
+    //             other_purpose_text: "",
+    //             loan_amount_applied: "",
+    //             tenure_fortnight: "",
+    //             interest_rate: "",
+    //             processing_fee: "",
+    //             bank_name: "",
+    //             bank_branch: "",
+    //             bank_account_no: "",
+    //             remarks: "",
+    //         }));
+    //         console.log("set loan form customer_id to temp id:",res.data.temp_customer_id);
+    //         console.log("set loan form customer_id setTempCustomerId:",tempCustomerId);
+    //         setMessage('✅ Please fill out the loan application form.');
+    //         setStep(2); // Move to next tab
+    //     } catch (error) {
+    //         console.error(error);
+    //         // setMessage('❌ Please correct the errors before proceeding.');
+    //         setMessage('❌' + error);
+    //     }
+    // };
     useEffect(()=>{
         axios.get("/api/fetch-loan-temp-customer",{withCredentials:true})
 
@@ -785,14 +747,8 @@ export default function Create({ auth, loan_settings }) {
                                         )} */}
                                         <CustomerEligibilityForm
                                             customerId={loanFormData.customer_id}
-                                            onEligibilityChange={(eligible) => {
-                                                setIsEligible(eligible);
-                                                console.log("isEligible on CustomerEligibilityCheck", isEligible);
-                                            }}
-                                            onEligibilityChangeTruely={(isTruelyEligible) => {
-                                                setIsTruelyEligible(isTruelyEligible);
-                                                console.log("isTruelyEligible on CustomerEligibilityCheck", isTruelyEligible);
-                                            }}
+                                            onEligibilityChange={(eligible) => setIsEligible(eligible)}
+                                            onEligibilityChangeTruely={(isTruelyEligible) => setIsTruelyEligible(isTruelyEligible)}
                                             proposedPvaAmt={(recProposedPvaAmt) => {
                                                 setRecProposedPvaAmt(recProposedPvaAmt);
                                                 setLoanFormData((prev) => ({ ...prev, loan_amount_applied: recProposedPvaAmt }));
@@ -803,9 +759,7 @@ export default function Create({ auth, loan_settings }) {
                                             }}
                                         />
                                     </div>
-                                    {console.log("recEleigibleAmount", recEleigibleAmount)}
-                                    {console.log("isEligible", isEligible)}
-                                    {(!isTruelyEligible && recEleigibleAmount != 0) ? (
+                                    {(!isEligible && recEleigibleAmount != 0) ? (
                                         <Row>
                                             <Col md={12} className='text-center'>
                                                 <Button variant="primary" type="button" onClick={handleNotElegibleSubmit}>
@@ -894,59 +848,28 @@ export default function Create({ auth, loan_settings }) {
                                         <div className="col-md-3">
                                             <label className="form-label">Loan Amount Applied</label>
                                             <input 
-                                                type="number" step="0.01"
-                                                className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`}
-                                                name="loan_amount_applied"
+                                                type="number" step="0.01" 
+                                                className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="loan_amount_applied" 
                                                 value={loanFormData.loan_amount_applied}
-                                                onChange={(e) => loanHandleChange(e)}
-                                                onKeyUp={(e) => {
-                                                    const selectedLoanSetting = loanSettings.find(
-                                                        (ls) => ls.id === Number(loanFormData.loan_type)
-                                                    );
-
-                                                    const errs = validateLoanAmountAndTerm(
-                                                        e.target.value,
-                                                        loanFormData.tenure_fortnight,
-                                                        selectedLoanSetting
-                                                    );
-
-                                                    if (errs.length > 0) {
-                                                        setMessage(errs.join(" "));
-                                                    } else {
-                                                        setMessage("");
-                                                        calculateRepaymentDetails();
-                                                    }
+                                                onChange={(e) => {
+                                                loanHandleChange(e);
                                                 }}
+                                                onKeyUp={calculateRepaymentDetails}
                                                 required
-                                                />
+                                            />
                                         </div>
 
                                         <div className="col-md-3">
                                             <label className="form-label">Tenure (Fortnight)</label>
                                             <input 
-                                                type="number" step="1"
-                                                name="tenure_fortnight"
+                                                type="number" step="0.01" 
+                                                name="tenure_fortnight" 
                                                 className={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50":""}`} 
                                                 value={loanFormData.tenure_fortnight}
-                                                onChange={(e) => loanHandleChange(e)}
-                                                onKeyUp={(e) => {
-                                                    const selectedLoanSetting = loanSettings.find(
-                                                        (ls) => ls.id === Number(loanFormData.loan_type)
-                                                    );
-
-                                                    const errs = validateLoanAmountAndTerm(
-                                                        loanFormData.loan_amount_applied,
-                                                        e.target.value,
-                                                        selectedLoanSetting
-                                                    );
-
-                                                    if (errs.length > 0) {
-                                                        setMessage(errs.join(" "));
-                                                    } else {
-                                                        setMessage("");
-                                                        calculateRepaymentDetails();
-                                                    }
+                                                onChange={(e) => {
+                                                loanHandleChange(e);
                                                 }}
+                                                onKeyUp={calculateRepaymentDetails}
                                                 required
                                             />
                                         </div>
@@ -1008,26 +931,9 @@ export default function Create({ auth, loan_settings }) {
                                 </fieldset>
                                     <Row className="mt-4 text-end">
                                         <Col>
-                                            <button
-                                                type="submit"
-                                                className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${
-                                                    !isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""
-                                                }`}
-                                                disabled={!isEligible || isChecking}
-                                            >
-                                                {isChecking ? (
-                                                    <>
-                                                    <span
-                                                        className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
-                                                        role="status"
-                                                    ></span>
-                                                    Checking...
-                                                    </>
-                                                ) : (
-                                                    "Save & Upload Documents →"
-                                                )}
+                                            <button type="submit" className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center ${!isEligible ? "cursor-not-allowed opacity-50":""}`} disabled={!isEligible}>
+                                                Save & Upload Documents →
                                             </button>
-
                                         </Col>
                                     </Row>
                                 </form>
