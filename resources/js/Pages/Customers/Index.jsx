@@ -265,7 +265,7 @@ export default function Index({ auth }) {
             <span className="font-medium">
               {Math.min(currentPage * itemsPerPage, filteredData.length)}
             </span>{" "}
-            of <span className="font-medium">{filteredData.length}</span> entries (10 per page)
+            of <span className="font-medium">{filteredData.length}</span> entries (15 per page)
           </div>
 
           {/* Pagination Controls */}
