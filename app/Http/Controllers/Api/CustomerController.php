@@ -311,8 +311,13 @@ class CustomerController extends Controller
     public function all_cust_list()
     {
         // Fetch all customers from all_cust_master table
-        $customers = DB::table('all_cust_master')->get();
-
+        // $customers = DB::table('all_cust_master')->get();
+        // return only those customers whose emp_code is not in `customers` table's employee_no column
+        $customers = DB::table('all_cust_master')
+            ->whereNotIn('emp_code', function ($query) {
+            $query->select('employee_no')->from('customers')->whereNotNull('employee_no');
+            })
+            ->get();
         // Return the customers as a JSON response
         return response()->json($customers);
     }

@@ -289,6 +289,8 @@ class LoanController extends Controller
 
         $loan = Loan::find($validated['loan_id']);
         $loan->isda_signed_upload_path = '/storage/' . $path;
+        $loan->isada_upload_date = now()->toDateString();
+        $loan->isada_upload_by = auth()->user()->id;
         $loan->save();
 
         return response()->json([
@@ -308,6 +310,8 @@ class LoanController extends Controller
 
         $loan = Loan::find($validated['loan_id']);
         $loan->org_signed_upload_path = '/storage/' . $path;
+        $loan->org_signed_upload_date = now()->toDateString();
+        $loan->org_signed_upload_by = auth()->user()->id;
         $loan->save();
 
         return response()->json([

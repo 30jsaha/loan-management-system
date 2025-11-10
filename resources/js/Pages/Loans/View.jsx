@@ -5,6 +5,7 @@ import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 //icon pack
 import { ArrowLeft, Download, Eye } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function View({ auth, loanId }) {
     const [loan, setLoan] = useState(null);
@@ -78,10 +79,20 @@ export default function View({ auth, loanId }) {
         try {
             await axios.post(`/api/loans/${loanId}/approve`);
             setMessage("✅ Loan approved successfully!");
+            Swal.fire({
+                title: "Success !",
+                text: "Loan approved successfully!",
+                icon: "success"
+            });
             router.visit(route("loans"));
         } catch (error) {
             console.error(error);
             setMessage("❌ Failed to approve loan.");
+            Swal.fire({
+                title: "Error !",
+                text: "Failed to approve loan!",
+                icon: "error"
+            });
         }
     };
 
@@ -89,10 +100,20 @@ export default function View({ auth, loanId }) {
         try {
             await axios.post(`/api/loans/${loanId}/reject`);
             setMessage("❌ Loan rejected.");
+            Swal.fire({
+                title: "Info !",
+                text: "Loan rejected",
+                icon: "success"
+            });
             router.visit(route("loans"));
         } catch (error) {
             console.error(error);
             setMessage("❌ Failed to reject loan.");
+            Swal.fire({
+                title: "Error !",
+                text: "Failed to reject loan",
+                icon: "error"
+            });
         }
     };
 
@@ -132,6 +153,11 @@ export default function View({ auth, loanId }) {
         let file = type === "video" ? videoFile : type === "pdf1" ? pdfFile1 : pdfFile;
         if (!file) {
             setMessage(`⚠️ Please select a ${type === "video" ? "video" : "PDF"} first.`);
+            Swal.fire({
+                title: "Warning !",
+                text: `Please select a ${type === "video" ? "video" : "PDF"} first.`,
+                icon: "warning"
+            });
             return;
         }
 
@@ -165,6 +191,11 @@ export default function View({ auth, loanId }) {
 
             // ✅ Success feedback
             setMessage(`✅ ${type === "video" ? "Video" : "PDF"} uploaded successfully!`);
+            Swal.fire({
+                title: "Success !",
+                text: `✅ ${type === "video" ? "Video" : "PDF"} uploaded successfully!`,
+                icon: "success"
+            });
 
             // ✅ Reset progress after short delay for better UX
             setTimeout(() => {
@@ -229,7 +260,7 @@ export default function View({ auth, loanId }) {
             setMessage("❌ Failed to verify document.");
         }
     };
-
+    console.log("allDocVerivied: ", allDocVerivied);
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -751,15 +782,15 @@ export default function View({ auth, loanId }) {
                                             <div className="mt-6 flex justify-center gap-4">
                                                 <button
                                                     onClick={handleApprove}
-                                                    disabled={loan.video_consent_path == null || loan.isda_signed_upload_path == null || !allDocVerivied}
-                                                    className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${loan.video_consent_path == null || loan.isda_signed_upload_path == null ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
+                                                    className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
                                                     Approve
                                                 </button>
                                                 <button
                                                     onClick={handleReject}
-                                                    disabled={loan.video_consent_path == null || loan.isda_signed_upload_path == null || !allDocVerivied}
-                                                    className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md ${loan.video_consent_path == null || loan.isda_signed_upload_path == null ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
+                                                    className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
                                                     Reject
                                                 </button>
