@@ -35,7 +35,7 @@ class CustomerController extends Controller
     //function to save new customer for new loan
     public function store(Request $request)
     {
-        // Validate incoming request data
+        // ✅ Validate incoming request data
         $validated = $request->validate([
             'company_id' => 'required|integer|exists:company_master,id',
             'user_id' => 'nullable|integer|default:0',
@@ -70,35 +70,21 @@ class CustomerController extends Controller
             'years_at_current_employer' => 'nullable|integer|min:0',
             'net_salary' => 'nullable|numeric',
         ]);
-        $validated['user_id'] = $request->user()->id;
-        //check if email, phone, employee_no already exists
-        $existingCustomer = Customer::where(function ($query) use ($validated) {
-            if (isset($validated['email'])) {
-                $query->where('email', $validated['email']);
-            }
-            if (isset($validated['phone'])) {
-                $query->orWhere('phone', $validated['phone']);
-            }
-            if (isset($validated['employee_no'])) {
-                $query->orWhere('employee_no', $validated['employee_no']);
-            }
-        })->first();
-        if ($existingCustomer) {
-            return response()->json([
-                'message' => 'Customer with the same email, phone, or employee number already exists.',
-            ], 409); // Conflict status code
-        }
 
-        // Create a new customer record
+        // ✅ Set user ID automatically
+        $validated['user_id'] = $request->user()->id ?? 0;
+
+        // ✅ Directly create customer without duplicate check
         $customer = Customer::create($validated);
-        // Return the newly created customer as a JSON response
-        // return response()->json($customer, 201);
+
+        // ✅ Return success response
         return response()->json([
-            'message' => 'Customer info saved temporarily.',
+            'message' => 'Customer info saved successfully.',
             'temp_customer_id' => $customer->id,
             'customer' => $customer
         ], 201);
     }
+
     //function to edit new customer for new loan
     public function edit_new_customer_for_new_loan(Request $request, $id)
     {
@@ -320,5 +306,22 @@ class CustomerController extends Controller
             ->get();
         // Return the customers as a JSON response
         return response()->json($customers);
+    }
+
+    public function destroy($id)
+    {
+        $customer = Customer::find($id);
+
+        if (!$customer) {
+            return response()->json([
+                'message' => 'Customer not found.',
+            ], 404);
+        }
+
+        $customer->delete();
+
+        return response()->json([
+            'message' => 'Customer deleted successfully.',
+        ], 200);
     }
 }

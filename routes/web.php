@@ -70,6 +70,8 @@ Route::middleware('auth')->get('/customers', fn() => Inertia::render('Customers/
 Route::middleware('auth')->get('/customers/create', fn() => Inertia::render('Customers/Create'))->name('customer.create');
 Route::middleware('auth')->get('/customers/{id}', fn($id) => Inertia::render('Customers/View', ['customerId' => $id]))->name('customer.view');
 Route::middleware('auth')->get('/customers/{id}/edit', fn($id) => Inertia::render('Customers/Edit', ['customerId' => $id]))->name('customer.edit');
+
+
 // Loan Calculator route
 Route::get('/loan-calculator', function () {
     return inertia('LoanCalculator/LoanCalculator');
@@ -88,5 +90,15 @@ Route::get('/edu-form', fn()=> Inertia::render('Forms/EduPrintFormat'))->middlew
 Route::middleware('auth')->get('/loan-settings', [LoansController::class, 'loan_setting_index'])
     ->middleware(['auth', 'verified'])
     ->name('loan.settings');
+
+
+//edit.jsx
+Route::middleware('auth')->get('/customers/{id}/edit', fn($id) => 
+    Inertia::render('Customers/EditCustomer', ['customerId' => $id])
+)->name('customer.edit');
+Route::middleware('auth')->get('/customers/{id}/edit', fn($id) => 
+    Inertia::render('Customers/EditCustomer', ['customerId' => $id])
+)->name('customer.edit');
+
 
 require __DIR__.'/auth.php';
