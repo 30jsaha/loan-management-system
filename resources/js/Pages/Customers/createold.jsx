@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import { Card, Container, Row, Col, Alert, Spinner } from "react-bootstrap";
 import axios from "axios";
-import CustomerForm from "@/Components/CustomerForm";
-import { ArrowLeft } from "lucide-react";
+import CustomerForm from "@/Components/CustomerForm"; // ✅ Reusable component
+import { ArrowLeft } from "lucide-react"; // optional icon
 
 export default function Create({ auth }) {
-  const { props } = usePage();
-  const editCustomer = props.customer || null; // ✅ when editing, this comes from router.visit()
-
   const [formData, setFormData] = useState({
     cus_id: 0,
     company_id: "",
@@ -28,8 +25,8 @@ export default function Create({ auth }) {
     designation: "",
     employment_type: "",
     date_joined: "",
-    monthly_salary: 0.0,
-    net_salary: 0.0,
+    monthly_salary: 0.00,
+    net_salary: 0.00,
     work_location: "",
     payroll_number: "",
     employer_department: "",
@@ -51,7 +48,7 @@ export default function Create({ auth }) {
   const [allCustMast, setAllCustMast] = useState([]);
   const [isFormDirty, setIsFormDirty] = useState(false);
 
-  // ✅ Fetch companies & organisations list
+  // ✅ Fetch companies & organisations
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -63,14 +60,6 @@ export default function Create({ auth }) {
         setCompanies(compRes.data);
         setOrganisations(orgRes.data);
         setAllCustMast(allCM.data);
-
-        // ✅ set default company_id if not editing
-        if (!editCustomer && compRes.data.length > 0) {
-          setFormData((prev) => ({
-            ...prev,
-            company_id: compRes.data[0].id,
-          }));
-        }
       } catch (error) {
         console.error("Error loading company/org data:", error);
         setMessage("⚠️ Failed to load company or organisation list.");
@@ -79,27 +68,13 @@ export default function Create({ auth }) {
       }
     };
     fetchData();
-  }, [editCustomer]);
+  }, []);
 
-  // ✅ When editing, prefill formData
-  useEffect(() => {
-    if (editCustomer) {
-      console.log("🟢 Editing existing customer:", editCustomer);
-      setFormData({
-        ...editCustomer,
-        cus_id: editCustomer.id,
-        company_id: editCustomer.company_id || "",
-        organisation_id: editCustomer.organisation_id || "",
-      });
-      setMessage("✏️ You are editing this customer's record.");
-    }
-  }, [editCustomer]);
-
-  // ✅ Called when CustomerForm successfully saves or updates
+  // ✅ Called when CustomerForm successfully saves a record
   const handleNext = (customerId) => {
     setFormData((prev) => ({ ...prev, cus_id: customerId.id }));
     setMessage("✅ Customer saved successfully!");
-    setTimeout(() => router.visit(route("customers")), 1200);
+    setTimeout(() => router.visit(route('customers')), 1000);
   };
 
   return (
@@ -107,11 +82,11 @@ export default function Create({ auth }) {
       user={auth.user}
       header={
         <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-          {formData.cus_id ? "Edit Customer" : "Create Customer"}
+          Create Customer
         </h2>
       }
     >
-      <Head title={formData.cus_id ? "Edit Customer" : "Create Customer"} />
+      <Head title="Create Customer" />
       <Container fluid className="py-5 custPadding">
         <Row className="mb-3">
           <Col className="d-flex justify-content-between align-items-center">
@@ -133,8 +108,6 @@ export default function Create({ auth }) {
                     ? "success"
                     : message.startsWith("⚠️")
                     ? "warning"
-                    : message.startsWith("✏️")
-                    ? "info"
                     : "danger"
                 }
               >
@@ -156,7 +129,7 @@ export default function Create({ auth }) {
                 allCustMast={allCustMast}
                 setMessage={setMessage}
                 setIsFormDirty={setIsFormDirty}
-                onNext={handleNext} // ✅ triggered after save/update
+                onNext={handleNext} // ✅ triggered after save
               />
             )}
           </Card.Body>
@@ -165,4 +138,3 @@ export default function Create({ auth }) {
     </AuthenticatedLayout>
   );
 }
- 

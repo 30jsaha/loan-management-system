@@ -47,7 +47,10 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);
-Route::middleware('auth:sanctum')->get('/company-list', [CompanyController::class, 'company_list']);
+
+
+
+Route::middleware('auth:sanctum')->get('/company-list', [CompanyController::class, 'company_list']); 
 Route::middleware('auth:sanctum')->get('/organisation-list', [OrganisationController::class, 'organisation_list']);
 
 Route::middleware('auth:sanctum')->group(function() {
@@ -68,7 +71,7 @@ Route::post('/document-upload/verify/{id}', [DocumentUploadController::class, 'v
 
 //customer routes
 Route::get('/customers', [CustomerController::class, 'index']);
-// Route::post('/customers', [CustomerController::class, 'store']); //handled in save-new-customer-for-new-loan route above
+Route::post('/customers', [CustomerController::class, 'store']); //handled in save-new-customer-for-new-loan route above
 Route::get('/customers/{id}', [CustomerController::class, 'show']);
 Route::post('/customers/{id}', [CustomerController::class, 'update']);
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
@@ -83,3 +86,5 @@ Route::middleware('auth:sanctum')->delete('/all-dept-cust-delete/{id}', [AllCust
 Route::post('/validate-loan-tier', [LoanController::class, 'validateLoan'])
     ->middleware('auth:sanctum');
 
+
+ 

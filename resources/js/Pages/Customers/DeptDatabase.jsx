@@ -210,8 +210,8 @@ export default function DeptDatabase({ auth }) {
                 type="submit"
                 className={`${
                   isEditing
-                    ? "bg-amber-500 hover:bg-amber-600"
-                    : "bg-emerald-600 hover:bg-emerald-700"
+                    ? "bg-amber-500 hover:bg-amber-300"
+                    : "bg-emerald-500 hover:bg-emerald-300"
                 } text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200`}
               >
                 {isEditing ? "Update" : "Add"}
