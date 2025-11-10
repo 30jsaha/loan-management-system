@@ -23,6 +23,8 @@ class InstallmentDetail extends Model
         'late_fee',
         'status',
         'employer_reference_no',
+        'emi_collected_by_id',
+        'emi_collected_date',
         'remarks',
     ];
 

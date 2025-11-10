@@ -1,11 +1,8 @@
 import React, { useState, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Search, Loader2, X } from "lucide-react";
-import axios from "axios";
-import Swal from "sweetalert2";
+import { ArrowLeft, X, Search, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Row, Col, Table, Button } from "react-bootstrap";
 
 // Document Viewer Modal
 function DocumentViewerModal({ isOpen, onClose, documentUrl }) {
@@ -39,18 +36,14 @@ function DocumentViewerModal({ isOpen, onClose, documentUrl }) {
 } 
 
 export default function ActiveLoans({ auth, approved_loans }) {
-  console.log("approved_loans: ", approved_loans);
-  const [loans, setLoans] = useState(approved_loans);
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
-  const [selectedLoanIds, setSelectedLoanIds] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
 
-  // 🔍 Filtered loans
+  // Filter logic
   const filteredLoans = useMemo(() => {
-    return loans.filter((loan) => {
+    return approved_loans.filter((loan) => {
       const fullName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`
         .toLowerCase()
         .trim();
@@ -60,89 +53,7 @@ export default function ActiveLoans({ auth, approved_loans }) {
         : true;
       return matchesName && matchesDate;
     });
-  }, [loans, searchQuery, dateFilter]);
-
-  // 📦 Handle checkbox toggle
-  const toggleLoanSelection = (loanId) => {
-    setSelectedLoanIds((prev) =>
-      prev.includes(loanId)
-        ? prev.filter((id) => id !== loanId)
-        : [...prev, loanId]
-    );
-  };
-
-const normalizeDate = (d) => {
-  const date = new Date(d);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`; // Local date, no UTC shift
-};
-
-
-const isCollectible = (loan) => {
-  if (!loan || !loan.next_due_date) return false;
-
-  const today = normalizeDate(new Date());
-  const nextDue = normalizeDate(loan.next_due_date);
-
-  console.log("today", today);
-  console.log("nextDue", nextDue);
-
-  // Must have installments
-  // if (!Array.isArray(loan.installments) || loan.installments.length === 0) return false;
-
-  const nextInstallment = loan.installments.find(
-    (i) => normalizeDate(i.due_date) === nextDue
-  );
-
-  // if (!nextInstallment) return false;
-  if (nextInstallment) {
-    if (nextInstallment.status?.toLowerCase() === "paid") return false;
-  }
-
-  // Allow if due date is today or in the past
-  return nextDue <= today;
-};
-
-
-
-
-  // 💳 Collect EMI API call
-const handleCollectEMI = async () => {
-  if (selectedLoanIds.length === 0) {
-    Swal.fire("No Loans Selected", "Please select at least one loan.", "warning");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const res = await axios.post("/api/loans/collect-emi", {
-      loan_ids: selectedLoanIds,
-    });
-
-    Swal.fire("✅ Success", res.data.message || "EMI collected successfully!", "success");
-
-    // ✅ Refresh approved loan list after EMI collection
-    const refreshed = await axios.get("/api/loans/emi-collection-list");
-    if (refreshed.data) {
-      setSelectedLoanIds([]); // clear selected checkboxes
-      setSelectedLoan(null); // reset right panel
-      setSearchQuery("");
-      setDateFilter("");
-      // update your loan list state
-      if (Array.isArray(refreshed.data)) {
-        setLoans(refreshed.data);
-      }
-    }
-  } catch (error) {
-    console.error(error);
-    Swal.fire("❌ Error", "Failed to collect EMI. Try again later.", "error");
-  } finally {
-    setLoading(false);
-  }
-};
+  }, [approved_loans, searchQuery, dateFilter]);
 
   return (
     <AuthenticatedLayout
@@ -155,34 +66,10 @@ const handleCollectEMI = async () => {
 
         {/* LEFT PANEL */}
         <div className="w-1/3 bg-white rounded-lg shadow-md p-4 overflow-y-auto h-[85vh] font-[Times_New_Roman]">
-          {/* Header */}
           <div className="flex items-center mb-3">
             <Link href={route("dashboard")}><ArrowLeft size={16} className="mr-2 text-gray-600" /></Link>
+            
             <span className="font-semibold text-lg text-gray-800">Loan EMI Collection</span>
-          </div>
-
-          {/* Top Action Buttons */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={handleCollectEMI}
-              disabled={loading || selectedLoanIds.length === 0}
-              className={`flex-1 bg-green-600 text-white py-2 rounded-md flex items-center justify-center gap-2 ${
-                loading || selectedLoanIds.length === 0
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-green-700"
-              }`}
-            >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : "💰 Collect EMI"}
-            </button>
-            <button
-              disabled={!selectedLoan}
-              className={`flex-1 bg-blue-600 text-white py-2 rounded-md ${
-                selectedLoan ? "hover:bg-blue-700" : "opacity-50 cursor-not-allowed"
-              }`}
-              onClick={() => setSelectedLoan(selectedLoan)}
-            >
-              🔍 View Details
-            </button>
           </div>
 
           {/* Filters */}
@@ -209,58 +96,55 @@ const handleCollectEMI = async () => {
             </div>
           </div>
 
-          {/* Loan List */}
+          {/* Summary */}
+          <div className="grid grid-cols-3 text-center border border-gray-200 rounded-lg overflow-hidden mb-3">
+            <div className="py-3">
+              <div className="text-sm text-gray-500">Total</div>
+              <div className="text-xl font-bold">{filteredLoans.length}</div>
+            </div>
+            <div className="py-3 border-x border-gray-200">
+              <div className="text-sm text-gray-500">Pending</div>
+              <div className="text-xl font-bold">5,00,000</div>
+            </div>
+            <div className="py-3">
+              <div className="text-sm text-gray-500">Collected</div>
+              <div className="text-xl font-bold">10,00,000</div>
+            </div>
+          </div>
+
+          {/* Loan Cards */}
           {filteredLoans.length > 0 ? (
             filteredLoans.map((loan) => {
               const cust = loan.customer || {};
               const fullName = `${cust.first_name || ""} ${cust.last_name || ""}`.trim();
-              const collectible = isCollectible(loan);
-              console.log("collectible", collectible);
 
               return (
                 <motion.div
                   key={loan.id}
+                  onClick={() => setSelectedLoan(loan)}
                   whileHover={{ scale: 1.02 }}
-                  className={`transition-all duration-200 cursor-pointer border rounded-xl p-4 mb-3 shadow-sm ${
-                    selectedLoanIds.includes(loan.id)
+                  className={`transition-all duration-200 cursor-pointer border rounded-xl p-4 mb-3 shadow-sm hover:shadow-md ${
+                    selectedLoan?.id === loan.id
                       ? "border-green-500 bg-green-50"
                       : "border-gray-200 bg-white"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedLoanIds.includes(loan.id)}
-                      onChange={() => toggleLoanSelection(loan.id)}
-                      disabled={!collectible}
-                      className={`${!collectible ? "opacity-50 cursor-not-allowed" : ""}`}
-                      title={
-                        !collectible
-                          ? (() => {
-                              // if (!loan.next_due_date) return "No due date set";
-                              // if (!Array.isArray(loan.installments) || loan.installments.length === 0) return "No installments available";
-                              const nextInst = loan.installments.find(i => i.due_date === loan.next_due_date);
-                              // if (!nextInst) return "No matching installment";
-                              // if (nextInst.status?.toLowerCase() === "paid") return "Installment already paid";
-                              const today = new Date().toISOString().split("T")[0];
-                              if (loan.next_due_date > today) return `Not due until ${new Date(loan.next_due_date).toLocaleDateString()}`;
-                              return "Not collectible";
-                            })()
-                          : "Select to collect EMI"
-                      }
-                      aria-disabled={!collectible}
-                    />
-                    <button
-                      onClick={() => setSelectedLoan(loan)}
-                      className="text-blue-600 text-sm underline"
-                    >
-                      View Details
-                    </button>
-                  </div>
                   <h4 className="font-semibold text-base text-gray-800">{fullName || "Unknown"}</h4>
-                  <p className="text-sm text-gray-600">Loan ID: {loan.id}</p>
-                  <p className="text-sm text-gray-600">Next Due: {loan.next_due_date || "N/A"}</p>
-                  <p className="text-sm text-gray-600"><strong className="text-success">EMI: PGK {loan.emi_amount}</strong></p>
+                  <p className="text-sm text-gray-500">{cust.present_address || "N/A"}</p>
+                  <p className="-mt-1 text-sm text-gray-700">
+                    <span className="font-medium font-semibold">Created:</span>{" "}
+                    {new Date(loan.created_at).toLocaleDateString()}
+                  </p>
+                  <p className="-mt-1 text-sm text-gray-700">
+                    <span className="font-medium font-semibold">EMI Amount:</span>{" "}
+                     {loan.emi_amount || loan.loan_amount_applied}
+                  </p>
+                  <button
+                    onClick={() => setSelectedLoan(loan)}
+                    className="mt-1 w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-md text-sm shadow transition-colors duration-200"
+                  >
+                    Collect EMI
+                  </button>
                 </motion.div>
               );
             })
@@ -291,94 +175,24 @@ const handleCollectEMI = async () => {
                 </p>
               </div>
 
-                      {/* Loan Overview */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 text-sm">
-                      <div><b>Loan Type:</b> {selectedLoan.loan_settings?.loan_desc}</div>
-                      <div><b>Purpose:</b> {selectedLoan.purpose}</div>
-                      <div><b>Loan Amount:</b>  {selectedLoan.loan_amount_applied}</div>
-                      <div><b>Tenure:</b> {selectedLoan.tenure_fortnight} fortnights</div>
-                      <div><b>Interest Rate:</b> {selectedLoan.interest_rate}%</div>
-                      <div><b>Status:</b> {selectedLoan.status}</div>
-                      <div><b>Created Date:</b> {new Date(selectedLoan.created_at).toLocaleString()}</div>
-                      <div><b>Approved By:</b> {selectedLoan.approved_by}</div>
-                      <div><b>Approved Date:</b> {new Date(selectedLoan.approved_date).toLocaleString()}</div>
-                      <div><b>Processing Fee:</b> {selectedLoan.processing_fee}</div>
-                      <div><b>Bank Name:</b> {selectedLoan.bank_name}</div>
-                      <div><b>Bank Branch:</b> {selectedLoan.bank_branch}</div>
-                      <div><b>Account No:</b> {selectedLoan.bank_account_no}</div>
-                      <div>
-                      <b>Last EMI Paid:</b>{" "}
-                      {(() => {
-                        if (!selectedLoan || !Array.isArray(selectedLoan.installments)) return "N/A";
+              {/* Loan Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 text-sm">
+                <div><b>Loan Type:</b> {selectedLoan.loan_settings?.loan_desc}</div>
+                <div><b>Purpose:</b> {selectedLoan.purpose}</div>
+                <div><b>Loan Amount:</b>  {selectedLoan.loan_amount_applied}</div>
+                <div><b>Tenure:</b> {selectedLoan.tenure_fortnight} fortnights</div>
+                <div><b>Interest Rate:</b> {selectedLoan.interest_rate}%</div>
+                <div><b>Status:</b> {selectedLoan.status}</div>
+                <div><b>Created Date:</b> {new Date(selectedLoan.created_at).toLocaleString()}</div>
+                <div><b>Approved By:</b> {selectedLoan.approved_by}</div>
+                <div><b>Approved Date:</b> {new Date(selectedLoan.approved_date).toLocaleString()}</div>
+                <div><b>Processing Fee:</b> {selectedLoan.processing_fee}</div>
+                <div><b>Bank Name:</b> {selectedLoan.bank_name}</div>
+                <div><b>Bank Branch:</b> {selectedLoan.bank_branch}</div>
+                <div><b>Account No:</b> {selectedLoan.bank_account_no}</div>
+              </div>
 
-                        const paidInstallments = selectedLoan.installments.filter(
-                          (i) => i.status?.toLowerCase() === "paid" && i.payment_date
-                        );
-
-                        if (paidInstallments.length === 0) return "N/A";
-
-                        const latestDate = paidInstallments
-                          .map((i) => new Date(i.payment_date))
-                          .reduce((a, b) => (a > b ? a : b));
-
-                        return latestDate.toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        });
-                      })()}
-                    </div>
-                    <div>
-                    <b>Next Due Date:</b> {(() => {
-                      if (!selectedLoan || selectedLoan.next_due_date == null) return "N/A";
-                      const d = new Date(selectedLoan.next_due_date);
-                      if (Number.isNaN(d.getTime())) return "N/A";
-                      return d.toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      });
-                    })()}
-                    </div>
-                  </div>
-                  {selectedLoan.installments.length > 0 ? (
-                  <Table bordered size="sm" className="mt-3">
-                    <thead>
-                      <tr>
-                        <th>EMI No.</th>
-                        <th>Due Date</th>
-                        <th>Payment Date</th>
-                        <th>Status</th>
-                        <th>Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedLoan.installments.map((emi) => (
-                        <tr key={emi.id}>
-                          <td>{emi.installment_no}</td>
-                          <td>{emi.due_date}</td>
-                          <td>{emi.payment_date || "—"}</td>
-                          <td
-                            className={
-                              emi.status === "Paid"
-                                ? "text-success fw-semibold"
-                                : emi.status === "Overdue"
-                                ? "text-danger fw-semibold"
-                                : "text-warning fw-semibold"
-                            }
-                          >
-                            {emi.status}
-                          </td>
-                          <td>PGK {emi.emi_amount}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                ) : (
-                  <p>&nbsp;</p>
-                )}
-
-                      {/* Customer Info */}
+              {/* Customer Info */}
               <div className="border-t border-gray-200 mb-2 pt-2">
                 <h4 className="font-semibold text-base mb-3">Customer Details</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
@@ -468,6 +282,7 @@ const handleCollectEMI = async () => {
           )}
         </motion.div>
       </div>
+
       {/* Modal Viewer */}
       <DocumentViewerModal
         isOpen={!!selectedDoc}

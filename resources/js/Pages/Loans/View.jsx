@@ -3,6 +3,7 @@ import { router, Head, Link } from "@inertiajs/react";
 import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs, ProgressBar, Modal, Spinner } from "react-bootstrap";
 import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import LoanDocumentsUpload from '@/Components/LoanDocumentsUpload';
 //icon pack
 import { ArrowLeft, Download, Eye } from "lucide-react";
 import Swal from "sweetalert2";
@@ -416,7 +417,7 @@ export default function View({ auth, loanId }) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {loan.documents.map((doc) => (
+                                            {loan.documents.map((doc) => (
                                                 <tr key={doc.id} className="hover:bg-gray-50 transition">
                                                     <td className="border p-2">{doc.doc_type}</td>
                                                     <td className="border p-2">{doc.file_name}</td>
@@ -482,7 +483,25 @@ export default function View({ auth, loanId }) {
                                             </tbody>
                                             </table>
                                         ) : (
-                                            <p>No documents uploaded.</p>
+                                            <>
+                                            <div className="p-3 border rounded bg-gray-50">
+                                                <p className="text-gray-600 mb-3">No documents uploaded yet. Please upload required documents below:</p>
+                                                <LoanDocumentsUpload
+                                                loanFormData={loan}
+                                                onUploadComplete={async () => {
+                                                    // ✅ Re-fetch loan details after upload completion
+                                                    try {
+                                                    const res = await axios.get(`/api/loans/${loanId}`);
+                                                    setLoan(res.data);
+                                                    setMessage("✅ Document uploaded successfully! Data refreshed.");
+                                                    } catch (err) {
+                                                    console.error("Failed to refresh after upload:", err);
+                                                    setMessage("⚠️ Upload succeeded but failed to refresh loan data.");
+                                                    }
+                                                }}
+                                                />
+                                            </div>
+                                            </>
                                         )}
 
                                         {/* Modal for viewing document */}
@@ -565,6 +584,7 @@ export default function View({ auth, loanId }) {
                                         <Form.Control
                                         type="file"
                                         accept="video/mp4"
+                                        disabled={loan.status == "Approved"}
                                         onChange={(e) => {
                                             const file = e.target.files[0];
                                             if (file) {
@@ -634,6 +654,7 @@ export default function View({ auth, loanId }) {
                                         <Form.Control
                                         type="file"
                                         accept="application/pdf"
+                                        disabled={loan.status == "Approved"}
                                         onChange={(e) => {
                                             const file = e.target.files[0];
                                             if (file) {
@@ -705,6 +726,7 @@ export default function View({ auth, loanId }) {
                                         <Form.Control
                                         type="file"
                                         accept="application/pdf"
+                                        disabled={loan.status == "Approved"}
                                         onChange={(e) => {
                                             const file1 = e.target.files[0];
                                             if (file1) {

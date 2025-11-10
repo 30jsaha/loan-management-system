@@ -182,7 +182,7 @@ export default function LoanSettingMaster({ auth }) {
 
       <div className="min-h-screen bg-gray-100 p-6 space-y-6">
         {/* Back Button */}
-        <div className="max-w-7xl mx-auto mb-4">
+        <div className="max-w-9xl mx-auto mb-4 custPadding">
           <Link
             href={route("dashboard")}
             className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"

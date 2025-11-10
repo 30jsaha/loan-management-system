@@ -4,7 +4,7 @@ import { X, Upload, Eye } from "lucide-react";
 import { Button, ProgressBar, Modal } from "react-bootstrap";
 import toast, { Toaster } from "react-hot-toast";
 
-const LoanDocumentsUpload = ({ loanFormData }) => {
+const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
   const allowedDocs = [
     "ID",
     "Payslip",
@@ -79,7 +79,8 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
           setProgress((prev) => ({ ...prev, [docType]: percent }));
         },
       });
-
+      // ✅ Notify parent page that upload completed
+      if (onUploadComplete) onUploadComplete();
       setUploadedFiles((prev) => ({ ...prev, [docType]: true }));
       setMessage((prev) => ({
         ...prev,
@@ -99,14 +100,20 @@ const LoanDocumentsUpload = ({ loanFormData }) => {
 
   const handleUploadAll = async (e) => {
     e.preventDefault();
-    if (Object.keys(files).length === 0)
-      return alert("Please select files first!");
-
+    if (Object.keys(files).length === 0) {
+      toast.error("Please select files first!");
+      return;
+    }
     setUploading(true);
     for (const docType of Object.keys(files)) {
       await handleUpload(docType);
     }
     setUploading(false);
+    setFiles({});
+    setProgress({});
+    setUploadedFiles({});
+    // ✅ Call parent refresh after all uploads complete
+    if (onUploadComplete) onUploadComplete();
   };
 
   return (

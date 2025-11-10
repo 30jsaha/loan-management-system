@@ -8,11 +8,13 @@ use App\Models\LoanApplication as Loan;
 use App\Models\Customer;
 use App\Models\LoanSetting;
 use App\Models\LoanTierRule;
+use App\Models\InstallmentDetail;
 use Illuminate\Support\Facades\Validator;
 
 //log
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Support\Facades\Auth;
 
 class LoanController extends Controller
 {
@@ -203,8 +205,14 @@ class LoanController extends Controller
     public function approve($id)
     {
         $loan = Loan::findOrFail($id);
+        $loan->loan_amount_approved = $loan->loan_amount_applied;
+        $loan->total_no_emi = $loan->tenure_fortnight;
+        $loan->next_due_date = now()->addDays(14)->toDateString();
+        $loan->min_repay_amt_for_next_loan = $loan->total_repay_amt !== null ? (float) ($loan->total_repay_amt * 0.8) : null;
         $loan->status = 'Approved';
         $loan->approved_by = auth()->user()->name;
+        $loan->approved_by_id = auth()->user()->id;
+        $loan->disbursement_date = now()->toDateString();
         $loan->approved_date = now();
         $loan->save();
 
@@ -447,4 +455,56 @@ class LoanController extends Controller
 
         return response()->json(['message' => 'Loan setting deleted successfully']);
     }
+
+    public function loan_emi_list()
+    {
+        // $perPage = (int) $request->get('per_page', 15);
+
+        $approvedLoans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        ->where('status','Approved')
+        ->orderBy('approved_date','desc')->get();
+
+        return response()->json(['approved_loans' => $approvedLoans], 200);
+    }
+
+    public function collectEMI(Request $request)
+    {
+        $validated = $request->validate([
+            'loan_ids' => 'required|array',
+            'loan_ids.*' => 'exists:loan_applications,id',
+        ]);
+
+        foreach ($validated['loan_ids'] as $loanId) {
+            $l = Loan::findOrFail($loanId);
+
+            InstallmentDetail::create([
+                'loan_id' => $loanId,
+                'installment_no' => (function() use ($loanId, $l) {
+                    // Sum any previously recorded installment amounts for this loan
+                    $totalCollected = InstallmentDetail::where('loan_id', $loanId)->sum('emi_amount');
+
+                    // If loan EMI amount is available, derive the next installment number from total collected
+                    if (!empty($l->emi_amount) && $l->emi_amount > 0) {
+                        return (int) floor($totalCollected / $l->emi_amount) + 1;
+                    }
+
+                    // Fallback: use count of existing installments + 1
+                    return InstallmentDetail::where('loan_id', $loanId)->count() + 1;
+                })(),
+                'due_date' => now(),
+                'emi_amount' => $l->emi_amount,
+                'payment_date' => now(),
+                'status' => 'Paid',
+                'emi_collected_by_id' => auth()->user()->id,
+                'emi_collected_date' => now()
+            ]);
+
+            $nextDue = now()->addDays(14)->toDateString();
+            $l->next_due_date = $nextDue;
+            $l->save();
+        }
+
+        return response()->json(['message' => 'EMI collection recorded successfully!']);
+    }
+
 }

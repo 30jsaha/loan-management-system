@@ -26,7 +26,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 
-Route::get('/loans', [LoanController::class, 'index'])->name('loans.index');
+Route::middleware('auth:sanctum')->get('/loans', [LoanController::class, 'index'])->name('loans.index');
+Route::middleware('auth:sanctum')->get('/loans/emi-collection-list', [LoanController::class, 'loan_emi_list'])->name('loans.emi_list');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/loans', [LoanController::class, 'index']);
@@ -44,6 +45,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loan-settings-create', [LoanController::class, 'create_loan_setting']); // CREATE
     Route::put('/loan-settings-modify/{id}', [LoanController::class, 'modify_loan_setting']); // UPDATE
     Route::delete('/loan-settings-remove/{id}', [LoanController::class, 'remove_loan_setting']); // DELETE
+    Route::post('loans/collect-emi', [LoanController::class, 'collectEMI']);
+    // Route::get('loans/emi-collection-list', [LoanController::class, 'loan_emi_list']);
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);
