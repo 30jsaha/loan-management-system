@@ -8,6 +8,8 @@ use App\Models\LoanApplication as Loan;
 use App\Models\Customer;
 use App\Models\LoanSetting;
 use App\Models\LoanTierRule;
+use Illuminate\Support\Facades\Validator;
+
 //log
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -357,5 +359,88 @@ class LoanController extends Controller
     {
         $loan = LoanSetting::all();
         return response()->json($loan);
+    }
+    public function create_loan_setting(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'loan_desc' => 'required|string|max:255',
+            'org_id' => 'nullable|integer',
+            'min_loan_amount' => 'required|numeric',
+            'max_loan_amount' => 'required|numeric',
+            'interest_rate' => 'required|numeric',
+            'amt_multiplier' => 'required|numeric',
+            'min_loan_term_months' => 'required|integer',
+            'max_loan_term_months' => 'required|integer',
+            'process_fees' => 'required|numeric',
+            'min_repay_percentage_for_next_loan' => 'nullable|numeric',
+            'effect_date' => 'required|date',
+            'end_date' => 'required|date',
+            'user_id' => 'nullable|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $loanSetting = LoanSetting::create($validator->validated());
+
+        return response()->json([
+            'message' => 'Loan setting created successfully',
+            'data' => $loanSetting,
+        ]);
+    }
+
+    /**
+     * ✅ Modify an existing loan setting
+     */
+    public function modify_loan_setting(Request $request, $id)
+        {
+            try {
+                $loanSetting = LoanSetting::findOrFail($id);
+
+                $validator = Validator::make($request->all(), [
+                    'loan_desc' => 'required|string|max:255',
+                    'org_id' => 'nullable|integer',
+                    'min_loan_amount' => 'required|numeric',
+                    'max_loan_amount' => 'required|numeric',
+                    'interest_rate' => 'required|numeric',
+                    'amt_multiplier' => 'required|numeric',
+                    'min_loan_term_months' => 'required|integer',
+                    'max_loan_term_months' => 'required|integer',
+                    'process_fees' => 'required|numeric',
+                    'min_repay_percentage_for_next_loan' => 'nullable|numeric',
+                    'effect_date' => 'nullable|date',
+                    'end_date' => 'nullable|date',
+                    'user_id' => 'nullable|integer',
+                ]);
+
+                if ($validator->fails()) {
+                    \Log::error('LoanSetting validation failed', $validator->errors()->toArray());
+                    return response()->json(['errors' => $validator->errors()], 422);
+                }
+
+                $loanSetting->update($validator->validated());
+
+                return response()->json([
+                    'message' => 'Loan setting updated successfully',
+                    'data' => $loanSetting,
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::error('LoanSetting update failed: '.$e->getMessage());
+                return response()->json(['message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
+            }
+        }
+
+
+    /**
+     * ✅ Remove a loan setting
+     */
+    public function remove_loan_setting($id)
+    {
+        $loanSetting = LoanSetting::findOrFail($id);
+        $loanSetting->delete();
+
+        return response()->json(['message' => 'Loan setting deleted successfully']);
     }
 }

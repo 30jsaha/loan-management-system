@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 
-export default function LoanSettingMaster({ auth, loan_settings }) {
+export default function LoanSettingMaster({ auth }) {
   const [orgList, setOrgList] = useState([]);
-  const [loanSetting, setLoanSetting] = useState([]);
+  const [loanSettings, setLoanSettings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
-
+  const [isEditing, setIsEditing] = useState(false);
 
   const [formData, setFormData] = useState({
+    id: null,
     loan_desc: "",
     org_id: "",
     min_loan_amount: "",
@@ -27,25 +27,28 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
     end_date: "",
   });
 
+  // Filters and Sorting
+  const [searchTerm, setSearchTerm] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: "loan_desc", direction: "asc" });
+
   useEffect(() => {
     fetchData();
+    fetchOrganisationList();
   }, []);
 
   const fetchData = async () => {
     try {
-      const res = await axios.get("/api/loans");
-      setLoanSetting(res.data);
+      const res = await axios.get("/api/loan-settings-data");
+      setLoanSettings(res.data);
     } catch (error) {
-      console.error(error);
-      setMessage("❌ Failed to load loan setting data.");
+      console.error("Error loading data:", error);
+      toast.error("Failed to load loan setting data.");
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchOrganisationList();
-  }, []);
 
   const fetchOrganisationList = async () => {
     try {
@@ -66,14 +69,104 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      await axios.post("/api/loan-settings-store", formData);
-      toast.success("✅ Loan setting saved successfully!");
+      if (isEditing && formData.id) {
+        await axios.put(`/api/loan-settings-modify/${formData.id}`, formData);
+        setLoanSettings((prev) =>
+          prev.map((item) =>
+            item.id === formData.id ? { ...item, ...formData } : item
+          )
+        );
+        toast.success("Loan setting updated successfully!");
+      } else {
+        const res = await axios.post("/api/loan-settings-create", formData);
+        setLoanSettings((prev) => [...prev, res.data.data]);
+        toast.success("Loan setting added successfully!");
+      }
+
+      resetForm();
     } catch (error) {
       console.error("Error saving:", error);
-      toast.error("❌ Failed to save loan setting");
+      toast.error("Failed to save loan setting");
     }
   };
+
+  const handleEdit = (loan) => {
+    setFormData(loan);
+    setIsEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDelete = async (id, desc) => {
+    if (confirm(`Are you sure you want to delete "${desc}"?`)) {
+      try {
+        await axios.delete(`/api/loan-settings-remove/${id}`);
+        setLoanSettings((prev) => prev.filter((item) => item.id !== id));
+        toast.success("Deleted successfully!");
+      } catch (error) {
+        console.error("Error deleting:", error);
+        toast.error("Failed to delete record!");
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      id: null,
+      loan_desc: "",
+      org_id: "",
+      min_loan_amount: "",
+      max_loan_amount: "",
+      interest_rate: "",
+      amt_multiplier: "",
+      min_loan_term_months: "",
+      max_loan_term_months: "",
+      process_fees: "",
+      min_repay_percentage_for_next_loan: "",
+      effect_date: "",
+      end_date: "",
+    });
+    setIsEditing(false);
+  };
+
+  // Sorting Handler
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Sorted + Filtered Data
+  const sortedData = useMemo(() => {
+    let sortableItems = [...loanSettings];
+    if (sortConfig.key) {
+      sortableItems.sort((a, b) => {
+        const aVal = a[sortConfig.key] ?? "";
+        const bVal = b[sortConfig.key] ?? "";
+        if (!isNaN(aVal) && !isNaN(bVal)) {
+          return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
+        } else {
+          return sortConfig.direction === "asc"
+            ? String(aVal).localeCompare(String(bVal))
+            : String(bVal).localeCompare(String(aVal));
+        }
+      });
+    }
+    return sortableItems;
+  }, [loanSettings, sortConfig]);
+
+  const filteredData = sortedData.filter((item) => {
+    const matchesSearch = item.loan_desc
+      ?.toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const withinDate =
+      (!startDate || new Date(item.effect_date) >= new Date(startDate)) &&
+      (!endDate || new Date(item.end_date) <= new Date(endDate));
+    return matchesSearch && withinDate;
+  });
 
   return (
     <AuthenticatedLayout
@@ -99,21 +192,16 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
         </div>
 
         {/* Loan Settings Form */}
-        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-4  border border-gray-100">
+        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <h4 className="text-lg font-semibold text-gray-700 mb-4">
-            Loan Setting Master
+            {isEditing ? "Edit Loan Setting" : "Add Loan Setting"}
           </h4>
-          <div>
-            <h3 className="text-lg font-medium mb-2">Loan Setting Data</h3>
-            <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto whitespace-pre-wrap">
-              {JSON.stringify(loanSetting, null, 2)}
-            </pre>
-          </div>
+
           <form
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3"
           >
-            {/* Loan Desc */}
+            {/* Loan Description */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Loan Description <span className="text-red-500">*</span>
@@ -128,7 +216,7 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
               />
             </div>
 
-            {/* Organisation ID (Dropdown) */}
+            {/* Organisation */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Organisation
@@ -142,13 +230,13 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
                 <option value="">Select Organisation</option>
                 {orgList.map((org) => (
                   <option key={org.id} value={org.id}>
-                    {org.organisation_name}
+                    {org.id} - {org.organisation_name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Remaining Inputs */}
+            {/* Other Inputs */}
             {[
               ["min_loan_amount", "Minimum Loan Amount (PGK)"],
               ["max_loan_amount", "Maximum Loan Amount (PGK)"],
@@ -157,10 +245,7 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
               ["min_loan_term_months", "Minimum Term Months"],
               ["max_loan_term_months", "Maximum Term Months"],
               ["process_fees", "Processing Fees (PGK)"],
-              [
-                "min_repay_percentage_for_next_loan",
-                "Min Repay % for Next Loan",
-              ],
+              ["min_repay_percentage_for_next_loan", "Min Repay % for Next Loan"],
               ["effect_date", "Effect Date"],
               ["end_date", "End Date"],
             ].map(([key, label]) => (
@@ -169,13 +254,7 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
                   {label}
                 </label>
                 <input
-                  type={
-                    key.includes("date")
-                      ? "date"
-                      : key.includes("interest")
-                        ? "number"
-                        : "number"
-                  }
+                  type={key.includes("date") ? "date" : "number"}
                   name={key}
                   value={formData[key]}
                   onChange={handleChange}
@@ -185,96 +264,225 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
             ))}
           </form>
 
-          {/* Submit Button */}
-          <div className="mt-6 flex justify-end">
+          {/* Buttons */}
+          <div className="mt-6 flex justify-end gap-3">
+            {isEditing && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="bg-gray-400 hover:bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold shadow-md"
+              >
+                Cancel
+              </button>
+            )}
             <button
               type="submit"
               onClick={handleSubmit}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition-all duration-200"
+              className={`${
+                isEditing
+                  ? "bg-amber-500 hover:bg-amber-600"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              } text-white px-6 py-2 rounded-lg font-semibold shadow-md`}
             >
-              Save Loan Setting
+              {isEditing ? "Update Loan Setting" : "Save Loan Setting"}
+            </button>
+          </div>
+        </div>
+
+        {/* --- FILTER BAR --- */}
+        <div className="max-w-7xl mx-auto bg-white shadow-md border border-gray-100 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+          {/* Search */}
+          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2 w-full sm:w-1/4 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5 text-gray-500 mr-2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by Name"
+              onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
+            />
+          </div>
+
+
+          {/* Effect Date */}
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-600 mb-1">
+              Effect Date
+            </label>
+            <input
+              type="date"
+              onChange={(e) => setStartDate(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-44 focus:ring-2 focus:ring-emerald-500 outline-none"
+            />
+          </div>
+
+          {/* End Date */}
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-600 mb-1">
+              End Date
+            </label>
+            <input
+              type="date"
+              onChange={(e) => setEndDate(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-44 focus:ring-2 focus:ring-emerald-500 outline-none"
+            />
+          </div>
+
+          {/* Sort Field */}
+          <div className="flex flex-col">
+            <label className="text-xs font-semibold text-gray-600 mb-1">
+              Sort By
+            </label>
+            <select
+              onChange={(e) => setSortConfig({ ...sortConfig, key: e.target.value })}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-44 focus:ring-2 focus:ring-emerald-500 outline-none"
+            >
+              <option value="loan_desc">Loan Name</option>
+              <option value="effect_date">Effect Date</option>
+              <option value="end_date">End Date</option>
+              <option value="org_id">Organisation ID</option>
+            </select>
+          </div>
+
+          {/* Sort Order */}
+          <div className="flex flex-col items-start">
+            <label className="text-xs font-semibold text-gray-600 mb-1">
+              Sort Order
+            </label>
+            <button
+              onClick={() =>
+                setSortConfig({
+                  ...sortConfig,
+                  direction: sortConfig.direction === "asc" ? "desc" : "asc",
+                })
+              }
+              className="flex items-center justify-center border border-gray-300 rounded-lg px-3 py-2 w-32 text-sm text-gray-700 hover:bg-emerald-50 transition-all"
+            >
+              {sortConfig.direction === "asc" ? (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-4 h-4 mr-1 text-emerald-600"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8 7l4-4m0 0l4 4m-4-4v18"
+                    />
+                  </svg>
+                  Asc
+                </>
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-4 h-4 mr-1 text-emerald-600"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M16 17l-4 4m0 0l-4-4m4 4V3"
+                    />
+                  </svg>
+                  Desc
+                </>
+              )}
             </button>
           </div>
         </div>
 
         {/* Loan Settings Table */}
         <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="flex justify-between items-center p-4 bg-gradient-to-r from-emerald-100 via-emerald-50 to-teal-50 border-b border-emerald-200">
-            <h5 className="text-lg font-semibold text-gray-800">
-              Loan Settings Records
-            </h5>
-            <span className="bg-emerald-200/60 text-emerald-800 font-semibold px-4 py-1.5 rounded-full text-sm shadow-inner border border-emerald-300/60">
-              Total: {loan_settings.length}
-            </span>
-          </div>
-
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm text-left border-collapse">
               <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
                 <tr className="divide-x divide-white/20">
                   {[
-                    "#",
-                    "Loan Desc",
-                    "Org ID",
-                    "Min Loan",
-                    "Max Loan",
-                    "Rate (%)",
-                    "Multiplier",
-                    "Term (Min - Max)",
-                    "Proc. Fees",
-                    "Effect Date",
-                    "End Date",
-                    "Actions",
-                  ].map((header, index) => (
+                    ["#", "id"],
+                    ["Loan Desc", "loan_desc"],
+                    ["Org ID", "org_id"],
+                    ["Min Loan", "min_loan_amount"],
+                    ["Max Loan", "max_loan_amount"],
+                    ["Rate (%)", "interest_rate"],
+                    ["Multiplier", "amt_multiplier"],
+                    ["Term (Min - Max)", "min_loan_term_months"],
+                    ["Proc. Fees", "process_fees"],
+                    ["Effect Date", "effect_date"],
+                    ["End Date", "end_date"],
+                  ].map(([header, key]) => (
                     <th
-                      key={index}
-                      className="px-4 py-3 font-semibold text-[0.9rem] uppercase tracking-wide"
+                      key={key}
+                      onClick={() => handleSort(key)}
+                      className="px-4 py-3 font-semibold text-[0.9rem] uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center"
                     >
-                      {header}
+                      <div className="flex justify-center items-center gap-1">
+                        {header}
+                        {sortConfig.key === key ? (
+                          sortConfig.direction === "asc" ? (
+                            <span>▲</span>
+                          ) : (
+                            <span>▼</span>
+                          )
+                        ) : (
+                          <span className="opacity-50"></span>
+                        )}
+                      </div>
                     </th>
                   ))}
+                  <th className="px-4 py-3 font-semibold text-[0.9rem] uppercase tracking-wide text-center">
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {loan_settings.length > 0 ? (
-                  loan_settings.map((loan, i) => (
+                {filteredData.length > 0 ? (
+                  filteredData.map((loan, i) => (
                     <tr
                       key={loan.id}
                       className="hover:bg-emerald-50 transition-all duration-200"
                     >
-                      <td className="px-4 py-3">{i + 1}</td>
-                      <td className="px-4 py-3 font-semibold text-gray-800">
+                      <td className="px-4 py-3 text-center">{i + 1}</td>
+                      <td className="px-4 py-3 font-semibold text-gray-800 text-center">
                         {loan.loan_desc}
                       </td>
-                      <td className="px-4 py-3">{loan.org_id || "—"}</td>
-                      <td className="px-4 py-3">{loan.min_loan_amount}</td>
-                      <td className="px-4 py-3">{loan.max_loan_amount}</td>
-                      <td className="px-4 py-3">{loan.interest_rate}</td>
-                      <td className="px-4 py-3">{loan.amt_multiplier}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-center">{loan.org_id}</td>
+                      <td className="px-4 py-3 text-center">{loan.min_loan_amount}</td>
+                      <td className="px-4 py-3 text-center">{loan.max_loan_amount}</td>
+                      <td className="px-4 py-3 text-center">{loan.interest_rate}</td>
+                      <td className="px-4 py-3 text-center">{loan.amt_multiplier}</td>
+                      <td className="px-4 py-3 text-center">
                         {loan.min_loan_term_months} - {loan.max_loan_term_months}
                       </td>
-                      <td className="px-4 py-3">{loan.process_fees}</td>
-                      <td className="px-4 py-3">{loan.effect_date}</td>
-                      <td className="px-4 py-3">{loan.end_date}</td>
+                      <td className="px-4 py-3 text-center">{loan.process_fees}</td>
+                      <td className="px-4 py-3 text-center">{loan.effect_date}</td>
+                      <td className="px-4 py-3 text-center">{loan.end_date}</td>
 
-                      {/* --- Edit & Delete Buttons --- */}
-                      <td className="px-4 py-3 text-center flex justify-center gap-3">
-                        {/* Edit Button */}
+                      {/* Edit / Delete Buttons */}
+                      <td className="px-4 py-3 flex justify-center gap-3">
                         <button
-                          onClick={() => {
-                            setFormData(loan);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                            toast("Editing mode enabled", {
-                              style: {
-                                background: "#f59e0b",
-                                color: "white",
-                                fontWeight: 500,
-                              },
-                            });
-                          }}
-                          className="p-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-md transition-all duration-300 shadow-sm hover:shadow-md"
+                          onClick={() => handleEdit(loan)}
+                          className="p-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center"
                           title="Edit Loan Setting"
                         >
                           <svg
@@ -293,26 +501,9 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
                           </svg>
                         </button>
 
-                        {/* Delete Button */}
                         <button
-                          onClick={async () => {
-                            if (
-                              confirm(
-                                `Are you sure you want to delete "${loan.loan_desc}"?`
-                              )
-                            ) {
-                              try {
-                                await axios.delete(
-                                  `/api/loan-settings-delete/${loan.id}`
-                                );
-                                toast.success("🗑️ Deleted successfully!");
-                                window.location.reload();
-                              } catch (error) {
-                                toast.error("❌ Failed to delete record!");
-                              }
-                            }
-                          }}
-                          className="p-2.5 bg-red-500 hover:bg-red-600 text-white rounded-md transition-all duration-300 shadow-sm hover:shadow-md"
+                          onClick={() => handleDelete(loan.id, loan.loan_desc)}
+                          className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center"
                           title="Delete Loan Setting"
                         >
                           <svg
@@ -347,7 +538,6 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
             </table>
           </div>
         </div>
-
       </div>
     </AuthenticatedLayout>
   );
