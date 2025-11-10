@@ -41,6 +41,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/loans/{id}', [LoanController::class, 'destroy']);
     Route::get('/loan-types/{cid}', [LoanController::class, 'loan_types']);
     Route::get('/loan-settings-data', [LoanController::class, 'get_all_loan_setting_data']);
+    Route::post('/loan-settings-create', [LoanController::class, 'create_loan_setting']); // CREATE
+    Route::put('/loan-settings-modify/{id}', [LoanController::class, 'modify_loan_setting']); // UPDATE
+    Route::delete('/loan-settings-remove/{id}', [LoanController::class, 'remove_loan_setting']); // DELETE
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);
