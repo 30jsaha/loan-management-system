@@ -550,4 +550,7 @@ class LoanController extends Controller
         return response()->json(['message' => 'EMI collection recorded successfully!']);
     }
 
+
+   
+
 }
