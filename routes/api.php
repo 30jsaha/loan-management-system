@@ -47,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/loan-settings-remove/{id}', [LoanController::class, 'remove_loan_setting']); // DELETE
     Route::post('loans/collect-emi', [LoanController::class, 'collectEMI']);
     // Route::get('loans/emi-collection-list', [LoanController::class, 'loan_emi_list']);
+    Route::middleware('auth:sanctum')->put('/loans/{id}', [LoanController::class, 'update']);
+
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);

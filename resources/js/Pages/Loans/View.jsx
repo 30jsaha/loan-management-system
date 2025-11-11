@@ -24,6 +24,9 @@ export default function View({ auth, loanId }) {
 
     const [showModal, setShowModal] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState(null);
+
+    const pdfPath = "/storage/uploads/documents/Loan Application Form - loanms.pdf";
+    const fileName = "Loan Application Form - loanms.pdf";
     // Open modal with selected document
     const openDocModal = (doc) => {
         setSelectedDoc(doc);
@@ -568,6 +571,80 @@ export default function View({ auth, loanId }) {
                                         </Modal>
                                     </fieldset>
                                 </Col>
+
+                                {/* 📄 Form (Always Visible) */}
+                                 <fieldset className="fldset mb-5">
+                                <legend className="font-semibold mb-2">📑 Document Summary</legend>
+
+                                <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
+                                    <thead className="bg-indigo-600 text-white">
+                                    <tr>
+                                        <th className="border p-2 text-center">Document Type</th>
+                                        <th className="border p-2 text-center">File Name</th>
+                                        <th className="border p-2 text-center">View</th>
+                                        <th className="border p-2 text-center">Download</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody>
+                                    <tr className="hover:bg-gray-50 transition">
+                                        <td className="border p-2 text-center">Application Form</td>
+                                        <td className="border p-2 text-center">{fileName}</td>
+
+                                        {/* View Button */}
+                                        <td className="border p-2 text-center">
+                                        <button
+                                            onClick={() => setShowModal(true)}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                        >
+                                            <Eye size={14} /> View
+                                        </button>
+                                        </td>
+
+                                        {/* Download Button */}
+                                        <td className="border p-2 text-center">
+                                        <a
+                                            href={pdfPath}
+                                            download
+                                            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                        >
+                                            <Download size={14} /> Download
+                                        </a>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+
+                                {/* PDF Modal */}
+                                <Modal
+                                    show={showModal}
+                                    onHide={() => setShowModal(false)}
+                                    size="xl"
+                                    centered
+                                    dialogClassName="max-w-[900px]"
+                                >
+                                    <Modal.Header closeButton>
+                                    <Modal.Title>📄 Application Form Preview</Modal.Title>
+                                    </Modal.Header>
+
+                                    <Modal.Body>
+                                    <iframe
+                                        src={`${pdfPath}#toolbar=1`}
+                                        width="100%"
+                                        height="600"
+                                        title="Loan Application PDF"
+                                        className="rounded border shadow-sm"
+                                    />
+                                    </Modal.Body>
+
+                                    <Modal.Footer>
+                                    <Button variant="secondary" onClick={() => setShowModal(false)}>
+                                        Close
+                                    </Button>
+                                    </Modal.Footer>
+                                </Modal>
+                                </fieldset>
+
                                 {/* --- Video Consent Upload / Preview --- */}
                                 <Row className="g-4 align-items-start mb-5">
                                 <Col md={6}>
