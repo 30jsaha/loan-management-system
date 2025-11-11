@@ -148,6 +148,7 @@ export default function Index({ auth }) {
           {loading ? (
             <div className="text-center py-5 text-gray-600">Loading customers...</div>
           ) : paginatedCustomers.length > 0 ? (
+            <div className="table-responsive">
             <table className="w-full text-xs sm:text-sm border-collapse table-fixed">
               <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
                 <tr>
@@ -249,6 +250,7 @@ export default function Index({ auth }) {
                 ))}
               </tbody>
             </table>
+            </div>
           ) : (
             <div className="p-6 text-gray-600 text-center font-medium">No customers found.</div>
           )}

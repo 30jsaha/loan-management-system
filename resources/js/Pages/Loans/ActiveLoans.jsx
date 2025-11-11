@@ -169,11 +169,11 @@ const handleCollectEMI = async () => {
             </div>
             <div className="py-3 border-x border-gray-200">
               <div className="text-sm text-gray-500">Pending</div>
-              <div className="text-xl font-bold">{currencyPrefix}&nbsp;5,00,000</div>
+              <div className="text-xl font-bold">{currencyPrefix}&nbsp;{loans[0].total_outstanding_amount_all_loan || 0.00}</div>
             </div>
             <div className="py-3">
               <div className="text-sm text-gray-500">Collected</div>
-              <div className="text-xl font-bold">{currencyPrefix}&nbsp;10,00,000</div>
+              <div className="text-xl font-bold">{currencyPrefix}&nbsp;{loans[0].total_paid_amount_all_loan || 0.00}</div>
             </div>
           </div>
           {/* Top Action Buttons */}
