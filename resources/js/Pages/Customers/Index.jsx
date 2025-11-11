@@ -203,6 +203,7 @@ export default function Index({ auth }) {
                       {cust.first_name} {cust.last_name}
                     </td>
                     <td className="px-2 py-2 text-center">{cust.employee_no}</td>
+                    <td className="px-2 py-2 text-center">{cust.organisation_name}</td>
                     <td className="px-2 py-2 text-center">{cust.gender}</td>
                     <td className="px-2 py-2 text-center text-gray-800">{cust.phone}</td>
                     <td className="px-2 py-2 text-center text-gray-500 truncate">{cust.email}</td>
