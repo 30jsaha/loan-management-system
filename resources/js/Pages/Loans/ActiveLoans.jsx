@@ -6,6 +6,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { motion, AnimatePresence } from "framer-motion";
 import { Row, Col, Table, Button } from "react-bootstrap";
+import{ currencyPrefix } from "@/config";
 
 // Document Viewer Modal
 function DocumentViewerModal({ isOpen, onClose, documentUrl }) {
@@ -160,7 +161,21 @@ const handleCollectEMI = async () => {
             <Link href={route("dashboard")}><ArrowLeft size={16} className="mr-2 text-gray-600" /></Link>
             <span className="font-semibold text-lg text-gray-800">Loan EMI Collection</span>
           </div>
-
+          {/* Summary */}
+          <div className="grid grid-cols-3 text-center border border-gray-200 rounded-lg overflow-hidden mb-3">
+            <div className="py-3">
+              <div className="text-sm text-gray-500">Total</div>
+              <div className="text-xl font-bold">{filteredLoans.length}</div>
+            </div>
+            <div className="py-3 border-x border-gray-200">
+              <div className="text-sm text-gray-500">Pending</div>
+              <div className="text-xl font-bold">{currencyPrefix}&nbsp;5,00,000</div>
+            </div>
+            <div className="py-3">
+              <div className="text-sm text-gray-500">Collected</div>
+              <div className="text-xl font-bold">{currencyPrefix}&nbsp;10,00,000</div>
+            </div>
+          </div>
           {/* Top Action Buttons */}
           <div className="flex gap-2 mb-4">
             <button
@@ -258,9 +273,10 @@ const handleCollectEMI = async () => {
                     </button>
                   </div>
                   <h4 className="font-semibold text-base text-gray-800">{fullName || "Unknown"}</h4>
-                  <p className="text-sm text-gray-600">Loan ID: {loan.id}</p>
+                  <p className="text-sm text-gray-600">Loan ID: #{loan.id}</p>
                   <p className="text-sm text-gray-600">Next Due: {loan.next_due_date || "N/A"}</p>
-                  <p className="text-sm text-gray-600"><strong className="text-success">EMI: PGK {loan.emi_amount}</strong></p>
+                  <p className="text-sm text-gray-600"><b>Total Repayment Amt:&nbsp;</b>{currencyPrefix}&nbsp;{loan.total_repay_amt}</p>
+                  <p className="text-sm text-gray-600"><strong className="text-success">EMI: {currencyPrefix}&nbsp;{loan.emi_amount}</strong></p>
                 </motion.div>
               );
             })
@@ -295,17 +311,19 @@ const handleCollectEMI = async () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 text-sm">
                       <div><b>Loan Type:</b> {selectedLoan.loan_settings?.loan_desc}</div>
                       <div><b>Purpose:</b> {selectedLoan.purpose}</div>
-                      <div><b>Loan Amount:</b>  {selectedLoan.loan_amount_applied}</div>
+                      <div><b>Loan Amount:</b> {currencyPrefix}&nbsp;{selectedLoan.loan_amount_applied}</div>
                       <div><b>Tenure:</b> {selectedLoan.tenure_fortnight} fortnights</div>
                       <div><b>Interest Rate:</b> {selectedLoan.interest_rate}%</div>
-                      <div><b>Status:</b> {selectedLoan.status}</div>
-                      <div><b>Created Date:</b> {new Date(selectedLoan.created_at).toLocaleString()}</div>
-                      <div><b>Approved By:</b> {selectedLoan.approved_by}</div>
-                      <div><b>Approved Date:</b> {new Date(selectedLoan.approved_date).toLocaleString()}</div>
-                      <div><b>Processing Fee:</b> {selectedLoan.processing_fee}</div>
-                      <div><b>Bank Name:</b> {selectedLoan.bank_name}</div>
+                      {/* <div><b>Created Date:</b> {new Date(selectedLoan.created_at).toLocaleString()}</div> */}
+                      
+                      <div><b>Processing Fee:</b> {currencyPrefix}&nbsp;{selectedLoan.processing_fee}</div>
+                      {/* <div><b>Bank Name:</b> {selectedLoan.bank_name}</div>
                       <div><b>Bank Branch:</b> {selectedLoan.bank_branch}</div>
-                      <div><b>Account No:</b> {selectedLoan.bank_account_no}</div>
+                      <div><b>Account No:</b> {selectedLoan.bank_account_no}</div> */}
+
+                      <div><b>Status:</b> <strong className="text-success">{selectedLoan.status}</strong></div>
+                      <div><b>Approved Date:</b> <i>{new Date(selectedLoan.approved_date).toLocaleString()}</i></div>
+                      <div><b>Approved By:</b> {selectedLoan.approved_by}</div>
                       <div>
                       <b>Last EMI Paid:</b>{" "}
                       {(() => {
@@ -340,6 +358,9 @@ const handleCollectEMI = async () => {
                       });
                     })()}
                     </div>
+                    <div>
+                      <b>Total Repayment Amt:&nbsp;</b>{currencyPrefix}&nbsp;{selectedLoan.total_repay_amt}
+                    </div>
                   </div>
                   {selectedLoan.installments.length > 0 ? (
                   <Table bordered size="sm" className="mt-3">
@@ -369,7 +390,7 @@ const handleCollectEMI = async () => {
                           >
                             {emi.status}
                           </td>
-                          <td>PGK {emi.emi_amount}</td>
+                          <td>{currencyPrefix}&nbsp;{emi.emi_amount}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -383,15 +404,15 @@ const handleCollectEMI = async () => {
                 <h4 className="font-semibold text-base mb-3">Customer Details</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                   <div><b>Name:</b> {selectedLoan.customer?.first_name} {selectedLoan.customer?.last_name}</div>
-                  <div><b>Gender:</b> {selectedLoan.customer?.gender}</div>
-                  <div><b>DOB:</b> {selectedLoan.customer?.dob}</div>
+                  {/* <div><b>Gender:</b> {selectedLoan.customer?.gender}</div> */}
+                  {/* <div><b>DOB:</b> {selectedLoan.customer?.dob}</div> */}
                   <div><b>Phone:</b> {selectedLoan.customer?.phone}</div>
                   <div><b>Email:</b> {selectedLoan.customer?.email}</div>
                   <div><b>Employee No:</b> {selectedLoan.customer?.employee_no}</div>
                   <div><b>Designation:</b> {selectedLoan.customer?.designation}</div>
-                  <div><b>Employment Type:</b> {selectedLoan.customer?.employment_type}</div>
+                  {/* <div><b>Employment Type:</b> {selectedLoan.customer?.employment_type}</div> */}
                   <div><b>Monthly Salary:</b> {selectedLoan.customer?.monthly_salary}</div>
-                  <div><b>Work Location:</b> {selectedLoan.customer?.work_location}</div>
+                  {/* <div><b>Work Location:</b> {selectedLoan.customer?.work_location}</div> */}
                 </div>
               </div>
 

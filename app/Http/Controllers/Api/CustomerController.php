@@ -15,7 +15,9 @@ class CustomerController extends Controller
     public function customer_list()
     {
         // Fetch customers from the database
-        $customers = \App\Models\Customer::all();
+        $customers = Customer::select('customers.*', 'organisation_master.organisation_name as organisation_name')
+            ->leftJoin('organisation_master', 'customers.organisation_id', '=', 'organisation_master.id')
+            ->get();
 
         // Return the customers as a JSON response
         return response()->json($customers);

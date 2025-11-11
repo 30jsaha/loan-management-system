@@ -155,6 +155,7 @@ export default function Index({ auth }) {
                     ["#", "id"],
                     ["Name", "first_name"],
                     ["Emp No", "employee_no"],
+                    ["Organisation", "organisation_name"],
                     ["Gender", "gender"],
                     ["Phone", "phone"],
                     ["Email", "email"],

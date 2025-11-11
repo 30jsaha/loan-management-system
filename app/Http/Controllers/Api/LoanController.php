@@ -476,7 +476,9 @@ class LoanController extends Controller
 
         foreach ($validated['loan_ids'] as $loanId) {
             $l = Loan::findOrFail($loanId);
-
+            $emi_freq = LoanSetting::where('id', $l->loan_type)
+            ->value('installment_frequency_in_days');
+            $emi_freq_val = (filter_var($emi_freq, FILTER_VALIDATE_INT) !== false && (int)$emi_freq !== 0) ? $emi_freq : 14;
             InstallmentDetail::create([
                 'loan_id' => $loanId,
                 'installment_no' => (function() use ($loanId, $l) {
@@ -499,7 +501,7 @@ class LoanController extends Controller
                 'emi_collected_date' => now()
             ]);
 
-            $nextDue = now()->addDays(14)->toDateString();
+            $nextDue = now()->addDays($emi_freq_val)->toDateString();
             $l->next_due_date = $nextDue;
             $l->save();
         }
