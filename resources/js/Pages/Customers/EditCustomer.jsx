@@ -97,7 +97,7 @@ export default function EditCustomer() {
 
   if (loading) {
     return (
-      <AuthenticatedLayout user={auth.user} header={<h2>Edit Customer</h2>}>
+      <AuthenticatedLayout user={auth.user} header={<h4>Edit Customer</h4>}>
         <Head title="Edit Customer" />
         <div className="flex justify-center items-center h-96">
           <Spinner animation="border" variant="primary" />

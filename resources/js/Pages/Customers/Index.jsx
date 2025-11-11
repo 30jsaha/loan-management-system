@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link, Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Pencil, Eye, Trash2, Search } from "lucide-react";
+import { currencyPrefix } from "@/config";
 import Swal from "sweetalert2";
 
 export default function Index({ auth }) {
@@ -12,6 +13,10 @@ export default function Index({ auth }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "first_name", direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchName, setSearchName] = useState("");
+  const [searchEmp, setSearchEmp] = useState("");
+  const [searchOrg, setSearchOrg] = useState("");
+
   const itemsPerPage = 15; // ✅ Now shows 10 items per page
 
   useEffect(() => {
@@ -92,9 +97,15 @@ export default function Index({ auth }) {
     return sorted;
   }, [customers, sortConfig]);
 
-  const filteredData = sortedData.filter((c) =>
-    `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = sortedData.filter((c) => {
+    const fullName = `${c.first_name} ${c.last_name}`.toLowerCase();
+    return (
+      fullName.includes(searchName.toLowerCase()) &&
+      c.employee_no?.toLowerCase().includes(searchEmp.toLowerCase()) &&
+      c.organisation_name?.toLowerCase().includes(searchOrg.toLowerCase())
+    );
+  });
+
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
   const paginatedCustomers = filteredData.slice(
@@ -126,22 +137,56 @@ export default function Index({ auth }) {
           </Link>
         </div>
 
-        {/* Search */}
-        <div className="bg-white shadow-md rounded-xl p-3 border border-gray-100 flex items-center justify-between">
-          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/3 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+        {/* 🔍 Search Filters */}
+        <div className="bg-white shadow-md rounded-xl p-3 border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-between gap-3">
+          
+          {/* Search by Name */}
+          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
             <Search size={18} className="text-gray-500 mr-2" />
             <input
               type="text"
               placeholder="Search by Name"
-              value={searchTerm}
+              value={searchName}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
+                setSearchName(e.target.value);
                 setCurrentPage(1);
               }}
               className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
             />
           </div>
+
+          {/* Search by Employee No */}
+          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+            <Search size={18} className="text-gray-500 mr-2" />
+            <input
+              type="text"
+              placeholder="Search by Employee No"
+              value={searchEmp}
+              onChange={(e) => {
+                setSearchEmp(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
+            />
+          </div>
+
+          {/* Search by Organisation */}
+          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+            <Search size={18} className="text-gray-500 mr-2" />
+            <input
+              type="text"
+              placeholder="Search by Organisation"
+              value={searchOrg}
+              onChange={(e) => {
+                setSearchOrg(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
+            />
+          </div>
+
         </div>
+
 
         {/* Table */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 w-full overflow-hidden">
@@ -157,13 +202,11 @@ export default function Index({ auth }) {
                     ["Emp No", "employee_no"],
                     ["Organisation", "organisation_name"],
                     ["Gender", "gender"],
-                    ["Phone", "phone"],
-                    ["Email", "email"],
+                    ["Contact Info", "contact_info"],
                     ["Payroll No", "payroll_number"],
                     ["Type", "employment_type"],
                     ["Designation", "designation"],
-                    ["Gross", "monthly_salary"],
-                    ["Net", "net_salary"],
+                    ["Salary Info", "salary_info"],
                     ["Location", "work_location"],
                     ["Created", "created_at"],
                     ["Actions", "actions"],
@@ -205,17 +248,34 @@ export default function Index({ auth }) {
                     <td className="px-2 py-2 text-center">{cust.employee_no}</td>
                     <td className="px-2 py-2 text-center">{cust.organisation_name}</td>
                     <td className="px-2 py-2 text-center">{cust.gender}</td>
-                    <td className="px-2 py-2 text-center text-gray-800">{cust.phone}</td>
-                    <td className="px-2 py-2 text-center text-gray-500 truncate">{cust.email}</td>
+                    {/* <td className="px-2 py-2 text-center text-gray-800">{cust.phone}</td>
+                    <td className="px-2 py-2 text-center text-gray-500 truncate">{cust.email}</td> */}
+                    <td className="px-2 py-2 text-center text-gray-800">
+                      <div className="flex flex-col items-center">
+                        <span className="font-medium text-gray-700">{cust.phone || "—"}</span>
+                        <span className="text-gray-500 text-xs">{cust.email || "—"}</span>
+                      </div>
+                    </td>
                     <td className="px-2 py-2 text-center">{cust.payroll_number}</td>
                     <td className="px-2 py-2 text-center">{cust.employment_type}</td>
                     <td className="px-2 py-2 text-center">{cust.designation}</td>
-                    <td className="px-2 py-2 text-center text-emerald-700 font-semibold">
+                    {/* <td className="px-2 py-2 text-center text-emerald-700 font-semibold">
                       {parseFloat(cust.monthly_salary).toLocaleString()}
                     </td>
                     <td className="px-2 py-2 text-center text-emerald-700 font-semibold">
                       {parseFloat(cust.net_salary).toLocaleString()}
+                    </td> */}
+                    <td className="px-2 py-2 text-center text-emerald-700 font-semibold">
+                      <div className="flex flex-col items-center">
+                        <span className="text-emerald-700 font-semibold">
+                          Gross: {currencyPrefix}&nbsp;{parseFloat(cust.monthly_salary || 0).toLocaleString()}
+                        </span>
+                        <span className="text-gray-600 text-xs">
+                          Net: {currencyPrefix}&nbsp;{parseFloat(cust.net_salary || 0).toLocaleString()}
+                        </span>
+                      </div>
                     </td>
+
                     <td className="px-2 py-2 text-center">{cust.work_location}</td>
                     <td className="px-2 py-2 text-center text-gray-600 whitespace-nowrap">
                       {new Date(cust.created_at).toLocaleDateString()}

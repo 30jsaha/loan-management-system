@@ -364,15 +364,16 @@ const handleCollectEMI = async () => {
                   </div>
                   {selectedLoan.installments.length > 0 ? (
                   <Table bordered size="sm" className="mt-3">
-                    <thead>
+                    <thead className="!bg-gray-100 !text-gray-700">
                       <tr>
-                        <th>EMI No.</th>
-                        <th>Due Date</th>
-                        <th>Payment Date</th>
-                        <th>Status</th>
-                        <th>Amount</th>
+                        <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">EMI No.</th>
+                        <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">Due Date</th>
+                        <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">Payment Date</th>
+                        <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">Status</th>
+                        <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">Amount</th>
                       </tr>
                     </thead>
+
                     <tbody>
                       {selectedLoan.installments.map((emi) => (
                         <tr key={emi.id}>
