@@ -5,7 +5,7 @@ import { Head, Link } from "@inertiajs/react";
 import { Row, Col, Form, Button, ProgressBar } from "react-bootstrap";
 import { ArrowLeft, Upload, Eye } from "lucide-react";
 import Swal from "sweetalert2";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import { router } from "@inertiajs/react"; 
 
 export default function Edit({ auth, loanId }) {
@@ -112,52 +112,62 @@ export default function Edit({ auth, loanId }) {
   };
 
   const handleUpdate = async (e) => {
-    e.preventDefault();
-    setIsChecking(true);
-    try {
-      const selectedLoanSetting = loanSettings.find(
-        (ls) => ls.id === Number(loanFormData.loan_type)
-      );
+  e.preventDefault();
+  setIsChecking(true);
 
-      const validationErrors = validateLoanAmountAndTerm(
-        loanFormData.loan_amount_applied,
-        loanFormData.tenure_fortnight,
-        selectedLoanSetting
-      );
+  try {
+    const selectedLoanSetting = loanSettings.find(
+      (ls) => ls.id === Number(loanFormData.loan_type)
+    );
 
-      if (validationErrors.length > 0) {
-        Swal.fire({
-          title: "Validation Error",
-          html: validationErrors.join("<br>"),
-          icon: "warning",
-        });
-        setIsChecking(false);
-        return;
-      }
+    const validationErrors = validateLoanAmountAndTerm(
+      loanFormData.loan_amount_applied,
+      loanFormData.tenure_fortnight,
+      selectedLoanSetting
+    );
 
-      const loanAmount = parseFloat(loanFormData.loan_amount_applied);
-      const rate = parseFloat(loanFormData.interest_rate);
-      const term = parseFloat(loanFormData.tenure_fortnight);
-      const totalInterest = loanAmount * rate / 100 * term;
-      const totalRepay = loanAmount + totalInterest;
-      const emi = term > 0 ? totalRepay / term : 0;
-
-      const payload = {
-        ...loanFormData,
-        total_interest_amt: totalInterest,
-        total_repay_amt: totalRepay,
-        emi_amount: emi,
-      };
-
-      await axios.put(`/api/loans/${loanId}`, payload);
-      Swal.fire("Success", "Loan updated successfully!", "success");
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Failed to update loan", "error");
-    } finally {
+    if (validationErrors.length > 0) {
+      Swal.fire({
+        title: "Validation Error",
+        html: validationErrors.join("<br>"),
+        icon: "warning",
+      });
       setIsChecking(false);
+      return;
     }
+
+    const loanAmount = parseFloat(loanFormData.loan_amount_applied);
+    const rate = parseFloat(loanFormData.interest_rate);
+    const term = parseFloat(loanFormData.tenure_fortnight);
+    const totalInterest = loanAmount * rate / 100 * term;
+    const totalRepay = loanAmount + totalInterest;
+    const emi = term > 0 ? totalRepay / term : 0;
+
+    const payload = {
+      ...loanFormData,
+      total_interest_amt: totalInterest,
+      total_repay_amt: totalRepay,
+      emi_amount: emi,
+    };
+
+    await axios.put(`/api/loans/${loanId}`, payload);
+
+    // ✅ Show toast instead of SweetAlert
+    toast.success("Loan updated successfully!");
+
+    // ✅ Automatically go to Document Upload tab after short delay
+    setTimeout(() => {
+      setActiveSection("documents");
+    }, 1000);
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to update loan. Please try again.");
+  } finally {
+    setIsChecking(false);
+  }
   };
+
 
   // === Document Upload ===
   const handleFileUpload = async () => {
@@ -242,6 +252,8 @@ export default function Edit({ auth, loanId }) {
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Edit Loan</h2>}
     >
       <Head title="Edit Loan" />
+      <Toaster position="top-center" reverseOrder={false} />
+
       <div className="py-4 max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div className="bg-white shadow-sm sm:rounded-lg p-6">
 
@@ -480,178 +492,178 @@ export default function Edit({ auth, loanId }) {
           )}
 
           {activeSection === "documents" && (
-  <Row className="mt-4">
-    {/* === LEFT SIDE: TABLE (80%) === */}
-    <Col md={9}>
-      <fieldset className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm relative">
-        <legend className="absolute -top-3 left-4 bg-green-700 text-white text-sm font-semibold px-3 py-1 rounded-md shadow w-auto">
-          Uploaded Documents
-        </legend>
+          <Row className="mt-4">
+            {/* === LEFT SIDE: TABLE (80%) === */}
+            <Col md={9}>
+              <fieldset className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm relative">
+                <legend className="absolute -top-3 left-4 bg-green-700 text-white text-sm font-semibold px-3 py-1 rounded-md shadow w-auto">
+                  Uploaded Documents
+                </legend>
 
-        <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
-          <thead>
-            <tr className="bg-green-600 text-white">
-              <th className="border p-2 text-center w-48">Document Type</th>
-              <th className="border p-2 text-center">File Name</th>
-              <th className="border p-2 text-center w-24">Status</th>
-              <th className="border p-2 text-center w-32">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loanDocs && loanDocs.length > 0 ? (
-              loanDocs.map((doc, index) => (
-                <tr
-                  key={index}
-                  className={`hover:bg-gray-50 transition ${
-                    selectedDoc?.doc_type === doc.doc_type ? "bg-green-50" : ""
-                  }`}
-                  onClick={() => setSelectedDoc(doc)}
-                >
-                  <td className="border p-2 text-center font-medium">
-                    {doc.doc_type || "N/A"}
-                  </td>
-                  <td className="border p-2 text-center truncate">{doc.file_name}</td>
-                  <td className="border p-2 text-center">
-                    {doc.verification_status === "Verified" ? (
-                      <span className="text-green-600 font-semibold">✅ Verified</span>
-                    ) : doc.verification_status === "Rejected" ? (
-                      <span className="text-red-600 font-semibold">❌ Rejected</span>
-                    ) : (
-                      <span className="text-yellow-600 font-semibold">⏳ Pending</span>
-                    )}
-                  </td>
-                  <td className="border p-2 text-center">
-                    <div className="flex justify-center gap-2">
-                      {doc.file_path && (
-                        <a
-                          onClick={() => {
-                            setSelectedDoc(doc);
-                            setShowPreview(true);
-                          }}
-                          className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md inline-flex items-center justify-center gap-1 text-xs"
-                        >
-                          <Eye size={14} /> View
-                        </a>
-                      )}
-                      {doc.verification_status === "Pending" && (
-                        <button
+                <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
+                  <thead>
+                    <tr className="bg-green-600 text-white">
+                      <th className="border p-2 text-center w-48">Document Type</th>
+                      <th className="border p-2 text-center">File Name</th>
+                      <th className="border p-2 text-center w-24">Status</th>
+                      <th className="border p-2 text-center w-32">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loanDocs && loanDocs.length > 0 ? (
+                      loanDocs.map((doc, index) => (
+                        <tr
+                          key={index}
+                          className={`hover:bg-gray-50 transition ${
+                            selectedDoc?.doc_type === doc.doc_type ? "bg-green-50" : ""
+                          }`}
                           onClick={() => setSelectedDoc(doc)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md inline-flex items-center justify-center gap-1 text-xs"
                         >
-                          <Upload size={14} /> Upload
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="4" className="text-center p-3 text-gray-500">
-                  No documents uploaded yet.
-                </td>
-              </tr>
+                          <td className="border p-2 text-center font-medium">
+                            {doc.doc_type || "N/A"}
+                          </td>
+                          <td className="border p-2 text-center truncate">{doc.file_name}</td>
+                          <td className="border p-2 text-center">
+                            {doc.verification_status === "Verified" ? (
+                              <span className="text-green-600 font-semibold">✅ Verified</span>
+                            ) : doc.verification_status === "Rejected" ? (
+                              <span className="text-red-600 font-semibold">❌ Rejected</span>
+                            ) : (
+                              <span className="text-yellow-600 font-semibold">⏳ Pending</span>
+                            )}
+                          </td>
+                          <td className="border p-2 text-center">
+                            <div className="flex justify-center gap-2">
+                              {doc.file_path && (
+                                <a
+                                  onClick={() => {
+                                    setSelectedDoc(doc);
+                                    setShowPreview(true);
+                                  }}
+                                  className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md inline-flex items-center justify-center gap-1 text-xs"
+                                >
+                                  <Eye size={14} /> View
+                                </a>
+                              )}
+                              {doc.verification_status === "Pending" && (
+                                <button
+                                  onClick={() => setSelectedDoc(doc)}
+                                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md inline-flex items-center justify-center gap-1 text-xs"
+                                >
+                                  <Upload size={14} /> Upload
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="text-center p-3 text-gray-500">
+                          No documents uploaded yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </fieldset>
+            </Col>
+
+            {/* === RIGHT SIDE: UPLOAD PANEL (20%) === */}
+            {/* === RIGHT SIDE: PREVIEW / UPLOAD PANEL === */}
+                <Col md={3}>
+                  <fieldset className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm relative">
+                    <legend className="absolute -top-3 left-4 bg-green-700 text-white text-sm font-semibold px-3 py-1 rounded-md shadow w-auto">
+                      {showPreview ? "Document Preview" : "Select a Document"}
+                    </legend>
+
+                    {selectedDoc ? (
+                      <>
+                        <h6 className="font-semibold mb-2 text-gray-700">{selectedDoc.doc_type}</h6>
+
+                        {selectedDoc.file_path ? (
+                          <>
+                            {/* Preview PDF or Image */}
+                            {selectedDoc.file_path.endsWith(".pdf") ? (
+                              <iframe
+                                src={`/storage/${selectedDoc.file_path}#toolbar=0`}
+                                width="100%"
+                                height="250"
+                                className="border rounded mb-3"
+                                title="PDF Preview"
+                              />
+                            ) : selectedDoc.file_path.match(/\.(jpg|jpeg|png)$/i) ? (
+                              <img
+                                src={`/storage/${selectedDoc.file_path}`}
+                                alt={selectedDoc.file_name}
+                                className="w-full rounded mb-3 border shadow-sm"
+                              />
+                            ) : (
+                              <p className="text-gray-500 text-center mb-3">
+                                Preview not available for this file type.
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <div className="p-3 text-gray-500 text-center border rounded mb-3">
+                            No file uploaded yet.
+                          </div>
+                        )}
+
+                        {/* Upload New File (if Pending) */}
+                        {selectedDoc.verification_status === "Pending" && (
+                          <>
+                            <Form.Group controlId="formFile" className="mb-3">
+                              <Form.Label className="font-medium">Upload New File</Form.Label>
+                              <Form.Control
+                                type="file"
+                                accept="application/pdf, image/jpeg, image/png"
+                                onChange={(e) => setUploadFile(e.target.files[0])}
+                              />
+                            </Form.Group>
+
+                            {uploadProgress > 0 && (
+                              <ProgressBar
+                                now={uploadProgress}
+                                label={`${uploadProgress}%`}
+                                className="mb-3"
+                                animated
+                              />
+                            )}
+
+                            <Button
+                              variant="success"
+                              className="w-100 d-flex align-items-center justify-content-center gap-2"
+                              onClick={handleFileUpload}
+                              disabled={!uploadFile}
+                            >
+                              <Upload size={18} /> Upload
+                            </Button>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center text-gray-500 p-4">
+                        Select a document to view or upload.
+                      </div>
+                    )}
+                  </fieldset>
+                </Col>
+
+
+            {/* Finalize Button */}
+            {loanDocs.length >= 3 && (
+              <Col md={12} className="text-end mt-3">
+                <Button
+                  variant="success"
+                  onClick={handleFinishUpload}
+                  className="d-inline-flex align-items-center gap-2"
+                >
+                  ✅ Upload All Documents & Finish
+                </Button>
+              </Col>
             )}
-          </tbody>
-        </table>
-      </fieldset>
-    </Col>
-
-    {/* === RIGHT SIDE: UPLOAD PANEL (20%) === */}
-    {/* === RIGHT SIDE: PREVIEW / UPLOAD PANEL === */}
-<Col md={3}>
-  <fieldset className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm relative">
-    <legend className="absolute -top-3 left-4 bg-green-700 text-white text-sm font-semibold px-3 py-1 rounded-md shadow w-auto">
-      {showPreview ? "Document Preview" : "Select a Document"}
-    </legend>
-
-    {selectedDoc ? (
-      <>
-        <h6 className="font-semibold mb-2 text-gray-700">{selectedDoc.doc_type}</h6>
-
-        {selectedDoc.file_path ? (
-          <>
-            {/* Preview PDF or Image */}
-            {selectedDoc.file_path.endsWith(".pdf") ? (
-              <iframe
-                src={`/storage/${selectedDoc.file_path}#toolbar=0`}
-                width="100%"
-                height="250"
-                className="border rounded mb-3"
-                title="PDF Preview"
-              />
-            ) : selectedDoc.file_path.match(/\.(jpg|jpeg|png)$/i) ? (
-              <img
-                src={`/storage/${selectedDoc.file_path}`}
-                alt={selectedDoc.file_name}
-                className="w-full rounded mb-3 border shadow-sm"
-              />
-            ) : (
-              <p className="text-gray-500 text-center mb-3">
-                Preview not available for this file type.
-              </p>
-            )}
-          </>
-        ) : (
-          <div className="p-3 text-gray-500 text-center border rounded mb-3">
-            No file uploaded yet.
-          </div>
-        )}
-
-        {/* Upload New File (if Pending) */}
-        {selectedDoc.verification_status === "Pending" && (
-          <>
-            <Form.Group controlId="formFile" className="mb-3">
-              <Form.Label className="font-medium">Upload New File</Form.Label>
-              <Form.Control
-                type="file"
-                accept="application/pdf, image/jpeg, image/png"
-                onChange={(e) => setUploadFile(e.target.files[0])}
-              />
-            </Form.Group>
-
-            {uploadProgress > 0 && (
-              <ProgressBar
-                now={uploadProgress}
-                label={`${uploadProgress}%`}
-                className="mb-3"
-                animated
-              />
-            )}
-
-            <Button
-              variant="success"
-              className="w-100 d-flex align-items-center justify-content-center gap-2"
-              onClick={handleFileUpload}
-              disabled={!uploadFile}
-            >
-              <Upload size={18} /> Upload
-            </Button>
-          </>
-        )}
-      </>
-    ) : (
-      <div className="text-center text-gray-500 p-4">
-        Select a document to view or upload.
-      </div>
-    )}
-  </fieldset>
-</Col>
-
-
-    {/* Finalize Button */}
-    {loanDocs.length >= 3 && (
-      <Col md={12} className="text-end mt-3">
-        <Button
-          variant="success"
-          onClick={handleFinishUpload}
-          className="d-inline-flex align-items-center gap-2"
-        >
-          ✅ Upload All Documents & Finish
-        </Button>
-      </Col>
-    )}
-  </Row>
+          </Row>
           )}
 
 
