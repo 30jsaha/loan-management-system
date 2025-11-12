@@ -657,21 +657,27 @@ export default function View({ auth, loanId }) {
                                     </legend>
 
                                     <Form.Group>
-                                        <Form.Label className="font-medium">Upload Consent Video (MP4 only)</Form.Label>
+                                        <Form.Label className="font-medium">
+                                            Upload Consent Video (MP4 only)
+                                        </Form.Label>
+
                                         <Form.Control
-                                        type="file"
-                                        accept="video/mp4"
-                                        disabled={loan.status == "Approved"}
-                                        onChange={(e) => {
+                                            type="file"
+                                            accept="video/mp4"
+                                            key={videoFile ? videoFile.name : ""} // 👈 resets input display after upload
+                                            disabled={loan.status === "Approved"}
+                                            onChange={(e) => {
                                             const file = e.target.files[0];
                                             if (file) {
-                                            setVideoFile(file);
-                                            setVideoPreview(URL.createObjectURL(file));
+                                                setVideoFile(file);
+                                                setVideoPreview(URL.createObjectURL(file));
                                             }
-                                        }}
+                                            }}
                                         />
+
                                         <Form.Text className="text-muted">Max size: 20MB</Form.Text>
                                     </Form.Group>
+
 
                                     <Button
                                         className="mt-3 bg-blue-600 hover:bg-blue-700 text-white"
@@ -732,6 +738,7 @@ export default function View({ auth, loanId }) {
                                         type="file"
                                         accept="application/pdf"
                                         disabled={loan.status == "Approved"}
+                                         key={pdfFile ? pdfFile.name : ""}
                                         onChange={(e) => {
                                             const file = e.target.files[0];
                                             if (file) {
@@ -804,6 +811,7 @@ export default function View({ auth, loanId }) {
                                         type="file"
                                         accept="application/pdf"
                                         disabled={loan.status == "Approved"}
+                                        key={pdfFile1 ? pdfFile1.name : ""}
                                         onChange={(e) => {
                                             const file1 = e.target.files[0];
                                             if (file1) {
