@@ -71,6 +71,7 @@ export default function ActiveLoans({ auth, approved_loans }) {
         ? prev.filter((id) => id !== loanId)
         : [...prev, loanId]
     );
+    setSelectedLoan(null);
   };
 
   // ✅ Handle Select All logic

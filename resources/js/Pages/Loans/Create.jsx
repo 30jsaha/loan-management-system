@@ -422,7 +422,7 @@ export default function Create({ auth, loan_settings }) {
             console.log("loanFormData before submit", loanFormData);
             console.log(typeof(loanFormData.loan_amount_applied));
             
-            return;
+            // return;
             const res = await axios.post('/api/loans', loanFormData);
             setMessage('✅ Loan application data saved successfully!');
             Swal.fire({

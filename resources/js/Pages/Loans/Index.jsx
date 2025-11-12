@@ -223,11 +223,11 @@ export default function Index({ auth }) {
           </div>
 
           {/* 🧾 Table */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mt-4">
+          <div className="bg-white shadow-lg border border-gray-100 overflow-hidden mt-4">
             {loading ? (
               <div className="text-center py-6 text-gray-600">Loading loans...</div>
             ) : filteredLoans.length > 0 ? (
-              <table className="w-full text-sm border-collapse table-auto">
+              <table className="w-full text-sm border-collapse table-auto border-spacing-2 border border-gray-400">
                 <thead className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-blue-600 text-white">
                   <tr>
                     <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide">#</th>
@@ -270,7 +270,7 @@ export default function Index({ auth }) {
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 border-separate">
                   {paginatedLoans.map((loan, index) => (
                     <tr key={loan.id} className="hover:bg-indigo-50 transition-all duration-200">
                       <td className="px-4 py-3 text-center text-gray-700">

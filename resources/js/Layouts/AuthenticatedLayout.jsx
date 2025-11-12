@@ -69,7 +69,7 @@ export default function Authenticated({ user, header, children }) {
 
                                         <Dropdown.Content>
                                             <Dropdown.Link className={`${route().current('loans') ? 'dropdown-nav-a-active' : ''}`} href={route('loans')}>Loan Applications</Dropdown.Link>
-                                            <Dropdown.Link className={`${route().current('loan-create') ? 'dropdown-nav-a-active' : ''}`} href={route('loan-create')}>+ New Loan</Dropdown.Link>
+                                            {/* <Dropdown.Link className={`${route().current('loan-create') ? 'dropdown-nav-a-active' : ''}`} href={route('loan-create')}>+ New Loan</Dropdown.Link> */}
                                             <Dropdown.Link className={`${route().current('loan.emi') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.emi')}>EMI Collection</Dropdown.Link>
                                             <Dropdown.Link className={`${route().current('loan.settings') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.settings')}>Loan Settings</Dropdown.Link>
                                         </Dropdown.Content>
@@ -111,8 +111,8 @@ export default function Authenticated({ user, header, children }) {
 
                                         <Dropdown.Content>
                                             <Dropdown.Link className={`${route().current('customers') ? 'dropdown-nav-a-active' : ''}`} href={route('customers')}>All Customers</Dropdown.Link>
-                                            <Dropdown.Link className={`${route().current('customer.create') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.create')}>+ New Customer</Dropdown.Link>
-                                            <Dropdown.Link className={`${route().current('customer.dept') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.dept')}>Dept Saved Customers</Dropdown.Link>
+                                            {/* <Dropdown.Link className={`${route().current('customer.create') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.create')}>+ New Customer</Dropdown.Link> */}
+                                            <Dropdown.Link className={`${route().current('customer.dept') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.dept')}>Dept. Database</Dropdown.Link>
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>
