@@ -277,18 +277,21 @@ export default function Index({ auth }) {
                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
 
+                      {/* Details */}
                       <td className="px-4 py-3 text-gray-800 text-sm">
                         <strong>Type:</strong> {loan.loan_settings?.loan_desc || "-"}
                         <br />
                         <strong>Purpose:</strong> {loan.purpose || "-"}
                       </td>
 
+                      {/* Organisation */}
                       <td className="px-4 py-3 text-gray-800 text-sm">
                         <strong>{loan.organisation?.organisation_name || "-"}</strong>
                         <br />
                         {loan.organisation?.email || "-"}
                       </td>
 
+                      {/* Amount */}
                       <td className="px-4 py-3 text-gray-800 text-sm">
                         {currencyPrefix}&nbsp;
                         {parseFloat(loan.loan_amount_applied || 0).toLocaleString()}
@@ -296,6 +299,7 @@ export default function Index({ auth }) {
                         <strong>Tenure:</strong> {loan.tenure_fortnight}
                       </td>
 
+                      {/* Eligibility + Eligible Amount */}
                       <td className="px-4 py-3 text-center">
                         <span
                           className={`px-2 py-1 text-xs font-semibold rounded-full ${
@@ -306,8 +310,13 @@ export default function Index({ auth }) {
                         >
                           {loan.is_elegible === 1 ? "Eligible" : "Not Eligible"}
                         </span>
+                        <div className="text-xs text-gray-700 mt-1">
+                          <strong>Eligible Amt:</strong> {currencyPrefix}
+                          {parseFloat(loan.elegible_amount || 0).toLocaleString()}
+                        </div>
                       </td>
 
+                      {/* Status */}
                       <td className="px-4 py-3 text-center">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -322,10 +331,12 @@ export default function Index({ auth }) {
                         </span>
                       </td>
 
+                      {/* Created */}
                       <td className="px-4 py-3 text-center text-gray-600 whitespace-nowrap">
                         {new Date(loan.created_at).toLocaleDateString()}
                       </td>
 
+                      {/* Actions */}
                       <td className="px-4 py-3 text-center">
                         <div className="flex justify-center gap-2">
                           <Link
