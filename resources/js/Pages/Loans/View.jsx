@@ -576,44 +576,78 @@ export default function View({ auth, loanId }) {
                                  <fieldset className="fldset mb-5">
                                 <legend className="font-semibold mb-2">📑 Document Summary</legend>
 
-                                <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
+                               <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
                                     <thead className="bg-indigo-600 text-white">
-                                    <tr>
+                                        <tr>
                                         <th className="border p-2 text-center">Document Type</th>
                                         <th className="border p-2 text-center">File Name</th>
                                         <th className="border p-2 text-center">View</th>
                                         <th className="border p-2 text-center">Download</th>
-                                    </tr>
+                                        <th className="border p-2 text-center">Print</th>
+                                        </tr>
                                     </thead>
 
                                     <tbody>
-                                    <tr className="hover:bg-gray-50 transition">
+                                        <tr className="hover:bg-gray-50 transition">
                                         <td className="border p-2 text-center">Application Form</td>
                                         <td className="border p-2 text-center">{fileName}</td>
 
                                         {/* View Button */}
                                         <td className="border p-2 text-center">
-                                        <button
+                                            <button
                                             onClick={() => setShowModal(true)}
                                             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                        >
+                                            >
                                             <Eye size={14} /> View
-                                        </button>
+                                            </button>
                                         </td>
 
                                         {/* Download Button */}
                                         <td className="border p-2 text-center">
-                                        <a
+                                            <a
                                             href={pdfPath}
                                             download
                                             className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                        >
+                                            >
                                             <Download size={14} /> Download
-                                        </a>
+                                            </a>
                                         </td>
-                                    </tr>
+
+                                        {/* 🖨️ Print Button */}
+                                        <td className="border p-2 text-center">
+                                            <button
+                                            onClick={() => {
+                                                const printWindow = window.open(pdfPath, "_blank");
+                                                if (printWindow) {
+                                                printWindow.onload = () => {
+                                                    printWindow.focus();
+                                                    printWindow.print();
+                                                };
+                                                }
+                                            }}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                            >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                strokeWidth="1.5"
+                                                stroke="currentColor"
+                                                className="w-4 h-4"
+                                            >
+                                                <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6"
+                                                />
+                                            </svg>
+                                            Print
+                                            </button>
+                                        </td>
+                                        </tr>
                                     </tbody>
                                 </table>
+
 
                                 {/* PDF Modal */}
                                 <Modal
