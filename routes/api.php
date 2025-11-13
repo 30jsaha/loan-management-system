@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\OrganisationController;
 use App\Http\Controllers\Api\LoanTempCustomerController;
 use App\Http\Controllers\Api\DocumentUploadController;
 use App\Http\Controllers\Api\AllCustController;
+use App\Http\Controllers\Api\FrontEndController;
 use App\Models\LoanTempCustomer;
 /*
 |--------------------------------------------------------------------------
@@ -89,7 +90,8 @@ Route::middleware('auth:sanctum')->put('/all-dept-cust-update/{id}', [AllCustCon
 Route::middleware('auth:sanctum')->delete('/all-dept-cust-delete/{id}', [AllCustController::class, 'destroy']);
 
 Route::post('/validate-loan-tier', [LoanController::class, 'validateLoan'])
-    ->middleware('auth:sanctum');
+->middleware('auth:sanctum');
 
 
- 
+
+Route::middleware('auth:sanctum')->post('/send-loan-mail', [LoanController::class, 'sendLoanMail']);
