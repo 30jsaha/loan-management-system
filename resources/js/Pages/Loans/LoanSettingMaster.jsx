@@ -184,19 +184,19 @@ export default function LoanSettingMaster({ auth }) {
       <Head title="Loan Settings" />
       <Toaster position="top-center" />
 
-      <div className="min-h-screen bg-gray-100 p-6 space-y-6">
+      <div className="min-h-screen bg-gray-100 p-6 space-y-6 ">
         {/* Back Button */}
-        <div className="max-w-9xl mx-auto mb-4 custPadding">
+        <div className="max-w-9xl mx-auto -mb-3 -mt-2 ">
           <Link
-            href={route("dashboard")}
+            href={route("loans")}
             className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
           >
-            <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
+            <ArrowLeft size={16} className="mr-2" /> Back to List
           </Link>
         </div>
 
         {/* Form */}
-        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="max-w-9xl mx-auto bg-white rounded-0xl shadow-lg p-6 border border-gray-100">
           <h4 className="text-lg font-semibold text-gray-700 mb-4">{isEditing ? "Edit Loan Setting" : "Add Loan Setting"}</h4>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
@@ -253,7 +253,7 @@ export default function LoanSettingMaster({ auth }) {
         </div>
 
         {/* --- FILTER BAR --- */}
-        <div className="max-w-7xl mx-auto bg-white shadow-sm border border-gray-100 rounded-lg p-3 flex flex-wrap md:flex-nowrap items-center justify-between gap-2">
+        <div className="max-w-9xl mx-auto bg-white shadow-sm border border-gray-100  p-3 flex flex-wrap md:flex-nowrap items-center justify-between gap-2">
         {/* Search */}
         <div className="flex items-center bg-gray-50 rounded-md px-2.5 py-1.5 w-full md:w-1/3 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-200">
           <svg
@@ -310,8 +310,8 @@ export default function LoanSettingMaster({ auth }) {
 
 
         {/* Table - compact, no horizontal scroll */}
-        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden ">
-          <table className="w-full text-sm text-left border-collapse">
+        <div className="w-full bg-white shadow-lg border border-gray-700 overflow-hidden">
+          <table className="w-full text-sm text-left border border-gray-700 border-collapse">
             <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
               <tr>
                 {[
@@ -327,53 +327,79 @@ export default function LoanSettingMaster({ auth }) {
                   ["Effect Date", "effect_date"],
                   ["End Date", "end_date"],
                 ].map(([header, key]) => (
-                  <th key={key}
+                  <th
+                    key={key}
                     onClick={() => handleSort(key)}
-                    className="px-2 py-3 font-semibold text-xs md:text-[0.85rem] uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center">
+                    className="px-2 py-3 font-semibold text-xs md:text-[0.85rem] uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center border border-gray-700"
+                  >
                     <div className="flex justify-center items-center gap-1">
                       <span className="whitespace-nowrap">{header}</span>
-                      {sortConfig.key === key ? (sortConfig.direction === "asc" ? <span>▲</span> : <span>▼</span>) : <span className="opacity-50">⇅</span>}
+                      {sortConfig.key === key ? (
+                        sortConfig.direction === "asc" ? (
+                          <span>▲</span>
+                        ) : (
+                          <span>▼</span>
+                        )
+                      ) : (
+                        <span className="opacity-50">⇅</span>
+                      )}
                     </div>
                   </th>
                 ))}
-                <th className="px-2 py-3 font-semibold text-xs uppercase tracking-wide text-center">Actions</th>
+                <th className="px-2 py-3 font-semibold text-xs uppercase tracking-wide text-center border border-gray-700">
+                  Actions
+                </th>
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {paginatedData.map((loan, idx) => {
                 const isEditingRow = formData.id === loan.id; // highlight current edit row
                 return (
                   <tr
                     key={loan.id}
-                    className={`
-                      transition-all duration-300 
-                      ${isEditingRow 
-                        ? "bg-amber-100 ring-2 ring-amber-100"  // editing highlight
-                        : idx % 2 === 0 
-                          ? "bg-white" 
-                          : "bg-emerald-50/40"} 
-                      hover:bg-emerald-100/70 hover:scale-[1.01]
-                    `}
+                    className={`transition-all duration-300 ${
+                      isEditingRow
+                        ? "bg-amber-100 ring-2 ring-amber-200"
+                        : idx % 2 === 0
+                        ? "bg-white"
+                        : "bg-emerald-50/40"
+                    } hover:bg-emerald-100/70`}
                   >
-                    <td className="px-2 py-2 text-center">
+                    <td className="px-2 py-2 text-center border border-gray-700">
                       {(currentPage - 1) * itemsPerPage + idx + 1}
                     </td>
-                    <td className="px-2 py-2 font-semibold text-gray-800 text-center truncate">
+                    <td className="px-2 py-2 font-semibold text-gray-800 text-center border border-gray-700">
                       {loan.loan_desc}
                     </td>
-                    <td className="px-2 py-2 text-center">{loan.org_id}</td>
-                    <td className="px-2 py-2 text-center">{loan.min_loan_amount}</td>
-                    <td className="px-2 py-2 text-center">{loan.max_loan_amount}</td>
-                    <td className="px-2 py-2 text-center">{loan.interest_rate}</td>
-                    <td className="px-2 py-2 text-center">{loan.amt_multiplier}</td>
-                    <td className="px-2 py-2 text-center">
+                    <td className="px-2 py-2 text-center border border-gray-700">
+                      {loan.org_id}
+                    </td>
+                    <td className="px-2 py-2 text-center border border-gray-700">
+                      {loan.min_loan_amount}
+                    </td>
+                    <td className="px-2 py-2 text-center border border-gray-700">
+                      {loan.max_loan_amount}
+                    </td>
+                    <td className="px-2 py-2 text-center border border-gray-700">
+                      {loan.interest_rate}
+                    </td>
+                    <td className="px-2 py-2 text-center border border-gray-700">
+                      {loan.amt_multiplier}
+                    </td>
+                    <td className="px-2 py-2 text-center border border-gray-700">
                       {loan.min_loan_term_months} - {loan.max_loan_term_months}
                     </td>
-                    <td className="px-2 py-2 text-center">{loan.process_fees}</td>
-                    <td className="px-2 py-2 text-center">{loan.effect_date}</td>
-                    <td className="px-2 py-2 text-center">{loan.end_date}</td>
-                    <td className="px-2 py-2 flex justify-center gap-2">
+                    <td className="px-2 py-2 text-center border border-gray-700">
+                      {loan.process_fees}
+                    </td>
+                    <td className="px-2 py-2 text-center border border-gray-700">
+                      {loan.effect_date}
+                    </td>
+                    <td className="px-2 py-2 text-center border border-gray-700">
+                      {loan.end_date}
+                    </td>
+                    <td className="px-2 py-2 flex justify-center gap-2 border border-gray-700">
                       <button
                         onClick={() => handleEdit(loan)}
                         className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
@@ -392,10 +418,10 @@ export default function LoanSettingMaster({ auth }) {
                   </tr>
                 );
               })}
-
             </tbody>
           </table>
         </div>
+
 
         {/* Pagination */}
         <div className="flex justify-between items-center gap-4 mt-4 max-w-7xl mx-auto">

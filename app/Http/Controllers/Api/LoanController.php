@@ -10,6 +10,8 @@ use App\Models\LoanSetting;
 use App\Models\LoanTierRule;
 use App\Models\InstallmentDetail;
 use Illuminate\Support\Facades\Validator;
+//newly added -- edit document upload
+use App\Models\DocumentUpload;
 
 //log
 use Illuminate\Support\Facades\Log;
@@ -227,14 +229,6 @@ class LoanController extends Controller
         $loan->save();
 
         return response()->json(['message' => 'Loan rejected successfully.']);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
     }
 
     /**
@@ -483,7 +477,7 @@ class LoanController extends Controller
             $totalPending = $installments->where('status', 'Pending')->sum('emi_amount');
             $totalOverdue = $installments->where('status', 'Overdue')->sum('emi_amount');
             $totalOutstanding = $totalPending + $totalOverdue;
-
+ 
             // Get total repayable amount from loan_applications
             $totalRepayAmt = $loan->total_repay_amt ?? 0;
             $totalRepayAmtAll+=$totalRepayAmt;
@@ -550,7 +544,115 @@ class LoanController extends Controller
         return response()->json(['message' => 'EMI collection recorded successfully!']);
     }
 
+    //new update function
+    public function update(Request $request, string $id)
+    {
+        $loan = Loan::findOrFail($id);
 
-   
+        $validated = $request->validate([
+            'company_id' => 'nullable|integer|exists:company_master,id',
+            'customer_id' => 'nullable|integer|exists:customers,id',
+            'organisation_id' => 'nullable|integer|exists:organisation_master,id',
+            'loan_type' => 'required|integer|exists:loan_settings,id',
+            'purpose' => 'nullable|string|max:255',
+            'other_purpose_text' => 'nullable|string|max:255',
+            'loan_amount_applied' => 'required|numeric|min:0',
+            'loan_amount_approved' => 'nullable|numeric|min:0',
+            'tenure_fortnight' => 'required|integer|min:1',
+            'interest_rate' => 'nullable|numeric|min:0|max:100',
+            'processing_fee' => 'nullable|numeric|min:0',
+            'bank_name' => 'nullable|string|max:255',
+            'bank_branch' => 'nullable|string|max:255',
+            'bank_account_no' => 'nullable|string|max:255',
+            'status' => 'nullable|string|in:Pending,Verified,Approved,HigherApproval,Disbursed,Closed',
+            'remarks' => 'nullable|string',
+        ]);
+
+
+        try {
+            // Recalculate server-side (safe)
+            $loanAmount = $validated['loan_amount_applied'] ?? 0;
+            $rate = $validated['interest_rate'] ?? 0;
+            $term = $validated['tenure_fortnight'] ?? 0;
+
+            $totalInterest = $loanAmount * $rate / 100 * $term;
+            $totalRepay = $loanAmount + $totalInterest;
+            $emi = $term > 0 ? $totalRepay / $term : 0;
+
+            $updateData = array_merge($validated, [
+                'total_interest_amt' => round($totalInterest, 2),
+                'total_repay_amt' => round($totalRepay, 2),
+                'emi_amount' => round($emi, 2),
+            ]);
+
+            $loan->update($updateData);
+
+            Log::info("Loan #{$loan->id} updated");
+
+            return response()->json(['message' => 'Loan updated', 'loan' => $loan], 200);
+        } catch (\Exception $e) {
+            Log::error("Loan update failed: ".$e->getMessage());
+            return response()->json(['error' => 'Failed to update', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function uploadDocument(Request $request)
+    {
+        $validated = $request->validate([
+            'loan_id' => 'required|exists:loan_applications,id',
+            'customer_id' => 'nullable|exists:customers,id',
+            'doc_type' => 'required|string|max:255',
+            'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        try {
+            $file = $request->file('document');
+            $filename = time().'_'.$file->getClientOriginalName();
+            $path = $file->storeAs('uploads/loan_documents', $filename, 'public');
+
+            // update or create document row (if doc_type exists for loan, replace)
+            $doc = DocumentUpload::updateOrCreate(
+                [
+                    'loan_id' => $validated['loan_id'],
+                    'doc_type' => $validated['doc_type'],
+                ],
+                [
+                    'customer_id' => $validated['customer_id'] ?? null,
+                    'file_name' => $filename,
+                    'file_path' => 'uploads/loan_documents/'.$filename,
+                    'uploaded_by' => auth()->user()->name ?? 'System',
+                    'uploaded_by_user_id' => auth()->id(),
+                    'uploaded_on' => now(),
+                    'verification_status' => 'Pending',
+                ]
+            );
+
+            return response()->json(['message' => 'Document uploaded', 'document' => $doc], 200);
+        } catch (\Exception $e) {
+            Log::error("Doc upload failed: ".$e->getMessage());
+            return response()->json(['error' => 'Upload failed', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+   public function finalizeDocuments(Request $request, $id)
+    {
+        $loan = Loan::with('documents')->findOrFail($id);
+
+        // adjust list to your real required docs
+        $required = ['Application Form', 'Payslip', 'ID'];
+
+        $uploaded = $loan->documents->pluck('doc_type')->toArray();
+        $missing = array_diff($required, $uploaded);
+
+        if (count($missing) > 0) {
+            return response()->json(['error' => 'Missing docs: '.implode(', ', $missing)], 400);
+        }
+
+        $loan->status = 'Verified';
+        $loan->save();
+
+        return response()->json(['message' => 'Documents finalized', 'loan' => $loan], 200);
+    }
+
 
 }

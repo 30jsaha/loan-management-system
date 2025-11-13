@@ -105,42 +105,7 @@ class LoansController extends Controller
         ]);
     }
     
-    //edit and update loan application
-    public function update(Request $request, string $id)
-    {
-        $loan = Loan::findOrFail($id);
-
-        $validated = $request->validate([
-            'loan_type' => 'required|integer|min:0',
-            'purpose' => 'nullable|string|max:255',
-            'other_purpose_text' => 'nullable|string|max:255',
-            'loan_amount_applied' => 'required|numeric|min:0',
-            'tenure_fortnight' => 'required|integer|min:1',
-            'interest_rate' => 'nullable|numeric|min:0|max:100',
-            'processing_fee' => 'nullable|numeric|min:0',
-            'bank_name' => 'nullable|string|max:255',
-            'bank_branch' => 'nullable|string|max:255',
-            'bank_account_no' => 'nullable|string|max:255',
-            'remarks' => 'nullable|string',
-            'status' => 'nullable|in:Pending,Verified,Approved,HigherApproval,Disbursed,Closed',
-        ]);
-
-        try {
-            $loan->update($validated);
-
-            return response()->json([
-                'message' => '✅ Loan updated successfully.',
-                'loan' => $loan
-            ], 200);
-        } catch (\Exception $e) {
-            \Log::error("Loan update failed: " . $e->getMessage());
-
-            return response()->json([
-                'error' => '❌ Failed to update loan.',
-                'details' => $e->getMessage(),
-            ], 500);
-        }
-    }
+    
 
    
 }

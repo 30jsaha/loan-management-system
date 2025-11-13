@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react";
+import { Head,Link } from "@inertiajs/react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Swal from "sweetalert2";
-import { Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { Search } from "react-bootstrap-icons";
 
 export default function DeptDatabase({ auth }) {
@@ -25,7 +25,9 @@ export default function DeptDatabase({ auth }) {
   const [searchName, setSearchName] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "cust_name", direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchDate, setSearchDate] = useState("");
+  const [searchEmpCode, setSearchEmpCode] = useState("");
+  const [searchGrossPay, setSearchGrossPay] = useState("");
+ const [searchDate, setSearchDate] = useState("");
   const itemsPerPage = 8;
 
   useEffect(() => {
@@ -167,10 +169,19 @@ export default function DeptDatabase({ auth }) {
       <Head title="Customer Department Database" />
       <Toaster position="top-center" />
 
-      <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="py-8 max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div className="max-w-9xl mx-auto -mt-4 ">
+          <Link
+            href={route("customers")}
+            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
+          >
+            <ArrowLeft size={16} className="mr-2" /> Back to List
+          </Link>
+        </div>
+        
         {/* FORM */}
-        <div className="bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-700 mb-4">
+        <div className="bg-white shadow-lg p-6 border border-gray-100">
+          <h4 className="text-lg font-semibold text-gray-700 -mt-3">
             {isEditing ? "Edit Customer" : "Add Customer"}
           </h4>
 
@@ -230,141 +241,158 @@ export default function DeptDatabase({ auth }) {
         </div>
 
         {/* FILTER BAR */}
-        <div className="bg-white shadow-md rounded-2xl p-3 border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-start gap-3">
-          {/* Search */}
-          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/3 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300 md:mr-2">
-            <Search className="w-5 h-5 text-gray-500 mr-2" />
-            <input
-              type="text"
-              placeholder="Search by Name"
-              value={searchName}
-              onChange={(e) => {
-                setSearchName(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
-            />
-          </div>
+        {/* FILTER BAR */}
+<div className="bg-white shadow-md p-3 border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-start gap-3">
+  {/* Search by Name */}
+  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/3 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+    <Search className="w-5 h-5 text-gray-500 mr-2" />
+    <input
+      type="text"
+      placeholder="Search by Name"
+      value={searchName}
+      onChange={(e) => {
+        setSearchName(e.target.value);
+        setCurrentPage(1);
+      }}
+      className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
+    />
+  </div>
 
-            {/* Date Filter */}
-            <div className="flex flex-col w-full md:w-1/3">
-              <label className="text-[11px] font-semibold text-gray-600 mb-0.5">Date</label>
-              <input
-                type="date"
-                value={searchDate}
-                onChange={(e) => {
-                  setSearchDate(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="rounded-md px-2 py-1.5 text-sm bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none border border-gray-300 w-full"
-              />
-            </div>
-        </div>
+  {/* Search by Employee Code */}
+  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/4 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+    <Search className="w-5 h-5 text-gray-500 mr-2" />
+    <input
+      type="text"
+      placeholder="Search by Employee Code"
+      value={searchEmpCode}
+      onChange={(e) => {
+        setSearchEmpCode(e.target.value);
+        setCurrentPage(1);
+      }}
+      className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
+    />
+  </div>
+
+  {/* Search by Gross Pay */}
+  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/4 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+    <Search className="w-5 h-5 text-gray-500 mr-2" />
+    <input
+      type="text"
+      placeholder="Search by Gross Pay"
+      value={searchGrossPay}
+      onChange={(e) => {
+        setSearchGrossPay(e.target.value);
+        setCurrentPage(1);
+      }}
+      className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
+    />
+  </div>
+</div>
+
 
 
         {/* TABLE */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm text-left border-collapse">
-            <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
-              <tr>
-                {[
-                  ["#", "id"],
-                  ["Name", "cust_name"],
-                  ["Emp Code", "emp_code"],
-                  ["Phone", "phone"],
-                  ["Email", "email"],
-                  ["Gross Pay", "gross_pay"],
-                  ["Date", "created_at"],
-                ].map(([label, key]) => (
-                  <th
-                    key={key}
-                    onClick={() => handleSort(key)}
-                    className="px-3 py-3 font-semibold text-xs md:text-sm uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center"
-                  >
-                    <div className="flex justify-center items-center gap-1">
-                      {label}
-                      {sortConfig.key === key ? (
-                        sortConfig.direction === "asc" ? (
-                          <span>▲</span>
-                        ) : (
-                          <span>▼</span>
-                        )
+        <div className="bg-white shadow-lg border border-gray-700 overflow-hidden">
+        <table className="w-full text-sm text-left border border-gray-700 border-collapse">
+          <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
+            <tr>
+              {[
+                ["#", "id"],
+                ["Name", "cust_name"],
+                ["Emp Code", "emp_code"],
+                ["Phone", "phone"],
+                ["Email", "email"],
+                ["Gross Pay", "gross_pay"],
+                ["Date", "created_at"],
+              ].map(([label, key]) => (
+                <th
+                  key={key}
+                  onClick={() => handleSort(key)}
+                  className="px-3 py-3 font-semibold text-xs md:text-sm uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center border border-gray-700"
+                >
+                  <div className="flex justify-center items-center gap-1">
+                    {label}
+                    {sortConfig.key === key ? (
+                      sortConfig.direction === "asc" ? (
+                        <span>▲</span>
                       ) : (
-                        <span className="opacity-50">⇅</span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wide text-center">
-                  Actions
+                        <span>▼</span>
+                      )
+                    ) : (
+                      <span className="opacity-50">⇅</span>
+                    )}
+                  </div>
                 </th>
-              </tr>
-            </thead>
+              ))}
+              <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wide text-center border border-gray-700">
+                Actions
+              </th>
+            </tr>
+          </thead>
 
-            <tbody className="divide-y divide-gray-100">
-              {paginatedData.length > 0 ? (
-                paginatedData.map((c, i) => {
-                  const isEditingRow = formData.id === c.id;
-                  return (
-                    <tr
-                      key={c.id}
-                      className={`transition-all duration-300 ${
-                        isEditingRow
-                          ? "bg-amber-100 ring-2 ring-amber-400"
-                          : i % 2 === 0
-                          ? "bg-white"
-                          : "bg-emerald-50/40"
-                      } hover:bg-emerald-100/70 hover:scale-[1.01]`}
-                    >
-                      <td className="px-3 py-2 text-center">
-                        {(currentPage - 1) * itemsPerPage + i + 1}
-                      </td>
-                      <td className="px-3 py-2 text-center font-semibold text-gray-800">
-                        {c.cust_name}
-                      </td>
-                      <td className="px-3 py-2 text-center">{c.emp_code}</td>
-                      <td className="px-3 py-2 text-center">{c.phone}</td>
-                      <td className="px-3 py-2 text-center">{c.email}</td>
-                      <td className="px-3 py-2 text-center text-emerald-700 font-semibold">
-                        {parseFloat(c.gross_pay || 0).toFixed(2)}
-                      </td>
-                      <td className="px-3 py-2 text-center text-gray-700">
-                        {c.created_at
-                          ? new Date(c.created_at).toLocaleDateString()
-                          : "—"}
-                      </td>
-                      <td className="px-3 py-2 flex justify-center gap-2">
-                        <button
-                          onClick={() => handleEdit(c)}
-                          className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
-                          title="Edit"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(c.id)}
-                          className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td
-                    colSpan="8"
-                    className="text-center text-gray-500 py-4 font-medium"
+          <tbody className="divide-y divide-gray-200">
+            {paginatedData.length > 0 ? (
+              paginatedData.map((c, i) => {
+                const isEditingRow = formData.id === c.id;
+                return (
+                  <tr
+                    key={c.id}
+                    className={`transition-all duration-300 ${
+                      isEditingRow
+                        ? "bg-amber-100 ring-2 ring-amber-400"
+                        : "bg-white"
+                    } hover:bg-emerald-100/70`}
                   >
-                    No Records Found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    <td className="px-3 py-2 border border-gray-700">
+                      {(currentPage - 1) * itemsPerPage + i + 1}
+                    </td>
+                    <td className="px-3 py-2 text-center font-semibold text-gray-800 border border-gray-700">
+                      {c.cust_name}
+                    </td>
+                    <td className="px-3 py-2 text-center border border-gray-700">{c.emp_code}</td>
+                    <td className="px-3 py-2 text-center border border-gray-700">{c.phone}</td>
+                    <td className="px-3 py-2 text-center border border-gray-700">{c.email}</td>
+                    <td className="px-3 py-2 text-center text-emerald-700 font-semibold border border-gray-700">
+                      {parseFloat(c.gross_pay || 0).toFixed(2)}
+                    </td>
+                    <td className="px-3 py-2 text-center text-gray-700 border border-gray-700">
+                      {c.created_at
+                        ? new Date(c.created_at).toLocaleDateString()
+                        : "—"}
+                    </td>
+                    <td className="px-3 py-2 flex justify-center gap-2 border border-gray-700">
+                      <button
+                        onClick={() => handleEdit(c)}
+                        className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
+                        title="Edit"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td
+                  colSpan="8"
+                  className="text-center text-gray-500 py-4 font-medium border border-gray-700"
+                >
+                  No Records Found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+  </div>
+
 
         {/* PAGINATION */}
         <div className="flex justify-between items-center gap-4 mt-4 max-w-7xl mx-auto">
