@@ -25,6 +25,8 @@ class DatabaseSeeder extends Seeder
             LoanSettingSeeder::class,
             AllCustMastSeeder::class,
             LoanTierRulesSeeder::class,
+            SalarySlabSeeder::class,
+            RejectionReasonSeeder::class,
         ]);
     }
 }

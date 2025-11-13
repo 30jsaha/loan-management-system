@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\LoanSetting;
 use App\Models\LoanApplication as Loan;
 use App\Models\allCustMaster;
+use App\Models\SalarySlab;
 
 class LoansController extends Controller
 {
@@ -15,8 +16,10 @@ class LoansController extends Controller
      */
     public function index()
     {
-        // return Loan::all();
-        return inertia('Loans/Index'); // points to resources/js/Pages/Loans/Index.jsx
+        $salary_slabs = SalarySlab::all();
+        return inertia('Loans/Index', [
+            'salary_slabs'=>$salary_slabs
+        ]);
     }
     public function create()
     {
@@ -28,11 +31,15 @@ class LoansController extends Controller
     {
         // return Loan::all();
         $loan_settings = LoanSetting::all();
-        return inertia('Loans/LoanSettingMaster', ['loan_settings' => $loan_settings]); // points to resources/js/Pages/Loans/Create.jsx
+        $salary_slabs = SalarySlab::all();
+        return inertia('Loans/LoanSettingMaster', [
+            'loan_settings' => $loan_settings,
+            'salary_slabs' => $salary_slabs,
+        ]);
     }
     public function loan_emi_list(Request $request)
     {
-        $perPage = (int) $request->get('per_page', 15);
+        // $perPage = (int) $request->get('per_page', 15);
 
         $approvedLoans = Loan::with([
             'customer',

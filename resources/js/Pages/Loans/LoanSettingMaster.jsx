@@ -5,8 +5,14 @@ import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 
-export default function LoanSettingMaster({ auth }) {
+import { MultiSelect } from 'primereact/multiselect';
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
+
+export default function LoanSettingMaster({ auth, salary_slabs }) {
   const [orgList, setOrgList] = useState([]);
+  const [salarySlabList, setSalarySlabList] = useState(salary_slabs);
   const [loanSettings, setLoanSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -32,6 +38,8 @@ export default function LoanSettingMaster({ auth }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "loan_desc", direction: "asc" });
+  const [selectedOrgs, setSelectedOrgs] = useState(null);
+  const [selectedSslabs, setSelectedSslabs] = useState(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,7 +71,14 @@ export default function LoanSettingMaster({ auth }) {
       toast.error("Failed to load organisation list");
     }
   };
-
+  const organisationOptions = orgList.map((org) => ({
+      name: `${org.organisation_name}`,
+      code: org.id
+  }));
+  const salarySlabOptions = salarySlabList.map((ss) => ({
+      name: `${ss.slab_desc} - [${ss.starting_salary} - ${ss.ending_salary}]`,
+      code: ss.id
+  }));
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -205,7 +220,7 @@ export default function LoanSettingMaster({ auth }) {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Organisation</label>
               <select name="org_id" value={formData.org_id} onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
@@ -214,6 +229,62 @@ export default function LoanSettingMaster({ auth }) {
                   <option key={org.id} value={org.id}>{org.id} - {org.organisation_name}</option>
                 ))}
               </select>
+            </div> */}
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Organisation
+              </label>
+
+              {/* <MultiSelect
+                  value={formData.org_id_list}   // MUST be an array
+                  onChange={(e) =>
+                    setFormData({ ...formData, org_id_list: e.value })
+                  }
+                  options={organisationOptions}
+                  optionLabel="name"
+                  placeholder="Select Organisation(s)"
+                  display="chip"
+                  className="w-full"
+              /> */}
+              <div className="card flex justify-content-center">
+                  <MultiSelect 
+                    value={selectedOrgs} 
+                    onChange={(e) => {
+                      setSelectedOrgs(e.value);
+                      setFormData({ ...formData, org_id_list: selectedOrgs })
+                    }} 
+                    options={organisationOptions} 
+                    optionLabel="name" 
+                    filter filterDelay={400} 
+                    placeholder="Organisation(s)" 
+                    display="chip"
+                    maxSelectedLabels={3} 
+                    className="w-full md:w-20rem"
+                  />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Salary Slabs
+              </label>
+              <div className="card flex justify-content-center">
+                  <MultiSelect 
+                    value={selectedSslabs} 
+                    onChange={(e) => {
+                      setSelectedSslabs(e.value)
+                      setFormData({ ...formData, ss_id_list: selectedSslabs });
+                      console.log("formData on slab select: ",formData);
+                    }}
+                    options={salarySlabOptions}
+                    optionLabel="name" 
+                    filter filterDelay={400} 
+                    placeholder="Organisation(s)" 
+                    display="chip"
+                    maxSelectedLabels={3} 
+                    className="w-full md:w-20rem"
+                  />
+              </div>
             </div>
 
             {[

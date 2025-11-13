@@ -503,3 +503,8 @@ table thead
   --tw-bg-opacity: 1;
   background-color: rgb(243 244 246 / var(--tw-bg-opacity, 1));
 }
+.p-multiselect-panel,
+.p-multiselect-header
+{
+  background: #dfdfdf !important;
+}

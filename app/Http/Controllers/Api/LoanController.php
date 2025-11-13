@@ -368,6 +368,7 @@ class LoanController extends Controller
     }
     public function create_loan_setting(Request $request)
     {
+        dd($request);
         $validator = Validator::make($request->all(), [
             'loan_desc' => 'required|string|max:255',
             'org_id' => 'nullable|integer',
