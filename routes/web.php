@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LoansController;
 use App\Http\Controllers\Api\LoanController;
+use App\Http\Controllers\SalarySlabController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -90,6 +91,10 @@ Route::get('/edu-form', fn()=> Inertia::render('Forms/EduPrintFormat'))->middlew
 Route::middleware('auth')->get('/loan-settings', [LoansController::class, 'loan_setting_index'])
     ->middleware(['auth', 'verified'])
     ->name('loan.settings');
+
+Route::middleware('auth')->get('/loan-income-slabs', [SalarySlabController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('loan.income.slabs');
 
 
 //edit.jsx

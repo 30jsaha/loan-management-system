@@ -8,6 +8,7 @@ use App\Models\LoanSetting;
 use App\Models\LoanApplication as Loan;
 use App\Models\allCustMaster;
 use App\Models\SalarySlab;
+use App\Models\OrganisationMaster as Org;
 
 class LoansController extends Controller
 {
@@ -35,6 +36,16 @@ class LoansController extends Controller
         return inertia('Loans/LoanSettingMaster', [
             'loan_settings' => $loan_settings,
             'salary_slabs' => $salary_slabs,
+        ]);
+    }
+    public function loan_income_slab_index()
+    {
+        // return Loan::all();
+        $salary_slabs = SalarySlab::all();
+        $organizations = Org::all();
+        return inertia('Loans/LoanSslabMaster', [
+            'salary_slabs' => $salary_slabs,
+            'organizations' => $organizations
         ]);
     }
     public function loan_emi_list(Request $request)

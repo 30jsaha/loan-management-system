@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\LoanTempCustomerController;
 use App\Http\Controllers\Api\DocumentUploadController;
 use App\Http\Controllers\Api\AllCustController;
 use App\Http\Controllers\Api\FrontEndController;
+use App\Http\Controllers\Api\SalarySlabController;
 use App\Models\LoanTempCustomer;
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +47,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loan-settings-create', [LoanController::class, 'create_loan_setting']); // CREATE
     Route::put('/loan-settings-modify/{id}', [LoanController::class, 'modify_loan_setting']); // UPDATE
     Route::delete('/loan-settings-remove/{id}', [LoanController::class, 'remove_loan_setting']); // DELETE
+    Route::post('/loan-slab-create', [LoanController::class, 'create_loan_slab']); // CREATE
+    Route::put('/loan-slab-modify/{id}', [LoanController::class, 'modify_loan_slab']); // UPDATE
+    Route::delete('/loan-slab-remove/{id}', [LoanController::class, 'remove_loan_slab']); // DELETE
     Route::post('loans/collect-emi', [LoanController::class, 'collectEMI']);
     // Route::get('loans/emi-collection-list', [LoanController::class, 'loan_emi_list']);
     Route::put('/loans/{id}', [LoanController::class, 'update']);
@@ -96,4 +100,12 @@ Route::post('/validate-loan-tier', [LoanController::class, 'validateLoan'])
 
 
 
-Route::middleware('auth:sanctum')->post('/send-loan-mail', [LoanController::class, 'sendLoanMail']);
+Route::middleware('auth:sanctum')->post('/send-loan-mail', [FrontEndController::class, 'sendLoanMail']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/salary-slab-create', [SalarySlabController::class, 'create_salary_slab']); // CREATE
+    Route::put('/salary-slab-modify/{id}', [SalarySlabController::class, 'modify_salary_slab']); // UPDATE
+    Route::delete('/salary-slab-remove/{id}', [SalarySlabController::class, 'remove_salary_slab']); // DELETE
+    
+    Route::get('/salary-slab-data', [SalarySlabController::class, 'get_slab_data']); // GET
+});

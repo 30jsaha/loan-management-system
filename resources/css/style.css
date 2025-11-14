@@ -3827,3 +3827,121 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
 	background-color: green;
 	/* darker blue */
 }
+
+.noBgSection.section-title
+{
+	background-color: unset !important;
+}
+/* ===========================
+     ✅ Desktop / Laptop Layout
+     =========================== */
+    .about-images {
+      position: relative;
+      display: inline-block;
+    }
+
+    /* ===== Image 1 (Main Background Image) ===== */
+    .about-images .main-img {
+      width: 100%;
+      max-width: 460px;
+      /* 🔧 Adjust image width */
+      height: auto;
+      /* 🔧 Adjust image height (auto keeps proportion) */
+      border-radius: 0;
+      position: relative;
+      left: 40px;
+      /* 🔧 Move RIGHT: increase this value | Move LEFT: decrease */
+      top: 0;
+      /* 🔧 Move DOWN: increase | Move UP: decrease */
+    }
+
+    /* ===== Image 2 (Front Overlapping Image) ===== */
+    .about-images .overlay-img {
+      position: absolute;
+      bottom: -34px;
+      /* 🔧 Move DOWN: increase | Move UP: decrease */
+      left: -40px;
+      /* 🔧 Move LEFT: increase negative value | Move RIGHT: decrease negative value */
+      width: 45%;
+      /* 🔧 Adjust WIDTH size of 2nd image */
+      height: 326px;
+      /* 🔧 Change if you want fixed height (e.g., 220px) */
+      border-radius: 0;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+      transition: none !important;
+      /* no hover zoom */
+      transform: none !important;
+    }
+
+    /* ===========================
+     ✅ Tablet View
+     =========================== */
+    @media (max-width: 992px) {
+      .about-images .overlay-img {
+        bottom: -30px;
+        /* 🔧 Adjust vertical position for tablets */
+        left: -40px;
+        /* 🔧 Adjust horizontal position for tablets */
+        width: 55%;
+        /* 🔧 Slightly larger on tablets */
+      }
+
+      .about-images .main-img {
+        left: 20px;
+        /* 🔧 Slightly reduce right shift */
+      }
+    }
+
+    /* ===========================
+     ✅ Mobile View
+     =========================== */
+    @media (max-width: 768px) {
+      #about {
+        text-align: center;
+        padding: 40px 15px;
+      }
+
+      #about .row {
+        flex-direction: column-reverse;
+        /* ✅ Image comes after text */
+      }
+
+      #about .col-md-6 {
+        width: 100%;
+      }
+
+      #about button {
+        background-color: #d71920;
+        color: #fff;
+        font-weight: 600;
+        border-radius: 6px;
+        margin-bottom: 25px;
+        padding: 10px 25px;
+      }
+
+      .about-images {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .about-images .main-img {
+        width: 100%;
+        max-width: 350px;
+        border-radius: 10px;
+        margin: 0 auto;
+        display: block;
+        left: 0;
+        /* ✅ Center image on mobile */
+      }
+
+      .about-images .overlay-img {
+        display: none;
+        /* ✅ Hide second image on mobile for clean look */
+      }
+    }
+@media only screen and (min-width: 1200px) {
+    .container {
+        max-width: 1440px !important;
+    }
+}

@@ -72,6 +72,7 @@ export default function Authenticated({ user, header, children }) {
                                             {/* <Dropdown.Link className={`${route().current('loan-create') ? 'dropdown-nav-a-active' : ''}`} href={route('loan-create')}>+ New Loan</Dropdown.Link> */}
                                             <Dropdown.Link className={`${route().current('loan.emi') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.emi')}>EMI Collection</Dropdown.Link>
                                             <Dropdown.Link className={`${route().current('loan.settings') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.settings')}>Loan Settings</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('loan.income.slabs') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.income.slabs')}>Income Slabs</Dropdown.Link>
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>

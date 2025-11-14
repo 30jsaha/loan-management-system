@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, Head } from '@inertiajs/react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+// import '../../css/bootstrap5.3.0.min.css';
+import '../../css/bootstrap-icons.min.css';
 import '../../css/style.css';
 
 // Images (place your images in resources/img)
@@ -312,7 +314,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               <p className="text-muted mb-4">From school fees to medical expenses, we provide quick, reliable, and flexible loan<br/> solutions
                 that make access to finance simple and stress-free for everyone.
               </p>
-              <a href="#contact" className="btn px-4 py-2" style={{backgroundColor:'#d71920', color:'#fff', border:'none', borderRadius:6, textDecoration:'none'}}>Apply for Loan</a>
+              <a href="#contact" className="btn px-4 py-2 text-light" style={{backgroundColor:'#d71920', color:'#fff', border:'none', borderRadius:6, textDecoration:'none'}}>Apply for Loan</a>
             </div>
 
             <div className="col-md-6 text-center position-relative">
@@ -331,7 +333,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
         <div className="container">
           <div className="row">
             <div className="col-lg-12">
-              <div className="section-title">
+              <div className="section-title noBgSection">
                 <h2>Our Loan Solutions</h2>
                 <p>Flexible financing options designed to meet your every need.</p>
               </div>

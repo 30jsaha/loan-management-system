@@ -27,8 +27,8 @@ class LoanController extends Controller
     {
         // return Loan::orderBy('id', 'desc')->alongwith('customer')->get();
         // return inertia('Loans/Index'); // points to resources/js/Pages/Loans/Index.jsx
-        return Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
-        ->orderBy('id','desc')->get();
+        return Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company'])
+            ->orderBy('id', 'desc')->get();
     }
     public function create()
     {
@@ -198,10 +198,9 @@ class LoanController extends Controller
         // $loan = Loan::findOrFail($id);
         // return response()->json($loan);
 
-        $loan = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
-        ->orderBy('id','desc')->findOrFail($id);
+        $loan = Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company'])
+            ->orderBy('id', 'desc')->findOrFail($id);
         return response()->json($loan);
-
     }
 
     public function approve($id)
@@ -361,14 +360,14 @@ class LoanController extends Controller
         ], 200);
     }
 
-    public function get_all_loan_setting_data ()
+    public function get_all_loan_setting_data()
     {
         $loan = LoanSetting::all();
         return response()->json($loan);
     }
     public function create_loan_setting(Request $request)
     {
-        dd($request);
+        // dd($request);
         $validator = Validator::make($request->all(), [
             'loan_desc' => 'required|string|max:255',
             'org_id' => 'nullable|integer',
@@ -401,43 +400,42 @@ class LoanController extends Controller
      * ✅ Modify an existing loan setting
      */
     public function modify_loan_setting(Request $request, $id)
-        {
-            try {
-                $loanSetting = LoanSetting::findOrFail($id);
+    {
+        try {
+            $loanSetting = LoanSetting::findOrFail($id);
 
-                $validator = Validator::make($request->all(), [
-                    'loan_desc' => 'required|string|max:255',
-                    'org_id' => 'nullable|integer',
-                    'min_loan_amount' => 'required|numeric',
-                    'max_loan_amount' => 'required|numeric',
-                    'interest_rate' => 'required|numeric',
-                    'amt_multiplier' => 'required|numeric',
-                    'min_loan_term_months' => 'required|integer',
-                    'max_loan_term_months' => 'required|integer',
-                    'process_fees' => 'required|numeric',
-                    'min_repay_percentage_for_next_loan' => 'nullable|numeric',
-                    'effect_date' => 'nullable|date',
-                    'end_date' => 'nullable|date',
-                    'user_id' => 'nullable|integer',
-                ]);
+            $validator = Validator::make($request->all(), [
+                'loan_desc' => 'required|string|max:255',
+                'org_id' => 'nullable|integer',
+                'min_loan_amount' => 'required|numeric',
+                'max_loan_amount' => 'required|numeric',
+                'interest_rate' => 'required|numeric',
+                'amt_multiplier' => 'required|numeric',
+                'min_loan_term_months' => 'required|integer',
+                'max_loan_term_months' => 'required|integer',
+                'process_fees' => 'required|numeric',
+                'min_repay_percentage_for_next_loan' => 'nullable|numeric',
+                'effect_date' => 'nullable|date',
+                'end_date' => 'nullable|date',
+                'user_id' => 'nullable|integer',
+            ]);
 
-                if ($validator->fails()) {
-                    \Log::error('LoanSetting validation failed', $validator->errors()->toArray());
-                    return response()->json(['errors' => $validator->errors()], 422);
-                }
-
-                $loanSetting->update($validator->validated());
-
-                return response()->json([
-                    'message' => 'Loan setting updated successfully',
-                    'data' => $loanSetting,
-                ]);
-
-            } catch (\Exception $e) {
-                \Log::error('LoanSetting update failed: '.$e->getMessage());
-                return response()->json(['message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
+            if ($validator->fails()) {
+                \Log::error('LoanSetting validation failed', $validator->errors()->toArray());
+                return response()->json(['errors' => $validator->errors()], 422);
             }
+
+            $loanSetting->update($validator->validated());
+
+            return response()->json([
+                'message' => 'Loan setting updated successfully',
+                'data' => $loanSetting,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('LoanSetting update failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
         }
+    }
 
 
     /**
@@ -463,11 +461,11 @@ class LoanController extends Controller
             'loan_settings',
             'company'
         ])
-        ->where('status', 'Approved')
-        ->orderBy('approved_date', 'desc')
-        ->get();
+            ->where('status', 'Approved')
+            ->orderBy('approved_date', 'desc')
+            ->get();
         $approvedLoans = $approvedLoans->map(function ($loan) {
-            $total_paid_amount_all_loan=$total_outstanding_amount_all_loan=$totalRepayAmtAll=0.00;
+            $total_paid_amount_all_loan = $total_outstanding_amount_all_loan = $totalRepayAmtAll = 0.00;
             // Fetch all EMI installments
             $installments = \App\Models\InstallmentDetail::where('loan_id', $loan->id)->get();
 
@@ -478,13 +476,13 @@ class LoanController extends Controller
             $totalPending = $installments->where('status', 'Pending')->sum('emi_amount');
             $totalOverdue = $installments->where('status', 'Overdue')->sum('emi_amount');
             $totalOutstanding = $totalPending + $totalOverdue;
- 
+
             // Get total repayable amount from loan_applications
             $totalRepayAmt = $loan->total_repay_amt ?? 0;
-            $totalRepayAmtAll+=$totalRepayAmt;
+            $totalRepayAmtAll += $totalRepayAmt;
 
-            $total_paid_amount_all_loan+=round($totalPaid, 2);
-            $total_outstanding_amount_all_loan=round(($totalRepayAmtAll-$totalPaid), 2);
+            $total_paid_amount_all_loan += round($totalPaid, 2);
+            $total_outstanding_amount_all_loan = round(($totalRepayAmtAll - $totalPaid), 2);
 
             // Attach calculated data
             $loan->total_emi_paid_count = $totalPaidCount;
@@ -513,11 +511,11 @@ class LoanController extends Controller
         foreach ($validated['loan_ids'] as $loanId) {
             $l = Loan::findOrFail($loanId);
             $emi_freq = LoanSetting::where('id', $l->loan_type)
-            ->value('installment_frequency_in_days');
+                ->value('installment_frequency_in_days');
             $emi_freq_val = (filter_var($emi_freq, FILTER_VALIDATE_INT) !== false && (int)$emi_freq !== 0) ? $emi_freq : 14;
             InstallmentDetail::create([
                 'loan_id' => $loanId,
-                'installment_no' => (function() use ($loanId, $l) {
+                'installment_no' => (function () use ($loanId, $l) {
                     // Sum any previously recorded installment amounts for this loan
                     $totalCollected = InstallmentDetail::where('loan_id', $loanId)->sum('emi_amount');
 
@@ -592,7 +590,7 @@ class LoanController extends Controller
 
             return response()->json(['message' => 'Loan updated', 'loan' => $loan], 200);
         } catch (\Exception $e) {
-            Log::error("Loan update failed: ".$e->getMessage());
+            Log::error("Loan update failed: " . $e->getMessage());
             return response()->json(['error' => 'Failed to update', 'details' => $e->getMessage()], 500);
         }
     }
@@ -608,7 +606,7 @@ class LoanController extends Controller
 
         try {
             $file = $request->file('document');
-            $filename = time().'_'.$file->getClientOriginalName();
+            $filename = time() . '_' . $file->getClientOriginalName();
             $path = $file->storeAs('uploads/loan_documents', $filename, 'public');
 
             // update or create document row (if doc_type exists for loan, replace)
@@ -620,7 +618,7 @@ class LoanController extends Controller
                 [
                     'customer_id' => $validated['customer_id'] ?? null,
                     'file_name' => $filename,
-                    'file_path' => 'uploads/loan_documents/'.$filename,
+                    'file_path' => 'uploads/loan_documents/' . $filename,
                     'uploaded_by' => auth()->user()->name ?? 'System',
                     'uploaded_by_user_id' => auth()->id(),
                     'uploaded_on' => now(),
@@ -630,12 +628,12 @@ class LoanController extends Controller
 
             return response()->json(['message' => 'Document uploaded', 'document' => $doc], 200);
         } catch (\Exception $e) {
-            Log::error("Doc upload failed: ".$e->getMessage());
+            Log::error("Doc upload failed: " . $e->getMessage());
             return response()->json(['error' => 'Upload failed', 'details' => $e->getMessage()], 500);
         }
     }
 
-   public function finalizeDocuments(Request $request, $id)
+    public function finalizeDocuments(Request $request, $id)
     {
         $loan = Loan::with('documents')->findOrFail($id);
 
@@ -646,7 +644,7 @@ class LoanController extends Controller
         $missing = array_diff($required, $uploaded);
 
         if (count($missing) > 0) {
-            return response()->json(['error' => 'Missing docs: '.implode(', ', $missing)], 400);
+            return response()->json(['error' => 'Missing docs: ' . implode(', ', $missing)], 400);
         }
 
         $loan->status = 'Verified';
@@ -654,6 +652,4 @@ class LoanController extends Controller
 
         return response()->json(['message' => 'Documents finalized', 'loan' => $loan], 200);
     }
-
-
 }

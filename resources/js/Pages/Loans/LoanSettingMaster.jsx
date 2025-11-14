@@ -220,7 +220,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
             </div>
 
-            {/* <div>
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Organisation</label>
               <select name="org_id" value={formData.org_id} onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
@@ -229,24 +229,12 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                   <option key={org.id} value={org.id}>{org.id} - {org.organisation_name}</option>
                 ))}
               </select>
-            </div> */}
+            </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Organisation
               </label>
-
-              {/* <MultiSelect
-                  value={formData.org_id_list}   // MUST be an array
-                  onChange={(e) =>
-                    setFormData({ ...formData, org_id_list: e.value })
-                  }
-                  options={organisationOptions}
-                  optionLabel="name"
-                  placeholder="Select Organisation(s)"
-                  display="chip"
-                  className="w-full"
-              /> */}
               <div className="card flex justify-content-center">
                   <MultiSelect 
                     value={selectedOrgs} 
@@ -263,8 +251,8 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     className="w-full md:w-20rem"
                   />
               </div>
-            </div>
-            <div>
+            </div> */}
+            {/* <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Salary Slabs
               </label>
@@ -279,13 +267,13 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     options={salarySlabOptions}
                     optionLabel="name" 
                     filter filterDelay={400} 
-                    placeholder="Organisation(s)" 
+                    placeholder="Income Slab(s)" 
                     display="chip"
                     maxSelectedLabels={3} 
                     className="w-full md:w-20rem"
                   />
               </div>
-            </div>
+            </div> */}
 
             {[
               ["min_loan_amount", "Minimum Loan Amount (PGK)"],
