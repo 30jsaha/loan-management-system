@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\SalarySlab;
 use App\Models\OrganisationMaster as Org;
+use Illuminate\Support\Facades\Log;
 
 class SalarySlabController extends Controller
 {
@@ -25,10 +26,12 @@ class SalarySlabController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::error('Income slab validation failed', $validator->errors()->toArray());
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
         $sslab = SalarySlab::create($validator->validated());
+        Log::info('Income slab created', ['slab_id' => $sslab->id ?? null, 'org_id' => $sslab->org_id ?? null]);
 
         return response()->json([
             'message' => 'Income slab created successfully',
@@ -48,7 +51,7 @@ class SalarySlabController extends Controller
             ]);
 
             if ($validator->fails()) {
-                \Log::error('Income slab validation failed', $validator->errors()->toArray());
+                Log::error('Income slab validation failed', $validator->errors()->toArray());
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
@@ -60,7 +63,7 @@ class SalarySlabController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Income slab update failed: '.$e->getMessage());
+            Log::error('Income slab update failed: '.$e->getMessage());
             return response()->json(['message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
         }
     }

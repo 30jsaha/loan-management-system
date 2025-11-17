@@ -39,7 +39,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
   const [endDate, setEndDate] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "loan_desc", direction: "asc" });
   const [selectedOrgs, setSelectedOrgs] = useState(null);
-  const [selectedSslabs, setSelectedSslabs] = useState(null);
+  const [selectedSslabs, setSelectedSslabs] = useState([]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -139,6 +139,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       min_repay_percentage_for_next_loan: "",
       effect_date: "",
       end_date: "",
+      ss_id_list:[]
     });
     setIsEditing(false);
   };
@@ -220,7 +221,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Organisation</label>
               <select name="org_id" value={formData.org_id} onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
@@ -229,7 +230,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                   <option key={org.id} value={org.id}>{org.id} - {org.organisation_name}</option>
                 ))}
               </select>
-            </div>
+            </div> */}
 
             {/* <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -252,17 +253,18 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                   />
               </div>
             </div> */}
-            {/* <div>
+            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Salary Slabs
+                Income Slabs
               </label>
               <div className="card flex justify-content-center">
                   <MultiSelect 
                     value={selectedSslabs} 
                     onChange={(e) => {
-                      setSelectedSslabs(e.value)
-                      setFormData({ ...formData, ss_id_list: selectedSslabs });
+                      setSelectedSslabs(e.value);
+                      setFormData({ ...formData, ss_id_list: e.value.map(s => s.code) });
                       console.log("formData on slab select: ",formData);
+                      console.log("Selected Slabs:", e.value);
                     }}
                     options={salarySlabOptions}
                     optionLabel="name" 
@@ -273,7 +275,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     className="w-full md:w-20rem"
                   />
               </div>
-            </div> */}
+            </div>
 
             {[
               ["min_loan_amount", "Minimum Loan Amount (PGK)"],
