@@ -392,10 +392,7 @@ export default function LoanApplicationForm({ auth, data }) {
         </div>
         {/* --- End of MODIFICATION 2 --- */}
       </div>
-      
-      
-     
-     
+
       <style>
         {`
           @media print {

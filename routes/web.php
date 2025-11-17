@@ -106,4 +106,10 @@ Route::middleware('auth')->get('/customers/{id}/edit', fn($id) =>
 )->name('customer.edit');
 
 
+
+Route::middleware(['auth', 'verified'])
+    ->get('/loan-emi-collection', [LoansController::class, 'loanEmiCollectionPage'])
+    ->name('loan.emi.collection');
+
+
 require __DIR__.'/auth.php';

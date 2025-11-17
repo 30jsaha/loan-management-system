@@ -99,6 +99,8 @@ class LoansController extends Controller
             'approved_loans' => $approvedLoans,
         ]);
     }
+
+
     public function loan_emi_details(Request $request, $id)
     {
         $perPage = (int) $request->get('per_page', 15);
@@ -122,7 +124,26 @@ class LoansController extends Controller
             'allDeptCust' => json_encode($allCust),
         ]);
     }
-    
+    public function loanEmiCollectionPage()
+    {
+        $approvedLoans = Loan::with([
+            'customer',
+            'organisation',
+            'documents',
+            'installments',
+            'loan_settings',
+            'company'
+        ])
+        ->where('status', 'Approved')
+        ->orderBy('approved_date', 'desc')
+        ->get();
+
+        return inertia('Loans/LoanEmiCollection', [
+            'approved_loans' => $approvedLoans
+        ]);
+    }
+
+
     
 
    

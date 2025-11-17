@@ -31,6 +31,14 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   const [respMsg, setRespMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [showScroll, setShowScroll] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    email: ""
+  });
+  const [showRepayment, setShowRepayment] = useState(false);
+
 
   // scroll listener for scroll-to-top button
   useEffect(() => {
@@ -72,23 +80,24 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       return lockedEMIValues[amount].lockedEMI.toFixed(2);
     }
 
+  
+    function roundTwo(num) {
+       return Math.round(num * 100 + 0.0000001) / 100;
+    }
     const interestRate = 2.35;
+
     const emi = ((amount * (interestRate / 100) * tenureDays) + amount) / tenureDays;
-    return emi.toFixed(2);
+    const result = roundTwo(emi);
+
+    return result.toFixed(2);
+
+
   }
 
   // handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormState(prev => ({ ...prev, [name]: value }));
-
-    // update repaymentPlan live when amount/tenure change
-    if (name === 'amount' || name === 'tenure') {
-      const amountVal = name === 'amount' ? value : formState.amount;
-      const tenureVal = name === 'tenure' ? value : formState.tenure;
-      const calc = calculateRepayment(amountVal, tenureVal);
-      setFormState(prev => ({ ...prev, repaymentPlan: calc }));
-    }
   };
 
   // handle form submit (keeps original behavior: prevent reload and calculate)
@@ -104,70 +113,67 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
     setFormState(prev => ({ ...prev, repaymentPlan: repayment }));
     //(do not auto-send here — "Check Your Loan Now" handles sending in original)
   };
+  
+  //handel submit & download brochure
+  const handleSubmitForm = () => {
+  if (!formData.name || !formData.phone || !formData.email) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  // TODO: Your download logic here
+  console.log("Form submitted:", formData);
+
+  setShowForm(false);
+  };
 
   // handle Check Your Loan Now (calculates and sends AJAX POST via fetch)
-  const handleCheckLoan = async (e) => {
-    e.preventDefault();
-    const formEl = formRef.current;
-    if (!formEl.checkValidity()) {
-      formEl.reportValidity();
-      return;
-    }
+  const handleCheckLoan = (e) => {
+      e.preventDefault();
+      setRespMsg("");
+      setShowRepayment(false);
 
-    const repayment = calculateRepayment(formState.amount, formState.tenure);
-    setFormState(prev => ({ ...prev, repaymentPlan: repayment }));
+      const { amount, tenure } = formState;
 
-    // Prepare FormData from the form element (keeps compatibility with your send_loan_mail.php)
-    const fd = new FormData(formEl);
+      const amt = Number(amount);
+      const tn = Number(tenure);
 
-    // helper to read cookie value
-    const getCookie = (name) => {
-      const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-      return match ? decodeURIComponent(match.pop()) : null;
-    };
-
-    // Try to obtain CSRF token (from meta tag or Laravel's XSRF-TOKEN cookie)
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || getCookie('XSRF-TOKEN');
-
-    // Append token to FormData for compatibility and also send header if available
-    // if (csrfToken) {
-    //   fd.append('_token', csrfToken);
-    // }
-
-    try {
-        setSending(true);
-        // POST to new API endpoint (include credentials so cookies are sent)
-        const res = await fetch('/api/send-loan-mail', {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json'
-        },
-        body: fd
-    });
-
-      let respBody;
-      try {
-        respBody = await res.json();
-      } catch (parseErr) {
-        respBody = await res.text();
+      // Rule 3: tenure must be >= 5 for all amounts
+      if (amt< 200) {
+        setRespMsg("❌ amount not applicable (minimum is 200)");
+        setShowRepayment(true);
+        return;
       }
-      console.log('/api/send-loan-mail/ response:', respBody);
-
-      if (!res.ok) {
-        const errMsg = (respBody && (respBody.message || respBody)) || 'Error sending inquiry. Please try again.';
-        setRespMsg(errMsg);
-      } else {
-        const successMsg = (respBody && (respBody.message || respBody)) || 'Your loan inquiry has been sent successfully!';
-        setRespMsg(successMsg);
+      if (tn < 5) {
+        setRespMsg("❌ Tenure not applicable (minimum is 5 days)");
+        setShowRepayment(true);
+        return;
       }
-      setTimeout(() => setRespMsg(''), 3000);
-    } catch (err) {
-      console.error('API error:', err);
-      setRespMsg('Error sending inquiry. Please try again.');
-      setTimeout(() => setRespMsg(''), 3000);
-    } finally {
-      setSending(false);
-    }
+
+      // Rule 1: For 200, 250, 300 → max 5 days
+      const smallAmounts = [200, 250, 300];
+      if (smallAmounts.includes(amt)) {
+        if (tn > 5) {
+          setRespMsg("❌ Tenure not applicable for this amount (Max 5 days)");
+          setShowRepayment(true);
+          return;
+        }
+      }
+
+      // Rule 2: For 350–950 → max 26 days
+      if (amt >= 350 && amt <= 950) {
+        if (tn > 26) {
+          setRespMsg("❌ Tenure not applicable for this amount (Max 26 days)");
+          setShowRepayment(true);
+          return;
+        }
+      }
+
+      // If passed all rules → calculate repayment
+      const repayment = calculateRepayment(amount, tenure);
+      setFormState((prev) => ({ ...prev, repaymentPlan: repayment }));
+
+      setShowRepayment(true);
   };
 
   return (
@@ -189,7 +195,94 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             </ul>
           </div>
           <div className="d-flex align-items-center">
-            <button className="btn btn-call">Download Brochure</button>
+           <button
+            className="btn btn-call"
+            onClick={() => setShowForm(true)}
+          >
+            Download Brochure
+            </button>
+             {/* Download Brochure Form Modal */}
+            {showForm && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-50">
+                <div className="bg-white w-full max-w-md rounded-xl shadow-lg animate-fadeIn">
+
+                  {/* Header */}
+                  <div className="border-b px-6 py-4">
+                    <h2 className="text-lg font-semibold text-gray-700">
+                      Please provide your details
+                    </h2>
+                  </div>
+
+                  {/* Body */}
+                  <div className="px-6 py-4 space-y-4">
+
+                    {/* Name */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Name</label>
+                      <input
+                        type="text"
+                        placeholder="Your full name"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
+                      />
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Phone</label>
+                      <input
+                        type="text"
+                        placeholder="Valid 8-digit mobile number"
+                        value={formData.phone}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phone: e.target.value })
+                        }
+                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
+                      />
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Email</label>
+                      <input
+                        type="email"
+                        placeholder="name@example.com"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
+                      />
+                    </div>
+
+                  </div>
+
+                  {/* Footer */}
+                  <div className="border-t px-6 py-4 flex justify-end gap-3">
+
+                    {/* Cancel */}
+                    <button
+                      onClick={() => setShowForm(false)}
+                      className="px-5 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm"
+                    >
+                      Cancel
+                    </button>
+
+                    {/* Submit & Download */}
+                    <button
+                      onClick={() => handleSubmitForm()}
+                      className="px-5 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-white text-sm"
+                    >
+                      Submit & Download
+                    </button>
+                  </div>
+                </div>
+              </div>
+        )}
+
             {/* <button className="btn btn-login">Login</button> */}
             {auth.user ? (
                 <Link
@@ -239,50 +332,94 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               <form id="loanForm" ref={formRef} onSubmit={handleSubmit}>
                 <div className="row">
                   <div className="col-md-6 mb-3">
-                    <label htmlFor="amount" className="form-label">Amount <span style={{color:'red'}}>*</span></label>
-                    <input type="number" id="amount" name="amount" value={formState.amount} onChange={handleChange}
-                      className="form-control" placeholder="Enter Amount" required />
+                    <label className="form-label">Amount *</label>
+                    <input type="number" name="amount" value={formState.amount}
+                      onChange={handleChange} className="form-control" required />
                   </div>
 
                   <div className="col-md-6 mb-3">
-                    <label htmlFor="tenure" className="form-label">Tenure (Days) <span style={{color:'red'}}>*</span></label>
-                    <input type="number" id="tenure" name="tenure" value={formState.tenure} onChange={handleChange}
-                      className="form-control" placeholder="Enter Tenure (Days)" required />
+                    <label className="form-label">Tenure (Days) *</label>
+                    <input type="number" name="tenure" value={formState.tenure}
+                      onChange={handleChange} className="form-control" required />
                   </div>
                 </div>
-
-                <div className="mb-3">
-                  <label htmlFor="repaymentPlan" className="form-label">Repayment Plan</label>
-                  <input type="text" id="repaymentPlan" name="repaymentPlan" className="form-control"
-                    placeholder="Repayment Amount" readOnly value={formState.repaymentPlan} />
-                </div>
-
                 <div className="row">
                   <div className="col-md-6 mb-3">
-                    <label htmlFor="name" className="form-label">Name <span style={{color:'red'}}>*</span></label>
-                    <input type="text" id="name" name="name" value={formState.name} onChange={handleChange}
-                      className="form-control" placeholder="Enter Your Name" required />
+                    <label className="form-label">Name *</label>
+                    <input type="text" name="name" value={formState.name}
+                      onChange={handleChange} className="form-control" required />
                   </div>
-
                   <div className="col-md-6 mb-3">
-                    <label htmlFor="phone" className="form-label">Phone <span style={{color:'red'}}>*</span></label>
-                    <input type="tel" id="phone" name="phone" value={formState.phone} onChange={handleChange}
-                      className="form-control" placeholder="Phone Number" required pattern="[0-9]{8}" maxLength={8} title="Please enter 8 digits" />
+                    <label className="form-label">Phone *</label>
+                    <input type="tel" name="phone" value={formState.phone}
+                      onChange={handleChange} className="form-control"
+                      required pattern="[0-9]{8}" maxLength={8} />
                   </div>
-
-                  <div className="mb-3">
-                    <label htmlFor="email" className="form-label">Email <span style={{color:'red'}}>*</span></label>
-                    <input type="email" id="email" name="email" value={formState.email} onChange={handleChange}
-                      className="form-control" placeholder="Enter Email Address" required />
-                  </div>
+                    <div className="mb-3">
+                      <label className="form-label">Email *</label>
+                      <input type="email" name="email" value={formState.email}
+                        onChange={handleChange} className="form-control" required />
+                    </div>
                 </div>
+                {/* Show repayment only AFTER button click */}
+                {showRepayment && (
+  <div
+    className="p-3 rounded-lg mb-3 text-center"
+    style={{
+      background: "#deebd9ff",
+      borderRadius: "10px",
+    }}
+  >
+    {/* If repayment is valid */}
+    {!respMsg && (
+      <>
+        <div
+          className="fw-bold text-dark"
+          style={{ fontSize: "14px", marginBottom: "4px" }}
+        >
+          Repayment Amount
+        </div>
 
-                <button type="button" id="checkLoan" className="btn btn-success btn-check-loan" onClick={handleCheckLoan} disabled={sending}>
-                  {sending ? 'Sending...' : 'Check Your Loan Now!'}
-                </button>
+        <div
+          className="fw-bold"
+          style={{ color: "#0a8a42", fontSize: "22px" }}
+        >
+          <strong>
+            PGK {Number(formState.repaymentPlan).toLocaleString()}
+          </strong>
+        </div>
+      </>
+    )}
 
-                <div className="resp mt-2">{respMsg}</div>
+    {/* If error */}
+    {respMsg && (
+      <div
+        className="mt-2 p-2 fw-bold text-white"
+        style={{
+          background: "#d9534f",
+          borderRadius: "6px",
+          fontSize: "14px",
+        }}
+      >
+        {respMsg}
+      </div>
+    )}
+  </div>
+                )}
+
+
+              <button
+                type="button"
+                className="btn btn-success btn-check-loan"
+                onClick={handleCheckLoan}
+                disabled={sending}
+              >
+                {sending ? "Sending..." : "Check Your Loan Now!"}
+              </button>
+
+              <div className="resp mt-2">{respMsg}</div>
               </form>
+
 
             </div>
           </div>

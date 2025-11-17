@@ -1,214 +1,194 @@
-import React, { useState, useMemo, useEffect } from "react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+// resources/js/Pages/Loans/EmiCollection.jsx
+import React, { useEffect, useMemo, useState } from "react";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Search, Loader2, X } from "lucide-react";
 import axios from "axios";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { Eye, Pencil, Trash2, Search, X, ArrowLeft } from "lucide-react";
 import Swal from "sweetalert2";
-import { motion, AnimatePresence } from "framer-motion";
-import { Row, Col, Table, Button } from "react-bootstrap";
 import { currencyPrefix } from "@/config";
 
-// Document Viewer Modal
-function DocumentViewerModal({ isOpen, onClose, documentUrl }) {
-  if (!isOpen) return null;
+/**
+ * DocumentViewerModal
+ * - documentUrl must be a full/public URL to the PDF/MP4 (eg: /storage/... or external URL)
+ */
+function DocumentViewerModal({ open, onClose, documentUrl, title }) {
+  if (!open) return null;
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      >
-        <motion.div
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          exit={{ scale: 0.8 }}
-          transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          className="bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col shadow-xl"
-        >
-          <div className="flex justify-between items-center p-4 border-b">
-            <h3 className="text-lg font-semibold">Document Viewer</h3>
-            <button className="p-1 hover:bg-gray-100 rounded-full" onClick={onClose}>
-              <X size={20} />
-            </button>
-          </div>
-          <iframe src={documentUrl} className="w-full h-full rounded border" title="Document" />
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+      <div className="bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden shadow-xl">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+          <h3 className="text-lg font-semibold">{title || "Document Viewer"}</h3>
+          <button
+            onClick={onClose}
+            className="p-2 rounded hover:bg-gray-100"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          {/* PDF or video */}
+          {documentUrl?.endsWith(".pdf") || documentUrl?.includes(".pdf") ? (
+            <iframe
+              title="Document"
+              src={documentUrl + (documentUrl.includes("#") ? "" : "#toolbar=0")}
+              className="w-full h-full border-0"
+            />
+          ) : documentUrl?.endsWith(".mp4") || documentUrl?.includes(".mp4") ? (
+            <video className="w-full h-full" controls src={documentUrl} />
+          ) : (
+            <div className="p-6 text-center text-gray-600">
+              Preview not available for this file type.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
-export default function ActiveLoans({ auth, approved_loans }) {
-  const [selectAll, setSelectAll] = useState(false);
-  console.log("approved_loans: ", approved_loans);
-  const [loans, setLoans] = useState(approved_loans);
+export default function EmiCollection({ auth, approved_loans = null }) {
+  const [loans, setLoans] = useState(Array.isArray(approved_loans) ? approved_loans : []);
+  const [loading, setLoading] = useState(true);
+  const [orgs, setOrgs] = useState([]);
+  const [searchName, setSearchName] = useState("");
+  const [searchLoanAmt, setSearchLoanAmt] = useState("");
+  const [orgFilter, setOrgFilter] = useState("");
+  const [eligibilityFilter, setEligibilityFilter] = useState("all"); // all / eligible / not_eligible
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  // right panel / modal state
   const [selectedLoan, setSelectedLoan] = useState(null);
-  const [selectedDoc, setSelectedDoc] = useState(null);
-  const [selectedLoanIds, setSelectedLoanIds] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+  const [docModalOpen, setDocModalOpen] = useState(false);
+  const [docUrl, setDocUrl] = useState("");
+  const [docTitle, setDocTitle] = useState("");
+  
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
-  // 🔍 Filtered loans
-  const filteredLoans = useMemo(() => {
-    return loans.filter((loan) => {
-      const fullName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`
-        .toLowerCase()
-        .trim();
-      const matchesName = fullName.includes(searchQuery.toLowerCase());
-      const matchesDate = dateFilter
-        ? loan.created_at && loan.created_at.startsWith(dateFilter)
-        : true;
-      return matchesName && matchesDate;
-    });
-  }, [loans, searchQuery, dateFilter]);
+  axios.defaults.withCredentials = true;
 
-  // 📦 Handle checkbox toggle
-  const toggleLoanSelection = (loanId) => {
-    setSelectedLoanIds((prev) =>
-      prev.includes(loanId)
-        ? prev.filter((id) => id !== loanId)
-        : [...prev, loanId]
-    );
-    setSelectedLoan(null);
-  };
-
-  // ✅ Handle Select All logic
-  const toggleSelectAll = () => {
-    if (selectAll) {
-      // Unselect all
-      setSelectedLoanIds([]);
-      setSelectedLoan(null);
-    } else {
-      // Select only collectible loans
-      const collectibleIds = filteredLoans
-        .filter((loan) => isCollectible(loan))
-        .map((loan) => loan.id);
-      setSelectedLoanIds(collectibleIds);
-      setSelectedLoan(null);
-    }
-    setSelectAll(!selectAll);
-  };
-  const normalizeDate = (d) => {
-    const date = new Date(d);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`; // Local date, no UTC shift
-  };
-
-
-  const isCollectible = (loan) => {
-    if (!loan || !loan.next_due_date) return false;
-
-    const today = normalizeDate(new Date());
-    const nextDue = normalizeDate(loan.next_due_date);
-
-    console.log("today", today);
-    console.log("nextDue", nextDue);
-
-    // Must have installments
-    // if (!Array.isArray(loan.installments) || loan.installments.length === 0) return false;
-
-    const nextInstallment = loan.installments.find(
-      (i) => normalizeDate(i.due_date) === nextDue
-    );
-
-    // if (!nextInstallment) return false;
-    if (nextInstallment) {
-      if (nextInstallment.status?.toLowerCase() === "paid") return false;
-    }
-
-    // Allow if due date is today or in the past
-    return nextDue <= today;
-  };
-
-
-
-
-  // 💳 Collect EMI API call
-  // const handleCollectEMI = async () => {
-  //   if (selectedLoanIds.length === 0) {
-  //     Swal.fire("No Loans Selected", "Please select at least one loan.", "warning");
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     const res = await axios.post("/api/loans/collect-emi", {
-  //       loan_ids: selectedLoanIds,
-  //     });
-
-  //     Swal.fire("✅ Success", res.data.message || "EMI collected successfully!", "success");
-
-  //     // ✅ Refresh approved loan list after EMI collection
-  //     const refreshed = await axios.get("/api/loans/emi-collection-list");
-  //     if (refreshed.data) {
-  //       setSelectedLoanIds([]); // clear selected checkboxes
-  //       setSelectedLoan(null); // reset right panel
-  //       setSearchQuery("");
-  //       setDateFilter("");
-  //       // update your loan list state
-  //       if (Array.isArray(refreshed.data)) {
-  //         setLoans(refreshed.data);
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error(error);
-  //     Swal.fire("❌ Error", "Failed to collect EMI. Try again later.", "error");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-  const handleCollectEMI = async () => {
-    try {
-      // if (selectedLoanIds.length === 0) return;
-      if (selectedLoanIds.length === 0) {
-        Swal.fire("No Loans Selected", "Please select at least one loan.", "warning");
-        return;
-      }
-      setLoading(true);
-
-      const response = await axios.post("/api/loans/collect-emi", {
-        loan_ids: selectedLoanIds,
-      });
-
-      // setMessage("✅ EMI collected successfully!");
-      Swal.fire("✅ Success", response.data.message || "EMI collected successfully!", "success");
-      // Refresh the loan list after successful collection
-      const res = await axios.get("/api/loans/emi-collection-list");
-      // setLoans(res.data.approved_loans);
-      setSelectedLoanIds([]); // clear selection
-      setSelectedLoan(null); // reset right panel
-      setSearchQuery("");
-      setDateFilter("");
-      // update your loan list state
-      if (Array.isArray(res.data)) {
-        setLoans(res.data.approved_loans);
-      }
-    } catch (error) {
-      console.error(error);
-      // setMessage("❌ Failed to collect EMI.");
-      Swal.fire("❌ Error", "Failed to collect EMI. Try again later.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ Keep Select All state in sync with filteredLoans
+  // Fetch loans if not provided as prop
   useEffect(() => {
-    const collectibleIds = filteredLoans
-      .filter((loan) => isCollectible(loan))
-      .map((loan) => loan.id);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        if (!approved_loans) {
+          const res = await axios.get("/api/loans/emi-collection-list");
+          // backend may wrap; try to locate array safely:
+          const data = Array.isArray(res.data) ? res.data : (res.data.approved_loans || res.data);
+          setLoans(Array.isArray(data) ? data : []);
+        } else {
+          setLoans(approved_loans);
+        }
+      } catch (err) {
+        console.error("Failed to fetch loans:", err);
+        setLoans([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // If all collectible loans are selected → mark Select All checked
-    setSelectAll(
-      collectibleIds.length > 0 &&
-      collectibleIds.every((id) => selectedLoanIds.includes(id))
-    );
-  }, [filteredLoans, selectedLoanIds]);
+    const fetchOrgs = async () => {
+      try {
+        const r = await axios.get("/api/organisation-list");
+        setOrgs(Array.isArray(r.data) ? r.data : []);
+      } catch (e) {
+        console.error("Failed to fetch organisations:", e);
+        setOrgs([]);
+      }
+    };
+
+    fetchData();
+    fetchOrgs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Filters + search
+  const filtered = useMemo(() => {
+    return loans.filter((loan) => {
+      const custFull =
+        `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
+      const matchesName = custFull.includes(searchName.trim().toLowerCase());
+      const appliedAmt = (loan.loan_amount_applied ?? "").toString();
+      const matchesAmt = searchLoanAmt.trim() === "" || appliedAmt.includes(searchLoanAmt.trim());
+      const matchesOrg =
+        !orgFilter || (loan.organisation && String(loan.organisation.id) === String(orgFilter));
+      const matchesElig =
+        eligibilityFilter === "all"
+          ? true
+          : eligibilityFilter === "eligible"
+          ? Number(loan.is_elegible) === 1
+          : Number(loan.is_elegible) === 0;
+      // normalize created_at
+    const loanDate = loan.created_at
+      ? new Date(loan.created_at.replace(" ", "T"))
+      : null;
+
+    // normalize toDate — include full day
+    const toDateEnd = toDate ? new Date(toDate + "T23:59:59") : null;
+
+    const matchesFrom =
+      !fromDate || (loanDate && loanDate >= new Date(fromDate + "T00:00:00"));
+
+    const matchesTo =
+      !toDate || (loanDate && loanDate <= toDateEnd);
+
+      return matchesName &&
+       matchesAmt &&
+       matchesOrg &&
+       matchesElig &&
+       matchesFrom &&
+       matchesTo;
+
+    });
+  }, [loans, searchName, searchLoanAmt, orgFilter, eligibilityFilter, fromDate, toDate]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(1);
+  }, [totalPages, currentPage]);
+
+  const pageData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage]);
+
+  // actions
+  const handleDelete = async (loanId) => {
+    
+  };
+
+  const openDocument = (doc) => {
+    // doc.file_path expected like "/storage/uploads/...pdf"
+    const path = doc?.file_path || doc?.path || doc?.file || "";
+    const url = path.startsWith("/") ? path : `/storage/${path}`;
+    setDocUrl(url);
+    setDocTitle(doc.file_name || "Document");
+    setDocModalOpen(true);
+  };
+
+  const openCustomPdf = (url, title) => {
+    // Use when you have explicit local path (like your example E:\... -> web public path /storage/...)
+    setDocUrl(url);
+    setDocTitle(title || "Document");
+    setDocModalOpen(true);
+  };
+
+  // nice date display
+  const fmtDate = (d) => {
+    if (!d) return "—";
+    try {
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return d;
+      return dt.toLocaleDateString();
+    } catch {
+      return d;
+    }
+  };
+
   return (
     <AuthenticatedLayout
       user={auth.user}
@@ -216,451 +196,447 @@ export default function ActiveLoans({ auth, approved_loans }) {
     >
       <Head title="Loan EMI Collection" />
 
-      <div className="min-h-screen bg-gray-100 py-6 px-4 flex gap-4 transition-all duration-300">
+      <div className="py-6 max-w-9xl mx-auto sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <div className="max-w-9xl mx-auto mb-2 -mt-2 ">
+          <Link
+            href={route("loans")}
+            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
+          >
+            <ArrowLeft size={16} className="mr-2" /> Back to List
+          </Link>
+        </div>
+        
+        {/* Top Bar */}
+        <div className="bg-white shadow-sm p-3 py-2 mb-4 border border-gray-200 flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-700">Loan Applications</h3>
+          </div>
 
-        {/* LEFT PANEL */}
-        <div className="w-1/3 bg-white rounded-lg shadow-md p-4 overflow-y-auto h-[85vh] font-[Times_New_Roman]">
-          {/* Header */}
-          <div className="flex items-center mb-3">
-            <Link href={route("dashboard")}><ArrowLeft size={16} className="mr-2 text-gray-600" /></Link>
-            <span className="font-semibold text-lg text-gray-800">Loan EMI Collection</span>
-          </div>
-          {/* Summary */}
-          <div className="grid grid-cols-3 text-center border border-gray-200 rounded-lg overflow-hidden mb-3">
-            <div className="py-3">
-              <div className="text-sm text-gray-500">Total</div>
-              <div className="text-xl font-bold">{filteredLoans.length}</div>
-            </div>
-            <div className="py-3 border-x border-gray-200">
-              <div className="text-sm text-gray-500">Pending</div>
-              <div className="text-xl font-bold">{currencyPrefix}&nbsp;{loans[0].total_outstanding_amount_all_loan || 0.00}</div>
-            </div>
-            <div className="py-3">
-              <div className="text-sm text-gray-500">Collected</div>
-              <div className="text-xl font-bold">{currencyPrefix}&nbsp;{loans[0].total_paid_amount_all_loan || 0.00}</div>
-            </div>
-          </div>
-          {/* Top Action Buttons */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={handleCollectEMI}
-              disabled={loading || selectedLoanIds.length === 0}
-              className={`flex-1 bg-green-600 text-white py-2 rounded-md flex items-center justify-center gap-2 ${loading || selectedLoanIds.length === 0
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-green-700"
-                }`}
+          <div className="flex items-center gap-3">
+            <Link
+              href={route("loan.emi.collection")}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : "💰 Collect EMI"}
-            </button>
-            <button
-              disabled={!selectedLoan}
-              className={`flex-1 bg-blue-600 text-white py-2 rounded-md ${selectedLoan ? "hover:bg-blue-700" : "opacity-50 cursor-not-allowed"
-                }`}
-              onClick={() => setSelectedLoan(selectedLoan)}
+              Collect EMI
+            </Link>
+            <Link
+              href={route("loan-create")}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
-              🔍 View Details
-            </button>
+              + New Loan Application
+            </Link>
           </div>
-
-          {/* Filters */}
-          <div className="space-y-3 mb-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search by name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm focus:ring-1 focus:ring-green-400 focus:border-green-400"
-              />
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-            </div>
-
-            <div>
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-green-400 focus:border-green-400"
-              />
-              <p className="text-xs text-gray-500 mt-1">Filter by created date</p>
-            </div>
-          </div>
-          {/* Select All Checkbox */}
-          <div className="flex items-center justify-between mb-3 px-1">
-            <label className="flex items-center space-x-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={selectAll}
-                onChange={
-                  filteredLoans.filter(isCollectible).length === 0
-                    ? undefined
-                    : toggleSelectAll
-                }
-                className={`form-check-input ${filteredLoans.filter(isCollectible).length === 0
-                    ? "opacity-50 cursor-not-allowed pointer-events-none"
-                    : "cursor-pointer"
-                  }`}
-                title={
-                  filteredLoans.filter(isCollectible).length === 0
-                    ? "No collectible loans available"
-                    : "Select to collect EMI"
-                }
-              />
-
-              <span>Select All Collectible Loans</span>
-            </label>
-            {selectedLoanIds.length > 0 && (
-              <span className="text-xs text-gray-500">
-                Selected: {selectedLoanIds.length}
-              </span>
-            )}
-          </div>
-          {/* Loan List */}
-          {filteredLoans.length > 0 ? (
-            filteredLoans.map((loan) => {
-              const cust = loan.customer || {};
-              const fullName = `${cust.first_name || ""} ${cust.last_name || ""}`.trim();
-              const collectible = isCollectible(loan);
-
-              return (
-                <motion.div
-                  key={loan.id}
-                  whileHover={{ scale: 1.01 }}
-                  className={`transition-all duration-150 cursor-pointer border rounded-lg p-3 mb-2 shadow-sm hover:shadow-md ${selectedLoanIds.includes(loan.id)
-                      ? "border-green-500 bg-green-50"
-                      : "border-gray-200 bg-white"
-                    }`}
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedLoanIds.includes(loan.id)}
-                        onChange={() => toggleLoanSelection(loan.id)}
-                        disabled={!collectible}
-                        className={`h-4 w-4 mt-0.5 ${!collectible ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                          }`}
-                        title={
-                          !collectible
-                            ? (() => {
-                              const today = new Date().toISOString().split("T")[0];
-                              if (loan.next_due_date > today)
-                                return `Not due until ${new Date(
-                                  loan.next_due_date
-                                ).toLocaleDateString()}`;
-                              return "Not collectible";
-                            })()
-                            : "Select to collect EMI"
-                        }
-                      />
-                      <div>
-                        <h4 className="font-semibold text-gray-800 text-sm leading-tight">
-                          {fullName || "Unknown"}
-                        </h4>
-                        <p className="text-xs text-gray-500">Loan ID: #{loan.id}</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setSelectedLoan(loan)}
-                      disabled={selectedLoanIds.length > 1}
-                      className={`text-xs underline ${selectedLoanIds.length > 1
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-indigo-600 hover:text-indigo-700"
-                        }`}
-                    >
-                      View Details
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-gray-600 mt-1">
-                    <p><b>Next Due:</b> {loan.next_due_date || "N/A"}</p>
-                    <p><b>EMI:</b> <span className="text-green-700 font-medium">{currencyPrefix} {loan.emi_amount || 0}</span></p>
-                    <p><b>Total Repay:</b> {currencyPrefix} {loan.total_repay_amt || 0}</p>
-                    <p><b>Paid Amt:</b> {currencyPrefix} {loan.total_emi_paid_amount || 0}</p>
-                  </div>
-                </motion.div>
-              );
-            })
-          ) : (
-            <div className="text-center text-gray-500 py-6 text-sm">
-              No matching loans found.
-            </div>
-          )}
         </div>
 
-        {/* RIGHT PANEL */}
-        <motion.div
-          key={selectedLoan?.id}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -50 }}
-          transition={{ type: "spring", stiffness: 100, damping: 15 }}
-          className="flex-1 bg-white rounded-lg shadow-md p-6 overflow-y-auto h-[85vh] font-[Times_New_Roman]"
-        >
-          {/* Right Panel - Selected Loans Summary */}
-          <div className="col-span-4 border-l pl-4">
-            {selectedLoanIds.length > 0 ? (
-              <>
-                {/* Top Action Bar */}
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-semibold text-lg text-gray-800">
-                    Selected Loans ({selectedLoanIds.length})
-                  </h4>
-                  <button
-                    onClick={handleCollectEMI}
-                    className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md shadow-sm"
-                  >
-                    💰 Collect EMI
-                  </button>
-                </div>
-
-                {/* Selected Loans Summary */}
-                <div className="space-y-2 max-h-[70vh] overflow-y-auto">
-                  {filteredLoans
-                    .filter((loan) => selectedLoanIds.includes(loan.id))
-                    .map((loan) => {
-                      const cust = loan.customer || {};
-                      return (
-                        <div
-                          key={loan.id}
-                          className="border border-green-300 rounded-md p-3 bg-green-50 shadow-sm hover:shadow-md transition-all"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h5 className="font-medium text-gray-800 text-sm">
-                                {cust.first_name} {cust.last_name}
-                              </h5>
-                              <p className="text-xs text-gray-500">
-                                Loan #{loan.id} • Next Due:{" "}
-                                <span className="font-medium">
-                                  {loan.next_due_date || "N/A"}
-                                </span>
-                              </p>
-                            </div>
-                            <span className="text-green-700 font-semibold text-xs">
-                              {currencyPrefix} {loan.emi_amount}
-                            </span>
-                          </div>
-                          <div className="mt-1 text-xs text-gray-600 grid grid-cols-2 gap-x-2">
-                            <p><b>Total Repay:</b> {currencyPrefix} {loan.total_repay_amt}</p>
-                            <p><b>Paid Amt:</b> {currencyPrefix} {loan.total_emi_paid_amount}</p>
-                            <p><b>Remaining F/N:</b> {loan.tenure_fortnight - (loan.total_emi_paid_count || 0)}</p>
-                            <p><b>Status:</b> <span className="text-green-700 font-medium">Ready</span></p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              </>
-            ) : (
-              <div className="text-gray-500 text-sm text-center mt-10 d-none">
-                No loans selected.
-              </div>
-            )}
+        {/* Filters (styled like Loan Index) */}
+        <div className="bg-white border border-gray-200 shadow-sm p-4 flex flex-col lg:flex-row gap-4 items-center">
+          {/* Search by Name */}
+          <div className="relative flex-1 w-full">
+            <Search size={16} className="absolute left-3 top-3 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by Name"
+              value={searchName}
+              onChange={(e) => {
+                setSearchName(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
           </div>
-          {selectedLoan ? (
-            <>
-              {/* Company Info */}
-              <div className="border-b border-gray-200 mb-2">
-                <h3 className="text-lg font-bold text-white bg-green-500 px-4 py-2 rounded">
-                  {selectedLoan.company?.company_name || "N/A"}
-                </h3>
-                <p className="text-sm text-gray-600 mt-2">{selectedLoan.company?.address}</p>
-                <p className="text-sm text-gray-600 -mt-3">
-                  {selectedLoan.company?.contact_no} | {selectedLoan.company?.email}
+
+          {/* Search by Loan Amount */}
+          <div className="relative flex-1 w-full">
+            <Search size={16} className="absolute left-3 top-3 text-gray-400" />
+            <input
+              type="number"
+              placeholder="Search by Loan Amount"
+              value={searchLoanAmt}
+              onChange={(e) => {
+                setSearchLoanAmt(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Organisation select */}
+          <div className="relative flex-1 w-full">
+            <Search size={16} className="absolute left-3 top-3 text-gray-400" />
+            <select
+              value={orgFilter}
+              onChange={(e) => {
+                setOrgFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none"
+            >
+              <option value="">All Organisations</option>
+              {orgs.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.organisation_name || o.name || `Org ${o.id}`}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* From Date */}
+          <div className="relative flex-1 w-full">
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-3 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm
+                        focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            />
+          </div>
+
+        {/* To Date */}
+        {/* <div className="relative flex-1 w-full">
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => {
+              setToDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm
+                      focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div> */}
+
+          
+        </div>
+
+        {/* Table (styled like Loan Index) */}
+        <div className="bg-white shadow-lg border border-gray-700 overflow-hidden mt-3">
+          <table className="w-full text-sm border border-gray-700 border-collapse table-auto">
+            <thead className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-blue-600 text-white">
+              <tr>
+                <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700 w-12">#</th>
+                <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">Name</th>
+                <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">Details</th>
+                <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">Organisation</th>
+                <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">Amount Details</th>
+                <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">Eligibility</th>
+                <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">Status</th>
+                <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">Created At</th>
+                <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700 w-36">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="p-6 text-center text-gray-600 border border-gray-700">
+                    Loading loans...
+                  </td>
+                </tr>
+              ) : pageData.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="p-6 text-center text-gray-600 border border-gray-700">
+                    No loans found.
+                  </td>
+                </tr>
+              ) : (
+                pageData.map((loan, idx) => {
+                  const rowIndex = (currentPage - 1) * itemsPerPage + idx + 1;
+                  const companyName = loan.company?.company_name || "-";
+                  const orgName = loan.organisation?.organisation_name || "-";
+                  return (
+                    <tr
+                      key={loan.id}
+                      className="hover:bg-indigo-50 transition-all duration-200 bg-white"
+                    >
+                      <td className="px-4 py-3 text-center text-gray-700 border border-gray-700">
+                        {rowIndex}
+                      </td>
+                      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
+                        <div className="flex flex-col items-center justify-center">
+                          <span>
+                             {loan.customer.first_name  || "-"}
+                          </span>
+                          <span>
+                            {loan.customer.last_name|| "-"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
+                        <div className="flex flex-col items-center justify-center">
+                          <span>
+                            <strong>Type:</strong> {loan.loan_settings?.loan_desc || "-"}
+                          </span>
+                          <span>
+                            <strong>Purpose:</strong> {loan.purpose || "-"}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
+                        <div className="flex flex-col items-center justify-center">
+                          <strong>{orgName}</strong>
+                          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
+                            {loan.organisation?.contact_no || loan.company?.contact_no || "-"}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
+                        <div className="flex flex-col items-center justify-center">
+                          <span>
+                            {currencyPrefix}&nbsp;
+                            {Number(loan.loan_amount_applied || 0).toLocaleString()}
+                          </span>
+                          <span>
+                            <strong>Tenure:</strong> {loan.tenure_fortnight || 0}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3 text-center border border-gray-700">
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            Number(loan.is_elegible) === 1 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {Number(loan.is_elegible) === 1 ? "Eligible" : "Not Eligible"}
+                        </span>
+                        <div className="text-xs text-gray-700 mt-1">
+                          <strong>Eligible Amt:</strong> {currencyPrefix}
+                          {Number(loan.elegible_amount || 0).toLocaleString()}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3 text-center border border-gray-700">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            loan.status === "Approved"
+                              ? "bg-green-100 text-green-700"
+                              : loan.status === "Rejected"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {loan.status || "-"}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3 text-center text-gray-600 whitespace-nowrap border border-gray-700">
+                        {fmtDate(loan.created_at)}
+                      </td>
+
+                      <td className="px-4 py-3 text-center border border-gray-700">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            title="View"
+                            onClick={() => {
+                              setSelectedLoan(loan);
+                            }}
+                            className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+                          >
+                            <Eye size={15} />
+                          </button>
+
+            
+                          <button
+                            title="Delete"
+                            onClick={() => handleDelete(loan.id)}
+                            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination footer (styled like Loan Index) */}
+        <div className="flex justify-between items-center gap-3 mt-4 mx-4 px-8">
+          <div className="text-sm text-gray-600">
+            Showing{" "}
+            <span className="font-medium">
+              {filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
+            </span>{" "}
+            to{" "}
+            <span className="font-medium">
+              {Math.min(currentPage * itemsPerPage, filtered.length)}
+            </span>{" "}
+            of <span className="font-medium">{filtered.length}</span> entries ({itemsPerPage} per page)
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50 hover:bg-gray-50"
+            >
+              ← Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setCurrentPage(p)}
+                className={`px-3 py-1 rounded-md ${
+                  p === currentPage ? "bg-indigo-600 text-white" : "bg-white border border-gray-200 hover:bg-gray-50"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50 hover:bg-gray-50"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+
+        {/* Right-side Loan Details (when user clicks View) */}
+        {selectedLoan && (
+        <div className="mt-6 bg-white shadow-xl border border-gray-200 rounded-xl p-6 transition-all">
+          
+          {/* Header */}
+          <div className="flex justify-between items-start border-b pb-3">
+            <div>
+              <h4 className="text-xl font-bold text-gray-800">Loan ID: #{selectedLoan.id}</h4>
+              <p className="text-sm text-gray-500 mt-1">
+                {selectedLoan.organisation?.organisation_name ||
+                  selectedLoan.company?.company_name ||
+                  "-"}
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSelectedLoan(null)}
+              className="px-4 py-1.5 text-sm rounded-md border bg-gray-100 hover:bg-gray-200 transition text-gray-700"
+            >
+              Close
+            </button>
+          </div>
+
+          {/* SECTION 1 — Loan / Customer / Org */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-5">
+
+            {/* Application Details */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 shadow-sm">
+              <h5 className="font-semibold text-gray-700 mb-3">Application Details</h5>
+              <div className="space-y-1 text-sm text-gray-700">
+                <p><strong>Type:</strong> {selectedLoan.loan_settings?.loan_desc || "-"}</p>
+                <p><strong>Purpose:</strong> {selectedLoan.purpose || "-"}</p>
+                <p>
+                  <strong>Amount:</strong> {currencyPrefix}&nbsp;
+                  {Number(selectedLoan.loan_amount_applied || 0).toLocaleString()}
+                </p>
+                <p><strong>Tenure FN:</strong> {selectedLoan.tenure_fortnight}</p>
+                <p>
+                  <strong>EMI:</strong> {currencyPrefix}&nbsp;
+                  {Number(selectedLoan.emi_amount || 0).toLocaleString()}
                 </p>
               </div>
-
-              {/* Loan Overview */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 text-sm">
-                <div><b>Loan Type:</b> {selectedLoan.loan_settings?.loan_desc}</div>
-                <div><b>Purpose:</b> {selectedLoan.purpose}</div>
-                <div><b>Loan Amount:</b> {currencyPrefix}&nbsp;{selectedLoan.loan_amount_applied}</div>
-                <div><b>Tenure:</b> {selectedLoan.tenure_fortnight} fortnights</div>
-                <div><b>Interest Rate:</b> {selectedLoan.interest_rate}%</div>
-                {/* <div><b>Created Date:</b> {new Date(selectedLoan.created_at).toLocaleString()}</div> */}
-
-                <div><b>Processing Fee:</b> {currencyPrefix}&nbsp;{selectedLoan.processing_fee}</div>
-                {/* <div><b>Bank Name:</b> {selectedLoan.bank_name}</div>
-                      <div><b>Bank Branch:</b> {selectedLoan.bank_branch}</div>
-                      <div><b>Account No:</b> {selectedLoan.bank_account_no}</div> */}
-
-                <div><b>Status:</b> <strong className="text-success">{selectedLoan.status}</strong></div>
-                <div><b>Approved Date:</b> <i>{new Date(selectedLoan.approved_date).toLocaleString()}</i></div>
-                <div><b>Approved By:</b> {selectedLoan.approved_by}</div>
-                <div>
-                  <b>Last EMI Paid:</b>{" "}
-                  {(() => {
-                    if (!selectedLoan || !Array.isArray(selectedLoan.installments)) return "N/A";
-
-                    const paidInstallments = selectedLoan.installments.filter(
-                      (i) => i.status?.toLowerCase() === "paid" && i.payment_date
-                    );
-
-                    if (paidInstallments.length === 0) return "N/A";
-
-                    const latestDate = paidInstallments
-                      .map((i) => new Date(i.payment_date))
-                      .reduce((a, b) => (a > b ? a : b));
-
-                    return latestDate.toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    });
-                  })()}
-                </div>
-                <div>
-                  <b>Next Due Date:</b> {(() => {
-                    if (!selectedLoan || selectedLoan.next_due_date == null) return "N/A";
-                    const d = new Date(selectedLoan.next_due_date);
-                    if (Number.isNaN(d.getTime())) return "N/A";
-                    return d.toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    });
-                  })()}
-                </div>
-                <div>
-                  <b>Total Repayment Amt:&nbsp;</b>{currencyPrefix}&nbsp;{selectedLoan.total_repay_amt}
-                </div>
-              </div>
-              {selectedLoan.installments.length > 0 ? (
-                <Table bordered size="sm" className="mt-3">
-                  <thead className="!bg-gray-100 !text-gray-700">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">EMI No.</th>
-                      <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">Due Date</th>
-                      <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">Payment Date</th>
-                      <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">Status</th>
-                      <th className="px-4 py-2 text-left font-semibold border-b border-gray-200">Amount</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {selectedLoan.installments.map((emi) => (
-                      <tr key={emi.id}>
-                        <td>{emi.installment_no}</td>
-                        <td>{emi.due_date}</td>
-                        <td>{emi.payment_date || "—"}</td>
-                        <td
-                          className={
-                            emi.status === "Paid"
-                              ? "text-success fw-semibold"
-                              : emi.status === "Overdue"
-                                ? "text-danger fw-semibold"
-                                : "text-warning fw-semibold"
-                          }
-                        >
-                          {emi.status}
-                        </td>
-                        <td>{currencyPrefix}&nbsp;{emi.emi_amount}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              ) : (
-                <p>&nbsp;</p>
-              )}
-
-              {/* Customer Info */}
-              <div className="border-t border-gray-200 mb-2 pt-2">
-                <h4 className="font-semibold text-base mb-3">Customer Details</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                  <div><b>Name:</b> {selectedLoan.customer?.first_name} {selectedLoan.customer?.last_name}</div>
-                  {/* <div><b>Gender:</b> {selectedLoan.customer?.gender}</div> */}
-                  {/* <div><b>DOB:</b> {selectedLoan.customer?.dob}</div> */}
-                  <div><b>Phone:</b> {selectedLoan.customer?.phone}</div>
-                  <div><b>Email:</b> {selectedLoan.customer?.email}</div>
-                  <div><b>Employee No:</b> {selectedLoan.customer?.employee_no}</div>
-                  <div><b>Designation:</b> {selectedLoan.customer?.designation}</div>
-                  {/* <div><b>Employment Type:</b> {selectedLoan.customer?.employment_type}</div> */}
-                  <div><b>Monthly Salary:</b> {selectedLoan.customer?.monthly_salary}</div>
-                  {/* <div><b>Work Location:</b> {selectedLoan.customer?.work_location}</div> */}
-                </div>
-              </div>
-
-              {/* Organisation Info */}
-              <div className="border-t border-gray-200 pt-2 mb-2">
-                <h4 className="font-semibold text-base mb-3">Organisation Details</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                  <div><b>Organisation:</b> {selectedLoan.organisation?.organisation_name}</div>
-                  <div><b>Sector:</b> {selectedLoan.organisation?.sector_type}</div>
-                  <div><b>Address:</b> {selectedLoan.organisation?.address}</div>
-                  <div><b>Contact:</b> {selectedLoan.organisation?.contact_no}</div>
-                  <div><b>Email:</b> {selectedLoan.organisation?.email}</div>
-                </div>
-              </div>
-
-              {/* Documents */}
-              <div className="border-t border-gray-200 pt-2">
-                <h4 className="font-semibold text-base mb-1">Documents</h4>
-                {selectedLoan.documents?.length > 0 ? (
-                  <table className="w-full border-collapse border border-gray-300 text-sm">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="border p-2">Type</th>
-                        <th className="border p-2">File</th>
-                        <th className="border p-2">Uploaded By</th>
-                        <th className="border p-2">Status</th>
-                        <th className="border p-2 text-center">View</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedLoan.documents.map((doc) => (
-                        <tr key={doc.id}>
-                          <td className="border p-2">{doc.doc_type}</td>
-                          <td className="border p-2">{doc.file_name}</td>
-                          <td className="border p-2">{doc.uploaded_by}</td>
-                          <td className="border p-2">{doc.verification_status}</td>
-                          <td className="border p-2 text-center">
-                            <button
-                              onClick={() => setSelectedDoc(doc)}
-                              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="lucide lucide-eye"
-                                aria-hidden="true"
-                              >
-                                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                              </svg>
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <p className="text-sm text-gray-500">No documents uploaded.</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="flex justify-center items-center h-full text-gray-500 text-lg">
-              Select a loan from the left panel 👈
             </div>
-          )}
-        </motion.div>
+
+            {/* Customer */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 shadow-sm">
+              <h5 className="font-semibold text-gray-700 mb-3">Customer</h5>
+              <div className="space-y-1 text-sm text-gray-700">
+                <p><strong>Name:</strong> {selectedLoan.customer?.first_name} {selectedLoan.customer?.last_name}</p>
+                <p><strong>Employee No:</strong> {selectedLoan.customer?.employee_no || "-"}</p>
+                <p><strong>Phone:</strong> {selectedLoan.customer?.phone || "-"}</p>
+                <p><strong>Email:</strong> {selectedLoan.customer?.email || "-"}</p>
+              </div>
+            </div>
+
+            {/* Organisation */}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 shadow-sm">
+              <h5 className="font-semibold text-gray-700 mb-3">Organisation</h5>
+              <div className="space-y-1 text-sm text-gray-700">
+                <p><strong>Name:</strong> {selectedLoan.organisation?.organisation_name || "-"}</p>
+                <p><strong>Contact:</strong> {selectedLoan.organisation?.contact_no || "-"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 2 — Documents */}
+          <div className="mt-6">
+            <h5 className="font-semibold text-gray-700 mb-2">Documents</h5>
+
+            <div className="border rounded-lg overflow-hidden shadow-sm">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100 border-b">
+                  <tr>
+                    <th className="p-2 font-medium text-left border">Document Type</th>
+                    <th className="p-2 font-medium text-left border">File Name</th>
+                    <th className="p-2 font-medium text-center border">View</th>
+                    <th className="p-2 font-medium text-center border">Download</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y">
+                  {Array.isArray(selectedLoan.documents) && selectedLoan.documents.length > 0 ? (
+                    selectedLoan.documents.map((doc) => (
+                      <tr key={doc.id} className="hover:bg-gray-50 transition">
+                        <td className="p-2 border text-xs">{doc.doc_type}</td>
+                        <td className="p-2 border text-xs break-all">{doc.file_name}</td>
+
+                        {/* View Button */}
+                        <td className="p-2 border text-center">
+                          <button
+                            onClick={() => openDocument(doc)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs flex items-center gap-1 mx-auto"
+                          >
+                            <Eye size={12} /> View
+                          </button>
+                        </td>
+
+                        {/* Download Button */}
+                        <td className="p-2 border text-center">
+                          <a
+                            href={doc.file_path?.startsWith("/") ? doc.file_path : `/storage/${doc.file_path}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-xs inline-flex items-center gap-1"
+                          >
+                            Download
+                          </a>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="p-4 text-center text-gray-500">
+                        No documents uploaded for this loan.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+        )}
+
+
+        {/* Document Viewer Modal */}
+        <DocumentViewerModal
+          open={docModalOpen}
+          onClose={() => setDocModalOpen(false)}
+          documentUrl={docUrl}
+          title={docTitle}
+        />
       </div>
-      {/* Modal Viewer */}
-      <DocumentViewerModal
-        isOpen={!!selectedDoc}
-        onClose={() => setSelectedDoc(null)}
-        documentUrl={selectedDoc ? `/storage/${selectedDoc.file_path}` : ""}
-      />
     </AuthenticatedLayout>
   );
 }
