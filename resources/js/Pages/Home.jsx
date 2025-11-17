@@ -139,6 +139,11 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       const tn = Number(tenure);
 
       // Rule 3: tenure must be >= 5 for all amounts
+      if (amt< 200) {
+        setRespMsg("❌ amount not applicable (minimum is 200)");
+        setShowRepayment(true);
+        return;
+      }
       if (tn < 5) {
         setRespMsg("❌ Tenure not applicable (minimum is 5 days)");
         setShowRepayment(true);

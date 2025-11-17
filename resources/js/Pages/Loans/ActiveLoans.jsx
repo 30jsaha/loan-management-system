@@ -122,17 +122,19 @@ export default function EmiCollection({ auth, approved_loans = null }) {
           : eligibilityFilter === "eligible"
           ? Number(loan.is_elegible) === 1
           : Number(loan.is_elegible) === 0;
-      // Created date filter
-      const loanDate = loan.created_at ? new Date(loan.created_at) : null;
+      // normalize created_at
+    const loanDate = loan.created_at
+      ? new Date(loan.created_at.replace(" ", "T"))
+      : null;
 
-      // Fix: end-of-day for toDate
-      const toDateEnd = toDate ? new Date(toDate + "T23:59:59") : null;
+    // normalize toDate — include full day
+    const toDateEnd = toDate ? new Date(toDate + "T23:59:59") : null;
 
-      const matchesFrom =
-        !fromDate || (loanDate && loanDate >= new Date(fromDate));
+    const matchesFrom =
+      !fromDate || (loanDate && loanDate >= new Date(fromDate + "T00:00:00"));
 
-      const matchesTo =
-        !toDate || (loanDate && loanDate <= toDateEnd);
+    const matchesTo =
+      !toDate || (loanDate && loanDate <= toDateEnd);
 
       return matchesName &&
        matchesAmt &&
@@ -142,7 +144,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
        matchesTo;
 
     });
-  }, [loans, searchName, searchLoanAmt, orgFilter, eligibilityFilter]);
+  }, [loans, searchName, searchLoanAmt, orgFilter, eligibilityFilter, fromDate, toDate]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   useEffect(() => {
