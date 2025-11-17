@@ -72,9 +72,18 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       return lockedEMIValues[amount].lockedEMI.toFixed(2);
     }
 
+  
+    function roundTwo(num) {
+       return Math.round(num * 100 + 0.0000001) / 100;
+    }
     const interestRate = 2.35;
+
     const emi = ((amount * (interestRate / 100) * tenureDays) + amount) / tenureDays;
-    return emi.toFixed(2);
+    const result = roundTwo(emi);
+
+    return result.toFixed(2);
+
+
   }
 
   // handle input change
