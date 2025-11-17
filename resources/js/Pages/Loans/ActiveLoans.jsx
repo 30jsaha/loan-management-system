@@ -125,9 +125,14 @@ export default function EmiCollection({ auth, approved_loans = null }) {
       // Created date filter
       const loanDate = loan.created_at ? new Date(loan.created_at) : null;
 
-      const matchesFrom =!fromDate || (loanDate && loanDate >= new Date(fromDate));
+      // Fix: end-of-day for toDate
+      const toDateEnd = toDate ? new Date(toDate + "T23:59:59") : null;
 
-      const matchesTo =!toDate || (loanDate && loanDate <= new Date(toDate));
+      const matchesFrom =
+        !fromDate || (loanDate && loanDate >= new Date(fromDate));
+
+      const matchesTo =
+        !toDate || (loanDate && loanDate <= toDateEnd);
 
       return matchesName &&
        matchesAmt &&
