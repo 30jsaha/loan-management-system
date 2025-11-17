@@ -210,7 +210,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         {/* Top Bar */}
         <div className="bg-white shadow-sm p-3 py-2 mb-4 border border-gray-200 flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-semibold text-gray-700">Loan Applications</h3>
+            <h3 className="text-lg font-semibold text-gray-700">EMI List</h3>
           </div>
 
           <div className="flex items-center gap-3">

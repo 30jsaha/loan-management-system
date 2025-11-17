@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LoansController;
 use App\Http\Controllers\Api\LoanController;
 use App\Http\Controllers\SalarySlabController;
+use App\Http\Controllers\OrganizationsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -110,6 +111,17 @@ Route::middleware('auth')->get('/customers/{id}/edit', fn($id) =>
 Route::middleware(['auth', 'verified'])
     ->get('/loan-emi-collection', [LoansController::class, 'loanEmiCollectionPage'])
     ->name('loan.emi.collection');
+
+
+//     Route::get('/organizations', function () {
+//     return Inertia::render('Organizations');
+// })->middleware(['auth', 'verified'])->name('orgs');
+
+
+
+Route::middleware(['auth', 'verified'])
+    ->get('/organizations', [OrganizationsController::class, 'index'])
+    ->name('orgs');
 
 
 require __DIR__.'/auth.php';

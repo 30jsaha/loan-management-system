@@ -32,13 +32,17 @@ export default function Authenticated({ user, header, children }) {
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')}>
                                     Dashboard
                                 </NavLink>
+                                <NavLink href={route('orgs')} active={route().current('orgs')}>
+                                    Organizations
+                                </NavLink>
                                 <div
                                     className={`ms-3 relative pt-3 ${
                                         route().current('loans') ||
                                         route().current('loan-create') ||
                                         route().current('loan.view') ||
                                         route().current('loan.emi') ||
-                                        route().current('loan.settings')
+                                        route().current('loan.settings') ||
+                                        route().current('loan.income.slabs')
                                             ? 'dropdown-nav-active' // Active style
                                             : 'text-gray-500'
                                     }`}

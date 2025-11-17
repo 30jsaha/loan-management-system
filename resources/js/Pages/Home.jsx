@@ -159,6 +159,15 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           return;
         }
       }
+      // Rule 1: For 350, 400, 450, 500 → max 5 days
+      const eightDaysAmounts = [350, 400, 450, 500];
+      if (eightDaysAmounts.includes(amt)) {
+        if (tn > 8) {
+          setRespMsg("❌ Tenure not applicable for this amount (Max 8 days)");
+          setShowRepayment(true);
+          return;
+        }
+      }
 
       // Rule 2: For 350–950 → max 26 days
       if (amt >= 350 && amt <= 950) {
