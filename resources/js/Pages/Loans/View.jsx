@@ -264,7 +264,7 @@ export default function View({ auth, loanId }) {
             docVData.append("verification_status", status);
 
             await axios.post(`/api/document-upload/verify/${docId}`, docVData);
-            setMessage("✅ Document verified successfully!");
+            setMessage(`✅ Document ${status == 'Rejected' ? "Rejected" : "verified"} successfully!`);
 
             // Refresh loan details
             const res = await axios.get(`/api/loans/${loanId}`);
