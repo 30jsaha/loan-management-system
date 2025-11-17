@@ -849,7 +849,7 @@ export default function View({ auth, loanId }) {
 
                                 {/* --- Video Consent Upload / Preview --- */}
                             {auth.user.is_admin !== 1 && (
-                                <React.Fragment>
+                                <React.Fragment> 
                                     <Row className="g-4 align-items-start mb-5">
                                         <Col md={6}>
                                             <fieldset className="fldset mb-4">
