@@ -373,31 +373,31 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
               <form id="loanForm" ref={formRef} onSubmit={handleSubmit}>
                 <div className="row">
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-6 mb-3 text-left">
                     <label className="form-label">Amount *</label>
                     <input type="number" name="amount" value={formState.amount}
                       onChange={handleChange} className="form-control" required />
                   </div>
 
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-6 mb-3  text-left">
                     <label className="form-label">Tenure (Days) *</label>
                     <input type="number" name="tenure" value={formState.tenure}
                       onChange={handleChange} className="form-control" required />
                   </div>
                 </div>
                 <div className="row">
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-6 mb-3 text-left">
                     <label className="form-label">Name *</label>
                     <input type="text" name="name" value={formState.name}
                       onChange={handleChange} className="form-control" required />
                   </div>
-                  <div className="col-md-6 mb-3">
+                  <div className="col-md-6 mb-3 text-left">
                     <label className="form-label">Phone *</label>
                     <input type="tel" name="phone" value={formState.phone}
                       onChange={handleChange} className="form-control"
                       required pattern="[0-9]{8}" maxLength={8} />
                   </div>
-                    <div className="mb-3">
+                    <div className="mb-3 text-left">
                       <label className="form-label">Email *</label>
                       <input type="email" name="email" value={formState.email}
                         onChange={handleChange} className="form-control" required />
