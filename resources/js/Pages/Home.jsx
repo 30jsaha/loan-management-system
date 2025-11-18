@@ -196,9 +196,12 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
             <nav className="navbar navbar-expand-lg fixed-top">
               <div className="container">
 
-                <a className="navbar-brand" href="./">
-                  <img src={logo} alt="Agro Advance Aben" style={{height: '100px'}}/>
-                </a>
+                <a className="navbar-brand d-flex flex-column align-items-center" href="./">
+  <img src={logo} alt="Agro Advance Aben" className="brand-logo"/>
+
+  <span className="brand-title">AGRO ADVANCE ABEN</span>
+  <span className="brand-subtitle">Finance with Purpose</span>
+</a>
 
                 <button
                   className="navbar-toggler"
