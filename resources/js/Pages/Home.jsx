@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, Head } from '@inertiajs/react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
 // import '../../css/bootstrap5.3.0.min.css';
 import '../../css/bootstrap-icons.min.css';
 import '../../css/style.css';
@@ -16,6 +18,9 @@ import loan2 from '../../img/Ourloansolution2.jpg';
 import loan3 from '../../img/Ourloansolution3.jpg';
 import loan4 from '../../img/Ourloansolution4.jpg';
 import loan5 from '../../img/Ourloansolution5.jpg';
+import footerBg from '../../img/png image.jpg';
+
+
 
 export default function Home({ auth, laravelVersion, phpVersion }) {
   const formRef = useRef(null);
@@ -72,9 +77,15 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       return lockedEMIValues[amount].lockedEMI.toFixed(2);
     }
 
+    function roundTwo(num) {
+       return Math.round(num * 100 + 0.0000001) / 100;
+    }
     const interestRate = 2.35;
+ 
     const emi = ((amount * (interestRate / 100) * tenureDays) + amount) / tenureDays;
-    return emi.toFixed(2);
+    const result = roundTwo(emi);
+ 
+    return result.toFixed(2);
   }
 
   // handle input change
@@ -176,7 +187,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg fixed-top">
         <div className="container">
-          <a className="navbar-brand" href="./"><img src={logo} alt="Agro Advance Aben" style={{height: '48px'}}/></a>
+          <a className="navbar-brand" href="./"><img src={logo} alt="Agro Advance Aben" style={{height: '100px'}}/></a>
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span
             className="navbar-toggler-icon"></span></button>
           <div className="navbar-collapse justify-content-center" id="navbarNav">
@@ -226,15 +237,15 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             <div className="home-left me-4" style={{flex: '1 1 420px'}}>
               <h1 className="mt-2">Personal Loans for Life’s <br/> Everyday Needs.</h1>
               <p>
-                Enjoy flexible, transparent, and quick loan options that help you manage expenses,
+                Enjoy flexible, transparent, and quick loan options that help you manage expenses,<br/>
                 handle emergencies or make your plans a reality.
                 <br/><br/><b>Achieve Your Financial Goal</b><br/>
               </p>
               <a href="#contact" className="btn text-light" style={{backgroundColor: 'lightred', color: 'white'}}>Apply for Loan</a>
             </div>
 
-            <div className="home-right" style={{width: '360px'}}>
-              <h4>How much do you need</h4>
+            <div className="home-right loan-box" >
+            <h4 className="loan-heading">How much do you need</h4>
 
               <form id="loanForm" ref={formRef} onSubmit={handleSubmit}>
                 <div className="row">
@@ -291,12 +302,47 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
         {/* Quick Loan Bar */}
         <div className="quick-loan-section mt-5 d-flex align-items-center">
           <div className="quick-image me-3">
-            <img src={heroImage} alt="Agro hero footer" style={{maxWidth: '240px'}}/>
+            <img src={heroImage} alt="Agro hero footer" style={{maxWidth: '390px'}}/>
           </div>
           <div className="quick-items d-flex gap-3">
-            <div className="quick-item"><i className="bi bi-stopwatch"></i><span>Quick Loans.<br/>Easy Approvals.</span></div>
+            {/* <div className="quick-item"><i className="bi bi-stopwatch"></i><span>Quick Loans.<br/>Easy Approvals.</span></div>
             <div className="quick-item"><i className="bi bi-hand-thumbs-up"></i><span>Fast Cash.<br/>Zero Hassle.</span></div>
-            <div className="quick-item"><i className="bi bi-cash-stack"></i><span>Apply Today.<br/>Approved Tomorrow.</span></div>
+            <div className="quick-item"><i className="bi bi-cash-stack"></i><span>Apply Today.<br/>Approved Tomorrow.</span></div> */}
+<div className="quick-items d-flex gap-5">
+
+  <div className="quick-item d-flex align-items-center gap-3">
+    {/* <!-- Stopwatch Icon --> */}
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2">
+      <circle cx="12" cy="13" r="9"></circle>
+      <line x1="12" y1="13" x2="12" y2="8"></line>
+      <line x1="12" y1="13" x2="16" y2="13"></line>
+      <rect x="10" y="4" width="4" height="2" fill="#F1E600"></rect>
+    </svg>
+    <span>Quick Loans.<br/>Easy Approvals.</span>
+  </div>
+
+  <div className="quick-item d-flex align-items-center gap-3">
+    {/* <!-- Thumbs Up Icon --> */}
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 10v12H3V10h4z"></path>
+      <path d="M7 10l4-7 1 7h7a2 2 0 0 1 2 2l-1 7a2 2 0 0 1-2 2H7"></path>
+    </svg>
+    <span>Fast Cash.<br/>Zero Hassle.</span>
+  </div>
+
+  <div className="quick-item d-flex align-items-center gap-3">
+    {/* <!-- Money Icon --> */}
+    <svg width="40" height="32" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
+      <circle cx="12" cy="12" r="3"></circle>
+      <line x1="2" y1="12" x2="5" y2="12"></line>
+      <line x1="19" y1="12" x2="22" y2="12"></line>
+    </svg>
+    <span>Apply Today.<br/>Approved Tomorrow.</span>
+  </div>
+
+</div>
+     
           </div>
         </div>
       </section>
@@ -305,7 +351,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       <section id="about" className="py-5 bg-white">
         <div className="container">
           <div className="row align-items-center g-5">
-            <div className="col-md-6">
+            <div className="col-md-6 about-text-shift">
               <b> <small className="text-uppercase" style={{color:'#585858'}}>About Our Company</small></b>
               <h2 className="fw-bold mb-4" style={{color:'green'}}>Empowering Lives Through<br/> Smart Finance</h2>
               <p className="text-muted mb-3">Agro Advance Aben Limited is a trusted Papua New Guinea–based consumer finance <br/>company,
@@ -319,7 +365,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
             <div className="col-md-6 text-center position-relative">
               <div className="about-images">
-                <img src={about1} alt="Agro about 1" className="img-fluid main-img" style={{maxWidth: '460px'}}/>
+                <img src={about1} alt="Agro about 1" className="img-fluid main-img" style={{maxWidth: '530px'}}/>
                 <img src={about2} alt="Agro about 2" className="img-fluid overlay-img shadow-lg" style={{width:'45%', height:326}}/>
               </div>
             </div>
@@ -345,40 +391,43 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           <div className="loan__services__list d-flex flex-wrap">
             <div className="loan__services__item" style={{backgroundImage:`url(${loan1})`, backgroundSize:'cover', backgroundPosition:'center'}}>
               <div className="loan__services__item__text">
-                <h4><span>01.</span> Personal Loan</h4>
-                <p>But that’s not the kind of attention you want, is it?</p>
+                <h4> Personal Loan</h4>
+                <p>Secure,quick financing for government employees covering immediate personal needs,emergencies,or family commitments.</p>
                 <a href="#">Find Out More</a>
               </div>
             </div>
 
             <div className="loan__services__item" style={{backgroundImage:`url(${loan2})`, backgroundSize:'cover', backgroundPosition:'center'}}>
               <div className="loan__services__item__text">
-                <h4><span>02.</span> Business Loan</h4>
-                <p>But that’s not the kind of attention you want, is it?</p>
+                <h4> Business Loan</h4>
+                <p>Capital to support entrepreneurial ventures or side businesses, leveraging the stability of a government salary for reliable repayment.</p>
                 <a href="#">Find Out More</a>
               </div>
             </div>
 
             <div className="loan__services__item" style={{backgroundImage:`url(${loan3})`, backgroundSize:'cover', backgroundPosition:'center'}}>
               <div className="loan__services__item__text">
-                <h4><span>03.</span> Education Loan</h4>
-                <p>But that’s not the kind of attention you want, is it?</p>
+                <h4>Education Loan</h4>
+                <br/>
+                <p>Dedicated funding to ensure dependents of government employees access high-quality education without financial strain.</p>
                 <a href="#">Find Out More</a>
               </div>
             </div>
 
             <div className="loan__services__item" style={{backgroundImage:`url(${loan4})`, backgroundSize:'cover', backgroundPosition:'center'}}>
               <div className="loan__services__item__text">
-                <h4 style={{whiteSpace: 'nowrap'}}><span>04.</span> Commercial Loan</h4>
-                <p>But that’s not the kind of attention you want, is it?</p>
+                <h4> Commercial Loan</h4>
+                <br/>
+                <p>High-value lending secured by the employee's stable income, typically used for significant asset purchases or investment projects.</p>
                 <a href="#">Find Out More</a>
               </div>
             </div>
 
             <div className="loan__services__item" style={{backgroundImage:`url(${loan5})`, backgroundSize:'cover', backgroundPosition:'center'}}>
               <div className="loan__services__item__text">
-                <h4><span>05.</span> Health Loan</h4>
-                <p>But that’s not the kind of attention you want, is it?</p>
+                <h4> Health Loan</h4>
+                <br/>
+                <p>Essential financial support for unexpected or planned medical expenses and treatments for the employee or their family.</p>
                 <a href="#">Find Out More</a>
               </div>
             </div>
@@ -546,69 +595,94 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       </section>
 
       {/* Footer */}
-      <footer className="text-white pt-5" style={{backgroundColor:'#0B3D2E'}}>
-        <div className="container pb-4 border-bottom" style={{borderColor:'#1E5631'}}>
-          <div className="row justify-content-between align-items-start g-4">
-            <div className="col-md-3">
-              <h6 className="text-uppercase mb-3" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
-              <p className="small mb-4" style={{color:'#E8F5E9'}}>📍 Agro Advance Aben Limited, Port Moresby, Papua New Guinea</p>
-            </div>
+<footer
+  className="text-white pt-5"
+  style={{
+    backgroundImage: `url(${footerBg})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat"
+  }}
+>
+  <div className="footer-overlay">
 
-            <div className="col-md-4 text-md-center">
-              <p className="text-uppercase small mb-1" style={{color:'#E8F5E9'}}>Contact Us Now!</p>
-              <h4 className="fw-bold" style={{color:'#4CAF50'}}>(+12) 345-678-910</h4>
-            </div>
-
-            <div className="col-md-3 text-md-end">
-              <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben Limited</h5>
-              <p className="small mb-0" style={{color:'#E8F5E9'}}>Finance with Purpose. Supporting farmers and small businesses with affordable loans.</p>
-            </div>
-          </div>
+      
+    <div className="container pb-4 border-bottom" >
+      <div className="row justify-content-between align-items-start g-4">
+        <div className="col-md-3">
+          <h6 className="text-uppercase mb-3" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
+          <p className="small mb-4" style={{color:'#E8F5E9'}}>📍 Avara Annex, Level 7, Brampton St., 
+          <br/>
+          Port Moresby, Papua New Guinea</p>
         </div>
 
-        <div className="container py-4">
-          <div className="row g-4">
-            <div className="col-md-3">
-              <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Services</h6>
-              <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
-                <li>Personal Loans</li>
-                <li>Business Loans</li>
-                <li>Education Loans</li>
-                <li>Health Loans</li>
-              </ul>
-            </div>
+        <div className="col-md-4 text-md-center">
+          <p className="text-uppercase small mb-1" style={{color:'#E8F5E9'}}>Contact Us Now!</p>
+          <h4 className="fw-bold" style={{color:'#4CAF50'}}>+675 7211 5122</h4>
+        </div>
 
-            <div className="col-md-3">
-              <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Socials</h6>
-              <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
-                <li><i className="bi bi-facebook"></i> Facebook</li>
-                <li><i className="bi bi-instagram"></i> Instagram</li>
-                <li><i className="bi bi-twitter"></i> Twitter</li>
-                <li><i className="bi bi-linkedin"></i> LinkedIn</li>
-              </ul>
-            </div>
+        <div className="col-md-3 text-md-end">
+          <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben Limited</h5>
+          <p className="small mb-0" style={{color:'#E8F5E9'}}>Finance with Purpose. Supporting farmers and small businesses with affordable loans.</p>
+        </div>
+      </div>
+    </div>
 
-            <div className="col-md-3">
-              <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Open Hours</h6>
-              <p className="small mb-1" style={{color:'#E8F5E9'}}>Monday–Friday: 11:00 am – 8:00 pm</p>
-              <p className="small mb-1" style={{color:'#E8F5E9'}}>Saturday: 10:00 am – 6:00 pm</p>
-              <p className="small mb-0" style={{color:'#E8F5E9'}}>Sunday: 11:00 am – 6:00 pm</p>
-            </div>
+    <div className="container py-4">
+      <div className="row g-4">
+        <div className="col-md-3">
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Services</h6>
+          <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
+            <li>Personal Loans</li>
+            <li>Business Loans</li>
+            <li>Education Loans</li>
+            <li>Health Loans</li>
+             <li>Commercial Loans</li>
 
-            <div className="col-md-3">
-              <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Legal</h6>
-              <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
-                <li><a href="terms-of-use.html" target="_blank" rel="noreferrer" style={{color:'#E8F5E9', textDecoration:'none'}}>Terms of Use</a></li>
-                <li><a href="privacy-policy.html" target="_blank" rel="noreferrer" style={{color:'#E8F5E9', textDecoration:'none'}}>Privacy Policy</a></li>
-              </ul>
-            </div>
+          </ul>
+        </div>
 
-            <div className="text-center mt-4 pt-3 border-top small" style={{borderColor:'#1E5631', color:'#E8F5E9'}}>
-              © 2025 Agro Advance Aben. All rights reserved.
-            </div>
+        <div className="col-md-3">
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Province</h6>
+          <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
+            <li>Enga</li>
+            <li>Madang</li>
+            <li>Morobe</li>
+            <li>East New Britain</li>
+            <li>National Capital District</li>
+          </ul>
+        </div>
+
+        <div className="col-md-3">
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Open Hours</h6>
+          <p className="small mb-1" style={{color:'#E8F5E9'}}>Monday–Friday: 09:00 am – 4:00 pm</p>
+        
+        </div>
+
+        <div className="col-md-3">
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Legal</h6>
+          <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
+            <li><a href="#" style={{color:'#E8F5E9', textDecoration:'none'}}>Terms of Use</a></li>
+            <li><a href="#" style={{color:'#E8F5E9', textDecoration:'none'}}>Privacy Policy</a></li>
+          </ul>
+
+          <div className="social-icons d-flex gap-3 mt-3">
+            <a href="#" className="glow-round"><i className="bi bi-facebook"></i></a>
+            <a href="#" className="glow-round"><i className="bi bi-instagram"></i></a>
+           
+            <a href="#" className="glow-round"><i className="bi bi-linkedin"></i></a>
           </div>
         </div>
-      </footer>
+      </div>
+
+      <div className="text-center mt-4 pt-3 border-top small" style={{borderColor:'#1E5631', color:'#E8F5E9'}}>
+        © 2025 Agro Advance Aben. All rights reserved.
+      </div>
+
+    </div>
+  </div>
+</footer>
+
 
       {/* Scroll to top button */}
       <button id="scrollToTopBtn" title="Go to top" style={{display: showScroll ? 'block' : 'none', position:'fixed', right:20, bottom:20, zIndex:1000}} onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>↑</button>

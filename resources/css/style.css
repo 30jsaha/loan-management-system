@@ -51,7 +51,7 @@ body {
 
 /* 🔹 Navbar Logo Bada Karne Ke Liye */
 .navbar-brand img {
-  height: 80px !important;   /* yahan se size badhao (try 100–130px) */
+  height: 100px !important;   /* yahan se size badhao (try 100–130px) */
   width: auto !important;     /* width automatically adjust ho */
 }
 
@@ -94,6 +94,24 @@ body {
 .btn-check-loan:hover {
   background-color: #157347;
   color: white;
+}
+
+.quick-item span {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.quick-item svg {
+  flex-shrink: 0;
+}
+.quick-icon {
+  width: 50px;
+  height: 50px;
+}
+.quick-icon {
+  width: 60px;
+  height: 60px;
 }
 
 
@@ -783,6 +801,29 @@ ol {
 -----------------------*/
 
 /* How much do you need */
+
+.home-wrapper {
+  display: flex;
+  gap: 80px; /* dono ke beech gap */
+}
+
+.loan-box {
+  background-color: #f8f9fa;
+  padding: 25px;
+  border-radius: 10px;
+  width: 450px;
+  box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+
+  margin-top: 15px;
+  margin-right: 50px; /* pehle bahut zyada tha */
+  margin-left: -420px;     /* left se thik ho jayega */
+  
+}
+
+.loan-heading {
+  font-size: 24px;
+  font-weight: 700;
+}
 
 .home-right {
 	margin-top: 15px;
@@ -3505,6 +3546,62 @@ footer .border-bottom {
 		font-size: 24px;
 	}
 }
+.navbar-brand {
+  margin-left: 30px;
+}
+
+
+/* about me fornt me right side krne k liye  */
+.about-text-shift {
+  padding-left: 50px; /* thoda right move */
+}
+
+
+.loan__services__item {
+  width: 20%;
+  height: 350px;        /* FIX height */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
+  background-size: cover;
+  background-position: center;
+  color: white;
+  position: relative;
+}
+
+.loan__services__item__text {
+  margin-top: auto;     /* bottom alignment */
+  padding-bottom: 10px;
+}
+
+.loan__services__item__text p {
+  margin: 5px 0 0 0;     /* clean spacing */
+  font-size: 14px;
+  line-height: 1.4;
+}
+.footer-bg {
+  background-image: url("../../img/png image.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+
+
+.footer-overlay {
+  background: rgba(0, 0, 0, 0.55); /* Transparency */
+  width: 100%;
+  height: 100%;
+  padding-bottom: 20px;
+}
+
+.footer-overlay * {
+  position: relative;
+  z-index: 2;
+}
+
+
 
 
 
@@ -3550,14 +3647,21 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
 .quick-item i { font-size: 28px; color: #f5c518; }
 .quick-item span { font-weight: 500; font-size: 15px; }
 
+.quick-image {
+  height: 160px;    /* old 200px */
+}
+
+.quick-items {
+  padding: 10px;     /* old 20px */
+}
+
+
 @media(max-width: 768px){
   .home-wrapper { flex-direction: column; }
   .home-right { margin-top: 30px; }
   .quick-loan-section { flex-direction: column; }
   .quick-items { justify-content: center; }
 }
-
-
 
  /* (Home optional fine-tuning)  */
 
@@ -3580,7 +3684,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
     }
   
   /* <!-- ================= CSS Loan Calc================= --> */
-  
+
     #loan input[type=range] {
       accent-color: #d71920;
       cursor: pointer;
@@ -3635,7 +3739,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
         margin-top: 40px;
       }
     }
-  
+
   /* <!-- ================= CSS Discober Loan ================= --> */
   
     #discover .loan-card {
