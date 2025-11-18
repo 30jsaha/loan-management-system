@@ -16,4 +16,9 @@ class assignedLoansUnderOrg extends Model
         'loan_id',
         'active',
     ];
+    
+    public function loan()
+    {
+        return $this->belongsTo(LoanSetting::class, 'loan_id', 'id');
+    }
 }

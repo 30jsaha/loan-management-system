@@ -4,11 +4,17 @@ import { Head, Link } from "@inertiajs/react";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { currencyPrefix } from "@/config";
+import { MultiSelect } from 'primereact/multiselect';
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
 
-export default function OrganisationIndex({ auth }) {
+export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
   const [orgList, setOrgList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [loanTypeList, setLoanTypeList] = useState(loan_types);
 
   const [formData, setFormData] = useState({
     id: null,
@@ -23,6 +29,7 @@ export default function OrganisationIndex({ auth }) {
     contact_no: "",
     email: "",
     status: "Active",
+    loan_type_ids: []
   });
 
   // Filters
@@ -31,6 +38,14 @@ export default function OrganisationIndex({ auth }) {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  console.log("salary_slabs from parameter: ",salary_slabs);
+  console.log("loan_types from parameter: ",loan_types);
+
+  const loanTypeOptions = loanTypeList.map((lt) => ({
+      name: `${lt.loan_desc} - [${currencyPrefix} ${lt.min_loan_amount} - ${currencyPrefix} ${lt.max_loan_amount}]`,
+      code: lt.id
+  }));
 
   useEffect(() => {
     loadOrganisationList();
@@ -64,6 +79,7 @@ export default function OrganisationIndex({ auth }) {
       contact_no: "",
       email: "",
       status: "Active",
+      loan_type_ids: []
     });
     setIsEditing(false);
   };
@@ -72,10 +88,10 @@ export default function OrganisationIndex({ auth }) {
     e.preventDefault();
     try {
       if (isEditing) {
-        await axios.put(`/api/organisation/${formData.id}`, formData);
+        await axios.put(`/api/org-modify/${formData.id}`, formData);
         toast.success("Organisation updated");
       } else {
-        await axios.post("/api/organisation", formData);
+        await axios.post("/api/org-create", formData);
         toast.success("Organisation added");
       }
       resetForm();
@@ -85,17 +101,34 @@ export default function OrganisationIndex({ auth }) {
     }
   };
 
+  // const handleEdit = (org) => {
+  //   setFormData(org);
+  //   setIsEditing(true);
+  //   window.scrollTo({ top: 0, behavior: "smooth" });
+  // };
+  
   const handleEdit = (org) => {
-    setFormData(org);
-    setIsEditing(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+      // Convert loan list to MultiSelect format
+      const selectedLoanTypes = org.loans_under_org.map(item => ({
+          name: item.loan.loan_desc,  // label
+          code: item.loan_id          // unique ID
+      }));
+
+      setLoanTypeList(selectedLoanTypes); // <-- this sets MultiSelect
+      setFormData({
+          ...org,
+          loan_type_ids: selectedLoanTypes.map(l => l.code)
+      });
+
+      setIsEditing(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this organisation?")) return;
 
     try {
-      await axios.delete(`/api/organisation/${id}`);
+      await axios.delete(`/api/org-remove/${id}`);
       toast.success("Deleted successfully!");
       loadOrganisationList();
     } catch {
@@ -167,6 +200,30 @@ export default function OrganisationIndex({ auth }) {
               </div>
             ))}
 
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Select Loans to assign
+              </label>
+              <div className="card flex justify-content-center">
+                  <MultiSelect 
+                    value={loanTypeList} 
+                    onChange={(e) => {
+                      setLoanTypeList(e.value);
+                      setFormData({ ...formData, loan_type_ids: e.value.map(l => l.code) });
+                      console.log("formData on loan types select: ",formData);
+                      console.log("Selected loan types:", e.value);
+                    }}
+                    options={loanTypeOptions}
+                    optionLabel="name" 
+                    filter filterDelay={400} 
+                    placeholder="Loan(s)" 
+                    display="chip"
+                    maxSelectedLabels={3} 
+                    className="w-full md:w-20rem"
+                  />
+              </div>
+            </div>
+
             {/* Status */}
             <div>
               <label className="block text-sm font-medium">Status</label>
@@ -226,6 +283,7 @@ export default function OrganisationIndex({ auth }) {
                 <th className="border px-2 py-3">Dept Code</th>
                 <th className="border px-2 py-3">Location Code</th>
                 <th className="border px-2 py-3">Province</th>
+                <th className="border px-2 py-3">Loans</th>
                 <th className="border px-2 py-3">Contact Person</th>
                 <th className="border px-2 py-3">Contact No</th>
                 <th className="border px-2 py-3">Email</th>
@@ -258,6 +316,22 @@ export default function OrganisationIndex({ auth }) {
                     <td className="border px-2 py-2">{org.department_code}</td>
                     <td className="border px-2 py-2">{org.location_code}</td>
                     <td className="border px-2 py-2">{org.province}</td>
+                    <td className="border px-2 py-2">
+                      <div className="flex flex-wrap gap-1">
+                        {org.loans_under_org.length > 0 ? (
+                          org.loans_under_org.map((item) => (
+                            <span
+                              key={item.id}
+                              className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded"
+                            >
+                              {item.loan?.loan_desc}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400">No Loans Assigned</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="border px-2 py-2">{org.contact_person}</td>
                     <td className="border px-2 py-2">{org.contact_no}</td>
                     <td className="border px-2 py-2">{org.email}</td>
