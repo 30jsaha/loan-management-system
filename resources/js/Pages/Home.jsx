@@ -9,7 +9,7 @@ import '../../css/bootstrap-icons.min.css';
 import '../../css/style.css';
 
 // Images (place your images in resources/img)
-import logo from '../../img/logo.jpg';
+import logo from '../../img/logo_first.jpg';
 import heroImage from '../../img/PersonalLoansforLife1St.jpg';
 import about1 from '../../img/about1.jpg';
 import about2 from '../../img/about2.jpg';
@@ -18,12 +18,13 @@ import loan2 from '../../img/Ourloansolution2.jpg';
 import loan3 from '../../img/Ourloansolution3.jpg';
 import loan4 from '../../img/Ourloansolution4.jpg';
 import loan5 from '../../img/Ourloansolution5.jpg';
-import footerBg from '../../img/png image.jpg';
+import footerBg from '../../img/png_image.png';
 
 
 
 export default function Home({ auth, laravelVersion, phpVersion }) {
   const formRef = useRef(null);
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const [formState, setFormState] = useState({
     amount: "",
     tenure: "",
@@ -180,28 +181,54 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       setSending(false);
     }
   };
-
+const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
   return (
     <div className="min-vh-100" data-bs-spy="scroll" data-bs-target=".navbar" data-bs-offset="70">
 
       {/* Navbar */}
-      <nav className="navbar navbar-expand-lg fixed-top">
-        <div className="container">
-          <a className="navbar-brand" href="./"><img src={logo} alt="Agro Advance Aben" style={{height: '100px'}}/></a>
-          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span
-            className="navbar-toggler-icon"></span></button>
-          <div className="navbar-collapse justify-content-center" id="navbarNav">
-            <ul className="navbar-nav">
-              <li className="nav-item"><a className="nav-link active" href="#home">Home</a></li>
-              <li className="nav-item"><a className="nav-link" href="#about">About</a></li>
-              <li className="nav-item"><a className="nav-link" href="#why">Why Us</a></li>
-              <li className="nav-item"><a className="nav-link" href="#testimonials">Reviews</a></li>
-              <li className="nav-item"><a className="nav-link" href="#contact">Contact</a></li>
-            </ul>
-          </div>
-          <div className="d-flex align-items-center">
-            <button className="btn btn-call">Download Brochure</button>
-            {/* <button className="btn btn-login">Login</button> */}
+            <nav className="navbar navbar-expand-lg fixed-top">
+              <div className="container">
+
+                <a className="navbar-brand" href="./">
+                  <img src={logo} alt="Agro Advance Aben" style={{height: '100px'}}/>
+                </a>
+
+                <button
+                  className="navbar-toggler"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#navbarNav"
+                  aria-expanded={isDesktop}
+                  onClick={() => {
+                    const nav = document.getElementById("navbarNav");
+                    setIsNavOpen(!isNavOpen);
+                    console.log("Toggler clicked, isNavOpen:", !isNavOpen);
+                    if (!isNavOpen) {
+                      setTimeout(() => {
+                        nav.classList.remove("collapse");
+                        nav.classList.add("show");   // ensure open
+                      }, 350); // Bootstrap collapse animation = 300ms
+                    }
+                  }}
+                >
+                  <span className="navbar-toggler-icon"></span>
+                </button>
+
+                <div
+                  id="navbarNav"
+                  className={`navbar-collapse justify-content-center ${isDesktop ? 'show' : isNavOpen ? 'show' : 'collapse'}`}
+                >
+                  <ul className="navbar-nav">
+                    <li className="nav-item"><a className="nav-link active" href="#home">Home</a></li>
+                    <li className="nav-item"><a className="nav-link" href="#about">About</a></li>
+                    <li className="nav-item"><a className="nav-link" href="#why">Why Us</a></li>
+                    <li className="nav-item"><a className="nav-link" href="#testimonials">Reviews</a></li>
+                    <li className="nav-item"><a className="nav-link" href="#contact">Contact</a></li>
+                  </ul>
+                </div>
+                <div className="d-flex align-items-center">
+                  <button className="btn btn-call">Download Brochure</button>
+                  {/* <button className="btn btn-login">Login</button> */}
             {auth.user ? (
                 <Link
                     href={route('dashboard')}
@@ -218,12 +245,12 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                         <button className="btn btn-login">Log in</button>
                     </Link>
 
-                    <Link
+                    {/* <Link
                         href={route('register')}
                         // className="ms-4 font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500"
                     >
                         <button className="btn btn-login">Register</button>
-                    </Link>
+                    </Link> */}
                 </>
             )}
           </div>
@@ -408,7 +435,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             <div className="loan__services__item" style={{backgroundImage:`url(${loan3})`, backgroundSize:'cover', backgroundPosition:'center'}}>
               <div className="loan__services__item__text">
                 <h4>Education Loan</h4>
-                <br/>
+                
                 <p>Dedicated funding to ensure dependents of government employees access high-quality education without financial strain.</p>
                 <a href="#">Find Out More</a>
               </div>
@@ -417,7 +444,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             <div className="loan__services__item" style={{backgroundImage:`url(${loan4})`, backgroundSize:'cover', backgroundPosition:'center'}}>
               <div className="loan__services__item__text">
                 <h4> Commercial Loan</h4>
-                <br/>
+                
                 <p>High-value lending secured by the employee's stable income, typically used for significant asset purchases or investment projects.</p>
                 <a href="#">Find Out More</a>
               </div>
@@ -426,7 +453,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             <div className="loan__services__item" style={{backgroundImage:`url(${loan5})`, backgroundSize:'cover', backgroundPosition:'center'}}>
               <div className="loan__services__item__text">
                 <h4> Health Loan</h4>
-                <br/>
+               
                 <p>Essential financial support for unexpected or planned medical expenses and treatments for the employee or their family.</p>
                 <a href="#">Find Out More</a>
               </div>
@@ -599,7 +626,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   className="text-white pt-5"
   style={{
     backgroundImage: `url(${footerBg})`,
-    backgroundSize: "cover",
+    backgroundSize: "auto",
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat"
   }}
@@ -607,7 +634,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   <div className="footer-overlay">
 
       
-    <div className="container pb-4 border-bottom" >
+    <div className="container pb-4" >
       <div className="row justify-content-between align-items-start g-4">
         <div className="col-md-3">
           <h6 className="text-uppercase mb-3" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
