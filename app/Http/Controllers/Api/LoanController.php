@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\LoanApplication as Loan;
 use App\Models\Customer;
 use App\Models\LoanSetting;
@@ -370,7 +371,16 @@ class LoanController extends Controller
         // dd($request);
         $validator = Validator::make($request->all(), [
             'loan_desc' => 'required|string|max:255',
-            'org_id' => 'nullable|integer',
+            'org_id' => [
+                'nullable',
+                'integer',
+                function ($attribute, $value, $fail) {
+                    if (is_null($value)) {
+                        // ensure a 0 is inserted when org_id is null
+                        request()->merge([$attribute => 0]);
+                    }
+                },
+            ],
             'min_loan_amount' => 'required|numeric',
             'max_loan_amount' => 'required|numeric',
             'interest_rate' => 'required|numeric',
@@ -382,13 +392,32 @@ class LoanController extends Controller
             'effect_date' => 'required|date',
             'end_date' => 'required|date',
             'user_id' => 'nullable|integer',
+            'ss_id_list' => 'required|array',
+            'ss_id_list.*' => 'integer',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $loanSetting = LoanSetting::create($validator->validated());
+        // Use validated data array and ensure org_id is set to 0 when missing/null
+        $data = $validator->validated();
+        if (!isset($data['org_id']) || is_null($data['org_id'])) {
+            $data['org_id'] = 0;
+        }
+
+        $loanSetting = LoanSetting::create($data);
+
+        // Insert ss_id_list into assigned_slabs_under_loan table
+        foreach ($data['ss_id_list'] as $ssId) {
+            DB::table('assigned_slabs_under_loan')->insert([
+                'loan_id' => $loanSetting->id,
+                'slab_id' => $ssId,
+                'active' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         return response()->json([
             'message' => 'Loan setting created successfully',
@@ -421,7 +450,7 @@ class LoanController extends Controller
             ]);
 
             if ($validator->fails()) {
-                \Log::error('LoanSetting validation failed', $validator->errors()->toArray());
+                Log::error('LoanSetting validation failed', $validator->errors()->toArray());
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
@@ -432,7 +461,7 @@ class LoanController extends Controller
                 'data' => $loanSetting,
             ]);
         } catch (\Exception $e) {
-            \Log::error('LoanSetting update failed: ' . $e->getMessage());
+            Log::error('LoanSetting update failed: ' . $e->getMessage());
             return response()->json(['message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
         }
     }

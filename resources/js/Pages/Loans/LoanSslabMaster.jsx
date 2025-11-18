@@ -136,7 +136,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
     const handleDelete = async (id, desc) => {
         if (!confirm(`Are you sure you want to delete "${desc}"?`)) return;
         try {
-            await axios.delete(`/api/loan-settings-remove/${id}`);
+            await axios.delete(`/api/salary-slab-remove/${id}`);
             setSalarySlabs((prev) => prev.filter((item) => item.id !== id));
             toast.success("Deleted successfully!");
         } catch (error) {

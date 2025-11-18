@@ -1,4 +1,5 @@
-import { use, useEffect, useState, useCallback } from "react";
+import React from "react";
+import { useEffect, useState, useCallback } from "react";
 import { router, Head, Link } from "@inertiajs/react";
 import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs, ProgressBar, Modal, Spinner } from "react-bootstrap";
 import axios from "axios";
@@ -263,7 +264,7 @@ export default function View({ auth, loanId }) {
             docVData.append("verification_status", status);
 
             await axios.post(`/api/document-upload/verify/${docId}`, docVData);
-            setMessage("✅ Document verified successfully!");
+            setMessage(`✅ Document ${status == 'Rejected' ? "Rejected" : "verified"} successfully!`);
 
             // Refresh loan details
             const res = await axios.get(`/api/loans/${loanId}`);

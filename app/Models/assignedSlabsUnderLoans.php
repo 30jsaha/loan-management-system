@@ -5,16 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class SalarySlab extends Model
+class assignedSlabsUnderLoans extends Model
 {
     use HasFactory;
 
-    protected $table = 'salary_slabs';
+    protected $table = 'assigned_slabs_under_loan';
 
     protected $fillable = [
-        'slab_desc',
-        'starting_salary',
-        'ending_salary',
-        'org_id'
+        'loan_id',
+        'slab_id',
+        'active',
     ];
 }

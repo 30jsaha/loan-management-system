@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 use App\Models\CompanyMaster;
+use App\Models\assignedLoansUnderOrg;
 
 class OrganisationMaster extends Model
 {
@@ -30,5 +31,9 @@ class OrganisationMaster extends Model
     public function company()
     {
         return $this->belongsTo(CompanyMaster::class, 'company_id');
+    }
+    public function loansUnderOrg()
+    {
+        return $this->hasMany(assignedLoansUnderOrg::class, 'org_id', 'id');
     }
 }

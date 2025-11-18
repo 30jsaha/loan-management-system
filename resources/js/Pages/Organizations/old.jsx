@@ -10,7 +10,7 @@ import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
-export default function LoanSettingMaster({ auth, salary_slabs }) {
+export default function Index({ auth, salary_slabs }) {
   const [orgList, setOrgList] = useState([]);
   const [salarySlabList, setSalarySlabList] = useState(salary_slabs);
   const [loanSettings, setLoanSettings] = useState([]);
@@ -195,7 +195,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
   return (
     <AuthenticatedLayout
       user={auth.user}
-      header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan Settings</h2>}
+      header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Organizations</h2>}
     >
       <Head title="Loan Settings" />
       <Toaster position="top-center" />
@@ -213,7 +213,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
 
         {/* Form */}
         <div className="max-w-9xl mx-auto bg-white rounded-0xl shadow-lg p-6 border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-700 mb-4">{isEditing ? "Edit Loan Setting" : "Add Loan Setting"}</h4>
+          <h4 className="text-lg font-semibold text-gray-700 mb-4">{isEditing ? "Edit Organizations" : "Add Organizations"}</h4>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Loan Description <span className="text-red-500">*</span></label>

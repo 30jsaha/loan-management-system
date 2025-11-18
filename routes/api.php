@@ -109,3 +109,10 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/salary-slab-data', [SalarySlabController::class, 'get_slab_data']); // GET
 });
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/org-create', [OrganisationController::class, 'create_org']); // CREATE
+    Route::put('/org-modify/{id}', [OrganisationController::class, 'modify_org']); // UPDATE
+    Route::delete('/org-remove/{id}', [OrganisationController::class, 'remove_org']); // DELETE
+    
+    Route::get('/organisation-list', [OrganisationController::class, 'organisation_list']); // GET
+});
