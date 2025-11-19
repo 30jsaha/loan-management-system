@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Row, Col } from "react-bootstrap";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -13,6 +13,8 @@ export default function CustomerForm({
   setMessage,
   setIsFormDirty,
 }) {
+  
+  const [isOrgSelectable, setOrgSelectable] = useState(true);
   const ImportantField = () => <span className="text-danger">*</span>;
 
   const handleChange = (e) => {
@@ -192,6 +194,7 @@ export default function CustomerForm({
                           organisation_id: selectedEmp.organization_id || 1,
                           company_id: selectedEmp.company_id || 1,
                         }));
+                        setOrgSelectable(false);
                       }
                     }}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
@@ -214,6 +217,8 @@ export default function CustomerForm({
                     name="organisation_id"
                     value={formData.organisation_id || ""}
                     onChange={handleChange}
+                    disabled={!isOrgSelectable}
+                    aria-readonly={!isOrgSelectable}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                     required
                   >

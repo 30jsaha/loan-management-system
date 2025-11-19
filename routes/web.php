@@ -102,6 +102,7 @@ Route::middleware('auth')->get('/loan-income-slabs', [SalarySlabController::clas
 Route::middleware('auth')->get('/customers/{id}/edit', fn($id) => 
     Inertia::render('Customers/EditCustomer', ['customerId' => $id])
 )->name('customer.edit');
+
 Route::middleware('auth')->get('/customers/{id}/edit', fn($id) => 
     Inertia::render('Customers/EditCustomer', ['customerId' => $id])
 )->name('customer.edit');

@@ -3,7 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 import { currencyPrefix } from "@/config";
 import { MultiSelect } from 'primereact/multiselect';
 import "primereact/resources/themes/lara-light-indigo/theme.css";
@@ -15,10 +15,12 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [loanTypeList, setLoanTypeList] = useState(loan_types);
+  const [selectedLoanTypes, setSelectedLoanTypes] = useState([]);
+
 
   const [formData, setFormData] = useState({
     id: null,
-    company_id: "",
+    company_id: 1,
     organisation_name: "",
     sector_type: "",
     department_code: "",
@@ -34,7 +36,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
-
+  const sectorTypes = ["Education", "Health", "Other"];
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -68,7 +70,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
   const resetForm = () => {
     setFormData({
       id: null,
-      company_id: "",
+      company_id: 1,
       organisation_name: "",
       sector_type: "",
       department_code: "",
@@ -82,6 +84,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
       loan_type_ids: []
     });
     setIsEditing(false);
+    setSelectedLoanTypes([]);
   };
 
   const handleSubmit = async (e) => {
@@ -114,7 +117,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
           code: item.loan_id          // unique ID
       }));
 
-      setLoanTypeList(selectedLoanTypes); // <-- this sets MultiSelect
+      setSelectedLoanTypes(selectedLoanTypes); // <-- this sets MultiSelect
       setFormData({
           ...org,
           loan_type_ids: selectedLoanTypes.map(l => l.code)
@@ -155,6 +158,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Organisations</h2>}
     >
       <Head title="Organizations" />
+      <Toaster position="top-center" />
 
       <div className="p-6">
 
@@ -177,9 +181,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
             {[
-              ["company_id", "Company ID"],
               ["organisation_name", "Organisation Name"],
-              ["sector_type", "Sector Type"],
               ["department_code", "Department Code"],
               ["location_code", "Location Code"],
               ["address", "Address"],
@@ -199,6 +201,24 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                 />
               </div>
             ))}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Sector Type
+              </label>
+              <select
+                  name="sector_type"
+                  value={formData.sector_type}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              >
+                  <option value="">Select Sector Type</option>
+                  {sectorTypes.map((type) => (
+                      <option key={type} value={type}>
+                          {type}
+                      </option>
+                  ))}
+              </select>
+            </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -206,10 +226,13 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
               </label>
               <div className="card flex justify-content-center">
                   <MultiSelect 
-                    value={loanTypeList} 
+                    value={selectedLoanTypes} 
                     onChange={(e) => {
-                      setLoanTypeList(e.value);
-                      setFormData({ ...formData, loan_type_ids: e.value.map(l => l.code) });
+                      setSelectedLoanTypes(e.value);
+                      setFormData({ 
+                          ...formData, 
+                          loan_type_ids: e.value.map(l => l.code) 
+                      });
                       console.log("formData on loan types select: ",formData);
                       console.log("Selected loan types:", e.value);
                     }}
@@ -320,12 +343,12 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                       <div className="flex flex-wrap gap-1">
                         {org.loans_under_org.length > 0 ? (
                           org.loans_under_org.map((item) => (
-                            <span
-                              key={item.id}
-                              className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded"
-                            >
-                              {item.loan?.loan_desc}
-                            </span>
+                              <span
+                                key={item.id}
+                                className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded"
+                              >
+                                {item.loan?.loan_desc}
+                              </span>
                           ))
                         ) : (
                           <span className="text-gray-400">No Loans Assigned</span>

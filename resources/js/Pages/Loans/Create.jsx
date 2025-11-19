@@ -14,6 +14,7 @@ import Swal from 'sweetalert2';
 
 export default function Create({ auth, loan_settings }) {
     const [isEligible, setIsEligible] = useState(false);
+    const [isCustSelectable, setCustSelectable] = useState(true);
     const [recProposedPvaAmt, setRecProposedPvaAmt] = useState(0);
     const [recEleigibleAmount, setRecEleigibleAmount] = useState(0);
     const [isTruelyEligible, setIsTruelyEligible] = useState(false);
@@ -707,14 +708,26 @@ export default function Create({ auth, loan_settings }) {
                                     onNext={(savedCustomer) => {
                                         setIsFormDirty(false);
                                         fetchCustomers();
-                                        setFormData((prev) => ({ ...prev, cus_id: savedCustomer.id }));
-                                        setLoanFormData((prev) => ({
-                                            ...prev, 
-                                            customer_id: savedCustomer.id, 
-                                            // company_id: savedCustomer.company_id || "", 
-                                            // organisation_id: savedCustomer.organisation_id || "" 
+
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            cus_id: savedCustomer.id,
+                                            monthly_salary: savedCustomer.monthly_salary
                                         }));
+
+                                        setLoanFormData((prev) => ({
+                                            ...prev,
+                                            customer_id: savedCustomer.id,
+                                        }));
+
                                         setStep(2);
+                                        setCustSelectable(false);
+                                        // 🔥 Fetch loan types based on salary and organisation
+                                        axios.get(`/api/filtered-loan-types/${savedCustomer.id}`)
+                                            .then((res) => {
+                                                setLoanTypes(res.data);
+                                            })
+                                            .catch((err) => console.error("Error fetching loan types:", err));
                                     }}
                                 />
                             )}
@@ -738,6 +751,7 @@ export default function Create({ auth, loan_settings }) {
                                                 className="form-select"
                                                 name="customer_id"
                                                 value={loanFormData.customer_id || ""}  // ✅ always non-null
+                                                disabled={!isCustSelectable}
                                                 onChange={(e) => {
                                                     // Always call your main handler first
                                                     loanHandleChange(e);
@@ -751,6 +765,12 @@ export default function Create({ auth, loan_settings }) {
                                                         if (isTruelyEligible) {
                                                             setIsEligible(true);
                                                         }
+                                                        // 🔥 Fetch loan types based on salary and organisation
+                                                        axios.get(`/api/filtered-loan-types/${selectedValue}`)
+                                                            .then((res) => {
+                                                                setLoanTypes(res.data);
+                                                            })
+                                                            .catch((err) => console.error("Error fetching loan types:", err));
                                                     } else {
                                                         // Optional: reset eligibility when no customer selected
                                                         setIsEligible(false);
@@ -1002,7 +1022,15 @@ export default function Create({ auth, loan_settings }) {
                                 <LoanDocumentsUpload
                                     loanFormData={loanFormData}
                                     setLoanFormData={setLoanFormData}
-                                    onUploadComplete={() => setMessage("✅ All steps completed successfully!")}
+                                    onUploadComplete={() => {
+                                        setMessage("✅ All steps completed successfully!");
+                                        Swal.fire({
+                                            title: "Success !",
+                                            text: "✅ All steps completed successfully!",
+                                            icon: "success"
+                                        });
+                                        setTimeout(() => router.visit(route("loans")), 1000);
+                                    }}
                                 />
                             )}
                         </div>

@@ -681,4 +681,54 @@ class LoanController extends Controller
 
         return response()->json(['message' => 'Documents finalized', 'loan' => $loan], 200);
     }
+
+    public function getEligibleLoanTypes($customerId)
+    {
+        try {
+            // 1️⃣ Fetch Customer
+            $customer = Customer::findOrFail($customerId);
+
+            $salary = floatval($customer->monthly_salary);
+            $orgId = $customer->organisation_id;
+
+            if (!$orgId) {
+                return response()->json([], 200);
+            }
+
+            // 2️⃣ Get all loan types assigned to this organisation
+            $loanIds = DB::table('assigned_loans_under_org')
+                ->where('org_id', $orgId)
+                ->where('active', 1)
+                ->pluck('loan_id')
+                ->toArray();
+
+            if (empty($loanIds)) {
+                return response()->json([], 200);
+            }
+
+            // 3️⃣ For each loan type → fetch its salary slabs
+            $eligibleLoanIds = DB::table('assigned_slabs_under_loan AS al')
+                ->join('salary_slabs AS ss', 'ss.id', '=', 'al.slab_id')
+                ->whereIn('al.loan_id', $loanIds)
+                ->where('al.active', 1)
+                ->where('ss.active', 1)
+                ->where(function ($q) use ($salary) {
+                    $q->where('ss.starting_salary', '<=', $salary)
+                    ->where('ss.ending_salary', '>=', $salary);
+                })
+                ->pluck('al.loan_id')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            // 4️⃣ Return loan settings for only matched loan IDs
+            $matchedLoanTypes = LoanSetting::whereIn('id', $eligibleLoanIds)->get();
+
+            return response()->json($matchedLoanTypes, 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
 }

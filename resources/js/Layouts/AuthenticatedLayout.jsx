@@ -32,17 +32,55 @@ export default function Authenticated({ user, header, children }) {
                                 <NavLink href={route('dashboard')} active={route().current('dashboard')}>
                                     Dashboard
                                 </NavLink>
-                                <NavLink href={route('orgs')} active={route().current('orgs')}>
+                                {/* <NavLink href={route('orgs')} active={route().current('orgs')}>
                                     Organizations
-                                </NavLink>
+                                </NavLink> */}
+                                <div
+                                    className={`ms-3 relative pt-3 ${
+                                        route().current('loan.settings') ||
+                                        route().current('loan.income.slabs') ||
+                                        route().current('orgs')
+                                            ? 'dropdown-nav-active' // Active style
+                                            : 'text-gray-500'
+                                    }`}
+                                >
+                                    <Dropdown>
+                                        <Dropdown.Trigger>
+                                            <span className="inline-flex rounded-md">
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex items-center px-3 py-2 border-transparent text-sm leading-4 font-medium rounded-md bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
+                                                >
+                                                    Masters
+                                                    <svg
+                                                        className="ms-2 -me-0.5 h-4 w-4"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 20 20"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path
+                                                            fillRule="evenodd"
+                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                            clipRule="evenodd"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </span>
+                                        </Dropdown.Trigger>
+
+                                        <Dropdown.Content>
+                                            <Dropdown.Link className={`${route().current('loan.income.slabs') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.income.slabs')}>Income Slabs</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('loan.settings') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.settings')}>Loan Types</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('orgs') ? 'dropdown-nav-a-active' : ''}`} href={route('orgs')}>Organizations</Dropdown.Link>
+                                        </Dropdown.Content>
+                                    </Dropdown>
+                                </div>
                                 <div
                                     className={`ms-3 relative pt-3 ${
                                         route().current('loans') ||
                                         route().current('loan-create') ||
                                         route().current('loan.view') ||
-                                        route().current('loan.emi') ||
-                                        route().current('loan.settings') ||
-                                        route().current('loan.income.slabs')
+                                        route().current('loan.emi')
                                             ? 'dropdown-nav-active' // Active style
                                             : 'text-gray-500'
                                     }`}
@@ -75,8 +113,6 @@ export default function Authenticated({ user, header, children }) {
                                             <Dropdown.Link className={`${route().current('loans') ? 'dropdown-nav-a-active' : ''}`} href={route('loans')}>Loan Applications</Dropdown.Link>
                                             {/* <Dropdown.Link className={`${route().current('loan-create') ? 'dropdown-nav-a-active' : ''}`} href={route('loan-create')}>+ New Loan</Dropdown.Link> */}
                                             <Dropdown.Link className={`${route().current('loan.emi') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.emi')}>EMI Collection</Dropdown.Link>
-                                            <Dropdown.Link className={`${route().current('loan.settings') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.settings')}>Loan Settings</Dropdown.Link>
-                                            <Dropdown.Link className={`${route().current('loan.income.slabs') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.income.slabs')}>Income Slabs</Dropdown.Link>
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>

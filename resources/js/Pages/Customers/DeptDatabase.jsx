@@ -244,7 +244,7 @@ export default function DeptDatabase({ auth }) {
         {/* FILTER BAR */}
 <div className="bg-white shadow-md p-3 border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-start gap-3">
   {/* Search by Name */}
-  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/3 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/2 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
     <Search className="w-5 h-5 text-gray-500 mr-2" />
     <input
       type="text"
@@ -259,7 +259,7 @@ export default function DeptDatabase({ auth }) {
   </div>
 
   {/* Search by Employee Code */}
-  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/4 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/3 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
     <Search className="w-5 h-5 text-gray-500 mr-2" />
     <input
       type="text"
@@ -274,7 +274,7 @@ export default function DeptDatabase({ auth }) {
   </div>
 
   {/* Search by Gross Pay */}
-  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/4 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+  {/* <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/4 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
     <Search className="w-5 h-5 text-gray-500 mr-2" />
     <input
       type="text"
@@ -286,7 +286,7 @@ export default function DeptDatabase({ auth }) {
       }}
       className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
     />
-  </div>
+  </div> */}
 </div>
 
 

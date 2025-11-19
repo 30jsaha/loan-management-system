@@ -30,10 +30,11 @@ export default function View({ auth, loanId }) {
     const [showVideoModal, setShowVideoModal] = useState(false);
     const [videoSrc, setVideoSrc] = useState(null);
 
-    const pdfPath = "/storage/uploads/documents/Loan Application Form - loanms.pdf";
-    const fileName = "Loan Application Form - loanms.pdf";
+    // const pdfPath = "/storage/uploads/documents/Loan Application Form - loanms.pdf";
+    // const fileName = "Loan Application Form - loanms.pdf";
     // Open modal with selected document
     const openDocModal = (doc) => {
+        console.log("doc on openDocModal: ",doc);
         setSelectedDoc(doc);
         setShowModal(true);
     };
@@ -444,8 +445,10 @@ export default function View({ auth, loanId }) {
                                                 <th className="border p-2">Uploaded By</th>
                                                 <th className="border p-2">View</th>
                                                 <th className="border p-2">Download</th>
-                                                {(auth.user.is_admin == 1) && (
+                                                {(auth.user.is_admin == 1) ? (
                                                     <th className="border p-2">Verify</th>
+                                                ) : (
+                                                    <th className="border p-2">Status</th>
                                                 )}
                                                 </tr>
                                             </thead>
@@ -453,65 +456,82 @@ export default function View({ auth, loanId }) {
                                             {loan.documents.map((doc) => (
                                                 <tr key={doc.id} className="hover:bg-gray-50 transition">
                                                     <td className="border p-2">{doc.doc_type}</td>
+
                                                     <td className="border p-2">{doc.file_name}</td>
+
                                                     <td className="border p-2">
-                                                    {new Date(doc.uploaded_on).toLocaleDateString()}
+                                                        {new Date(doc.uploaded_on).toLocaleDateString()}
                                                     </td>
+
                                                     <td className="border p-2">
                                                         {doc.uploaded_by}
                                                     </td>
 
                                                     {/* View Button */}
                                                     <td className="border p-2 text-center">
-                                                    <button
-                                                        onClick={() => openDocModal(doc)}
-                                                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                    >
-                                                        <Eye size={16} /> View
-                                                    </button>
+                                                        <button
+                                                            onClick={() =>
+                                                                openDocModal({
+                                                                    id: doc.id,
+                                                                    doc_type: doc.doc_type,
+                                                                    file_name: doc.file_name,
+                                                                    file_path: doc.file_path,
+                                                                })
+                                                            }
+                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                        >
+                                                            <Eye size={16} /> View
+                                                        </button>
                                                     </td>
+
                                                     {/* Download Button */}
                                                     <td className="border p-2 text-center">
-                                                    <a
-                                                        href={route("document-upload.download", { id: doc.id })}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                    >
-                                                        Download <Download size={16} />
-                                                    </a>
+                                                        <a
+                                                            href={route("document-upload.download", { id: doc.id })}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                        >
+                                                            Download <Download size={16} />
+                                                        </a>
                                                     </td>
 
                                                     {/* Verify / Reject */}
-                                                    {(auth.user.is_admin == 1) && (
+                                                    {auth.user.is_admin == 1 ? (
                                                         <td className="border p-2 text-center">
-                                                        {doc.verification_status === "Verified" ? (
-                                                            <span className="text-green-600 font-semibold">
-                                                            Verified ✅
-                                                            </span>
-                                                        ) : doc.verification_status === "Rejected" ? (
-                                                            <span className="text-red-600 font-semibold">
-                                                            Rejected ❌
-                                                            </span>
-                                                        ) : (
-                                                            <div className="flex gap-2 justify-center">
-                                                            <button
-                                                                onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                            >
-                                                                Verify
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                            >
-                                                                Reject
-                                                            </button>
-                                                            </div>
-                                                        )}
+                                                            {doc.verification_status === "Verified" ? (
+                                                                <span className="text-green-600 font-semibold">Verified ✅</span>
+                                                            ) : doc.verification_status === "Rejected" ? (
+                                                                <span className="text-red-600 font-semibold">Rejected ❌</span>
+                                                            ) : (
+                                                                <div className="flex gap-2 justify-center">
+                                                                    <button
+                                                                        onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                    >
+                                                                        Verify
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                    >
+                                                                        Reject
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    ) : (
+                                                        <td className="border p-2 text-center">
+                                                            {doc.verification_status === "Verified" ? (
+                                                                <span className="text-green-600 font-semibold">Verified ✅</span>
+                                                            ) : doc.verification_status === "Rejected" ? (
+                                                                <span className="text-red-600 font-semibold">Rejected ❌</span>
+                                                            ) : <span className="text-yellow-600 font-semibold">Pending !</span>
+                                                            }
                                                         </td>
                                                     )}
                                                 </tr>
+
                                                 ))}
                                                 {auth.user.is_admin && (
                                                     <>
@@ -743,7 +763,7 @@ export default function View({ auth, loanId }) {
 
                                 {/* 📄 Form (Always Visible) */}
                                  <fieldset className="fldset mb-5">
-                                <legend className="font-semibold mb-2">📑 Document Summary</legend>
+                                <legend className="font-semibold mb-2">📑 Acknowledgement</legend>
 
                                <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
                                     <thead className="bg-indigo-600 text-white">
@@ -1088,7 +1108,7 @@ export default function View({ auth, loanId }) {
                                 </div>
                                 )}
 
-                                {(auth.user.is_admin == 1) && (
+                                {(auth.user.is_admin == 1) ? (
                                     <Col md={12}>
                                         {(loan.status === "Pending" ) && (
                                             <div className="mt-6 flex justify-center gap-4">
@@ -1106,6 +1126,34 @@ export default function View({ auth, loanId }) {
                                                 >
                                                     Reject
                                                 </button>
+                                            </div>
+                                        )}
+                                    </Col>
+                                ) : (
+                                    <Col md={12}>
+                                        {(loan.status === "Pending" ) ? (
+                                            <div className="mt-6 flex justify-center gap-4">
+                                                <Link
+                                                    href={route("loans")}
+                                                >
+                                                    <button
+                                                        className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md`}
+                                                    >
+                                                        Send for approval
+                                                    </button>
+                                                </Link>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-6 flex justify-center gap-4">
+                                                <Link
+                                                    href={route("loans")}
+                                                >
+                                                    <button
+                                                        className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md`}
+                                                    >
+                                                        Back to the list
+                                                    </button>
+                                                </Link>
                                             </div>
                                         )}
                                     </Col>

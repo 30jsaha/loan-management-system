@@ -258,6 +258,12 @@ export default function Index({ auth }) {
                       </th>
                       <th
                         className="px-4 py-3 text-center font-semibold uppercase tracking-wide cursor-pointer border border-gray-700"
+                        onClick={() => handleSort("customers")}
+                      >
+                        Customers <ArrowUpDown size={14} className="inline ml-1" />
+                      </th>
+                      <th
+                        className="px-4 py-3 text-center font-semibold uppercase tracking-wide cursor-pointer border border-gray-700"
                         onClick={() => handleSort("amount")}
                       >
                         Amount Details <ArrowUpDown size={14} className="inline ml-1" />
@@ -312,6 +318,18 @@ export default function Index({ auth }) {
           <strong>{loan.organisation?.organisation_name || "-"}</strong>
           <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
             {loan.organisation?.email || "-"}
+          </span>
+        </div>
+      </td>
+      {/* Customers - CENTERED */}
+      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
+        <div className="flex flex-col items-center justify-center">
+          <strong>{loan.customer? loan.customer.first_name+" "+loan.customer.last_name : "-"}</strong>
+          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
+            {loan.customer?.employee_no || "-"}
+          </span>
+          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
+            {loan.customer?.designation || "-"}
           </span>
         </div>
       </td>
@@ -376,20 +394,20 @@ export default function Index({ auth }) {
           >
             <Eye size={15} />
           </Link>
-          <Link
+          {/* <Link
             href={route("loan.edit", { id: loan.id })}
             className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
             title="Edit"
           >
             <Pencil size={15} />
-          </Link>
-          <button
+          </Link> */}
+          {/* <button
             onClick={() => handleDelete(loan.id)}
             className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md"
             title="Delete"
           >
             <Trash2 size={15} />
-          </button>
+          </button> */}
         </div>
       </td>
     </tr>
