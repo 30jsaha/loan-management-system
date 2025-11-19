@@ -79,14 +79,6 @@ body {
 }
 
 
-
-
-
-
-
-
-
-
 /* 🔹 Navbar Logo Bada Karne Ke Liye */
 .navbar-brand img {
   height: 55px !important;   /* yahan se size badhao (try 100–130px) */
@@ -152,8 +144,6 @@ body {
   height: 60px;
 }
 
-
-
 /* 🔹 Buttons Ko Thoda Center Aur Stylish Dikhane Ke Liye */
 .btn-call, .btn-login {
   margin-left: 10px;
@@ -217,8 +207,6 @@ h1 {
 h2 {
 	font-size: 36px;
 }
-
-
 
 h3 {
 	font-size: 30px;
@@ -398,9 +386,6 @@ ol {
   padding: 40px 25px;
 }
 
-
-
-
 .loan-services.spad {
   background-color: #f8f9fa; /* grey background */
   padding-top: 35px;   /* section ke upar ka space */
@@ -463,8 +448,6 @@ ol {
 		border-left-color: transparent;
 	}
 }
-
-
 
 .spacial-controls {
 	position: fixed;
@@ -3050,6 +3033,20 @@ footer .border-bottom {
 	top: 4px;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*--------------------------------- Responsive Media Quaries -----------------------------*/
 
 @media only screen and (min-width: 1200px) {
@@ -3639,8 +3636,6 @@ footer .border-bottom {
 .about-text-shift {
   padding-left: 50px; /* thoda right move */
 }
-
-
 .loan__services__item {
   width: 20%;
   height: 350px;        /* FIX height */
@@ -3686,9 +3681,6 @@ footer .border-bottom {
   position: relative;
   z-index: 2;
 }
-
-
-
 
 
 body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
@@ -4341,3 +4333,782 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
     margin-bottom: 20px;
   }
 }
+
+
+/* 🔥 GLOBAL FIXES FOR ALL MOBILES UNDER 768px */
+@media (max-width: 768px) {
+
+  /* 1. Remove PC positioning */
+  .loan-box {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 20px !important;
+  }
+
+  /* 2. Make container full width */
+  .container {
+    max-width: 100% !important;
+    padding-left: 15px !important;
+    padding-right: 15px !important;
+  }
+
+  /* 3. Quick loan image fix */
+  .quick-image img {
+    margin-left: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* 4. Home wrapper stacking */
+  .home-wrapper {
+    flex-direction: column !important;
+    gap: 0 !important;
+  }
+
+  /* 5. Center hero text */
+  .home-left {
+    text-align: center !important;
+    padding: 10px !important;
+  }
+
+  /* 6. Navbar hamburger spacing */
+  .navbar-toggler {
+    margin-right: 12px !important;
+  }
+}
+@media (max-width: 768px) {
+  .btn-success,
+  .btn-danger {
+    margin-right: 12px !important;
+    margin-bottom: 10px !important;
+  }
+}
+
+
+@media (max-width: 768px) {
+
+  /* Buttons ke beech gap */
+  .home-left .btn-success,
+  .home-left .btn-danger {
+    margin-right: 12px !important;
+    margin-bottom: 500px !important;
+  }
+
+  /* Buttons left-right stuck na ho */
+  .home-left {
+    padding: 0 20px !important;
+  }
+}
+
+
+@media (max-width: 768px) {
+
+  /* Buttons ke niche proper space */
+  .home-left .btn-success,
+  .home-left .btn-danger {
+    margin-bottom: 18px !important;
+  }
+
+  /* Heading ko thoda niche push karo */
+  .home-left h1 {
+    margin-top: 80px !important;
+  }
+}
+/* ==============================
+   📌 Mobile Image Resize + Left Shift
+   ============================== */
+@media (max-width: 768px) {
+  .quick-image img {
+    width: 500% !important;      /* image ko bada kar diya */
+    height: auto !important;     
+    object-fit: cover !important; 
+    margin-left: -95px !important;  /* image ko left side shift */
+  }
+
+  .quick-image {
+    height: 200px !important;       /* container thoda bada */
+    overflow: hidden !important;    /* extra part cut ho jayega */
+  }
+}
+/* ============================
+   📌 Mobile View – Perfect Alignment Fix
+   ============================ */
+@media (max-width: 768px) {
+
+  .quick-items {
+    display: flex;
+    flex-direction: column;
+    gap: 25px; /* Items ke beech gap */
+    padding-left: 20px; /* text ek line me aa jaye */
+  }
+
+  .quick-item {
+    display: flex;
+    align-items: flex-start; /* icon + text top align */
+    gap: 12px;
+  }
+
+  /* icon ko same width mil jayega */
+  .quick-item i,
+  .quick-item svg {
+    width: 32px !important;
+    text-align: center;
+  }
+
+  /* text block */
+  .quick-item span {
+    display: block;
+    line-height: 1.4;
+    font-size: 16px;
+    color: #fff;
+  }
+}
+/* ================================
+   📌 Mobile Only – Bank Style Alignment
+   ================================ */
+@media (max-width: 768px) {
+
+  /* parent: items list */
+  .quick-items {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    padding-left: 15px;  /* straight line start */
+  }
+
+  /* each item: icon + text */
+  .quick-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  /* icon FIXED WIDTH (same for all) */
+  .quick-item i,
+  .quick-item svg {
+    width: 34px !important;     /* 👈 sab icon same width */
+    min-width: 34px !important;
+    text-align: center;
+    font-size: 28px !important;
+  }
+
+  /* text block */
+  .quick-item span {
+    display: block;
+    line-height: 1.35;
+    font-size: 16px;
+    color: #fff;
+  }
+}
+/* ======================================
+   📌 Mobile Only – PERFECT Left Alignment (All 3 items same line)
+   ====================================== */
+@media (max-width: 768px) {
+
+  /* Parent list */
+  .quick-items {
+    display: flex;
+    flex-direction: column;
+    gap: 28px !important;   /* space between rows */
+    padding-left: 0 !important;
+  }
+
+  /* Each row */
+  .quick-item {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+    margin-left: 20 !important; /* same left position for all */
+  }
+
+  /* Icon — FIXED WIDTH (same size → text perfect line me) */
+  .quick-item svg,
+  .quick-item i {
+    width: 34px !important;      /* 👈 sab icons same width */
+    min-width: 34px !important;  
+    text-align: center !important;
+    margin: 0 !important;
+  }
+
+  /* Text block — always same start point */
+  .quick-item span {
+    display: block;
+    text-align: left !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+@media (max-width: 768px) {
+  footer {
+    background-image: none !important;
+  }
+}
+@media (max-width: 768px) {
+  footer .container,
+  footer .row,
+  footer .col-md-3,
+  footer .col-md-4,
+  footer .col-md-7,
+  footer .text-center,
+  footer div,
+  footer p,
+  footer h4,
+  footer h5,
+  footer h6,
+  footer ul,
+  footer li {
+    text-align: left !important;
+  }
+
+  /* Social icons left me aa jayenge */
+  footer .social-icons {
+    justify-content: flex-start !important;
+  }
+}
+/* MOBILE FOOTER ACCORDION */
+@media (max-width: 768px) {
+
+  .footer-accordion {
+    width: 100%;
+  }
+
+  .fa-header {
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 18px;
+    color: #69F0AE;
+    padding: 12px 0;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .fa-content {
+    max-height: 0;
+    overflow: hidden;
+    padding-left: 10px;
+    transition: max-height 0.3s ease-out;
+  }
+
+  .fa-item ul,
+  .fa-item p {
+    margin: 10px 0;
+    color: #E8F5E9;
+    font-size: 15px;
+  }
+
+  /* when accordion opens */
+  .fa-item.active .fa-content {
+    max-height: 300px;
+  }
+}
+/* Hide original footer lists only on mobile */
+@media (max-width: 768px) {
+  footer .row.g-4 {
+    display: none !important;
+  }
+}
+@media (max-width: 768px) {
+  footer .container.py-4 .row.g-4 {
+    display: none !important;
+  }
+}
+/* Hide desktop footer content in mobile view */
+@media (max-width: 768px) {
+  footer .container.py-4 .row.g-4 {
+    display: none !important;
+  }
+}
+
+
+/* MOBILE VIEW SETTINGS */
+@media (max-width: 768px) {
+
+  /* ✔ Hide ONLY 4 main columns (services, province, hours, legal) */
+  footer .container.py-4 .row.g-4 {
+    display: none !important;
+  }
+
+  /* ✔ Accordion container */
+  .footer-accordion {
+    width: 100%;
+  }
+
+  .fa-header {
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 18px;
+    color: #69F0AE;
+    padding:px 0;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .fa-content {
+    max-height: 0;
+    overflow: hidden;
+    padding-left: 10px;
+    transition: max-height 0.3s ease-out;
+  }
+
+  .fa-item ul,
+  .fa-item p {
+    margin: 10px 0;
+    color: #E8F5E9;
+    font-size: 15px;
+  }
+
+  /* ✔ When section opened */
+  .fa-item.active .fa-content {
+    max-height: 300px;
+  }
+}
+/* ---------------- MOBILE FOOTER STYLE ---------------- */
+@media (max-width: 768px) {
+
+  /* Hide desktop footer columns only */
+  footer .container.py-4 .row.g-4 {
+    display: none !important;
+  }
+
+  /* Mobile footer wrapper */
+  .mobile-footer {
+    padding-top: 5px 0;
+  }
+
+  .mobile-footer-top p,
+  .mobile-footer-top h5,
+  .mobile-footer-top h6 {
+    text-align: left;
+  }
+
+  /* Accordion */
+  .fa-header {
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 18px;
+    color: #69F0AE;
+    padding: 10px 0;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .fa-content {
+    max-height: 50;
+    overflow: hidden;
+    padding-left: 10px;
+    transition: max-height 0.3s ease-out;
+  }
+
+  .fa-item ul,
+  .fa-item p {
+    margin: 10px 0;
+    color: #E8F5E9;
+    font-size: 15px;
+	
+  }
+
+  .fa-item.active .fa-content {
+    max-height: 300px;
+  }
+}
+/* Hide desktop footer on mobile */
+@media(max-width: 767px) {
+  footer .container.pb-4,
+  footer .container.py-4 {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .loan__services__item__text h4 {
+    font-size: 26px !important;
+  }
+  .loan__services__item__text p {
+    font-size: 17px !important;
+    line-height: 1.4;
+  }
+  .loan__services__item__text a {
+    font-size: 16px !important;
+  }
+}
+.fa-header {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #69F0AE;
+  font-weight: 500;
+  text-align: left;
+  font-size: 16px;
+}
+
+.fa-content {
+  display: none;
+  margin-top: 2px;
+  color: #E8F5E9;
+}
+
+.fa-item.active .fa-content {
+  display: block;
+}
+
+@media (max-width: 767px) {
+  .mobile-footer {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+}
+@media (max-width: 767px) {
+  .mobile-footer-top p.small {
+    margin-top: 10px !important;  /* jitna niche chahiye utna number badha dena */
+  }
+}
+@media (max-width: 768px) {
+  .quick-item {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-start !important;  /* force left align */
+    align-items: center !important;
+    gap: 12px;
+  }
+
+  .quick-items {
+    flex-direction: column !important;
+    padding-left: 25px;
+    gap: 25px;
+  }
+}
+@media (max-width: 767px) {
+  .loan__services__item__text h4 {
+    margin-bottom: 4px !important;
+  }
+  .loan__services__item__text p {
+    margin-top: 0 !important;
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 767px) {
+
+  .fa-header {
+    position: relative;
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 18px;
+    font-weight: 600;
+    color: #69F0AE;
+    padding: 12px 25px 12px 0; /* Right space for arrow */
+    cursor: pointer;
+  }
+
+  /* Triangle icon on right side */
+  .fa-header::after {
+    content: "▼";  /* Dropdown arrow */
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: #69F0AE;
+    transition: transform 0.3s ease;
+  }
+
+  /* When active → rotate arrow up */
+  .fa-item.active .fa-header::after {
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  /* Content hidden by default */
+  .fa-content {
+    display: none;
+    padding-left: 10px;
+    color: #E8F5E9;
+  }
+
+  /* Show content when active */
+  .fa-item.active .fa-content {
+    display: block;
+  }
+}
+@media(max-width: 768px) {
+  .fa-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;     /* text aur arrow ke beech gap */
+    width: auto;  /* full width mat lo */
+  }
+
+  .fa-header .fa-arrow {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  #about small.text-uppercase {
+    font-weight: 700 !important;   /* Bold */
+    color: #000 !important;        /* Dark color */
+    font-size: 16px;               /* Thoda bada, optional */
+  }
+}
+
+
+  @media (max-width: 767px) {
+  #about p.text-muted {
+    font-size: 16px !important;
+    /* font-weight: 600 !important;   BOLD */
+    line-height: 1.6 !important;
+    color: #333 !important;        /* optional: thoda dark for readability */
+  }
+
+
+
+  #about .fw-bold.mb-4 {
+    font-size: 26px !important;    /* heading also bigger (optional) */
+    line-height: 1.3;
+  }
+}
+
+
+/* ONLY MOBILE VIEW */
+@media (max-width: 767px) {
+  .quick-loan-section {
+    flex-direction: column !important;
+    text-align: left;
+    gap: 20px;
+  }
+
+  .quick-items {
+    flex-direction: column !important;
+    gap: 22px !important;
+  }
+
+  .quick-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+/* MOBILE VIEW TEXT BOOST */
+@media (max-width: 768px) {
+
+  /* Excluded Headings ko untouched rakha hai */
+
+  /* Baaki saare normal paragraphs dark + big */
+  p,
+  .text-muted,
+  .loan__services__item__text p,
+  .why-card p,
+  #contact p,
+  #home p {
+    font-size: 17px !important;
+    color: #222 !important;
+    font-weight: 600 !important;
+    line-height: 1.5;
+  }
+
+  /* List items dark + bigger */
+  ul li {
+    font-size: 17px !important;
+    color: #222 !important;
+    font-weight: 600 !important;
+  }
+
+  /* Labels bigger & dark */
+  label,
+  .form-label {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    color: #222 !important;
+  }
+
+  /* Buttons text bold */
+  button,
+  .btn {
+    font-size: 17px !important;
+    font-weight: 700 !important;
+  }
+
+  /* Small text bigger */
+  small {
+    font-size: 16px !important;
+    color: #222 !important;
+    font-weight: 600 !important;
+  }
+}
+/* ONLY MOBILE VIEW */
+@media (max-width: 768px) {
+
+  /* Loan Solutions (description paragraphs) */
+  .loan__services__item__text p {
+    color: #ffffff !important;
+  }
+
+  /* Contact section small paragraph */
+  #contact p,
+  #contact .text-light,
+  #contact .mb-4 {
+    color: #ffffff !important;
+  }
+}
+/* ONLY MOBILE VIEW */
+@media (max-width: 768px) {
+
+  /* Loan Solutions description → already added earlier */
+  .loan__services__item__text p {
+    color: #ffffff !important;
+  }
+
+  /* Contact section paragraph */
+  #contact p,
+  #contact .text-light,
+  #contact .mb-4 {
+    color: #ffffff !important;
+  }
+
+  /* Testimonials (subtitle line) */
+  #testimonials p.text-center {
+    color: #ffffff !important;
+  }
+
+  /* Footer address paragraph */
+  .mobile-footer p {
+    color: #ffffff !important;
+  }
+
+  /* Footer company description */
+  .mobile-footer h5 + p {
+    color: #ffffff !important;
+  }
+}
+@media (max-width: 768px) {
+
+  /* Footer dropdown list items (Services, Province, Legal) */
+  .fa-content ul li {
+    color: #ffffff !important;
+    font-weight: 600;
+  }
+
+  /* Open Hours text */
+  .fa-content p {
+    color: #ffffff !important;
+    font-weight: 600;
+  }
+}
+@media (max-width: 768px) {
+
+/* ---------- Image full width on mobile ---------- */
+@media (max-width: 768px) {
+
+  .about-images {
+    margin-top: -40px !important;  /* top gap kam */
+    margin-bottom: 10px !important; /* bottom gap kam */
+    padding: 0 8px;  /* thoda side se spacing */
+  }
+
+  .about-images .main-img {
+    width: 500% !important;
+    height: auto !important;
+    border-radius: 10px;
+    display: block;
+  }
+
+  .about-images .overlay-img {
+    width: 100% !important;
+    height: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+  }
+}
+
+}
+/* ===== MOBILE VIEW ONLY (max-width: 768px) ===== */
+@media (max-width: 768px) {
+
+  /* Why Choose Us – feature titles */
+  #why h5 {
+    font-weight: 700 !important;
+  }
+
+  /* Testimonials names */
+  .testimonial-card h6 {
+    font-weight: 700 !important;
+  }
+}
+/* ===== MOBILE VIEW ONLY (max-width: 768px) ===== */
+@media (max-width: 768px) {
+
+  /* WHY CHOOSE US — feature titles */
+  #why h5 {
+    font-weight: 780 !important;
+    font-size: 19.5px !important;
+  }
+
+  /* TESTIMONIAL — customer names */
+  .testimonial-card h6 {
+    font-weight: 780 !important;
+    font-size: 19.5px !important;
+  }
+}
+@media (max-width: 768px) {
+
+  /* Make the arrows float near the middle card */
+  .carousel-control-prev,
+  .carousel-control-next {
+    top: 55%;          /* middle ke thoda neeche */
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+  }
+
+  /* Circle styling (green circle + icon center) */
+  .carousel-control-prev-icon,
+  .carousel-control-next-icon {
+    background-color: #af4caf !important;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    background-size: 60%;
+  }
+
+  /* Move left arrow slightly inside */
+  .carousel-control-prev {
+    left: -5px;        /* adjust as needed */
+  }
+
+  /* Move right arrow slightly inside */
+  .carousel-control-next {
+    right: -5px;       /* adjust as needed */
+  }
+}
+
+@media (max-width: 768px) {
+
+  /* Carousel arrow circle ko center card ke level par lana */
+  #testimonials .carousel-control-prev,
+  #testimonials .carousel-control-next {
+    top: 50% !important;        /* middle position */
+    transform: translateY(-20%); /* thoda upar niche adjust */
+  }
+
+  /* Arrow icons ko thoda bada & perfect center */
+  #testimonials .carousel-control-prev-icon,
+  #testimonials .carousel-control-next-icon {
+    width: 40px;
+    height: 40px;
+    background-size: 70% 70%;
+    background-color: rgba(111, 207, 151, 1); /* green circle */
+    border-radius: 50%;
+  }
+}
+

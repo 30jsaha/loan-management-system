@@ -188,6 +188,23 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
       setShowRepayment(true);
   };
+
+useEffect(() => {
+  if (window.innerWidth > 768) return;
+
+  const items = document.querySelectorAll(".fa-item");
+
+  items.forEach((item) => {
+    const header = item.querySelector(".fa-header");
+
+    header.addEventListener("click", () => {
+      item.classList.toggle("active");
+    });
+  });
+}, []);
+
+
+
 const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
   return (
     <div className="min-vh-100" data-bs-spy="scroll" data-bs-target=".navbar" data-bs-offset="70">
@@ -503,7 +520,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
   <div className="quick-item d-flex align-items-center gap-3">
     {/* <!-- Money Icon --> */}
-    <svg width="40" height="32" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
       <circle cx="12" cy="12" r="3"></circle>
       <line x1="2" y1="12" x2="5" y2="12"></line>
@@ -523,7 +540,8 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
         <div className="container">
           <div className="row align-items-center g-5">
             <div className="col-md-6 about-text-shift">
-              <b> <small className="text-uppercase" style={{color:'#585858'}}>About Our Company</small></b>
+             <b><small className="text-uppercase" style={{color:'#585858'}}>About Our Company</small></b>
+
               <h2 className="fw-bold mb-4" style={{color:'green'}}>Empowering Lives Through<br/> Smart Finance</h2>
               <p className="text-muted mb-3">Agro Advance Aben Limited is a trusted Papua New Guinea–based consumer finance <br/>company,
                 dedicated to helping individuals meet personal and family financial needs.
@@ -536,7 +554,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
             <div className="col-md-6 text-center position-relative">
               <div className="about-images">
-                <img src={about1} alt="Agro about 1" className="img-fluid main-img" style={{maxWidth: '530px'}}/>
+                <img src={about1} alt="Agro about 1" className="img-fluid main-img" />
                 <img src={about2} alt="Agro about 2" className="img-fluid overlay-img shadow-lg" style={{width:'45%', height:326}}/>
               </div>
             </div>
@@ -564,7 +582,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
               <div className="loan__services__item__text">
                 <h4> Personal Loan</h4>
                 <p>Secure,quick financing for government employees covering immediate personal needs,emergencies,or family commitments.</p>
-                <a href="#">Find Out More</a>
+                {/* <a href="#">Find Out More</a> */}
               </div>
             </div>
 
@@ -572,7 +590,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
               <div className="loan__services__item__text">
                 <h4> Business Loan</h4>
                 <p>Capital to support entrepreneurial ventures or side businesses, leveraging the stability of a government salary for reliable repayment.</p>
-                <a href="#">Find Out More</a>
+                {/* <a href="#">Find Out More</a> */}
               </div>
             </div>
 
@@ -581,7 +599,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
                 <h4>Education Loan</h4>
                 
                 <p>Dedicated funding to ensure dependents of government employees access high-quality education without financial strain.</p>
-                <a href="#">Find Out More</a>
+                {/* <a href="#">Find Out More</a> */}
               </div>
             </div>
 
@@ -590,7 +608,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
                 <h4> Commercial Loan</h4>
                 
                 <p>High-value lending secured by the employee's stable income, typically used for significant asset purchases or investment projects.</p>
-                <a href="#">Find Out More</a>
+                {/* <a href="#">Find Out More</a> */}
               </div>
             </div>
 
@@ -599,7 +617,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
                 <h4> Health Loan</h4>
                
                 <p>Essential financial support for unexpected or planned medical expenses and treatments for the employee or their family.</p>
-                <a href="#">Find Out More</a>
+                {/* <a href="#">Find Out More</a> */}
               </div>
             </div>
 
@@ -777,14 +795,16 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 >
   <div className="footer-overlay">
 
-      
-    <div className="container pb-4" >
+    {/* DESKTOP FOOTER (hidden on mobile) */}
+    <div className="container pb-4 d-none d-md-block">
       <div className="row justify-content-between align-items-start g-4">
+        
         <div className="col-md-3">
           <h6 className="text-uppercase mb-3" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
-          <p className="small mb-4" style={{color:'#E8F5E9'}}>📍 Avara Annex, Level 7, Brampton St., 
-          <br/>
-          Port Moresby, Papua New Guinea</p>
+          <p className="small mb-4" style={{color:'#E8F5E9'}}>
+            📍 Avara Annex, Level 7, Brampton St., <br/>
+            Port Moresby, Papua New Guinea
+          </p>
         </div>
 
         <div className="col-md-4 text-md-center">
@@ -794,27 +814,27 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
         <div className="col-md-3 text-md-end">
           <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben Limited</h5>
-          <p className="small mb-0" style={{color:'#E8F5E9'}}>Finance with Purpose. Supporting farmers and small businesses with affordable loans.</p>
+          <p className="small mb-0" style={{color:'#E8F5E9'}}>
+            Finance with Purpose. Supporting farmers and small businesses with affordable loans.
+          </p>
         </div>
-      </div>
-    </div>
 
-    <div className="container py-4">
-      <div className="row g-4">
+      </div>
+
+      <div className="row g-4 mt-4">
         <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Services</h6>
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Services  <span className="fa-arrow">▼</span></h6>
           <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
             <li>Personal Loans</li>
             <li>Business Loans</li>
             <li>Education Loans</li>
             <li>Health Loans</li>
-             <li>Commercial Loans</li>
-
+            <li>Commercial Loans</li>
           </ul>
         </div>
 
         <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Province</h6>
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Province  <span className="fa-arrow">▼</span></h6>
           <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
             <li>Enga</li>
             <li>Madang</li>
@@ -825,39 +845,91 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
         </div>
 
         <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Open Hours</h6>
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Open Hours  <span className="fa-arrow">▼</span></h6>
           <p className="small mb-1" style={{color:'#E8F5E9'}}>Monday–Friday: 09:00 am – 4:00 pm</p>
-        
         </div>
 
         <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Legal</h6>
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Legal  <span className="fa-arrow">▼</span></h6>
           <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
-            <li><a href="#" style={{color:'#E8F5E9', textDecoration:'none'}}>Terms of Use</a></li>
-            <li><a href="#" style={{color:'#E8F5E9', textDecoration:'none'}}>Privacy Policy</a></li>
+            <li>Terms of Use</li>
+            <li>Privacy Policy</li>
           </ul>
+        </div>
+      </div>
+    </div>
 
-          <div className="social-icons d-flex gap-3 mt-3">
-            <a href="#" className="glow-round"><i className="bi bi-facebook"></i></a>
-            <a href="#" className="glow-round"><i className="bi bi-instagram"></i></a>
-           
-            <a href="#" className="glow-round"><i className="bi bi-linkedin"></i></a>
-          </div>
+    {/* ---------------------- MOBILE FOOTER ---------------------- */}
+    <div className="mobile-footer d-md-none mt-4 px-3">
+
+      {/* TOP INFORMATION VISIBLE ALWAYS */}
+      <h6 className="text-uppercase mb-2" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
+      <p className="small mb-3" style={{color:'#E8F5E9'}}>
+        📍 Avara Annex, Level 7, Brampton St., <br />
+        Port Moresby, Papua New Guinea
+      </p>
+
+      <p className="text-uppercase small mb-1" style={{color:'#E8F5E9'}}>Contact Us Now!</p>
+      <h4 className="fw-bold mb-3" style={{color:'#4CAF50'}}>+675 7211 5122</h4>
+
+      <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben Limited</h5>
+      <p className="small mb-3" style={{color:'#E8F5E9'}}>
+        Finance with Purpose. Supporting farmers and small businesses with affordable loans.
+      </p>
+
+      {/* DROPDOWN SECTIONS */}
+      <div className="fa-item">
+        <button className="fa-header">Services</button>
+        <div className="fa-content">
+          <ul>
+            <li>Personal Loans</li>
+            <li>Business Loans</li>
+            <li>Education Loans</li>
+            <li>Health Loans</li>
+            <li>Commercial Loans</li>
+          </ul>
         </div>
       </div>
 
-      <div className="text-center mt-4 pt-3 border-top small" style={{borderColor:'#1E5631', color:'#E8F5E9'}}>
-        © 2025 Agro Advance Aben. All rights reserved.
+      <div className="fa-item">
+        <button className="fa-header">Province</button>
+        <div className="fa-content">
+          <ul>
+            <li>Enga</li>
+            <li>Madang</li>
+            <li>Morobe</li>
+            <li>East New Britain</li>
+            <li>National Capital District</li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="fa-item">
+        <button className="fa-header">Open Hours</button>
+        <div className="fa-content">
+          <p>Monday–Friday: 09:00 am – 4:00 pm</p>
+        </div>
+      </div>
+
+      <div className="fa-item">
+        <button className="fa-header">Legal</button>
+        <div className="fa-content">
+          <ul>
+            <li>Terms of Use</li>
+            <li>Privacy Policy</li>
+          </ul>
+        </div>
       </div>
 
     </div>
+
+    {/* COPYRIGHT – SAME FOR BOTH */}
+    <div className="text-center mt-4 pt-3 border-top small" style={{borderColor:'#1E5631', color:'#E8F5E9'}}>
+      © 2025 Agro Advance Aben. All rights reserved.
+    </div>
+
   </div>
 </footer>
-
-
-      {/* Scroll to top button */}
-      <button id="scrollToTopBtn" title="Go to top" style={{display: showScroll ? 'block' : 'none', position:'fixed', right:20, bottom:20, zIndex:1000}} onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>↑</button>
-
-    </div>
+</div>
   );
 }
