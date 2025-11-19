@@ -7,6 +7,7 @@ use App\Http\Controllers\SalarySlabController;
 use App\Http\Controllers\OrganizationsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use Inertia\Inertia;
 
 /*
@@ -19,6 +20,16 @@ use Inertia\Inertia;
 | contains the "web" middleware group. Now create something great!
 |
 */
+
+Route::get('/cc', function () {
+    Artisan::call('optimize:clear');
+    Artisan::call('config:clear');
+    Artisan::call('cache:clear');
+    Artisan::call('route:clear');
+    Artisan::call('view:clear');
+    // return 'Cache cleared!';
+    return Inertia::render('CacheCleared');
+});
 
 Route::get('/', function () {
     return Inertia::render('Home', [
