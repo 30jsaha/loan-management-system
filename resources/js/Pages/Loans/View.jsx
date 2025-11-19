@@ -25,13 +25,15 @@ export default function View({ auth, loanId }) {
     const [uploadProgress, setUploadProgress] = useState({ video: 0, pdf: 0, pdf1:0 });
 
     const [showModal, setShowModal] = useState(false);
+    const [showModal1, setShowModal1] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState(null);
 
     const [showVideoModal, setShowVideoModal] = useState(false);
     const [videoSrc, setVideoSrc] = useState(null);
 
-    // const pdfPath = "/storage/uploads/documents/Loan Application Form - loanms.pdf";
-    // const fileName = "Loan Application Form - loanms.pdf";
+    const pdfPath = "/storage/uploads/documents/Loan Application Form - loanms.pdf";
+    const fileName = "Loan Application Form - loanms.pdf";
+
     // Open modal with selected document
     const openDocModal = (doc) => {
         console.log("doc on openDocModal: ",doc);
@@ -779,12 +781,12 @@ export default function View({ auth, loanId }) {
                                     <tbody>
                                         <tr className="hover:bg-gray-50 transition">
                                         <td className="border p-2 text-center">Application Form</td>
-                                        <td className="border p-2 text-center">{fileName}</td>
+                                        <td className="border p-2 text-center">Application Form</td>
 
                                         {/* View Button */}
                                         <td className="border p-2 text-center">
                                             <button
-                                            onClick={() => setShowModal(true)}
+                                            onClick={() => setShowModal1(true)}
                                             className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
                                             >
                                             <Eye size={14} /> View
@@ -840,8 +842,8 @@ export default function View({ auth, loanId }) {
 
                                 {/* PDF Modal */}
                                 <Modal
-                                    show={showModal}
-                                    onHide={() => setShowModal(false)}
+                                    show={showModal1}
+                                    onHide={() => setShowModal1(false)}
                                     size="xl"
                                     centered
                                     dialogClassName="max-w-[900px]"
@@ -861,7 +863,7 @@ export default function View({ auth, loanId }) {
                                     </Modal.Body>
 
                                     <Modal.Footer>
-                                    <Button variant="secondary" onClick={() => setShowModal(false)}>
+                                    <Button variant="secondary" onClick={() => setShowModal1(false)}>
                                         Close
                                     </Button>
                                     </Modal.Footer>
