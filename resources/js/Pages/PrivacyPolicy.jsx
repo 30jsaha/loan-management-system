@@ -22,7 +22,7 @@ import footerBg from '../../img/png_image.png';
 
 
 
-export default function Home({ auth, laravelVersion, phpVersion }) {
+export default function PrivacyPolicy({ auth, laravelVersion, phpVersion }) {
   const formRef = useRef(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [formState, setFormState] = useState({
@@ -379,7 +379,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
         <div className="container">
           <div className="home-wrapper d-flex flex-wrap align-items-start">
             <div className="home-left me-4" style={{flex: '1 1 420px'}}>
-              <h1 className="mt-2">Personal Loans for Life’s <br/> Everyday Needs.</h1>
+              <h1 className="mt-2">Privacy Policy</h1>
               <p>
                 Enjoy flexible, transparent, and quick loan options that help you manage expenses,<br/>
                 handle emergencies or make your plans a reality.
@@ -853,7 +853,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
           <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Legal  <span className="fa-arrow"></span></h6>
           <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
             <Link href={route('terms')}>
-              <li>Terms of Use</li>
+                <li>Terms of Use</li>
             </Link>
             <Link href={route('privacy')}>
             <li>Privacy Policy</li>
@@ -920,7 +920,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
         <div className="fa-content">
           <ul>
             <Link href={route('terms')}>
-              <li>Terms of Use</li>
+                <li>Terms of Use</li>
             </Link>
             <Link href={route('privacy')}>
             <li>Privacy Policy</li>
