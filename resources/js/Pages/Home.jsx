@@ -823,7 +823,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
       <div className="row g-4 mt-4">
         <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Services  <span className="fa-arrow">▼</span></h6>
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Services  <span className="fa-arrow"></span></h6>
           <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
             <li>Personal Loans</li>
             <li>Business Loans</li>
@@ -834,7 +834,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
         </div>
 
         <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Province  <span className="fa-arrow">▼</span></h6>
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Province  <span className="fa-arrow"></span></h6>
           <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
             <li>Enga</li>
             <li>Madang</li>
@@ -845,12 +845,12 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
         </div>
 
         <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Open Hours  <span className="fa-arrow">▼</span></h6>
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Open Hours  <span className="fa-arrow"></span></h6>
           <p className="small mb-1" style={{color:'#E8F5E9'}}>Monday–Friday: 09:00 am – 4:00 pm</p>
         </div>
 
         <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Legal  <span className="fa-arrow">▼</span></h6>
+          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Legal  <span className="fa-arrow"></span></h6>
           <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
             <li>Terms of Use</li>
             <li>Privacy Policy</li>
