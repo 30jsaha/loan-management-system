@@ -783,5 +783,18 @@ class LoanController extends Controller
             return response()->json(['error' => 'Failed to update loan status', 'details' => $e->getMessage()], 500);
         }
     }   
+    //need to modify
+    public function higherApproveLoan ()
+    {
+        $loanId = request()->input('loan_id');
+        $loan = Loan::findOrFail($loanId);
+        $loan->status = 'HigherApproval';
+        $loan->higher_approved_by = auth()->user()->name;
+        $loan->higher_approved_by_id = auth()->user()->id;
+        $loan->higher_approved_date = now()->toDateString();
+        $loan->save();
+
+        return response()->json(['message' => 'Loan higher approved successfully.']);
+    }
 
 }

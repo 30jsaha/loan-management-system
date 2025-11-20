@@ -56,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/upload-document', [LoanController::class, 'uploadDocument']);
     Route::post('/loans/{id}/finalize-documents', [LoanController::class, 'finalizeDocuments']);
     Route::get('/filtered-loan-types/{customerId}', [LoanController::class, 'getEligibleLoanTypes']);
+    Route::post('/loans/higher-approve/{loanId}', [LoanController::class, 'higherApproveLoan']);
     Route::post('/loans-update-after-higher-approval', [LoanController::class, 'loan_update_after_higher_approval']);
 });
 
