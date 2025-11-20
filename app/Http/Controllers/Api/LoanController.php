@@ -97,6 +97,7 @@ class LoanController extends Controller
 
             // Default values for unset fields
             $validated['status'] = $validated['status'] ?? 'Pending';
+            $validated['emi_amount'] = number_format($validated['emi_amount'],2);
             // dd($validated);
             // exit;
             // Create loan application
@@ -730,5 +731,57 @@ class LoanController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    public function loan_update_after_higher_approval(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|exists:loan_applications,id',
+            'loan_type' => 'required|integer|min:0',
+            'purpose' => 'nullable|in:Tuition,Living,Medical,Appliance,Car,Travel,HomeImprovement,Other',
+            'other_purpose_text' => 'nullable|string|max:255',
+
+            // 'loan_amount_applied' => 'required|numeric|min:0',
+            // 'loan_amount_approved' => 'nullable|numeric|min:0',
+            'tenure_fortnight' => 'required|integer|min:1',
+            'emi_amount' => 'nullable|numeric',
+            'elegible_amount' => 'nullable|numeric',
+            'total_repay_amt' => 'nullable|numeric',
+            'total_interest_amt' => 'nullable|numeric',
+            'interest_rate' => 'nullable|numeric|min:0|max:100',
+            'processing_fee' => 'nullable|numeric|min:0',
+            'grace_period_days' => 'nullable|integer|min:0',
+
+            'disbursement_date' => 'nullable|date',
+            'bank_name' => 'nullable|string|max:100',
+            'bank_branch' => 'nullable|string|max:100',
+            'bank_account_no' => 'nullable|string|max:50',
+
+            'status' => 'nullable|in:Pending,Verified,Approved,HigherApproval,Disbursed,Closed',
+
+            'approved_by' => 'nullable|string|max:100',
+            'approved_date' => 'nullable|date',
+            'higher_approved_by' => 'nullable|string|max:100',
+            'higher_approved_date' => 'nullable|date',
+
+            'remarks' => 'nullable|string',
+        ]);
+
+
+        try {
+            $loan = Loan::findOrFail($validated['id']);
+            $loan->is_loan_re_updated_after_higher_approval = 1;
+            $loan->loan_amount_approved = $validated['loan_amount_applied'] ?? $loan->loan_amount_applied;
+            $loan->emi_amount = number_format($validated['emi_amount'],2);
+            // $loan->higher_approved_by = auth()->user()->name;
+            // $loan->higher_approved_date = now()->toDateString();
+            $loan->is_elegible = 1;
+            $loan->update();
+
+            return response()->json(['message' => 'Loan update status updated successfully.', 'loan' => $loan], 200);
+        } catch (\Exception $e) {
+            Log::error("Loan update after higher approval failed: " . $e->getMessage());
+            return response()->json(['error' => 'Failed to update loan status', 'details' => $e->getMessage()], 500);
+        }
+    }   
 
 }
