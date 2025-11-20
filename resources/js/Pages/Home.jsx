@@ -44,6 +44,10 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
     email: ""
   });
   const [showRepayment, setShowRepayment] = useState(false);
+const [sliderAmount, setSliderAmount] = useState(200);
+const [sliderFortnight, setSliderFortnight] = useState(5);
+const [sliderEMI, setSliderEMI] = useState(0);
+const [sliderError, setSliderError] = useState("");
 
 
   // scroll listener for scroll-to-top button
@@ -56,6 +60,54 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+  const amt = sliderAmount;
+  const tn = sliderFortnight;
+
+  setSliderError(""); // reset
+
+  // Rule: amount must be >= 200
+  if (amt < 200) {
+    setSliderError("❌ Amount not applicable (minimum is 200)");
+    setSliderEMI(0);
+    return;
+  }
+
+  // Rule: tenure minimum 5
+  if (tn < 5) {
+    setSliderError("❌ Tenure not applicable (minimum is 5 days)");
+    setSliderEMI(0);
+    return;
+  }
+
+  // Rule 1: 200/250/300 max 5 days
+  if ([200, 250, 300].includes(amt) && tn > 5) {
+    setSliderError("❌ Tenure not applicable for this amount (Max 5 days)");
+    setSliderEMI(0);
+    return;
+  }
+
+  // Rule 2: 350–500 max 8
+  if ([350, 400, 450, 500].includes(amt) && tn > 8) {
+    setSliderError("❌ Tenure not applicable for this amount (Max 8 days)");
+    setSliderEMI(0);
+    return;
+  }
+
+  // Rule 3: 350–950 max 26
+  if (amt >= 350 && amt <= 950 && tn > 26) {
+    setSliderError("❌ Tenure not applicable (Max 26 days)");
+    setSliderEMI(0);
+    return;
+  }
+
+  // If all good → calculate EMI
+  const emi = calculateRepayment(amt, tn);
+  setSliderEMI(emi);
+
+}, [sliderAmount, sliderFortnight]);
+
 
   // Loan calculation logic (shared by submit & "Check Your Loan Now")
   function calculateRepayment(amountVal, tenureDaysVal) {
@@ -487,6 +539,130 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
           </div>
         </div>
 
+
+
+{/* Loan Slider Calculator (React + Validation + EMI Logic) */}
+{2+2 != 4 && (
+<section id="loan" className="py-5" style={{ backgroundColor: "#f9f9f9", display: "none !important" }}>
+  <div className="container">
+
+    <h2 className="text-center fw-bold mb-5" style={{ color: "#008037" }}>
+      How much do you want to borrow?
+    </h2>
+
+    <div className="card shadow-sm border-0 p-4 mx-auto" style={{ maxWidth: "700px" }}>
+
+      {/* Loan Amount */}
+      <div className="mb-4 text-center position-relative">
+        <h5 className="fw-semibold mb-3">Loan Amount</h5>
+
+        <div className="d-flex align-items-center justify-content-center gap-3">
+
+          <button
+            onClick={() => setSliderAmount(prev => Math.max(200, prev - 50))}
+            className="btn btn-sm btn-outline-success"
+          >
+            −
+          </button>
+
+          <div className="slider-wrapper position-relative w-75">
+            <input
+              type="range"
+              min="200"
+              max="10000"
+              step="50"
+              value={sliderAmount}
+              onChange={(e) => setSliderAmount(Number(e.target.value))}
+              className="form-range"
+            />
+            <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
+              K{sliderAmount}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setSliderAmount(prev => Math.min(10000, prev + 50))}
+            className="btn btn-sm btn-outline-success"
+          >
+            +
+          </button>
+
+        </div>
+      </div>
+
+      {/* Fortnight Count */}
+      <div className="mb-4 text-center position-relative">
+        <h5 className="fw-semibold mb-3">No. of Fortnights</h5>
+
+        <div className="d-flex align-items-center justify-content-center gap-3">
+
+          <button
+            onClick={() => setSliderFortnight(prev => Math.max(5, prev - 1))}
+            className="btn btn-sm btn-outline-success"
+          >
+            −
+          </button>
+
+          <div className="slider-wrapper position-relative w-75">
+            <input
+              type="range"
+              min="5"
+              max="52"
+              step="1"
+              value={sliderFortnight}
+              onChange={(e) => setSliderFortnight(Number(e.target.value))}
+              className="form-range"
+            />
+            <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
+              {sliderFortnight}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setSliderFortnight(prev => Math.min(52, prev + 1))}
+            className="btn btn-sm btn-outline-success"
+          >
+            +
+          </button>
+
+        </div>
+      </div>
+
+      {/* ---------- Validation Errors ---------- */}
+      {sliderError && (
+        <div
+          className="p-2 mb-3 text-white fw-bold text-center"
+          style={{ background: "#d9534f", borderRadius: 6 }}
+        >
+          {sliderError}
+        </div>
+      )}
+
+      {/* ---------- EMI Display ---------- */}
+      {!sliderError && (
+        <div className="text-center bg-light rounded p-3 mt-4">
+          <h6 className="text-muted mb-1">Fortnightly Payment (EMI)</h6>
+          <h3 className="fw-bold text-success mb-0">
+            PGK {sliderEMI}
+          </h3>
+        </div>
+      )}
+
+    </div>
+  </div>
+</section>
+)}
+
+
+
+
+
+
+
+
+
+
+
         {/* Quick Loan Bar */}
         <div className="quick-loan-section mt-5 d-flex align-items-center">
           <div className="quick-image me-3">
@@ -788,8 +964,8 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
   className="text-white pt-5"
   style={{
     backgroundImage: `url(${footerBg})`,
-    backgroundSize: "auto",
-    backgroundPosition: "center",
+    backgroundSize: "1500px",
+    backgroundPosition: "left",
     backgroundRepeat: "no-repeat"
   }}
 >
