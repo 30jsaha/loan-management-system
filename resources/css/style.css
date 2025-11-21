@@ -4828,7 +4828,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
 
 @media (max-width: 767px) {
   .mobile-footer {
-    padding-top: 0 !important;
+    padding-top: 35px !important;
     margin-top: 0 !important;
   }
 }

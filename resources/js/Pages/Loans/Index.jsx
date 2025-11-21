@@ -372,6 +372,8 @@ export default function Index({ auth }) {
               ? "bg-green-100 text-green-700"
               : loan.status === "Rejected"
               ? "bg-red-100 text-red-700"
+              : (loan.status === "HigherApproval" && loan.is_elegible==1)
+              ? "bg-green-100 text-green-700"
               : "bg-yellow-100 text-yellow-700"
           }`}
         >

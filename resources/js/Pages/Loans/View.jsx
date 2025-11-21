@@ -89,25 +89,23 @@ export default function View({ auth, loanId }) {
                 setLoan(res.data);
                 setLoading(false);
                 console.log(res.data);
-                useEffect(() => {
-                    if (res.data) {
-                        setLoanFormData((prev) => ({
-                            ...prev,
-                            id: res.data.id,
-                            loan_type: res.data.loan_type,
-                            purpose: res.data.purpose,
-                            other_purpose_text: res.data.other_purpose_text,
-                            loan_amount_applied: res.data.loan_amount_applied,
-                            tenure_fortnight: res.data.tenure_fortnight,
-                            interest_rate: res.data.interest_rate,
-                            processing_fee: res.data.processing_fee,
-                            bank_name: res.data.bank_name,
-                            bank_branch: res.data.bank_branch,
-                            bank_account_no: res.data.bank_account_no,
-                            remarks: res.data.remarks,
-                        }));
-                    }
-                }, [res.data]);
+                if (res.data) {
+                    setLoanFormData((prev) => ({
+                        ...prev,
+                        id: res.data.id,
+                        loan_type: res.data.loan_type,
+                        purpose: res.data.purpose,
+                        other_purpose_text: res.data.other_purpose_text,
+                        loan_amount_applied: res.data.loan_amount_applied,
+                        tenure_fortnight: res.data.tenure_fortnight,
+                        interest_rate: res.data.interest_rate,
+                        processing_fee: res.data.processing_fee,
+                        bank_name: res.data.bank_name,
+                        bank_branch: res.data.bank_branch,
+                        bank_account_no: res.data.bank_account_no,
+                        remarks: res.data.remarks,
+                    }));
+                }
             })
             .catch((error) => {
                 console.error(error);
@@ -569,7 +567,7 @@ export default function View({ auth, loanId }) {
                 bank_name: updatedLoan.bank_name,
                 bank_branch: updatedLoan.bank_branch,
                 bank_account_no: updatedLoan.bank_account_no,
-                remarks: updatedLoan.remarks,
+                remarks: updatedLoan.remarks
             });
 
         } catch (error) {
@@ -769,7 +767,7 @@ export default function View({ auth, loanId }) {
                                     </fieldset>
                                 </Col>
                                 {/* {(loan.is_elegible == 0) && (loan.higher_approved_by != 0) && (auth.user.is_admin != 1) && ( */}
-                                {(loan?.is_elegible == 0) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) ? (
+                                {(loan?.is_elegible == 0) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
                                     <form onSubmit={handleLoanSubmit}> {/* Loan application form here */}
                                         <div className="row mb-3">
                                         </div>
@@ -954,8 +952,9 @@ export default function View({ auth, loanId }) {
                                             </Col>
                                         </Row>
                                     </form>
-                                ) : (
-                                    ((loan?.is_elegible == 0) && (loan?.higher_approved_by != null) && (auth.user.is_admin == 1)) && (
+                                )}
+                                {((loan?.is_elegible == 0) && (loan?.higher_approved_by == null)) && (
+                                    ((auth.user.is_admin == 1) ) ? (
                                         <Alert variant="warning" className="d-flex align-items-center justify-content-between">
                                             <div>
                                                 <strong>Need Approval ⚠️</strong>
@@ -965,6 +964,14 @@ export default function View({ auth, loanId }) {
                                                 <Button variant="outline-success" size="sm" onClick={handleHigherApproval}>
                                                     Approve Loan
                                                 </Button>
+                                            </div>
+                                        </Alert>
+                                    ) : (
+                                        <Alert variant="warning" className="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <strong>Need Approval ⚠️</strong>
+                                                <div className="small">This loan needs additional approval as the applied amount is greater than the elegible amount</div>
+                                                <div className="small">Please wait untill the approver approves this loan.</div>
                                             </div>
                                         </Alert>
                                     )
@@ -1215,7 +1222,7 @@ export default function View({ auth, loanId }) {
                                             <>
                                                 <div className="p-3 border rounded bg-gray-50">
                                                     <p className="text-gray-600 mb-3">No documents uploaded yet.</p>
-                                                    {(auth.user.is_admin != 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
+                                                    {(loan?.is_elegible == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
                                                         <LoanDocumentsUpload
                                                             loanFormData={loan}
                                                             onUploadComplete={async () => {
