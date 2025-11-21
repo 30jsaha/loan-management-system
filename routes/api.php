@@ -30,6 +30,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::middleware('auth:sanctum')->get('/loans', [LoanController::class, 'index'])->name('loans.index');
 Route::middleware('auth:sanctum')->get('/loans/emi-collection-list', [LoanController::class, 'loan_emi_list'])->name('loans.emi_list');
+Route::middleware('auth:sanctum')->get('/loans/emi-collections', [LoanController::class, 'collectionHistory'])->name('loans.emi-collections');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/loans', [LoanController::class, 'index']);

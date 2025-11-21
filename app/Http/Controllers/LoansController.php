@@ -9,6 +9,7 @@ use App\Models\LoanApplication as Loan;
 use App\Models\allCustMaster;
 use App\Models\SalarySlab;
 use App\Models\OrganisationMaster as Org;
+use App\Models\InstallmentDetail;
 
 class LoansController extends Controller
 {
@@ -141,10 +142,5 @@ class LoansController extends Controller
         return inertia('Loans/LoanEmiCollection', [
             'approved_loans' => $approvedLoans
         ]);
-    }
-
-
-    
-
-   
+    } 
 }

@@ -50,6 +50,8 @@ function DocumentViewerModal({ open, onClose, documentUrl, title }) {
 
 export default function EmiCollection({ auth, approved_loans = null }) {
   const [loans, setLoans] = useState(Array.isArray(approved_loans) ? approved_loans : []);
+  const [collections, setCollections] = useState({});
+  const [filterCollectionId, setFilterCollectionId] = useState("");
   const [loading, setLoading] = useState(true);
   const [orgs, setOrgs] = useState([]);
   const [searchName, setSearchName] = useState("");
@@ -57,6 +59,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
   const [orgFilter, setOrgFilter] = useState("");
   const [eligibilityFilter, setEligibilityFilter] = useState("all"); // all / eligible / not_eligible
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedRows, setExpandedRows] = useState({});
   const itemsPerPage = 8;
 
   // right panel / modal state
@@ -69,6 +72,27 @@ export default function EmiCollection({ auth, approved_loans = null }) {
   const [toDate, setToDate] = useState("");
 
   axios.defaults.withCredentials = true;
+  const toggleExpand = (uid) => {
+      setExpandedRows((prev) => ({
+          ...prev,
+          [uid]: !prev[uid]
+      }));
+  };
+  useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get("/api/loans/emi-collections");
+        setCollections(res.data.collections || {});
+        setLoading(false);
+      } catch (err) {
+        console.error(err);
+        setLoading(false);
+      }
+    };
+
+    fetchCollections();
+  }, []);
 
   // Fetch loans if not provided as prop
   useEffect(() => {
@@ -189,6 +213,33 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     }
   };
 
+  const formattedCollections = useMemo(() => {
+    const list = [];
+
+    Object.keys(collections).forEach(cid => {
+      const group = collections[cid];
+
+      const first = group[0];
+
+      const orgId = first?.loan?.organisation_id ?? null;
+      const matchesOrg = !orgFilter || orgFilter == orgId;
+      const matchesId = !filterCollectionId || cid.includes(filterCollectionId);
+
+      if (matchesOrg && matchesId) {
+        list.push({
+          collection_id: cid,
+          count: group.length,
+          total_amount: group.reduce((t, r) => t + Number(r.emi_amount), 0),
+          date: group[0].payment_date,
+          orgName: first?.loan?.organisation?.organisation_name
+        });
+      }
+    });
+
+    return list;
+  }, [collections, orgFilter, filterCollectionId]);
+
+
   return (
     <AuthenticatedLayout
       user={auth.user}
@@ -198,14 +249,14 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
       <div className="py-6 max-w-9xl mx-auto sm:px-6 lg:px-8">
         {/* Back Button */}
-        <div className="max-w-9xl mx-auto mb-2 -mt-2 ">
+        {/* <div className="max-w-9xl mx-auto mb-2 -mt-2 ">
           <Link
             href={route("loans")}
             className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
           >
             <ArrowLeft size={16} className="mr-2" /> Back to List
           </Link>
-        </div>
+        </div> */}
         
         {/* Top Bar */}
         <div className="bg-white shadow-sm p-3 py-2 mb-4 border border-gray-200 flex justify-between items-center">
@@ -220,19 +271,18 @@ export default function EmiCollection({ auth, approved_loans = null }) {
             >
               Collect EMI
             </Link>
-            <Link
+            {/* <Link
               href={route("loan-create")}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
               + New Loan Application
-            </Link>
+            </Link> */}
           </div>
         </div>
 
         {/* Filters (styled like Loan Index) */}
-        <div className="bg-white border border-gray-200 shadow-sm p-4 flex flex-col lg:flex-row gap-4 items-center">
-          {/* Search by Name */}
-          <div className="relative flex-1 w-full">
+         <div className="bg-white border border-gray-200 shadow-sm p-4 flex flex-col lg:flex-row gap-4 items-center">
+          {/*<div className="relative flex-1 w-full">
             <Search size={16} className="absolute left-3 top-3 text-gray-400" />
             <input
               type="text"
@@ -244,10 +294,10 @@ export default function EmiCollection({ auth, approved_loans = null }) {
               }}
               className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
-          </div>
+          </div> */}
 
           {/* Search by Loan Amount */}
-          <div className="relative flex-1 w-full">
+          {/* <div className="relative flex-1 w-full">
             <Search size={16} className="absolute left-3 top-3 text-gray-400" />
             <input
               type="number"
@@ -259,10 +309,31 @@ export default function EmiCollection({ auth, approved_loans = null }) {
               }}
               className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
+          </div> */}
+
+          <div className="flex gap-3 mt-3">
+            <input
+              type="text"
+              placeholder="Search Collection ID"
+              value={filterCollectionId}
+              onChange={(e) => setFilterCollectionId(e.target.value)}
+              className="border p-2 rounded w-48"
+            />
+
+            <select
+              className="border p-2 rounded"
+              value={orgFilter}
+              onChange={(e) => setOrgFilter(e.target.value)}
+            >
+              <option value="">All Organisations</option>
+              {orgs.map(o => (
+                <option key={o.id} value={o.id}>{o.organisation_name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Organisation select */}
-          <div className="relative flex-1 w-full">
+          {/* <div className="relative flex-1 w-full">
             <Search size={16} className="absolute left-3 top-3 text-gray-400" />
             <select
               value={orgFilter}
@@ -279,10 +350,10 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                 </option>
               ))}
             </select>
-          </div>
+          </div> */}
           
           {/* From Date */}
-          <div className="relative flex-1 w-full">
+          {/* <div className="relative flex-1 w-full">
             <input
               type="date"
               value={fromDate}
@@ -293,7 +364,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
               className="px-3 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm
                         focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
-          </div>
+          </div> */}
 
         {/* To Date */}
         {/* <div className="relative flex-1 w-full">
@@ -314,7 +385,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
         {/* Table (styled like Loan Index) */}
         <div className="bg-white shadow-lg border border-gray-700 overflow-hidden mt-3">
-          <table className="w-full text-sm border border-gray-700 border-collapse table-auto">
+          <table className="w-full text-sm border border-gray-700 border-collapse table-auto d-none">
             <thead className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-blue-600 text-white">
               <tr>
                 <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700 w-12">#</th>
@@ -457,6 +528,113 @@ export default function EmiCollection({ auth, approved_loans = null }) {
               )}
             </tbody>
           </table>
+          <table className="w-full mt-4 border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 border">Collection ID</th>
+                <th className="p-2 border">Organisation</th>
+                <th className="p-2 border">No. of Loans</th>
+                <th className="p-2 border">Total Amount</th>
+                <th className="p-2 border">Date</th>
+                <th className="p-2 border">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+            {loading ? (
+                <tr>
+                  <td colSpan="8" className="p-6 text-center text-gray-600 border border-gray-700">
+                    Loading collections...
+                  </td>
+                </tr>
+              ) : formattedCollections.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="p-6 text-center text-gray-600 border border-gray-700">
+                    No collections found.
+                  </td>
+                </tr>
+              ) : (
+                formattedCollections.map((row) => (
+                  <React.Fragment key={row.collection_id}>
+                  <tr
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => toggleExpand(row.collection_id)}
+                  >
+                      <td className="p-2 border font-bold">{row.collection_id}</td>
+                      <td className="p-2 border">{row.orgName}</td>
+                      <td className="p-2 border">{row.count}</td>
+                      <td className="p-2 border">{currencyPrefix}{row.total_amount.toFixed(2)}</td>
+                      <td className="p-2 border">{row.date}</td>
+                      <td className="p-2 border">
+                          <button
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  openCollectionDetails(row.collection_id);
+                              }}
+                              className="bg-blue-600 text-white px-3 py-1 rounded"
+                          >
+                              View Details
+                          </button>
+                      </td>
+                  </tr>
+                  {expandedRows[row.collection_id] && (
+                    <tr className="bg-gray-50">
+                        <td colSpan="6" className="p-3 border">
+                            <table className="w-full text-sm border">
+                                <thead className="bg-gray-200">
+                                    <tr>
+                                        <th className="p-2 border">Loan ID</th>
+                                        <th className="p-2 border">Customer</th>
+                                        <th className="p-2 border">Organisation</th>
+                                        <th className="p-2 border">Installment No</th>
+                                        <th className="p-2 border">EMI Amount</th>
+                                        <th className="p-2 border">Payment Date</th>
+                                        <th className="p-2 border">Status</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {collections[row.collection_id]?.map((it) => (
+                                        <tr key={it.id} className="hover:bg-gray-100">
+                                            <td className="p-2 border">{it.loan_id}</td>
+                                            <td className="p-2 border">
+                                                {it.loan?.customer?.first_name}{" "}
+                                                {it.loan?.customer?.last_name}
+                                            </td>
+                                            <td className="p-2 border">
+                                                {it.loan?.organisation?.organisation_name}
+                                            </td>
+                                            <td className="p-2 border">{it.installment_no}</td>
+                                            <td className="p-2 border">
+                                                {currencyPrefix}{Number(it.emi_amount).toFixed(2)}
+                                            </td>
+                                            <td className="p-2 border">
+                                                {new Date(it.payment_date).toLocaleDateString()}
+                                            </td>
+                                            <td className="p-2 border">
+                                                <span className={
+                                                    it.status === "Paid"
+                                                        ? "text-green-600 font-semibold"
+                                                        : it.status === "Overdue"
+                                                        ? "text-red-600 font-semibold"
+                                                        : "text-gray-700"
+                                                }>
+                                                    {it.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
+
         </div>
 
         {/* Pagination footer (styled like Loan Index) */}

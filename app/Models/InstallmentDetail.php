@@ -15,6 +15,7 @@ class InstallmentDetail extends Model
 
     protected $fillable = [
         'loan_id',
+        'collection_uid',
         'installment_no',
         'due_date',
         'emi_amount',

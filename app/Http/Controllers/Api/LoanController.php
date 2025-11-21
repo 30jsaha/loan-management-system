@@ -859,6 +859,20 @@ class LoanController extends Controller
             ], 500);
         }
     }
+    public function collectionHistory(Request $request)
+    {
+        $collections = InstallmentDetail::with([
+            'loan',
+            'loan.customer',
+            'loan.organisation'
+        ])
+        ->orderBy('collection_uid', 'desc')
+        ->get()
+        ->groupBy('collection_uid');
 
+        return response()->json([
+            'collections' => $collections
+        ]);
+    }  
 
 }
