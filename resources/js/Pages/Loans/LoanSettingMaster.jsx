@@ -88,11 +88,19 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     try {
       if (isEditing && formData.id) {
         await axios.put(`/api/loan-settings-modify/${formData.id}`, formData);
-        setLoanSettings((prev) =>
-          prev.map((item) => (item.id === formData.id ? { ...item, ...formData } : item))
+
+        setLoanSettings(prev =>
+          prev.map(item =>
+            item.id === formData.id
+              ? { ...item, ...formData, ss_id_list: [...formData.ss_id_list] }
+              : item
+          )
         );
+
+
         toast.success("Loan setting updated successfully!");
-      } else {
+      }
+      else {
         const res = await axios.post("/api/loan-settings-create", formData);
         // If API returns created object under res.data.data
         const created = res.data?.data ?? res.data;
@@ -107,10 +115,41 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
   };
 
   const handleEdit = (loan) => {
-    setFormData(loan);
-    setIsEditing(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  // 1. Normalize slab list from either slab_id or ss_id_list
+  const slabIds = Array.isArray(loan.ss_id_list)
+    ? loan.ss_id_list                // multiple slabs
+    : loan.slab_id
+    ? [loan.slab_id]                 // single slab
+    : [];
+
+  // 2. Convert ID list to MultiSelect object format
+  const preselect = slabIds
+    .map((sid) => {
+      const slab = salarySlabList.find((s) => s.id === sid);
+      return slab
+        ? {
+            name: `${slab.slab_desc} - [${slab.starting_salary} - ${slab.ending_salary}]`,
+            code: slab.id,
+          }
+        : null;
+    })
+    .filter(Boolean);
+
+  // 3. Set MultiSelect selected values
+  setSelectedSslabs(preselect);
+
+  // 4. Fill form data for update
+  setFormData({
+    ...loan,
+    ss_id_list: slabIds,
+  });
+
+  setIsEditing(true);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+
+
 
   const handleDelete = async (id, desc) => {
     if (!confirm(`Are you sure you want to delete "${desc}"?`)) return;
@@ -141,6 +180,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       end_date: "",
       ss_id_list:[]
     });
+    setSelectedSslabs([]);
     setIsEditing(false);
   };
 
@@ -407,6 +447,10 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     </div>
                   </th>
                 ))}
+                <th className="px-2 py-3 text-center border border-gray-700">
+                    Income Slab
+                </th>
+
                 <th className="px-2 py-3 font-semibold text-xs uppercase tracking-wide text-center border border-gray-700">
                   Actions
                 </th>
@@ -445,6 +489,8 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     <td className="px-2 py-2 text-center border border-gray-700">
                       {loan.interest_rate}
                     </td>
+
+                 
                     <td className="px-2 py-2 text-center border border-gray-700">
                       {loan.amt_multiplier}
                     </td>
@@ -460,6 +506,32 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     <td className="px-2 py-2 text-center border border-gray-700">
                       {loan.end_date}
                     </td>
+                    <td className="px-2 py-2 text-center border border-gray-700">
+                      <div className="flex flex-wrap gap-1 justify-center">
+
+                        {/* Show MULTIPLE SLABS - correctly */}
+                        {Array.isArray(loan.ss_id_list) && loan.ss_id_list.length > 0 ? (
+                          loan.ss_id_list.map((sid) => {
+                            const slab = salarySlabList.find((s) => s.id === sid);
+                            return (
+                              <span
+                                key={sid}
+                                className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded"
+                              >
+                                {slab?.slab_desc || "Slab"}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-gray-400 text-xs">No Slabs</span>
+                        )}
+
+                      </div>
+                    </td>
+
+
+
+
                     <td className="px-2 py-2 flex justify-center gap-2 border border-gray-700">
                       <button
                         onClick={() => handleEdit(loan)}
