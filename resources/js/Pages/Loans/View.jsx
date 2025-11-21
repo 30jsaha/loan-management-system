@@ -539,24 +539,51 @@ export default function View({ auth, loanId }) {
 
     const handleHigherApproval = async () => {
         try {
-            await axios.post(`/api/loans/${loanId}/higher-approve`);
-            setMessage("✅ Loan approved successfully!");
+            setLoading(true);
+
+            // 1️⃣ Approve loan
+            await axios.post(`/api/loans/higher-approve/${loanId}`);
+
             Swal.fire({
-                title: "Success !",
+                title: "Success!",
                 text: "Loan approved successfully!",
                 icon: "success"
             });
-            router.visit(route("loans"));
+
+            // 2️⃣ Fetch updated loan
+            const res = await axios.get(`/api/loans/${loanId}`);
+            const updatedLoan = res.data;
+
+            setLoan(updatedLoan);
+
+            // 3️⃣ Update loan form data safely
+            setLoanFormData({
+                id: updatedLoan.id,
+                loan_type: updatedLoan.loan_type,
+                purpose: updatedLoan.purpose,
+                other_purpose_text: updatedLoan.other_purpose_text,
+                loan_amount_applied: updatedLoan.loan_amount_applied,
+                tenure_fortnight: updatedLoan.tenure_fortnight,
+                interest_rate: updatedLoan.interest_rate,
+                processing_fee: updatedLoan.processing_fee,
+                bank_name: updatedLoan.bank_name,
+                bank_branch: updatedLoan.bank_branch,
+                bank_account_no: updatedLoan.bank_account_no,
+                remarks: updatedLoan.remarks,
+            });
+
         } catch (error) {
             console.error(error);
-            setMessage("❌ Failed to approve the loan");
             Swal.fire({
-                title: "Error !",
-                text: "Failed to approve the loan",
+                title: "Error!",
+                text: "Failed to approve the loan.",
                 icon: "error"
             });
+        } finally {
+            setLoading(false);
         }
     };
+
 
     if (loading) {
         return (
@@ -928,17 +955,19 @@ export default function View({ auth, loanId }) {
                                         </Row>
                                     </form>
                                 ) : (
-                                    <Alert variant="warning" className="d-flex align-items-center justify-content-between">
-                                        <div>
-                                            <strong>Need Approval ⚠️</strong>
-                                            <div className="small">This loan needs additional approval as the applied amount is greater than the elegible amount</div>
-                                        </div>
-                                        <div>
-                                            <Button variant="outline-success" size="sm" onClick={handleHigherApproval}>
-                                                Approve Loan
-                                            </Button>
-                                        </div>
-                                    </Alert>
+                                    ((loan?.is_elegible == 0) && (loan?.higher_approved_by != null) && (auth.user.is_admin == 1)) && (
+                                        <Alert variant="warning" className="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <strong>Need Approval ⚠️</strong>
+                                                <div className="small">This loan needs additional approval as the applied amount is greater than the elegible amount</div>
+                                            </div>
+                                            <div>
+                                                <Button variant="outline-success" size="sm" onClick={handleHigherApproval}>
+                                                    Approve Loan
+                                                </Button>
+                                            </div>
+                                        </Alert>
+                                    )
                                 )}
                                 <Col md={12}>
                                     <fieldset className="fldset mb-4">
@@ -1186,7 +1215,7 @@ export default function View({ auth, loanId }) {
                                             <>
                                                 <div className="p-3 border rounded bg-gray-50">
                                                     <p className="text-gray-600 mb-3">No documents uploaded yet.</p>
-                                                    {(auth.user.is_admin != 1) && (
+                                                    {(auth.user.is_admin != 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
                                                         <LoanDocumentsUpload
                                                             loanFormData={loan}
                                                             onUploadComplete={async () => {
@@ -1270,116 +1299,118 @@ export default function View({ auth, loanId }) {
                                         </Modal>
                                     </fieldset>
                                 </Col>
+                                {(loan?.is_elegible == 1) && (loan?.is_loan_re_updated_after_higher_approval == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
+                                    <>
+                                    <fieldset className="fldset mb-5">
+                                        <legend className="font-semibold mb-2">📑 Acknowledgement</legend>
 
-                                {/* 📄 Form (Always Visible) */}
-                                <fieldset className="fldset mb-5">
-                                    <legend className="font-semibold mb-2">📑 Acknowledgement</legend>
+                                        <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
+                                            <thead className="bg-indigo-600 text-white">
+                                                <tr>
+                                                    <th className="border p-2 text-center">Document Type</th>
+                                                    <th className="border p-2 text-center">File Name</th>
+                                                    <th className="border p-2 text-center">View</th>
+                                                    <th className="border p-2 text-center">Download</th>
+                                                    <th className="border p-2 text-center">Print</th>
+                                                </tr>
+                                            </thead>
 
-                                    <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
-                                        <thead className="bg-indigo-600 text-white">
-                                            <tr>
-                                                <th className="border p-2 text-center">Document Type</th>
-                                                <th className="border p-2 text-center">File Name</th>
-                                                <th className="border p-2 text-center">View</th>
-                                                <th className="border p-2 text-center">Download</th>
-                                                <th className="border p-2 text-center">Print</th>
-                                            </tr>
-                                        </thead>
+                                            <tbody>
+                                                <tr className="hover:bg-gray-50 transition">
+                                                    <td className="border p-2 text-center">Application Form</td>
+                                                    <td className="border p-2 text-center">Application Form</td>
 
-                                        <tbody>
-                                            <tr className="hover:bg-gray-50 transition">
-                                                <td className="border p-2 text-center">Application Form</td>
-                                                <td className="border p-2 text-center">Application Form</td>
-
-                                                {/* View Button */}
-                                                <td className="border p-2 text-center">
-                                                    <button
-                                                        onClick={() => setShowModal1(true)}
-                                                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                    >
-                                                        <Eye size={14} /> View
-                                                    </button>
-                                                </td>
-
-                                                {/* Download Button */}
-                                                <td className="border p-2 text-center">
-                                                    <a
-                                                        href={pdfPath}
-                                                        download
-                                                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                    >
-                                                        <Download size={14} /> Download
-                                                    </a>
-                                                </td>
-
-                                                {/* 🖨️ Print Button */}
-                                                <td className="border p-2 text-center">
-                                                    <button
-                                                        onClick={() => {
-                                                            const printWindow = window.open(pdfPath, "_blank");
-                                                            if (printWindow) {
-                                                                printWindow.onload = () => {
-                                                                    printWindow.focus();
-                                                                    printWindow.print();
-                                                                };
-                                                            }
-                                                        }}
-                                                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            strokeWidth="1.5"
-                                                            stroke="currentColor"
-                                                            className="w-4 h-4"
+                                                    {/* View Button */}
+                                                    <td className="border p-2 text-center">
+                                                        <button
+                                                            onClick={() => setShowModal1(true)}
+                                                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
                                                         >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6"
-                                                            />
-                                                        </svg>
-                                                        Print
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                                            <Eye size={14} /> View
+                                                        </button>
+                                                    </td>
+
+                                                    {/* Download Button */}
+                                                    <td className="border p-2 text-center">
+                                                        <a
+                                                            href={pdfPath}
+                                                            download
+                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                        >
+                                                            <Download size={14} /> Download
+                                                        </a>
+                                                    </td>
+
+                                                    {/* 🖨️ Print Button */}
+                                                    <td className="border p-2 text-center">
+                                                        <button
+                                                            onClick={() => {
+                                                                const printWindow = window.open(pdfPath, "_blank");
+                                                                if (printWindow) {
+                                                                    printWindow.onload = () => {
+                                                                        printWindow.focus();
+                                                                        printWindow.print();
+                                                                    };
+                                                                }
+                                                            }}
+                                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                        >
+                                                            <svg
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                                fill="none"
+                                                                viewBox="0 0 24 24"
+                                                                strokeWidth="1.5"
+                                                                stroke="currentColor"
+                                                                className="w-4 h-4"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6"
+                                                                />
+                                                            </svg>
+                                                            Print
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
 
 
-                                    {/* PDF Modal */}
-                                    <Modal
-                                        show={showModal1}
-                                        onHide={() => setShowModal1(false)}
-                                        size="xl"
-                                        centered
-                                        dialogClassName="max-w-[900px]"
-                                    >
-                                        <Modal.Header closeButton>
-                                            <Modal.Title>📄 Application Form Preview</Modal.Title>
-                                        </Modal.Header>
+                                        {/* PDF Modal */}
+                                        <Modal
+                                            show={showModal1}
+                                            onHide={() => setShowModal1(false)}
+                                            size="xl"
+                                            centered
+                                            dialogClassName="max-w-[900px]"
+                                        >
+                                            <Modal.Header closeButton>
+                                                <Modal.Title>📄 Application Form Preview</Modal.Title>
+                                            </Modal.Header>
 
-                                        <Modal.Body>
-                                            <iframe
-                                                src={`${pdfPath}#toolbar=1`}
-                                                width="100%"
-                                                height="600"
-                                                title="Loan Application PDF"
-                                                className="rounded border shadow-sm"
-                                            />
-                                        </Modal.Body>
+                                            <Modal.Body>
+                                                <iframe
+                                                    src={`${pdfPath}#toolbar=1`}
+                                                    width="100%"
+                                                    height="600"
+                                                    title="Loan Application PDF"
+                                                    className="rounded border shadow-sm"
+                                                />
+                                            </Modal.Body>
 
-                                        <Modal.Footer>
-                                            <Button variant="secondary" onClick={() => setShowModal1(false)}>
-                                                Close
-                                            </Button>
-                                        </Modal.Footer>
-                                    </Modal>
-                                </fieldset>
+                                            <Modal.Footer>
+                                                <Button variant="secondary" onClick={() => setShowModal1(false)}>
+                                                    Close
+                                                </Button>
+                                            </Modal.Footer>
+                                        </Modal>
+                                    </fieldset>
+                                    </>
+                                )}
 
                                 {/* --- Video Consent Upload / Preview --- */}
-                                {auth.user.is_admin !== 1 && (
+                                {(loan?.is_elegible == 1) && (loan?.is_loan_re_updated_after_higher_approval == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
                                     <React.Fragment>
                                         <Row className="g-4 align-items-start mb-5">
                                             <Col md={6}>
