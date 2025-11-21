@@ -446,7 +446,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
         <div className="container">
           <div className="home-wrapper d-flex flex-wrap align-items-start">
             <div className="home-left me-4" style={{flex: '1 1 420px'}}>
-              <h1 className="mt-2">Personal Loans for Life’s <br/> Everyday Needs.</h1>
+              <h1 className="mt-2">Personal Loans for Life’s<br/>Everyday Needs.</h1>
               <p>
                 Enjoy flexible, transparent, and quick loan options that help you manage expenses,<br/>
                 handle emergencies or make your plans a reality.
@@ -780,7 +780,6 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
           >
             −
           </button>
-
           <div className="slider-wrapper position-relative w-75">
             <input
               type="range"
@@ -875,15 +874,11 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
 
 
-
-
-
-
         {/* Quick Loan Bar */}
         <div className="quick-loan-section mt-5 d-flex align-items-center">
           <div className="quick-image me-3">
-          <img src={heroImage1} alt="Agro hero footer" style={{maxWidth: '700px'}}/>
-            <img src={heroImage} alt="Agro hero footer" style={{maxWidth: '700px'}}/>
+          {/* <img src={heroImage1} alt="Agro hero footer" style={{maxWidth: '700px'}}/> */}
+            <img src={heroImage} alt="Agro hero footer" style={{maxWidth: '1200px'}}/>
             
           </div>
           <div className="quick-items d-flex gap-3">
