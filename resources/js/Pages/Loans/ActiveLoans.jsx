@@ -802,14 +802,14 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                   <div className="border rounded-md overflow-hidden mt-2">
 
                                     {/* FIXED HEADER */}
-                                    <table className="w-full table-fixed">
+                                    <table className="w-full table-fixed border border-gray-500">
                                       <thead>
-                                        <tr className="bg-emerald-400 text-white text-sm">
+                                        <tr className="bg-emerald-500 text-white text-sm border-b border-gray-500">
 
-                                          <th className="w-[80px] p-2 text-left border-r">EMI No.</th>
-                                          <th className="w-[130px] p-2 text-left border-r">Due Date</th>
-                                          <th className="w-[150px] p-2 text-left border-r">Payment Date</th>
-                                          <th className="w-[120px] p-2 text-left border-r">Status</th>
+                                          <th className="w-[80px] p-2 text-left border-r border-gray-500">EMI No.</th>
+                                          <th className="w-[130px] p-2 text-left border-r border-gray-500">Due Date</th>
+                                          <th className="w-[150px] p-2 text-left border-r border-gray-500">Payment Date</th>
+                                          <th className="w-[120px] p-2 text-left border-r border-gray-500">Status</th>
                                           <th className="w-[120px] p-2 text-left">Amount</th>
 
                                         </tr>
@@ -817,27 +817,36 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                     </table>
 
                                     {/* SCROLLABLE BODY */}
-                                    <div className="max-h-[150px] overflow-y-auto">
+                                    <div className="max-h-[150px] overflow-y-auto border border-gray-500 border-t-0">
                                       <table className="w-full table-fixed">
                                         <tbody>
 
                                           {items.map((it, i) => (
-                                            <tr key={i} className="border-b">
+                                            <tr
+                                              key={i}
+                                              className="border-b border-gray-500 hover:bg-gray-50 text-sm"
+                                            >
 
-                                              <td className="w-[80px] p-2">{it.installment_no}</td>
+                                              <td className="w-[80px] p-2 border-r border-gray-500">
+                                                {it.installment_no}
+                                              </td>
 
-                                              <td className="w-[130px] p-2">
+                                              <td className="w-[130px] p-2 border-r border-gray-500">
                                                 {it.due_date}
                                               </td>
 
-                                              <td className="w-[150px] p-2">
+                                              <td className="w-[150px] p-2 border-r border-gray-500">
                                                 {it.payment_date
                                                   ? new Date(it.payment_date).toLocaleDateString("en-GB")
                                                   : "—"}
                                               </td>
 
-                                              <td className="w-[120px] p-2">
-                                                <span className={it.status === "Paid" ? "text-green-600" : "text-red-500"}>
+                                              <td className="w-[120px] p-2 border-r border-gray-500">
+                                                <span
+                                                  className={
+                                                    it.status === "Paid" ? "text-green-600" : "text-red-500"
+                                                  }
+                                                >
                                                   {it.status}
                                                 </span>
                                               </td>
@@ -852,7 +861,6 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                         </tbody>
                                       </table>
                                     </div>
-
                                   </div>
 
                               </div>
