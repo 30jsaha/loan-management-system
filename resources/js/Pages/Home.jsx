@@ -875,7 +875,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
 
         {/* Quick Loan Bar */}
-        <div className="quick-loan-section mt-5 d-flex align-items-center">
+        <div className="quick-loan-section mt-5 d-flex align-items-center"> 
           <div className="quick-image me-3">
           {/* <img src={heroImage1} alt="Agro hero footer" style={{maxWidth: '700px'}}/> */}
             <img src={heroImage} alt="Agro hero footer" style={{maxWidth: '1200px'}}/>
