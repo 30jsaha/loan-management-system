@@ -734,6 +734,15 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                         <p className="text-sm leading-5">
                                           <b>{customer.first_name} {customer.last_name}</b> — {customer.email || "-"}
                                         </p>
+                                        <p className="text-sm">
+                                          <b>Customer ID:</b> {customer.id}
+                                        </p>
+                                        <p className="text-sm">
+                                          <b>Phone:</b> {customer.phone || "-"}
+                                        </p>
+                                        <p className="text-sm">
+                                          <b>Employee No:</b> {customer.employee_no || "-"}
+                                        </p>
                                       </div>
 
                                       {/* Organisation */}
@@ -741,7 +750,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                         <h4 className="font-semibold text-gray-700 text-sm mb-1">Organisation</h4>
                                         <p className="text-sm leading-5">
                                           <b>{org.organisation_name || "-"}</b>
-                                          {org.sector ? ` — ${org.sector}` : ""}
+                                          {org.sector_type ? ` — ${org.sector_type}` : ""}
                                         </p>
                                       </div>
 
@@ -754,13 +763,17 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                       {/* 3-column compact grid */}
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 gap-x-4 text-sm leading-5">
 
-                                        <p><b>Loan Type:</b> {loan.loan_settings?.loan_desc || "-"}</p>
-                                        <p><b>Purpose:</b> {loan.purpose || "-"}</p>
-                                        <p><b>Loan Amt:</b> {currencyPrefix}{loan.loan_amount_applied}</p>
+                                  
+                                        {/* LARGE LOAN AMOUNT */}
+                                        <p className="md:col-span-2 text-lg  ">
+                                          <b>Loan Amount: </b>{currencyPrefix}{Number(loan.loan_amount_applied).toLocaleString()}
+                                        </p>
 
                                         <p><b>Tenure:</b> {loan.tenure_fortnight} FN</p>
+
                                         <p><b>Interest:</b> {loan.interest_rate || "-"}</p>
-                                        <p><b>Proc. Fee:</b> {currencyPrefix}{loan.processing_fee || "-"}</p>
+
+                                        {/* REMOVE Purpose + Processing Fee */}
 
                                         <p>
                                           <b>Last EMI Paid:</b> {getLastEmiPaid({
@@ -772,6 +785,11 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                           })}
                                         </p>
 
+                                        <p>
+                                          <b>Next Due:</b> 
+                                          {loan.next_due_date ? new Date(loan.next_due_date).toLocaleDateString("en-GB") : "—"}
+                                        </p>
+
                                         <p><b>Total Repay:</b> {currencyPrefix}{loan.total_repay_amt || "-"}</p>
 
                                       </div>
@@ -780,10 +798,73 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                   </div>
                                 </div>
 
+                                {/* EMI TABLE =============================================================== */}
+                                  <div className="border rounded-md overflow-hidden mt-2">
+
+                                    {/* FIXED HEADER */}
+                                    <table className="w-full table-fixed border border-gray-500">
+                                      <thead>
+                                        <tr className="bg-emerald-500 text-white text-sm border-b border-gray-500">
+
+                                          <th className="w-[80px] p-2 text-left border-r border-gray-500">EMI No.</th>
+                                          <th className="w-[130px] p-2 text-left border-r border-gray-500">Due Date</th>
+                                          <th className="w-[150px] p-2 text-left border-r border-gray-500">Payment Date</th>
+                                          <th className="w-[120px] p-2 text-left border-r border-gray-500">Status</th>
+                                          <th className="w-[120px] p-2 text-left">Amount</th>
+
+                                        </tr>
+                                      </thead>
+                                    </table>
+
+                                    {/* SCROLLABLE BODY */}
+                                    <div className="max-h-[150px] overflow-y-auto border border-gray-500 border-t-0">
+                                      <table className="w-full table-fixed">
+                                        <tbody>
+
+                                          {items.map((it, i) => (
+                                            <tr
+                                              key={i}
+                                              className="border-b border-gray-500 hover:bg-gray-50 text-sm"
+                                            >
+
+                                              <td className="w-[80px] p-2 border-r border-gray-500">
+                                                {it.installment_no}
+                                              </td>
+
+                                              <td className="w-[130px] p-2 border-r border-gray-500">
+                                                {it.due_date}
+                                              </td>
+
+                                              <td className="w-[150px] p-2 border-r border-gray-500">
+                                                {it.payment_date
+                                                  ? new Date(it.payment_date).toLocaleDateString("en-GB")
+                                                  : "—"}
+                                              </td>
+
+                                              <td className="w-[120px] p-2 border-r border-gray-500">
+                                                <span
+                                                  className={
+                                                    it.status === "Paid" ? "text-green-600" : "text-red-500"
+                                                  }
+                                                >
+                                                  {it.status}
+                                                </span>
+                                              </td>
+
+                                              <td className="w-[120px] p-2">
+                                                {currencyPrefix} {Number(it.emi_amount).toFixed(2)}
+                                              </td>
+
+                                            </tr>
+                                          ))}
+
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+
                               </div>
                             )}
-
-
 
                           </div>
                         );

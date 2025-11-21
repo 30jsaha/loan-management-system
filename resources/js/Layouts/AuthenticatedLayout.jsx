@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import Logo from '../../images/aa logo.png';
+import Logo from '../../images/logo.png';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';

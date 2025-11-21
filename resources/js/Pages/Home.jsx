@@ -313,7 +313,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
                   className={`navbar-collapse justify-content-center ${isDesktop ? 'show' : isNavOpen ? 'show' : 'collapse'}`}
                 >
                   <ul className="navbar-nav">
-                    <li className="nav-item"><a className="nav-link active" href="#home">Home</a></li>
+                    {/* <li className="nav-item"><a className="nav-link active" href="#home">Home</a></li> */}
                     <li className="nav-item"><a className="nav-link" href="#about">About</a></li>
                     <li className="nav-item"><a className="nav-link" href="#why">Why Us</a></li>
                     <li className="nav-item"><a className="nav-link" href="#testimonials">Reviews</a></li>
@@ -1364,7 +1364,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
   className="footer-copy text-center mt-4 pt-3 border-top small"
   style={{ borderColor: "#1E5631", color: "#E8F5E9" }}
 >
-  Copyright 2025 All Right Reserved By.{" "}
+  Copyright 2025 All Right Reserved.{" "}
   <a
     href="https://www.adzguru.co/"
     target="_blank"
