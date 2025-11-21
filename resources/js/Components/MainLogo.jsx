@@ -1,4 +1,4 @@
-import Logo from '../../images/aa logo.png';
+import Logo from '../../images/logo.png';
 
 export default function MainLogo({width}) {
     return (

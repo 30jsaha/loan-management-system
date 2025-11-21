@@ -457,6 +457,9 @@ class LoanController extends Controller
 
             $loanSetting->update($validator->validated());
 
+            //need to delete the previous ids and update assigned_slabs_under_loan table as well
+
+
             return response()->json([
                 'message' => 'Loan setting updated successfully',
                 'data' => $loanSetting,
