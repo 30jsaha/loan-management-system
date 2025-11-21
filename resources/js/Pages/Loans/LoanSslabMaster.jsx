@@ -40,6 +40,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
     const [sortConfig, setSortConfig] = useState({ key: "loan_desc", direction: "asc" });
     const [selectedOrgs, setSelectedOrgs] = useState(null);
     const [selectedSslabs, setSelectedSslabs] = useState(null);
+    const [salarySearch, setSalarySearch] = useState("");
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -185,13 +186,29 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
     }, [salarySlabs, sortConfig]);
 
     // Filtered data (search + date range)
-    const filteredData = useMemo(() => {
-        return sortedData.filter((item) => {
-            const matchesSearch = item.slab_desc?.toString().toLowerCase().includes((searchTerm || "").toString().toLowerCase());
-            const orgOk = Number(orgFilter || 0) === 0 || Number(item.org_id) === Number(orgFilter);
-            return matchesSearch && orgOk;
-        });
-    }, [sortedData, searchTerm, orgFilter]);
+   const filteredData = useMemo(() => {
+    return sortedData.filter((item) => {
+        const matchesSearch =
+            item.slab_desc?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const orgOk =
+            Number(orgFilter || 0) === 0 || Number(item.org_id) === Number(orgFilter);
+
+        const salaryVal = Number(salarySearch);
+
+        // Correct Salary Range Filter (AND)
+        const matchesSalary =
+            salarySearch === "" ||
+            (
+                salaryVal >= Number(item.starting_salary) &&
+                salaryVal <= Number(item.ending_salary)
+            );
+
+        return matchesSearch && orgOk && matchesSalary;
+    });
+    }, [sortedData, searchTerm, orgFilter, salarySearch]);
+
+
 
     // Pagination
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
@@ -300,8 +317,21 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                             className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0 text-sm"
                         />
                     </div>
-                    {/* Need to implement data list here instead of multiselect, and proper filter function */}
                     
+                    {/* Salary Range Search */}
+                    <div className="flex items-center bg-gray-50 rounded-md px-2.5 py-1.5 w-full md:w-1/3 border border-gray-200">
+                        <input
+                            type="number"
+                            placeholder="Search by salary range"
+                            value={salarySearch}
+                            onChange={(e) => {
+                                setSalarySearch(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0 text-sm"
+                        />
+                    </div>
+
                     <div className="flex flex-col w-full md:w-1/3" style={{display:"none"}}>
                         <label className="text-[11px] font-semibold text-gray-600 mb-0.5">
                             Organisation

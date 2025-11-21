@@ -95,6 +95,8 @@ export default function EmiCollection({ auth, approved_loans = null }) {
   const [eligibilityFilter, setEligibilityFilter] = useState("all"); // all / eligible / not_eligible
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRows, setExpandedRows] = useState({});
+  const [accordionOpen, setAccordionOpen] = useState({});
+
   const itemsPerPage = 8;
 
   // right panel / modal state
@@ -119,6 +121,12 @@ export default function EmiCollection({ auth, approved_loans = null }) {
       [uid]: !prev[uid],
     }));
   };
+ const toggleAccordion = (loanId) => {
+  setAccordionOpen((prev) => ({
+    ...prev,
+    [loanId]: !prev[loanId],
+  }));
+};
 
   useEffect(() => {
     const fetchCollections = async () => {
@@ -269,17 +277,26 @@ export default function EmiCollection({ auth, approved_loans = null }) {
   }, [collections, orgFilter, filterCollectionId]);
 
   // Get Last EMI Paid Date
-  const getLastEmiPaid = (loan) => {
-    if (!loan || !Array.isArray(loan.installments)) return "—";
+ const getLastEmiPaid = (loan) => {
+  if (!loan || !Array.isArray(loan.installments)) return "N/A";
 
-    const paid = loan.installments.filter((i) => i.status?.toLowerCase() === "paid");
+  const paidInstallments = loan.installments.filter(
+    (i) => i.status?.toLowerCase() === "paid" && i.payment_date
+  );
 
-    if (paid.length === 0) return "—";
+  if (paidInstallments.length === 0) return "N/A";
 
-    const latest = paid.map((i) => new Date(i.payment_date)).reduce((a, b) => (a > b ? a : b));
+  const latestDate = paidInstallments
+    .map((i) => new Date(i.payment_date))
+    .reduce((a, b) => (a > b ? a : b));
 
-    return latest.toLocaleDateString("en-GB");
-  };
+  return latestDate.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 
   // Next Due Date
   const getNextDueDate = (loan) => {
@@ -484,11 +501,11 @@ export default function EmiCollection({ auth, approved_loans = null }) {
           </table>
 
           {/* Collections table */}
-          <table className="w-full mt-4 border">
+          <table className="w-full mt-0 border">
             <thead className="bg-gray-100">
               <tr>
                 <th className="p-2 border">Collection ID</th>
-                <th className="p-2 border">Organisation</th>
+                {/* <th className="p-2 border">Organisation</th> */}
                 <th className="p-2 border">No. of Loans</th>
                 <th className="p-2 border">Total Amount</th>
                 <th className="p-2 border">Date</th>
@@ -513,8 +530,8 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                 formattedCollections.map((row) => (
                   <React.Fragment key={row.collection_id}>
                     <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => toggleExpand(row.collection_id)}>
-                      <td className="p-2 border font-bold">{row.collection_id}</td>
-                      <td className="p-2 border">{row.orgName}</td>
+                      <td className="p-2 border font-bold">{row.collection_id || '#'}</td>
+                      {/* <td className="p-2 border">{row.orgName}</td> */}
                       <td className="p-2 border">{row.count}</td>
                       <td className="p-2 border">
                         {currencyPrefix}
@@ -527,7 +544,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                             e.stopPropagation();
                             openCollectionDetails(row.collection_id);
                           }}
-                          className="bg-blue-600 text-white px-3 py-1 rounded"
+                          className="bg-blue-500 text-white px-3 py-1 rounded"
                         >
                           View Details
                         </button>
@@ -538,20 +555,41 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                       <tr className="bg-gray-100">
                         <td colSpan="6" className="px-3 py-3 border text-sm">
                           <table className="w-full text-sm border">
-                            <thead className="bg-gray-100">
-                              <tr className="h-8">
-                                <th className="px-2 py-1 border">Loan ID</th>
-                                <th className="px-2 py-1 border">Customer</th>
-                                <th className="px-2 py-1 border">Organisation</th>
-                                <th className="px-2 py-1 border">Installment No</th>
-                                <th className="px-2 py-1 border">EMI Amount</th>
-                                <th className="px-2 py-1 border">Payment Date</th>
-                                <th className="px-2 py-1 border">Status</th>
-                                <th className="px-2 py-1 border">Last EMI Paid</th>
-                                <th className="px-2 py-1 border">Next Due Date</th>
-                                <th className="px-2 py-1 border">Total Repayment Amt</th>
-                              </tr>
-                            </thead>
+                            <thead>
+                            <tr className="bg-[#E8F0FE]">
+                              <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  ">
+                                Loan ID
+                              </th>
+                              <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  border border-[#D2E3FC]">
+                                Customer
+                              </th>
+                              <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  border border-[#D2E3FC]">
+                                Organisation
+                              </th>
+                              <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  border border-[#D2E3FC]">
+                                Installment No
+                              </th>
+                              <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  border border-[#D2E3FC]">
+                                EMI Amount
+                              </th>
+                              {/* <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  border border-[#D2E3FC]">
+                                Payment Date
+                              </th> */}
+                              <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  border border-[#D2E3FC]">
+                                Status
+                              </th>
+                              <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  border border-[#D2E3FC]">
+                                Last EMI Paid
+                              </th>
+                              <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  border border-[#D2E3FC]">
+                                Next Due Date
+                              </th>
+                              <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  border border-[#D2E3FC]">
+                                Total Repayment Amt
+                              </th>
+                            </tr>
+                          </thead>
+
 
                             <tbody>
                               {collections[row.collection_id]?.map((it) => (
@@ -566,7 +604,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                     {currencyPrefix}
                                     {Number(it.emi_amount).toFixed(2)}
                                   </td>
-                                  <td className="p-2 border">{it.payment_date ? new Date(it.payment_date).toLocaleDateString() : "—"}</td>
+                                  {/* <td className="p-2 border">{it.payment_date ? new Date(it.payment_date).toLocaleDateString() : "—"}</td> */}
                                   <td className="p-2 border">
                                     <span
                                       className={
@@ -577,7 +615,18 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                     </span>
                                   </td>
 
-                                  <td className="p-2 border">{getLastEmiPaid(it.loan)}</td>
+                                  <td className="p-2 border">
+                                    {getLastEmiPaid({
+                                      ...it.loan,
+                                      installments: collections[row.collection_id]
+                                        .filter(x => x.loan_id === it.loan_id)   // all installments for this loan
+                                        .map(x => ({
+                                          status: x.status,
+                                          payment_date: x.payment_date
+                                        }))
+                                    })}
+                                  </td>
+
                                   <td className="p-2 border">{getNextDueDate(it.loan)}</td>
                                   <td className="p-2 border">
                                     {currencyPrefix}
@@ -624,126 +673,135 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         {/* Side Drawer */}
         <SideDrawer open={sideOpen} onClose={() => setSideOpen(false)}>
           {selectedLoan ? (
-            (() => {
-              const first = selectedLoan[0];
-              const loan = first.loan || first; // sometimes normalized object
-              const org = loan.organisation || {};
-              const cust = loan.customer || {};
+              (() => {
+                // Group EMIs by loan_id
+                const loanGroups = selectedLoan.reduce((acc, item) => {
+                  const key = item.loan_id;
+                  if (!acc[key]) acc[key] = [];
+                  acc[key].push(item);
+                  return acc;
+                }, {});
 
-              return (
-                <div className="space-y-6">
-                  {/* Header */}
-                  <div className="bg-green-600 text-white p-4 rounded">
-                    <h2 className="text-xl font-bold">{org.organisation_name || loan.company?.company_name || "Organisation"}</h2>
-                    <p className="text-sm mt-1">{org.address || "-"}</p>
+                const uid = selectedLoan[0]?.collection_uid || "—";
+
+                return (
+                  <div className="space-y-6">
+
+                    {/* Header */}
+                    <div className="bg-blue-600 text-white p-2 rounded shadow-sm">
+                      <h2 className="text-xl font-bold">{uid}</h2>
+                      
+                    </div>
+
+                    {/* Accordion list */}
+                    <div className="space-y-3">
+                      {Object.keys(loanGroups).map((loanId) => {
+                        const items = loanGroups[loanId];
+                        const loan = items[0]?.loan || {};
+                        const customer = loan.customer || {};
+                        const org = loan.organisation || {};
+
+                        return (
+                          <div key={loanId} className="border rounded-md shadow-sm bg-white overflow-hidden">
+
+                            {/* Accordion Header */}
+                            <button
+                              onClick={() => toggleAccordion(loanId)}
+                              className="w-full flex justify-between items-center p-3 bg-gray-100 hover:bg-gray-200"
+                            >
+                              <span className="font-medium">
+                                Loan ID {loanId} — {org.organisation_name || "Organisation"}
+                              </span>
+                              <span>{accordionOpen[loanId] ? "▲" : "▼"}</span>
+                            </button>
+
+                            {/* Accordion Body */}
+                            {accordionOpen[loanId] && (
+                              <div className="p-3">
+
+                                {/* CARD */}
+                                <div className="bg-white shadow border rounded-md p-4">
+
+                                  {/* GRID: 2 columns */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                    {/* LEFT COLUMN ================================================= */}
+                                    <div className="space-y-3">
+
+                                      {/* Customer */}
+                                      <div>
+                                        <h4 className="font-semibold text-gray-700 text-sm mb-1">Customer</h4>
+                                        <p className="text-sm leading-5">
+                                          <b>{customer.first_name} {customer.last_name}</b> — {customer.email || "-"}
+                                        </p>
+                                      </div>
+
+                                      {/* Organisation */}
+                                      <div>
+                                        <h4 className="font-semibold text-gray-700 text-sm mb-1">Organisation</h4>
+                                        <p className="text-sm leading-5">
+                                          <b>{org.organisation_name || "-"}</b>
+                                          {org.sector ? ` — ${org.sector}` : ""}
+                                        </p>
+                                      </div>
+
+                                    </div>
+
+                                    {/* RIGHT COLUMN ================================================= */}
+                                    <div>
+                                      <h4 className="font-semibold text-gray-700 text-sm mb-2">Loan Details</h4>
+
+                                      {/* 3-column compact grid */}
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 gap-x-4 text-sm leading-5">
+
+                                        <p><b>Loan Type:</b> {loan.loan_settings?.loan_desc || "-"}</p>
+                                        <p><b>Purpose:</b> {loan.purpose || "-"}</p>
+                                        <p><b>Loan Amt:</b> {currencyPrefix}{loan.loan_amount_applied}</p>
+
+                                        <p><b>Tenure:</b> {loan.tenure_fortnight} FN</p>
+                                        <p><b>Interest:</b> {loan.interest_rate || "-"}</p>
+                                        <p><b>Proc. Fee:</b> {currencyPrefix}{loan.processing_fee || "-"}</p>
+
+                                        <p>
+                                          <b>Last EMI Paid:</b> {getLastEmiPaid({
+                                            ...loan,
+                                            installments: items.map(it => ({
+                                              status: it.status,
+                                              payment_date: it.payment_date
+                                            }))
+                                          })}
+                                        </p>
+
+                                        <p><b>Total Repay:</b> {currencyPrefix}{loan.total_repay_amt || "-"}</p>
+
+                                      </div>
+                                    </div>
+
+                                  </div>
+                                </div>
+
+                              </div>
+                            )}
+
+
+
+                          </div>
+                        );
+                      })}
+                    </div>
+
+
+                    <button onClick={() => setSideOpen(false)} className="w-full bg-gray-800 text-white py-2 rounded">
+                      Close
+                    </button>
+
                   </div>
+                );
+              })()
+            ) : (
+              <p>No data found.</p>
+            )}
 
-                  {/* Collection / EMI info (showing first EMI row info) */}
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="text-sm">
-                      <strong>Collection UID:</strong> {first.collection_uid || "—"}
-                    </div>
-                    <div className="text-sm">
-                      <strong>Loan ID:</strong> {first.loan_id || loan.id || "—"}
-                    </div>
-                    <div className="text-sm">
-                      <strong>Installment No:</strong> {first.installment_no ?? "—"}
-                    </div>
-                    <div className="text-sm">
-                      <strong>EMI Amount:</strong> {currencyPrefix} {Number(first.emi_amount || 0).toFixed(2)}
-                    </div>
-                    <div className="text-sm">
-                      <strong>Payment Date:</strong> {first.payment_date ? new Date(first.payment_date).toLocaleDateString() : "—"}
-                    </div>
-                    <div className="text-sm">
-                      <strong>Status:</strong> <span className={first.status === "Paid" ? "text-green-600 font-semibold" : "text-gray-700"}>{first.status || "—"}</span>
-                    </div>
-                  </div>
-
-                  {/* Loan Info */}
-                  <div className="border rounded p-3 bg-gray-50">
-                    <h4 className="font-semibold mb-2">Loan Info</h4>
-                    <p><b>Type:</b> {loan.loan_settings?.loan_desc || "-"}</p>
-                    <p><b>Purpose:</b> {loan.purpose || "-"}</p>
-                    <p><b>Amount:</b> {currencyPrefix}{loan.loan_amount_applied ?? "-"}</p>
-                    <p><b>EMI:</b> {currencyPrefix}{loan.emi_amount ?? "-"}</p>
-                    <p><b>Tenure:</b> {loan.tenure_fortnight ?? "-"} FN</p>
-                    <p><b>Total Repayment:</b> {currencyPrefix}{loan.total_repay_amt ?? "-"}</p>
-                  </div>
-
-                  {/* Customer */}
-                  <div className="border rounded p-3 bg-gray-50">
-                    <h4 className="font-semibold mb-2">Customer</h4>
-                    <p><b>Name:</b> {cust.first_name || "-"} {cust.last_name || "-"}</p>
-                    <p><b>Email:</b> {cust.email || "-"}</p>
-                    <p><b>Phone:</b> {cust.phone || "-"}</p>
-                    <p><b>Employee No:</b> {cust.employee_no || "-"}</p>
-                  </div>
-
-                  {/* Organisation */}
-                  <div className="border rounded p-3 bg-gray-50">
-                    <h4 className="font-semibold mb-2">Organisation</h4>
-                    <p><b>Name:</b> {org.organisation_name || "-"}</p>
-                    <p><b>Contact:</b> {org.contact_no || "-"}</p>
-                    <p><b>Email:</b> {org.contact_email || org.email || "-"}</p>
-                    <p><b>Address:</b> {org.address || "-"}</p>
-                  </div>
-
-                  {/* Documents for the loan (use loan.documents if present) */}
-                  <div>
-                    <h4 className="font-semibold mb-2">Documents</h4>
-                    <div className="border rounded-lg overflow-hidden shadow-sm">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-100 border-b">
-                          <tr>
-                            <th className="p-2 font-medium text-left border">Document Type</th>
-                            <th className="p-2 font-medium text-left border">File Name</th>
-                            <th className="p-2 font-medium text-center border">View</th>
-                            <th className="p-2 font-medium text-center border">Download</th>
-                          </tr>
-                        </thead>
-
-                        <tbody className="divide-y">
-                          {Array.isArray(loan.documents) && loan.documents.length > 0 ? (
-                            loan.documents.map((doc) => (
-                              <tr key={doc.id} className="hover:bg-gray-50 transition">
-                                <td className="p-2 border text-xs">{doc.doc_type}</td>
-                                <td className="p-2 border text-xs break-all">{doc.file_name}</td>
-
-                                {/* View Button */}
-                                <td className="p-2 border text-center">
-                                  <button onClick={() => openDocument(doc)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs flex items-center gap-1 mx-auto">
-                                    <Eye size={12} /> View
-                                  </button>
-                                </td>
-
-                                {/* Download Button */}
-                                <td className="p-2 border text-center">
-                                  <a href={doc.file_path?.startsWith("/") ? doc.file_path : `/storage/${doc.file_path}`} target="_blank" rel="noopener noreferrer" download className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-xs inline-flex items-center gap-1">
-                                    Download
-                                  </a>
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan="4" className="p-4 text-center text-gray-500">No documents uploaded for this loan.</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  <button onClick={() => setSideOpen(false)} className="w-full bg-gray-800 text-white py-2 rounded mt-3">
-                    Close
-                  </button>
-                </div>
-              );
-            })()
-          ) : (
-            <p>No data found.</p>
-          )}
         </SideDrawer>
 
         {/* Document Viewer Modal */}

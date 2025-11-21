@@ -214,13 +214,27 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
 
   // Filtered data (search + date range)
   const filteredData = useMemo(() => {
-    return sortedData.filter((item) => {
-      const matchesSearch = item.loan_desc?.toLowerCase().includes(searchTerm.toLowerCase());
-      const effectOk = !startDate || !item.effect_date || new Date(item.effect_date) >= new Date(startDate);
-      const endOk = !endDate || !item.end_date || new Date(item.end_date) <= new Date(endDate);
-      return matchesSearch && effectOk && endOk;
-    });
-  }, [sortedData, searchTerm, startDate, endDate]);
+  return sortedData.filter((item) => {
+    // search filter
+    const matchesSearch =
+      item.loan_desc?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // slab filter
+    const selectedIds = selectedSslabs.map(s => s.code);
+
+    // include record if:
+    // - no slab filter applied OR
+    // - item slab matches selected slab(s)
+    const matchesSlabs =
+      selectedIds.length === 0 ||
+      selectedIds.includes(item.slab_id) ||
+      (Array.isArray(item.ss_id_list) &&
+       item.ss_id_list.some(id => selectedIds.includes(id)));
+
+    return matchesSearch && matchesSlabs;
+  });
+}, [sortedData, searchTerm, selectedSslabs]);
+
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
@@ -354,60 +368,43 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         </div>
 
         {/* --- FILTER BAR --- */}
-        <div className="max-w-9xl mx-auto bg-white shadow-sm border border-gray-100  p-3 flex flex-wrap md:flex-nowrap items-center justify-between gap-2">
-        {/* Search */}
-        <div className="flex items-center bg-gray-50 rounded-md px-2.5 py-1.5 w-full md:w-1/3 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-200">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-4 h-4 text-gray-500 mr-2"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z"
+        
+        <div className="max-w-9xl mx-auto bg-white shadow-sm border border-gray-100 p-3 
+            flex flex-wrap md:flex-nowrap items-center justify-between ">
+
+          {/* Search by Loan Name */}
+          <div className="flex items-center bg-gray-50 rounded-md px-3 py-1.5 
+              w-full md:w-1/3 border border-gray-200">
+            <input
+              type="text"
+              placeholder="Search by Loan Description"
+              onChange={(e) => {
+                setSearchTerm(e.target.value.toLowerCase());
+                setCurrentPage(1);
+              }}
+              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 
+                  text-sm"
             />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search by Name"
-            onChange={(e) => {
-              setSearchTerm(e.target.value.toLowerCase());
-              setCurrentPage(1);
-            }}
-            className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0 text-sm"
-          />
+          </div>
+
+          {/* Income Slab Filter */}
+          <div className="flex flex-col w-full md:w-1/3 border border-gray-200 ">
+            <MultiSelect
+              value={selectedSslabs}
+              onChange={(e) => {
+                setSelectedSslabs(e.value);
+                setCurrentPage(1);
+              }}
+              options={salarySlabOptions}
+              optionLabel="name"
+              placeholder="Select Income Slab(s)"
+              display="chip"
+              className="w-full md:w-20rem"
+            />
+          </div>
+
         </div>
 
-        {/* Effect Date */}
-        <div className="flex flex-col w-full md:w-1/4">
-          <label className="text-[11px] font-semibold text-gray-600 mb-0.5">Effect Date</label>
-          <input
-            type="date"
-            onChange={(e) => {
-              setStartDate(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="rounded-md px-2 py-1.5 text-sm bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none border border-gray-300 w-full"
-          />
-        </div>
-
-        {/* End Date */}
-        <div className="flex flex-col w-full md:w-1/4">
-          <label className="text-[11px] font-semibold text-gray-600 mb-0.5">End Date</label>
-          <input
-            type="date"
-            onChange={(e) => {
-              setEndDate(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="rounded-md px-2 py-1.5 text-sm bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none border border-gray-300 w-full"
-          />
-        </div>
-        </div>
 
 
         {/* Table - compact, no horizontal scroll */}
@@ -506,28 +503,35 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     <td className="px-2 py-2 text-center border border-gray-700">
                       {loan.end_date}
                     </td>
+                    {/* //slab */}
                     <td className="px-2 py-2 text-center border border-gray-700">
-                      <div className="flex flex-wrap gap-1 justify-center">
+                    <div className="flex flex-wrap gap-1 justify-center">
 
-                        {/* Show MULTIPLE SLABS - correctly */}
-                        {Array.isArray(loan.ss_id_list) && loan.ss_id_list.length > 0 ? (
-                          loan.ss_id_list.map((sid) => {
-                            const slab = salarySlabList.find((s) => s.id === sid);
-                            return (
-                              <span
-                                key={sid}
-                                className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded"
-                              >
-                                {slab?.slab_desc || "Slab"}
-                              </span>
-                            );
-                          })
+                      {/* MULTIPLE slabs */}
+                      {Array.isArray(loan.ss_id_list) && loan.ss_id_list.length > 0 ? (
+                        loan.ss_id_list.map(sid => (
+                          <span
+                            key={sid}
+                            className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded"
+                          >
+                            {salarySlabList.find(s => s.id === sid)?.slab_desc}
+                          </span>
+                        ))
+                      ) : (
+
+                        /* FALLBACK single slab */
+                        loan.slab_id ? (
+                          <span className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded">
+                            {salarySlabList.find(s => s.id === loan.slab_id)?.slab_desc}
+                          </span>
                         ) : (
-                          <span className="text-gray-400 text-xs">No Slabs</span>
-                        )}
+                          <span className="text-gray-400">No Slabs</span>
+                        )
 
-                      </div>
-                    </td>
+                      )}
+                    </div>
+                  </td>
+
 
 
 
