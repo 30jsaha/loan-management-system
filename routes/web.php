@@ -39,6 +39,16 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 })->name('homes');
+
+Route::get('/h', function () {
+    return Inertia::render('HomeWithSlider', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+        'laravelVersion' => Application::VERSION,
+        'phpVersion' => PHP_VERSION,
+    ]);
+})->name('home2');
+
 Route::get('/terms-of-use', function () {
     return Inertia::render('TermsOfUse', [
         'canLogin' => Route::has('login'),
