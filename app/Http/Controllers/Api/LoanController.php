@@ -97,6 +97,7 @@ class LoanController extends Controller
 
             // Default values for unset fields
             $validated['status'] = $validated['status'] ?? 'Pending';
+            $validated['emi_amount'] = number_format($validated['emi_amount'],2);
             // dd($validated);
             // exit;
             // Create loan application
@@ -529,7 +530,49 @@ class LoanController extends Controller
             'approved_loans' => $approvedLoans
         ], 200);
     }
+    //old code without collectionId
+    // public function collectEMI(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'loan_ids' => 'required|array',
+    //         'loan_ids.*' => 'exists:loan_applications,id',
+    //     ]);
 
+    //     foreach ($validated['loan_ids'] as $loanId) {
+    //         $l = Loan::findOrFail($loanId);
+    //         $emi_freq = LoanSetting::where('id', $l->loan_type)
+    //             ->value('installment_frequency_in_days');
+    //         $emi_freq_val = (filter_var($emi_freq, FILTER_VALIDATE_INT) !== false && (int)$emi_freq !== 0) ? $emi_freq : 14;
+    //         InstallmentDetail::create([
+    //             'loan_id' => $loanId,
+    //             'installment_no' => (function () use ($loanId, $l) {
+    //                 // Sum any previously recorded installment amounts for this loan
+    //                 $totalCollected = InstallmentDetail::where('loan_id', $loanId)->sum('emi_amount');
+
+    //                 // If loan EMI amount is available, derive the next installment number from total collected
+    //                 if (!empty($l->emi_amount) && $l->emi_amount > 0) {
+    //                     return (int) floor($totalCollected / $l->emi_amount) + 1;
+    //                 }
+
+    //                 // Fallback: use count of existing installments + 1
+    //                 return InstallmentDetail::where('loan_id', $loanId)->count() + 1;
+    //             })(),
+    //             'due_date' => now(),
+    //             'emi_amount' => $l->emi_amount,
+    //             'payment_date' => now(),
+    //             'status' => 'Paid',
+    //             'emi_collected_by_id' => auth()->user()->id,
+    //             'emi_collected_date' => now()
+    //         ]);
+
+    //         $nextDue = now()->addDays($emi_freq_val)->toDateString();
+    //         $l->next_due_date = $nextDue;
+    //         $l->save();
+    //     }
+
+    //     return response()->json(['message' => 'EMI collection recorded successfully!']);
+    // }
+    //new code with collectionId
     public function collectEMI(Request $request)
     {
         $validated = $request->validate([
@@ -537,40 +580,46 @@ class LoanController extends Controller
             'loan_ids.*' => 'exists:loan_applications,id',
         ]);
 
+        // Generate 6-7 character collection ID (timestamp + random)
+        $collectionUid = strtoupper(substr(md5(time() . rand()), 0, 7));
+
         foreach ($validated['loan_ids'] as $loanId) {
-            $l = Loan::findOrFail($loanId);
-            $emi_freq = LoanSetting::where('id', $l->loan_type)
+
+            $loan = Loan::findOrFail($loanId);
+
+            // EMI Frequency
+            $emiFreq = LoanSetting::where('id', $loan->loan_type)
                 ->value('installment_frequency_in_days');
-            $emi_freq_val = (filter_var($emi_freq, FILTER_VALIDATE_INT) !== false && (int)$emi_freq !== 0) ? $emi_freq : 14;
+
+            $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? $emiFreq : 14;
+
+            // Calculate next installment_no
+            $installmentNo = InstallmentDetail::where('loan_id', $loanId)->count() + 1;
+
+            // Insert EMI record
             InstallmentDetail::create([
                 'loan_id' => $loanId,
-                'installment_no' => (function () use ($loanId, $l) {
-                    // Sum any previously recorded installment amounts for this loan
-                    $totalCollected = InstallmentDetail::where('loan_id', $loanId)->sum('emi_amount');
-
-                    // If loan EMI amount is available, derive the next installment number from total collected
-                    if (!empty($l->emi_amount) && $l->emi_amount > 0) {
-                        return (int) floor($totalCollected / $l->emi_amount) + 1;
-                    }
-
-                    // Fallback: use count of existing installments + 1
-                    return InstallmentDetail::where('loan_id', $loanId)->count() + 1;
-                })(),
+                'collection_uid' => $collectionUid,
+                'installment_no' => $installmentNo,
                 'due_date' => now(),
-                'emi_amount' => $l->emi_amount,
+                'emi_amount' => $loan->emi_amount,
                 'payment_date' => now(),
                 'status' => 'Paid',
                 'emi_collected_by_id' => auth()->user()->id,
-                'emi_collected_date' => now()
+                'emi_collected_date' => now(),
             ]);
 
-            $nextDue = now()->addDays($emi_freq_val)->toDateString();
-            $l->next_due_date = $nextDue;
-            $l->save();
+            // Update loan next due date
+            $loan->next_due_date = now()->addDays($emiFreq)->toDateString();
+            $loan->save();
         }
 
-        return response()->json(['message' => 'EMI collection recorded successfully!']);
+        return response()->json([
+            'message' => 'EMI collection recorded successfully!',
+            'collection_uid' => $collectionUid
+        ]);
     }
+
 
     //new update function
     public function update(Request $request, string $id)
@@ -730,5 +779,100 @@ class LoanController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    public function loan_update_after_higher_approval(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|exists:loan_applications,id',
+            'loan_type' => 'required|integer|min:0',
+            'purpose' => 'nullable|in:Tuition,Living,Medical,Appliance,Car,Travel,HomeImprovement,Other',
+            'other_purpose_text' => 'nullable|string|max:255',
+
+            // 'loan_amount_applied' => 'required|numeric|min:0',
+            // 'loan_amount_approved' => 'nullable|numeric|min:0',
+            'tenure_fortnight' => 'required|integer|min:1',
+            'emi_amount' => 'nullable|numeric',
+            'elegible_amount' => 'nullable|numeric',
+            'total_repay_amt' => 'nullable|numeric',
+            'total_interest_amt' => 'nullable|numeric',
+            'interest_rate' => 'nullable|numeric|min:0|max:100',
+            'processing_fee' => 'nullable|numeric|min:0',
+            'grace_period_days' => 'nullable|integer|min:0',
+
+            'disbursement_date' => 'nullable|date',
+            'bank_name' => 'nullable|string|max:100',
+            'bank_branch' => 'nullable|string|max:100',
+            'bank_account_no' => 'nullable|string|max:50',
+
+            'status' => 'nullable|in:Pending,Verified,Approved,HigherApproval,Disbursed,Closed',
+
+            'approved_by' => 'nullable|string|max:100',
+            'approved_date' => 'nullable|date',
+            'higher_approved_by' => 'nullable|string|max:100',
+            'higher_approved_date' => 'nullable|date',
+
+            'remarks' => 'nullable|string',
+        ]);
+
+
+        try {
+            $loan = Loan::findOrFail($validated['id']);
+            $loan->is_loan_re_updated_after_higher_approval = 1;
+            $loan->loan_amount_approved = $validated['loan_amount_applied'] ?? $loan->loan_amount_applied;
+            $loan->emi_amount = number_format($validated['emi_amount'],2);
+            // $loan->higher_approved_by = auth()->user()->name;
+            // $loan->higher_approved_date = now()->toDateString();
+            $loan->is_elegible = 1;
+            $loan->update();
+
+            return response()->json(['message' => 'Loan update status updated successfully.', 'loan' => $loan], 200);
+        } catch (\Exception $e) {
+            Log::error("Loan update after higher approval failed: " . $e->getMessage());
+            return response()->json(['error' => 'Failed to update loan status', 'details' => $e->getMessage()], 500);
+        }
+    }   
+    //need to modify
+    public function higherApproveLoan($id)
+    {
+        try {
+            // Fetch the loan
+            $loan = Loan::findOrFail($id);
+
+            // Update approval fields
+            $loan->status = 'HigherApproval';
+            $loan->higher_approved_by = auth()->user()->name;
+            $loan->higher_approved_by_id = auth()->user()->id;
+            $loan->higher_approved_date = now();
+
+            $loan->save();
+
+            return response()->json([
+                'message' => 'Loan higher approved successfully.',
+                'loan' => $loan
+            ], 200);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'message' => 'Failed to approve loan.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function collectionHistory(Request $request)
+    {
+        $collections = InstallmentDetail::with([
+            'loan',
+            'loan.customer',
+            'loan.organisation'
+        ])
+        ->orderBy('collection_uid', 'desc')
+        ->get()
+        ->groupBy('collection_uid');
+
+        return response()->json([
+            'collections' => $collections
+        ]);
+    }  
 
 }

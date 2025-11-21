@@ -30,6 +30,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::middleware('auth:sanctum')->get('/loans', [LoanController::class, 'index'])->name('loans.index');
 Route::middleware('auth:sanctum')->get('/loans/emi-collection-list', [LoanController::class, 'loan_emi_list'])->name('loans.emi_list');
+Route::middleware('auth:sanctum')->get('/loans/emi-collections', [LoanController::class, 'collectionHistory'])->name('loans.emi-collections');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/loans', [LoanController::class, 'index']);
@@ -56,8 +57,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/upload-document', [LoanController::class, 'uploadDocument']);
     Route::post('/loans/{id}/finalize-documents', [LoanController::class, 'finalizeDocuments']);
     Route::get('/filtered-loan-types/{customerId}', [LoanController::class, 'getEligibleLoanTypes']);
-
-
+    Route::post('/loans/higher-approve/{loanId}', [LoanController::class, 'higherApproveLoan']);
+    Route::post('/loans-update-after-higher-approval', [LoanController::class, 'loan_update_after_higher_approval']);
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);
