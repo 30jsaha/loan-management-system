@@ -5232,4 +5232,49 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
 }
 
 
+.scroll-to-top {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 50px;
+  height: 50px;
+  background: #00a651;   /* Green color */
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  z-index: 9999;
+  transition: 0.3s ease;
+}
+
+.scroll-to-top i {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.scroll-to-top:hover {
+  background: #008f45; /* darker green */
+  transform: translateY(-4px);
+}
+.small-inc-btn {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  font-size: 16px !important;
+  line-height: 26px !important;
+  border-radius: 6px !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #008037 !important; /* green border */
+  color: #008037 !important; /* green icon */
+  background: white !important;
+}
+
+.small-inc-btn:hover {
+  background-color: #e7f8e9 !important;
+}
 
