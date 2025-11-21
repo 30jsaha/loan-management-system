@@ -460,33 +460,71 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <div className="row">
                       <div className="col-md-6 mb-3 text-left">
                         <label className="form-label">Amount *</label>
-                        <input type="number" name="amount" value={formState.amount}
-                          onChange={handleChange} className="form-control" required />
+                        <input
+                          type="number"
+                          name="amount"
+                          value={formState.amount}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                          min="200"
+                          max="20000"
+                          title="Amount must be between 200 and 20000"
+                        />
                       </div>
 
                       <div className="col-md-6 mb-3  text-left">
                         <label className="form-label">Tenure (Days) *</label>
-                        <input type="number" name="tenure" value={formState.tenure}
-                          onChange={handleChange} className="form-control" required />
+                        <input
+                          type="number"
+                          name="tenure"
+                          value={formState.tenure}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                        />
                       </div>
                     </div>
 
                     <div className="row">
                       <div className="col-md-6 mb-3 text-left">
                         <label className="form-label">Name *</label>
-                        <input type="text" name="name" value={formState.name}
-                          onChange={handleChange} className="form-control" required />
+                        <input
+                          type="text"
+                          name="name"
+                          value={formState.name}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                          pattern="^[A-Za-z ]{3,}$"
+                          title="Name must contain only alphabets and be at least 3 characters."
+                        />
                       </div>
                       <div className="col-md-6 mb-3 text-left">
                         <label className="form-label">Phone *</label>
-                        <input type="tel" name="phone" value={formState.phone}
-                          onChange={handleChange} className="form-control"
-                          required pattern="[0-9]{8}" maxLength={8} />
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formState.phone}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                          pattern="^[0-9]{8}$"
+                          maxLength="8"
+                          title="Phone number must be exactly 8 digits."
+                        />
                       </div>
                       <div className="mb-3 text-left">
                         <label className="form-label">Email *</label>
-                        <input type="email" name="email" value={formState.email}
-                          onChange={handleChange} className="form-control" required />
+                        <input
+                          type="email"
+                          name="email"
+                          value={formState.email}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                          title="Enter a valid email address."
+                        />
                       </div>
                     </div>
                   </>
@@ -563,7 +601,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
                             <button
                               onClick={() => setSliderAmount(prev => Math.max(200, prev - 50))}
-                              className="btn btn-sm btn-outline-success"
+                              className="small-inc-btn"
                             >
                               −
                             </button>
@@ -585,7 +623,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
                             <button
                               onClick={() => setSliderAmount(prev => Math.min(10000, prev + 50))}
-                              className="btn btn-sm btn-outline-success"
+                              className="small-inc-btn"
                             >
                               +
                             </button>
@@ -601,7 +639,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
                             <button
                               onClick={() => setSliderFortnight(prev => Math.max(5, prev - 1))}
-                              className="btn btn-sm btn-outline-success"
+                              className="small-inc-btn"
                             >
                               −
                             </button>
@@ -623,7 +661,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
                             <button
                               onClick={() => setSliderFortnight(prev => Math.min(52, prev + 1))}
-                              className="btn btn-sm btn-outline-success"
+                              className="small-inc-btn"
                             >
                               +
                             </button>
