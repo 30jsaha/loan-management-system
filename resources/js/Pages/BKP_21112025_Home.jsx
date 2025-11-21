@@ -51,8 +51,6 @@ const [sliderAmount, setSliderAmount] = useState(200);
 const [sliderFortnight, setSliderFortnight] = useState(5);
 const [sliderEMI, setSliderEMI] = useState(0);
 const [sliderError, setSliderError] = useState("");
-const [calculatorFirstCheck, setCalculatorFirstCheck] = useState(false);
-const sliderRef = useRef(null);
 
 
   // scroll listener for scroll-to-top button
@@ -313,7 +311,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
                   className={`navbar-collapse justify-content-center ${isDesktop ? 'show' : isNavOpen ? 'show' : 'collapse'}`}
                 >
                   <ul className="navbar-nav">
-                    {/* <li className="nav-item"><a className="nav-link active" href="#home">Home</a></li> */}
+                    <li className="nav-item"><a className="nav-link active" href="#home">Home</a></li>
                     <li className="nav-item"><a className="nav-link" href="#about">About</a></li>
                     <li className="nav-item"><a className="nav-link" href="#why">Why Us</a></li>
                     <li className="nav-item"><a className="nav-link" href="#testimonials">Reviews</a></li>
@@ -456,295 +454,144 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
             </div>
 
             <div className="home-right loan-box" >
-            {!calculatorFirstCheck && (
-              <h4 className="loan-heading">How much do you need</h4>
-            )}
+            <h4 className="loan-heading">How much do you need</h4>
 
-            <form id="loanForm" ref={formRef} onSubmit={handleSubmit}>
-              {!calculatorFirstCheck && (
-                <>
-                  <div className="row">
-                    {/* AMOUNT */}
-                    <div className="col-md-6 mb-3 text-left">
-                      <label className="form-label">Amount *</label>
-                      <input
-                        type="number"
-                        name="amount"
-                        value={formState.amount}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                        min="200"
-                        max="20000"
-                        title="Amount must be between 200 and 20000"
-                      />
-                    </div>
+              <form id="loanForm" ref={formRef} onSubmit={handleSubmit}>
+  <div className="row">
+    {/* AMOUNT */}
+    <div className="col-md-6 mb-3 text-left">
+      <label className="form-label">Amount *</label>
+      <input
+        type="number"
+        name="amount"
+        value={formState.amount}
+        onChange={handleChange}
+        className="form-control"
+        required
+        min="200"
+        max="20000"
+        title="Amount must be between 200 and 20000"
+      />
+    </div>
 
-                    {/* TENURE */}
-                    <div className="col-md-6 mb-3 text-left">
-                      <label className="form-label">Tenure (Days) *</label>
-                      <input
-                        type="number"
-                        name="tenure"
-                        value={formState.tenure}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                      />
-                    </div>
-                  </div>
+    {/* TENURE */}
+    <div className="col-md-6 mb-3 text-left">
+      <label className="form-label">Tenure (Days) *</label>
+      <input
+        type="number"
+        name="tenure"
+        value={formState.tenure}
+        onChange={handleChange}
+        className="form-control"
+        required
+      />
+    </div>
+  </div>
 
-                  <div className="row">
-                    {/* NAME */}
-                    <div className="col-md-6 mb-3 text-left">
-                      <label className="form-label">Name *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formState.name}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                        pattern="^[A-Za-z ]{3,}$"
-                        title="Name must contain only alphabets and be at least 3 characters."
-                      />
-                    </div>
+  <div className="row">
+    {/* NAME */}
+    <div className="col-md-6 mb-3 text-left">
+      <label className="form-label">Name *</label>
+      <input
+        type="text"
+        name="name"
+        value={formState.name}
+        onChange={handleChange}
+        className="form-control"
+        required
+        pattern="^[A-Za-z ]{3,}$"
+        title="Name must contain only alphabets and be at least 3 characters."
+      />
+    </div>
 
-                    {/* PHONE */}
-                    <div className="col-md-6 mb-3 text-left">
-                      <label className="form-label">Phone *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formState.phone}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                        pattern="^[0-9]{8}$"
-                        maxLength="8"
-                        title="Phone number must be exactly 8 digits."
-                      />
-                    </div>
+    {/* PHONE */}
+    <div className="col-md-6 mb-3 text-left">
+      <label className="form-label">Phone *</label>
+      <input
+        type="tel"
+        name="phone"
+        value={formState.phone}
+        onChange={handleChange}
+        className="form-control"
+        required
+        pattern="^[0-9]{8}$"
+        maxLength="8"
+        title="Phone number must be exactly 8 digits."
+      />
+    </div>
 
-                    {/* EMAIL */}
-                    <div className="mb-3 text-left">
-                      <label className="form-label">Email *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formState.email}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                        title="Enter a valid email address."
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
+    {/* EMAIL */}
+    <div className="mb-3 text-left">
+      <label className="form-label">Email *</label>
+      <input
+        type="email"
+        name="email"
+        value={formState.email}
+        onChange={handleChange}
+        className="form-control"
+        required
+        title="Enter a valid email address."
+      />
+    </div>
+  </div>
 
   {/* Repayment Display */}
-  {/* Show repayment only AFTER button click */}
-                {showRepayment && !calculatorFirstCheck && (
-                  <div
-                    className="p-3 rounded-lg mb-3 text-center"
-                    style={{
-                      background: "#deebd9ff",
-                      borderRadius: "10px",
-                    }}
-                  >
-                    {/* If repayment is valid */}
-                    {!respMsg && !calculatorFirstCheck && (
-                      <>
-                        <div
-                          className="fw-bold text-dark"
-                          style={{ fontSize: "14px", marginBottom: "4px" }}
-                        >
-                          Repayment Amount
-                        </div>
+  {showRepayment && (
+    <div
+      className="p-3 rounded-lg mb-3 text-center"
+      style={{
+        background: "#deebd9ff",
+        borderRadius: "10px",
+      }}
+    >
+      {!respMsg && (
+        <>
+          <div
+            className="fw-bold text-dark"
+            style={{ fontSize: "14px", marginBottom: "4px" }}
+          >
+            Repayment Amount
+          </div>
 
-                        <div
-                          className="fw-bold"
-                          style={{ color: "#0a8a42", fontSize: "22px" }}
-                        >
-                          <strong>
-                            PGK {Number(formState.repaymentPlan).toLocaleString()}
-                          </strong>
-                        </div>
-                      </>
-                    )}
+          <div
+            className="fw-bold"
+            style={{ color: "#0a8a42", fontSize: "22px" }}
+          >
+            <strong>
+              PGK {Number(formState.repaymentPlan).toLocaleString()}
+            </strong>
+          </div>
+        </>
+      )}
 
-                    {/* If error */}
-                    {respMsg && !calculatorFirstCheck && (
-                      <div
-                        className="mt-2 p-2 fw-bold text-white"
-                        style={{
-                          background: "#d9534f",
-                          borderRadius: "6px",
-                          fontSize: "14px",
-                        }}
-                      >
-                        {respMsg}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Loan Slider Calculator (React + Validation + EMI Logic) */}
-                {calculatorFirstCheck && (
-                  <section
-                    id="loanCalculator"
-                    ref={sliderRef}
-                    className="py-5"
-                    style={{ backgroundColor: "#f9f9f9" }}
-                  >
+      {respMsg && (
+        <div
+          className="mt-2 p-2 fw-bold text-white"
+          style={{
+            background: "#d9534f",
+            borderRadius: "6px",
+            fontSize: "14px",
+          }}
+        >
+          {respMsg}
+        </div>
+      )}
+    </div>
+  )}
 
 
-                    <div className="container">
 
-                      <h2 className="text-center fw-bold mb-5" style={{ color: "#008037" }}>
-                        How much do you want to borrow?
-                      </h2>
 
-                      <div className="card shadow-sm border-0 p-4 mx-auto" style={{ maxWidth: "700px" }}>
 
-                        {/* Loan Amount */}
-                        <div className="mb-4 text-center position-relative">
-                          <h5 className="fw-semibold mb-3">Loan Amount</h5>
-
-                          <div className="d-flex align-items-center justify-content-center gap-3">
-
-                            <button
-                              onClick={() => setSliderAmount(prev => Math.max(200, prev - 50))}
-                              className="small-inc-btn"
-                            >
-                              −
-                            </button>
-
-                            <div className="slider-wrapper position-relative w-75">
-                              <input
-                                type="range"
-                                min="200"
-                                max="10000"
-                                step="50"
-                                value={sliderAmount}
-                                onChange={(e) => setSliderAmount(Number(e.target.value))}
-                                className="form-range"
-                              />
-                              <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
-                                K{sliderAmount}
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => setSliderAmount(prev => Math.min(10000, prev + 50))}
-                              className="small-inc-btn"
-                            >
-                              +
-                            </button>
-
-                          </div>
-                        </div>
-
-                        {/* Fortnight Count */}
-                        <div className="mb-4 text-center position-relative">
-                          <h5 className="fw-semibold mb-3">No. of Fortnights</h5>
-
-                          <div className="d-flex align-items-center justify-content-center gap-3">
-
-                            <button
-                              onClick={() => setSliderFortnight(prev => Math.max(5, prev - 1))}
-                              className="small-inc-btn"
-                            >
-                              −
-                            </button>
-
-                            <div className="slider-wrapper position-relative w-75">
-                              <input
-                                type="range"
-                                min="5"
-                                max="52"
-                                step="1"
-                                value={sliderFortnight}
-                                onChange={(e) => setSliderFortnight(Number(e.target.value))}
-                                className="form-range"
-                              />
-                              <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
-                                {sliderFortnight}
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => setSliderFortnight(prev => Math.min(52, prev + 1))}
-                              className="small-inc-btn"
-                            >
-                              +
-                            </button>
-
-                          </div>
-                        </div>
-
-                        {/* ---------- Validation Errors ---------- */}
-                        {sliderError && (
-                          <div
-                            className="p-2 mb-3 text-white fw-bold text-center"
-                            style={{ background: "#d9534f", borderRadius: 6 }}
-                          >
-                            {sliderError}
-                          </div>
-                        )}
-
-                        {/* ---------- EMI Display ---------- */}
-                        {!sliderError && (
-                          <div className="text-center bg-light rounded p-3 mt-4">
-                            <h6 className="text-muted mb-1">Fortnightly Payment (EMI)</h6>
-                            <h3 className="fw-bold text-success mb-0">
-                              PGK {sliderEMI}
-                            </h3>
-                          </div>
-                        )}
-
-                      </div>
-                    </div>
-                  </section>
-                )}
-                {(!calculatorFirstCheck) && (
-               <button
-  type="button"
-  className="btn btn-success btn-check-loan"
-  onClick={(e) => {
-    const formEl = formRef.current;
-
-    // 🔥 FIRST: Run built-in HTML validation
-    if (!formEl.checkValidity()) {
-      formEl.reportValidity();  // Show browser validation message
-      return;                   // Stop here if invalid
-    }
-
-    // 🔥 SECOND: Run your logic only if form is valid
-    handleCheckLoan(e);
-
-    // OPEN SLIDER SECTION
-    setCalculatorFirstCheck(true);
-
-    // SET SLIDERS FROM INPUT FIELDS
-    setSliderAmount(Number(formState.amount));
-    setSliderFortnight(Number(formState.tenure));
-
-    // SCROLL TO SLIDER SECTION
-    setTimeout(() => {
-      sliderRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }, 200);
-  }}
-  disabled={sending}
->
-  {sending ? "Sending..." : "Check Your Loan Now!"}
-</button>
-
-                )}
+  {/* MAIN BUTTON */}
+  <button
+    type="button"
+    className="btn btn-success btn-check-loan"
+    onClick={handleCheckLoan}
+    disabled={sending}
+  >
+    {sending ? "Sending..." : "Check Your Loan Now!"}
+  </button>
 
   <div className="resp mt-2">{respMsg}</div>
 </form>
@@ -1369,7 +1216,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
   className="footer-copy text-center mt-4 pt-3 border-top small"
   style={{ borderColor: "#1E5631", color: "#E8F5E9" }}
 >
-  Copyright 2025 All Right Reserved.{" "}
+  Copyright 2025 All Right Reserved By.{" "}
   <a
     href="https://www.adzguru.co/"
     target="_blank"
