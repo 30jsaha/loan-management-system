@@ -101,6 +101,20 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`; // Local date, no UTC shift
   };
+  // Calculate Paid Amount (Total Paid + Sum of Paid Installments)
+  const getTotalPaidAmount = (loan) => {
+    if (!loan) return 0;
+
+    const basePaid = loan.total_emi_paid_amount || 0;
+
+    if (!Array.isArray(loan.installments)) return basePaid;
+
+    const extraPaidSum = loan.installments
+      .filter((i) => i.status?.toLowerCase() === "paid")
+      .reduce((sum, i) => sum + (Number(i.emi_amount) || 0), 0);
+
+    return basePaid + extraPaidSum;
+  };
 
   const isCollectible = (loan) => {
     if (!loan || !loan.next_due_date) return false;
@@ -351,7 +365,8 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                     <p><b>Next Due:</b> {loan.next_due_date || "N/A"}</p>
                     <p><b>EMI:</b> <span className="text-green-700 font-medium">{currencyPrefix} {loan.emi_amount || 0}</span></p>
                     <p><b>Total Repay:</b> {currencyPrefix} {loan.total_repay_amt || 0}</p>
-                    <p><b>Paid Amt:</b> {currencyPrefix} {loan.total_emi_paid_amount || 0}</p>
+                    <p><b>Paid Amt:</b> {currencyPrefix} {getTotalPaidAmount(loan)}</p>
+
                   </div>
                 </motion.div>
               ); 
