@@ -164,7 +164,7 @@ export default function TermsOfUse({ auth }) {
   </h4>
 
   <p style={{ marginTop: "-5px", color: "#444" }}>
-    <b>Effective Date:</b> XXXXXXXXXX
+    <b>Effective Year:</b> 2025
   </p>
 
   <p style={{ lineHeight: "1.7", color: "#444" }}>
@@ -234,7 +234,7 @@ export default function TermsOfUse({ auth }) {
     9. Contact Us
   </h5>
   <p style={{ lineHeight: "1.7", color: "#555" }}>
-    📧 XXXX@XXXXXX.XXXX <br />
+    📧 emmanuel@aaapng.com <br />
     📍 Avara Annex, Level 7, Brampton St.,<br />
     Port Moresby, Papua New Guinea
   </p>
@@ -260,7 +260,8 @@ export default function TermsOfUse({ auth }) {
         <div className="col-md-3">
           <h6 className="text-uppercase mb-3" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
           <p className="small mb-4" style={{color:'#E8F5E9'}}>
-             📍 Port Moresby, Papua New Guinea
+             📍 Avara Annex, Level 7, Brampton St., <br/>
+            Port Moresby, Papua New Guinea
           </p>
         </div>
 
@@ -326,7 +327,8 @@ export default function TermsOfUse({ auth }) {
       {/* TOP INFORMATION VISIBLE ALWAYS */}
       <h6 className="text-uppercase mb-2" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
       <p className="small mb-3" style={{color:'#E8F5E9'}}>
-        📍 Port Moresby, Papua New Guinea
+        📍 Avara Annex, Level 7, Brampton St., <br/>
+            Port Moresby, Papua New Guinea
       </p>
 
       <p className="text-uppercase small mb-1" style={{color:'#E8F5E9'}}>Contact Us Now!</p>
@@ -388,9 +390,20 @@ export default function TermsOfUse({ auth }) {
     </div>
 
     {/* COPYRIGHT – SAME FOR BOTH */}
-    <div className="text-center mt-4 pt-3 border-top small" style={{borderColor:'#1E5631', color:'#E8F5E9'}}>
-      © 2025 Agro Advance Aben. All rights reserved.
-    </div>
+   <div
+  className="footer-copy text-center mt-4 pt-3 border-top small"
+  style={{ borderColor: "#1E5631", color: "#E8F5E9" }}
+>
+  Copyright 2025 All Right Reserved By.{" "}
+  <a
+    href="https://www.adzguru.co/"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{ color: "#E8F5E9", textDecoration: "underline", cursor: "pointer" }}
+  >
+    Adzguru (PNG) Ltd
+  </a>
+</div>
 
   </div>
 </footer>

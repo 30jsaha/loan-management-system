@@ -19,6 +19,9 @@ import loan3 from '../../img/Ourloansolution3.jpg';
 import loan4 from '../../img/Ourloansolution4.jpg';
 import loan5 from '../../img/Ourloansolution5.jpg';
 import footerBg from '../../img/png_image.png';
+import heroImage1 from '../../img/hero1.jpg';
+
+
 
 
 
@@ -184,15 +187,25 @@ const [sliderError, setSliderError] = useState("");
   };
 
   // handle Check Your Loan Now (calculates and sends AJAX POST via fetch)
-  const handleCheckLoan = (e) => {
-      e.preventDefault();
-      setRespMsg("");
-      setShowRepayment(false);
+ const handleCheckLoan = (e) => {
+  e.preventDefault();
+  setRespMsg("");
+  setShowRepayment(false);
 
-      const { amount, tenure } = formState;
+  // 🔥 Trigger HTML validation (THIS WAS MISSING!!)
+  const formEl = formRef.current;
+  if (!formEl.checkValidity()) {
+    formEl.reportValidity();
+    return;
+  }
 
-      const amt = Number(amount);
-      const tn = Number(tenure);
+  const { amount, tenure } = formState;
+
+  const amt = Number(amount);
+  const tn = Number(tenure);
+
+  // ... (your existing logic continues)
+
 
       // Rule 3: tenure must be >= 5 for all amounts
       if (amt< 200) {
@@ -444,95 +457,141 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
             <h4 className="loan-heading">How much do you need</h4>
 
               <form id="loanForm" ref={formRef} onSubmit={handleSubmit}>
-                <div className="row">
-                  <div className="col-md-6 mb-3 text-left">
-                    <label className="form-label">Amount *</label>
-                    <input type="number" name="amount" value={formState.amount}
-                      onChange={handleChange} className="form-control" required />
-                  </div>
+  <div className="row">
+    {/* AMOUNT */}
+    <div className="col-md-6 mb-3 text-left">
+      <label className="form-label">Amount *</label>
+      <input
+        type="number"
+        name="amount"
+        value={formState.amount}
+        onChange={handleChange}
+        className="form-control"
+        required
+        min="200"
+        max="20000"
+        title="Amount must be between 200 and 20000"
+      />
+    </div>
 
-                  <div className="col-md-6 mb-3  text-left">
-                    <label className="form-label">Tenure (Days) *</label>
-                    <input type="number" name="tenure" value={formState.tenure}
-                      onChange={handleChange} className="form-control" required />
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-md-6 mb-3 text-left">
-                    <label className="form-label">Name *</label>
-                    <input type="text" name="name" value={formState.name}
-                      onChange={handleChange} className="form-control" required />
-                  </div>
-                  <div className="col-md-6 mb-3 text-left">
-                    <label className="form-label">Phone *</label>
-                    <input type="tel" name="phone" value={formState.phone}
-                      onChange={handleChange} className="form-control"
-                      required pattern="[0-9]{8}" maxLength={8} />
-                  </div>
-                    <div className="mb-3 text-left">
-                      <label className="form-label">Email *</label>
-                      <input type="email" name="email" value={formState.email}
-                        onChange={handleChange} className="form-control" required />
-                    </div>
-                </div>
-                {/* Show repayment only AFTER button click */}
-                {showRepayment && (
-  <div
-    className="p-3 rounded-lg mb-3 text-center"
-    style={{
-      background: "#deebd9ff",
-      borderRadius: "10px",
-    }}
-  >
-    {/* If repayment is valid */}
-    {!respMsg && (
-      <>
-        <div
-          className="fw-bold text-dark"
-          style={{ fontSize: "14px", marginBottom: "4px" }}
-        >
-          Repayment Amount
-        </div>
-
-        <div
-          className="fw-bold"
-          style={{ color: "#0a8a42", fontSize: "22px" }}
-        >
-          <strong>
-            PGK {Number(formState.repaymentPlan).toLocaleString()}
-          </strong>
-        </div>
-      </>
-    )}
-
-    {/* If error */}
-    {respMsg && (
-      <div
-        className="mt-2 p-2 fw-bold text-white"
-        style={{
-          background: "#d9534f",
-          borderRadius: "6px",
-          fontSize: "14px",
-        }}
-      >
-        {respMsg}
-      </div>
-    )}
+    {/* TENURE */}
+    <div className="col-md-6 mb-3 text-left">
+      <label className="form-label">Tenure (Days) *</label>
+      <input
+        type="number"
+        name="tenure"
+        value={formState.tenure}
+        onChange={handleChange}
+        className="form-control"
+        required
+      />
+    </div>
   </div>
-                )}
 
+  <div className="row">
+    {/* NAME */}
+    <div className="col-md-6 mb-3 text-left">
+      <label className="form-label">Name *</label>
+      <input
+        type="text"
+        name="name"
+        value={formState.name}
+        onChange={handleChange}
+        className="form-control"
+        required
+        pattern="^[A-Za-z ]{3,}$"
+        title="Name must contain only alphabets and be at least 3 characters."
+      />
+    </div>
 
-              <button
-                type="button"
-                className="btn btn-success btn-check-loan"
-                onClick={handleCheckLoan}
-                disabled={sending}
-              >
-                {sending ? "Sending..." : "Check Your Loan Now!"}
-              </button>
+    {/* PHONE */}
+    <div className="col-md-6 mb-3 text-left">
+      <label className="form-label">Phone *</label>
+      <input
+        type="tel"
+        name="phone"
+        value={formState.phone}
+        onChange={handleChange}
+        className="form-control"
+        required
+        pattern="^[0-9]{8}$"
+        maxLength="8"
+        title="Phone number must be exactly 8 digits."
+      />
+    </div>
 
-              <div className="resp mt-2">{respMsg}</div>
-              </form>
+    {/* EMAIL */}
+    <div className="mb-3 text-left">
+      <label className="form-label">Email *</label>
+      <input
+        type="email"
+        name="email"
+        value={formState.email}
+        onChange={handleChange}
+        className="form-control"
+        required
+        title="Enter a valid email address."
+      />
+    </div>
+  </div>
+
+  {/* Repayment Display */}
+  {showRepayment && (
+    <div
+      className="p-3 rounded-lg mb-3 text-center"
+      style={{
+        background: "#deebd9ff",
+        borderRadius: "10px",
+      }}
+    >
+      {!respMsg && (
+        <>
+          <div
+            className="fw-bold text-dark"
+            style={{ fontSize: "14px", marginBottom: "4px" }}
+          >
+            Repayment Amount
+          </div>
+
+          <div
+            className="fw-bold"
+            style={{ color: "#0a8a42", fontSize: "22px" }}
+          >
+            <strong>
+              PGK {Number(formState.repaymentPlan).toLocaleString()}
+            </strong>
+          </div>
+        </>
+      )}
+
+      {respMsg && (
+        <div
+          className="mt-2 p-2 fw-bold text-white"
+          style={{
+            background: "#d9534f",
+            borderRadius: "6px",
+            fontSize: "14px",
+          }}
+        >
+          {respMsg}
+        </div>
+      )}
+    </div>
+  )}
+
+  {/* MAIN BUTTON */}
+  <button
+    type="button"
+    className="btn btn-success btn-check-loan"
+    onClick={handleCheckLoan}
+    disabled={sending}
+  >
+    {sending ? "Sending..." : "Check Your Loan Now!"}
+  </button>
+
+  <div className="resp mt-2">{respMsg}</div>
+</form>
+
 
 
             </div>
@@ -666,7 +725,9 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
         {/* Quick Loan Bar */}
         <div className="quick-loan-section mt-5 d-flex align-items-center">
           <div className="quick-image me-3">
-            <img src={heroImage} alt="Agro hero footer" style={{maxWidth: '390px'}}/>
+          <img src={heroImage1} alt="Agro hero footer" style={{maxWidth: '700px'}}/>
+            <img src={heroImage} alt="Agro hero footer" style={{maxWidth: '700px'}}/>
+            
           </div>
           <div className="quick-items d-flex gap-3">
             {/* <div className="quick-item"><i className="bi bi-stopwatch"></i><span>Quick Loans.<br/>Easy Approvals.</span></div>
@@ -867,7 +928,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
                   <div className="col-md-4">
                     <div className="testimonial-card p-4 bg-white rounded shadow-sm text-center h-100">
                       <h6 className="fw-bold mb-1">Lucy M</h6>
-                      <p className="text-muted small">Getting a loan was simple and fast. The staff understood my situation and made the process stress-free.</p>
+                      <p className="text-muted small">Getting a loan was simple and fast. The staff  understood <br/> my situation and made the process stress-free.</p>
                     </div>
                   </div>
 
@@ -930,31 +991,70 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
               <a href="#home" className="btn btn-outline-light px-4 py-2 rounded">Contact Us</a>
             </div>
 
-            <div className="col-md-7">
-              <form className="row g-3" onSubmit={(e)=>e.preventDefault()}>
-                <div className="col-md-6">
-                  <input type="text" className="form-control" placeholder="Name" required />
-                </div>
-                <div className="col-md-6">
-                  <input type="email" className="form-control" placeholder="Email" required />
-                </div>
-                <div className="col-md-6">
-                  <input type="tel" className="form-control" placeholder="Phone" required />
-                </div>
-                <div className="col-md-6">
-                  <select className="form-select" required>
-                    <option value="">Choose Our Services</option>
-                    <option value="1">Personal Loan</option>
-                    <option value="2">Business Loan</option>
-                    <option value="3">Education Loan</option>
-                    <option value="4">Health Loan</option>
-                  </select>
-                </div>
-                <div className="col-12 text-start">
-                  <button className="btn" type="submit" style={{backgroundColor:'#d71920', color:'#fff', border:'none'}}>Submit</button>
-                </div>
-              </form>
-            </div>
+           <div className="col-md-7">
+  <form className="row g-3" onSubmit={(e)=>e.preventDefault()}>
+
+    {/* NAME */}
+    <div className="col-md-6">
+      <input
+        type="text"
+        className="form-control"
+        placeholder="Name"
+        required
+        pattern="^[A-Za-z ]{3,}$"
+        title="Name must contain only alphabets and be at least 3 characters."
+      />
+    </div>
+
+    {/* EMAIL */}
+    <div className="col-md-6">
+      <input
+        type="email"
+        className="form-control"
+        placeholder="Email"
+        required
+        pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$"
+        title="Enter a valid email address."
+      />
+    </div>
+
+    {/* PHONE */}
+    <div className="col-md-6">
+      <input
+        type="tel"
+        className="form-control"
+        placeholder="Phone"
+        required
+        maxLength="8"
+        pattern="^[0-9]{8}$"
+        title="Phone must be exactly 8 digits."
+      />
+    </div>
+
+    {/* SERVICE SELECT */}
+    <div className="col-md-6">
+      <select className="form-select" required>
+        <option value="">Choose Our Services</option>
+        <option value="1">Personal Loan</option>
+        <option value="2">Business Loan</option>
+        <option value="3">Education Loan</option>
+        <option value="4">Health Loan</option>
+      </select>
+    </div>
+
+    <div className="col-12 text-start">
+      <button
+        className="btn"
+        type="submit"
+        style={{ backgroundColor: "#d71920", color: "#fff", border: "none" }}
+      >
+        Submit
+      </button>
+    </div>
+
+  </form>
+</div>
+
           </div>
         </div>
       </section>
@@ -1108,11 +1208,21 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
     </div>
 
     {/* COPYRIGHT – SAME FOR BOTH */}
-    <div className="text-center mt-4 pt-3 border-top small" style={{borderColor:'#1E5631', color:'#E8F5E9'}}>
-      © 2025 Agro Advance Aben. All rights reserved.
-    </div>
-
-  </div>
+<div
+  className="footer-copy text-center mt-4 pt-3 border-top small"
+  style={{ borderColor: "#1E5631", color: "#E8F5E9" }}
+>
+  Copyright 2025 All Right Reserved By.{" "}
+  <a
+    href="https://www.adzguru.co/"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{ color: "#E8F5E9", textDecoration: "underline", cursor: "pointer" }}
+  >
+    Adzguru (PNG) Ltd
+  </a>
+</div>
+</div>
 </footer>
 </div>
   );
