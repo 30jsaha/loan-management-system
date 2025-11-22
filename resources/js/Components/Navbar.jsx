@@ -14,8 +14,8 @@ export default function Navbar({ auth, setShowForm }) {
         {/* Brand */}
         <a href="/" className="d-flex flex-column align-items-center text-decoration-none">
           <img src={logo} alt="Logo" style={{ width: "65px" }} />
-          <span className="fw-bold text-dark" style={{ fontSize: "15px" }}>AGRO ADVANCE ABEN</span>
-          <span className="text-muted" style={{ fontSize: "12px", marginTop: "-4px" }}>Finance with Purpose</span>
+          <span className="brand-title" style={{ fontSize: "15px" }}>AGRO ADVANCE ABEN</span>
+          <span className="brand-subtitle" style={{ fontSize: "12px", marginTop: "-4px" }}>Finance with Purpose</span>
         </a>
 
         {/* Mobile Toggle */}
