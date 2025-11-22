@@ -69,7 +69,8 @@ export default function TermsOfUse({ auth }) {
     style={{ 
       fontSize: "26px", 
       color: "#0A8A42", 
-      letterSpacing: "0.5px" 
+      letterSpacing: "0.5px",
+      marginTop: "150px"
     }}
   >
     TERMS OF USE

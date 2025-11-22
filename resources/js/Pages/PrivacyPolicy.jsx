@@ -53,6 +53,7 @@ export default function PrivacyPolicy({ auth }) {
             fontSize: "26px",
             color: "#0A8A42",
             letterSpacing: "0.5px",
+            marginTop: "150px"
           }}
         >
           PRIVACY POLICY
@@ -68,7 +69,7 @@ export default function PrivacyPolicy({ auth }) {
           }}
         ></div>
 
-        <h4 className="fw-semibold" style={{ fontSize: "18px", color: "#0A8A42" }}>
+        <h4 className="fw-semibold" style={{ fontSize: "18px", color: "#0A8A42", marginTop: "100px" }}>
           Agro Advance Aben Limited
         </h4>
 
