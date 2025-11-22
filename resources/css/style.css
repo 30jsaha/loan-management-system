@@ -48,6 +48,116 @@ body {
   margin-top: 72px; /* is value ko 20–50px tak badha sakte ho */
 }
 
+.loan-desc {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.6;
+  font-weight: 400 !important;
+  color: #222;
+}
+
+/* Force EVERYTHING inside to normal - including browser fallback bold */
+.loan-desc b, 
+.loan-desc strong,
+.loan-desc *,
+.loan-desc br {
+  font-weight: 400 !important;
+}
+@media (max-width: 576px) {
+  .loan-desc {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+}
+
+
+.goal-text {
+  font-weight: 700 !important; /* Sirf yeh bold rahega */
+  font-size: 18px;
+  display: inline-block;
+  margin-top: 10px;
+}
+
+/* Mobile View Styling */
+@media (max-width: 576px) {
+
+  @media (max-width: 576px) {
+  .loan-desc {
+    font-size: 12px;
+    line-height: 1.35;
+    margin-top: 11px;
+    font-weight: 40 !important;
+  }
+}
+}
+
+/* MOBILE ONLY */
+@media (max-width: 576px) {
+
+  /* ❌ Heading me <br> hide */
+  .home-title br {
+    display: none !important;
+  }
+
+  /* ❌ Paragraph ke FIRST 2 <br> hide */
+  .loan-desc br:nth-of-type(1),
+  .loan-desc br:nth-of-type(2) {
+    display: none !important;
+  }
+
+  /* ✔ BUT Achieve Your Financial Goal wale <br> untouched */
+}
+@media (max-width: 576px) {
+
+  /* Achieve Your Financial Goal ko niche push */
+  .goal-text {
+    display: block;
+    margin-top: 22px;    /* yahan jitna niche chahiye utna px badha do */
+  }
+}
+@media (max-width: 576px) {
+  .about-desc br {
+    display: none !important;
+  }
+}
+
+ /* image brightness increas */
+.loan__services__item {
+  filter: brightness(1.4);   /* 1.0 = normal, 1.25 = brighter */
+}
+
+.loan__services__item {
+  position: relative;
+  overflow: hidden;
+}
+
+.loan__services__item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 128, 0, 0.45);
+  z-index: 1;
+}
+
+.loan__services__item__text {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  color: #fff;
+  z-index: 2;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+/* FORCE: Hover should NOT hide text */
+.loan__services__item:hover .loan__services__item__text {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+
 @media (max-width: 768px) {
   .home-wrapper {
     flex-direction: column !important;
@@ -4980,7 +5090,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
   #home p {
     font-size: 17px !important;
     color: #222 !important;
-    font-weight: 600 !important;
+   
     line-height: 1.5;
   }
 
@@ -5195,7 +5305,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
 
   .loan__services__item__text p {
     font-size: 17px !important;
-    line-height: 21px !important;
+    /* line-height: 21px !important; */
     font-weight: 400 !important;  /* 👉 paragraph now NOT bold */
   }
 }
