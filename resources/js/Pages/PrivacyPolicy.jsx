@@ -57,7 +57,7 @@ export default function PrivacyPolicy({ auth }) {
           {/* Nav Items */}
           <div className={`navbar-collapse ${isDesktop ? "show" : isNavOpen ? "show" : "collapse"}`} id="navbarNav">
             <ul className="navbar-nav mx-auto">
-              <li className="nav-item"><Link className="nav-link" href="/">Home</Link></li>
+              {/* <li className="nav-item"><Link className="nav-link" href="/">Home</Link></li> */}
               <li className="nav-item"><Link className="nav-link" href={`${route("homes")}#about`}>About</Link></li>
               <li className="nav-item"><Link className="nav-link" href={`${route("homes")}#why`}>Why Us</Link></li>
               <li className="nav-item"><Link className="nav-link" href={`${route("homes")}#testimonials`}>Reviews</Link></li>

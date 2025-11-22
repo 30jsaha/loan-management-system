@@ -77,9 +77,9 @@ export default function TermsOfUse({ auth }) {
           >
             <ul className="navbar-nav mx-auto">
 
-              <li className="nav-item">
+              {/* <li className="nav-item">
                 <Link className="nav-link" href="/">Home</Link>
-              </li>
+              </li> */}
 
               <li className="nav-item">
                 <Link className="nav-link" href={`${route("homes")}#about`}>About</Link>

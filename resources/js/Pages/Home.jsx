@@ -47,12 +47,12 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
     email: ""
   });
   const [showRepayment, setShowRepayment] = useState(false);
-const [sliderAmount, setSliderAmount] = useState(200);
-const [sliderFortnight, setSliderFortnight] = useState(5);
-const [sliderEMI, setSliderEMI] = useState(0);
-const [sliderError, setSliderError] = useState("");
-const [calculatorFirstCheck, setCalculatorFirstCheck] = useState(false);
-const sliderRef = useRef(null);
+  const [sliderAmount, setSliderAmount] = useState(200);
+  const [sliderFortnight, setSliderFortnight] = useState(5);
+  const [sliderEMI, setSliderEMI] = useState(0);
+  const [sliderError, setSliderError] = useState("");
+  const [calculatorFirstCheck, setCalculatorFirstCheck] = useState(false);
+  const sliderRef = useRef(null);
 
 
   // scroll listener for scroll-to-top button
@@ -67,51 +67,51 @@ const sliderRef = useRef(null);
   }, []);
 
   useEffect(() => {
-  const amt = sliderAmount;
-  const tn = sliderFortnight;
+    const amt = sliderAmount;
+    const tn = sliderFortnight;
 
-  setSliderError(""); // reset
+    setSliderError(""); // reset
 
-  // Rule: amount must be >= 200
-  if (amt < 200) {
-    setSliderError("❌ Amount not applicable (minimum is 200)");
-    setSliderEMI(0);
-    return;
-  }
+    // Rule: amount must be >= 200
+    if (amt < 200) {
+      setSliderError("❌ Amount not applicable (minimum is 200)");
+      setSliderEMI(0);
+      return;
+    }
 
-  // Rule: tenure minimum 5
-  if (tn < 5) {
-    setSliderError("❌ Tenure not applicable (minimum is 5 days)");
-    setSliderEMI(0);
-    return;
-  }
+    // Rule: tenure minimum 5
+    if (tn < 5) {
+      setSliderError("❌ Tenure not applicable (minimum is 5 days)");
+      setSliderEMI(0);
+      return;
+    }
 
-  // Rule 1: 200/250/300 max 5 days
-  if ([200, 250, 300].includes(amt) && tn > 5) {
-    setSliderError("❌ Tenure not applicable for this amount (Max 5 days)");
-    setSliderEMI(0);
-    return;
-  }
+    // Rule 1: 200/250/300 max 5 days
+    if ([200, 250, 300].includes(amt) && tn > 5) {
+      setSliderError("❌ Tenure not applicable for this amount (Max 5 days)");
+      setSliderEMI(0);
+      return;
+    }
 
-  // Rule 2: 350–500 max 8
-  if ([350, 400, 450, 500].includes(amt) && tn > 8) {
-    setSliderError("❌ Tenure not applicable for this amount (Max 8 days)");
-    setSliderEMI(0);
-    return;
-  }
+    // Rule 2: 350–500 max 8
+    if ([350, 400, 450, 500].includes(amt) && tn > 8) {
+      setSliderError("❌ Tenure not applicable for this amount (Max 8 days)");
+      setSliderEMI(0);
+      return;
+    }
 
-  // Rule 3: 350–950 max 26
-  if (amt >= 350 && amt <= 950 && tn > 26) {
-    setSliderError("❌ Tenure not applicable (Max 26 days)");
-    setSliderEMI(0);
-    return;
-  }
+    // Rule 3: 350–950 max 26
+    if (amt >= 350 && amt <= 950 && tn > 26) {
+      setSliderError("❌ Tenure not applicable (Max 26 days)");
+      setSliderEMI(0);
+      return;
+    }
 
-  // If all good → calculate EMI
-  const emi = calculateRepayment(amt, tn);
-  setSliderEMI(emi);
+    // If all good → calculate EMI
+    const emi = calculateRepayment(amt, tn);
+    setSliderEMI(emi);
 
-}, [sliderAmount, sliderFortnight]);
+  }, [sliderAmount, sliderFortnight]);
 
 
   // Loan calculation logic (shared by submit & "Check Your Loan Now")
@@ -143,15 +143,15 @@ const sliderRef = useRef(null);
       return lockedEMIValues[amount].lockedEMI.toFixed(2);
     }
 
-  
+
     function roundTwo(num) {
-       return Math.round(num * 100 + 0.0000001) / 100;
+      return Math.round(num * 100 + 0.0000001) / 100;
     }
     const interestRate = 2.35;
- 
+
     const emi = ((amount * (interestRate / 100) * tenureDays) + amount) / tenureDays;
     const result = roundTwo(emi);
- 
+
     return result.toFixed(2);
   }
 
@@ -174,377 +174,291 @@ const sliderRef = useRef(null);
     setFormState(prev => ({ ...prev, repaymentPlan: repayment }));
     //(do not auto-send here — "Check Your Loan Now" handles sending in original)
   };
-  
+
   //handel submit & download brochure
   const handleSubmitForm = () => {
-  if (!formData.name || !formData.phone || !formData.email) {
-    alert("Please fill all fields");
-    return;
-  }
+    if (!formData.name || !formData.phone || !formData.email) {
+      alert("Please fill all fields");
+      return;
+    }
 
-  // TODO: Your download logic here
-  console.log("Form submitted:", formData);
+    // TODO: Your download logic here
+    console.log("Form submitted:", formData);
 
-  setShowForm(false);
+    setShowForm(false);
   };
 
   // handle Check Your Loan Now (calculates and sends AJAX POST via fetch)
- const handleCheckLoan = (e) => {
-  e.preventDefault();
-  setRespMsg("");
-  setShowRepayment(false);
+  const handleCheckLoan = (e) => {
+    e.preventDefault();
+    setRespMsg("");
+    setShowRepayment(false);
 
-  // 🔥 Trigger HTML validation (THIS WAS MISSING!!)
-  const formEl = formRef.current;
-  if (!formEl.checkValidity()) {
-    formEl.reportValidity();
-    return;
-  }
+    // 🔥 Trigger HTML validation (THIS WAS MISSING!!)
+    const formEl = formRef.current;
+    if (!formEl.checkValidity()) {
+      formEl.reportValidity();
+      return;
+    }
 
-  const { amount, tenure } = formState;
+    const { amount, tenure } = formState;
 
-  const amt = Number(amount);
-  const tn = Number(tenure);
+    const amt = Number(amount);
+    const tn = Number(tenure);
 
-  // ... (your existing logic continues)
+    // ... (your existing logic continues)
 
 
-      // Rule 3: tenure must be >= 5 for all amounts
-      if (amt< 200) {
-        setRespMsg("❌ amount not applicable (minimum is 200)");
-        setShowRepayment(true);
-        return;
-      }
-      if (tn < 5) {
-        setRespMsg("❌ Tenure not applicable (minimum is 5 days)");
-        setShowRepayment(true);
-        return;
-      }
-
-      // Rule 1: For 200, 250, 300 → max 5 days
-      const smallAmounts = [200, 250, 300];
-      if (smallAmounts.includes(amt)) {
-        if (tn > 5) {
-          setRespMsg("❌ Tenure not applicable for this amount (Max 5 days)");
-          setShowRepayment(true);
-          return;
-        }
-      }
-      // Rule 1: For 350, 400, 450, 500 → max 5 days
-      const eightDaysAmounts = [350, 400, 450, 500];
-      if (eightDaysAmounts.includes(amt)) {
-        if (tn > 8) {
-          setRespMsg("❌ Tenure not applicable for this amount (Max 8 days)");
-          setShowRepayment(true);
-          return;
-        }
-      }
-
-      // Rule 2: For 350–950 → max 26 days
-      if (amt >= 350 && amt <= 950) {
-        if (tn > 26) {
-          setRespMsg("❌ Tenure not applicable for this amount (Max 26 days)");
-          setShowRepayment(true);
-          return;
-        }
-      }
-
-      // If passed all rules → calculate repayment
-      const repayment = calculateRepayment(amount, tenure);
-      setFormState((prev) => ({ ...prev, repaymentPlan: repayment }));
-
+    // Rule 3: tenure must be >= 5 for all amounts
+    if (amt < 200) {
+      setRespMsg("❌ amount not applicable (minimum is 200)");
       setShowRepayment(true);
+      return;
+    }
+    if (tn < 5) {
+      setRespMsg("❌ Tenure not applicable (minimum is 5 days)");
+      setShowRepayment(true);
+      return;
+    }
+
+    // Rule 1: For 200, 250, 300 → max 5 days
+    const smallAmounts = [200, 250, 300];
+    if (smallAmounts.includes(amt)) {
+      if (tn > 5) {
+        setRespMsg("❌ Tenure not applicable for this amount (Max 5 days)");
+        setShowRepayment(true);
+        return;
+      }
+    }
+    // Rule 1: For 350, 400, 450, 500 → max 5 days
+    const eightDaysAmounts = [350, 400, 450, 500];
+    if (eightDaysAmounts.includes(amt)) {
+      if (tn > 8) {
+        setRespMsg("❌ Tenure not applicable for this amount (Max 8 days)");
+        setShowRepayment(true);
+        return;
+      }
+    }
+
+    // Rule 2: For 350–950 → max 26 days
+    if (amt >= 350 && amt <= 950) {
+      if (tn > 26) {
+        setRespMsg("❌ Tenure not applicable for this amount (Max 26 days)");
+        setShowRepayment(true);
+        return;
+      }
+    }
+
+    // If passed all rules → calculate repayment
+    const repayment = calculateRepayment(amount, tenure);
+    setFormState((prev) => ({ ...prev, repaymentPlan: repayment }));
+
+    setShowRepayment(true);
   };
 
-useEffect(() => {
-  if (window.innerWidth > 768) return;
+  useEffect(() => {
+    if (window.innerWidth > 768) return;
 
-  const items = document.querySelectorAll(".fa-item");
+    const items = document.querySelectorAll(".fa-item");
 
-  items.forEach((item) => {
-    const header = item.querySelector(".fa-header");
+    items.forEach((item) => {
+      const header = item.querySelector(".fa-header");
 
-    header.addEventListener("click", () => {
-      item.classList.toggle("active");
+      header.addEventListener("click", () => {
+        item.classList.toggle("active");
+      });
     });
-  });
-}, []);
+  }, []);
 
 
 
-const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
+  const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
   return (
     <div className="min-vh-100" data-bs-spy="scroll" data-bs-target=".navbar" data-bs-offset="70">
 
       {/* Navbar */}
-            <nav className="navbar navbar-expand-lg fixed-top">
-              <div className="container">
+      <nav className="bg-white border-b fixed-top w-100 shadow-sm">
+        <div className="container d-flex justify-content-between align-items-center py-2">
 
-                <a className="navbar-brand d-flex flex-column align-items-center" href="./">
-  <img src={logo} alt="Agro Advance Aben" className="brand-logo"/>
+          {/* Logo + Title */}
+          <a href="/" className="d-flex flex-column align-items-center text-decoration-none">
+            <img src={logo} alt="Agro Logo" style={{ width: "60px" }} />
+            <span className="brand-title text-dark fw-bold">AGRO ADVANCE ABEN</span>
+            <span className="brand-subtitle text-muted" style={{ fontSize: "12px" }}>
+              Finance with Purpose
+            </span>
+          </a>
 
-  <span className="brand-title">AGRO ADVANCE ABEN</span>
-  <span className="brand-subtitle">Finance with Purpose</span>
-</a>
-
-                <button
-                  className="navbar-toggler"
-                  type="button"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#navbarNav"
-                  aria-expanded={isDesktop}
-                  onClick={() => {
-                    const nav = document.getElementById("navbarNav");
-                    setIsNavOpen(!isNavOpen);
-                    console.log("Toggler clicked, isNavOpen:", !isNavOpen);
-                    if (!isNavOpen) {
-                      setTimeout(() => {
-                        nav.classList.remove("collapse");
-                        nav.classList.add("show");   // ensure open
-                      }, 350); // Bootstrap collapse animation = 300ms
-                    }
-                  }}
-                >
-                  <span className="navbar-toggler-icon"></span>
-                </button>
-
-                <div
-                  id="navbarNav"
-                  className={`navbar-collapse justify-content-center ${isDesktop ? 'show' : isNavOpen ? 'show' : 'collapse'}`}
-                >
-                  <ul className="navbar-nav">
-                    {/* <li className="nav-item"><a className="nav-link active" href="#home">Home</a></li> */}
-                    <li className="nav-item"><a className="nav-link" href="#about">About</a></li>
-                    <li className="nav-item"><a className="nav-link" href="#why">Why Us</a></li>
-                    <li className="nav-item"><a className="nav-link" href="#testimonials">Reviews</a></li>
-                    <li className="nav-item"><a className="nav-link" href="#contact">Contact</a></li>
-                  </ul>
-                </div>
-                {/* <div className="d-flex align-items-center">
-                  <button className="btn btn-call">Download Brochure</button> */}
-                  {/* <button className="btn btn-login">Login</button> */}
-        <div className="d-flex align-items-center">
-           <button
-            className="btn btn-call"
-            onClick={() => setShowForm(true)}
+          {/* Mobile Toggle Button */}
+          <button
+            className="d-lg-none btn p-2"
+            onClick={() => setIsNavOpen(!isNavOpen)}
           >
-            Download Brochure
-            </button>
-             {/* Download Brochure Form Modal */}
-            {showForm && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-4 z-50">
-                <div className="bg-white w-full max-w-md rounded-xl shadow-lg animate-fadeIn">
-
-                  {/* Header */}
-                  <div className="border-b px-6 py-4">
-                    <h2 className="text-lg font-semibold text-gray-700">
-                      Please provide your details
-                    </h2>
-                  </div>
-
-                  {/* Body */}
-                  <div className="px-6 py-4 space-y-4">
-
-                    {/* Name */}
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Name</label>
-                      <input
-                        type="text"
-                        placeholder="Your full name"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
-                      />
-                    </div>
-
-                    {/* Phone */}
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Phone</label>
-                      <input
-                        type="text"
-                        placeholder="Valid 8-digit mobile number"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData({ ...formData, phone: e.target.value })
-                        }
-                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
-                      />
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Email</label>
-                      <input
-                        type="email"
-                        placeholder="name@example.com"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
-                      />
-                    </div>
-
-                  </div>
-
-                  {/* Footer */}
-                  <div className="border-t px-6 py-4 flex justify-end gap-3">
-
-                    {/* Cancel */}
-                    <button
-                      onClick={() => setShowForm(false)}
-                      className="px-5 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm"
-                    >
-                      Cancel
-                    </button>
-
-                    {/* Submit & Download */}
-                    <button
-                      onClick={() => handleSubmitForm()}
-                      className="px-5 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-white text-sm"
-                    >
-                      Submit & Download
-                    </button>
-                  </div>
-                </div>
-              </div>
-        )}
-
-            {/* <button className="btn btn-login">Login</button> */}
-            {auth.user ? (
-                <Link
-                    href={route('dashboard')}
-                    // className="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500"
-                >                    
-                    <button className="btn btn-login">Dashboard</button>
-                </Link>
+            {isNavOpen ? (
+              <i className="bi bi-x-lg fs-4"></i>
             ) : (
-                <>
-                    <Link
-                        href={route('login')}
-                        // className="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500"
-                    >
-                        <button className="btn btn-login">Log in</button>
-                    </Link>
+              <i className="bi bi-list fs-3"></i>
+            )}
+          </button>
 
-                    {/* <Link
-                        href={route('register')}
-                        // className="ms-4 font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500"
-                    >
-                        <button className="btn btn-login">Register</button>
-                    </Link> */}
-                </>
+          {/* Desktop Nav */}
+          <div className="d-none d-lg-flex align-items-center gap-4">
+            <a href="#about" className="nav-link">About</a>
+            <a href="#why" className="nav-link">Why Us</a>
+            <a href="#testimonials" className="nav-link">Reviews</a>
+            <a href="#contact" className="nav-link">Contact</a>
+
+            {/* Buttons */}
+            <button className="btn btn-call" onClick={() => setShowForm(true)}>
+              Download Brochure
+            </button>
+
+            {auth.user ? (
+              <Link href={route('dashboard')}>
+                <button className="btn btn-login">Dashboard</button>
+              </Link>
+            ) : (
+              <Link href={route('login')}>
+                <button className="btn btn-login">Login</button>
+              </Link>
             )}
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isNavOpen && (
+          <div className="bg-white border-top py-3 px-4 d-lg-none">
+
+            <a href="#about" className="mobile-nav-link d-block py-2">About</a>
+            <a href="#why" className="mobile-nav-link d-block py-2">Why Us</a>
+            <a href="#testimonials" className="mobile-nav-link d-block py-2">Reviews</a>
+            <a href="#contact" className="mobile-nav-link d-block py-2">Contact</a>
+
+            <button
+              className="btn btn-call w-100 mt-3"
+              onClick={() => setShowForm(true)}
+            >
+              Download Brochure
+            </button>
+
+            {auth.user ? (
+              <Link href={route('dashboard')}>
+                <button className="btn btn-login w-100 mt-2">Dashboard</button>
+              </Link>
+            ) : (
+              <Link href={route('login')}>
+                <button className="btn btn-login w-100 mt-2">Login</button>
+              </Link>
+            )}
+          </div>
+        )}
       </nav>
 
+
       {/* Home Section */}
-      <section id="home" className="py-5" style={{paddingTop: '100px'}}>
+      <section id="home" className="py-5" style={{ paddingTop: '100px' }}>
         <div className="container">
           <div className="home-wrapper d-flex flex-wrap align-items-start">
-            <div className="home-left me-4" style={{flex: '1 1 420px'}}>
-              <h1 className="mt-2">Personal Loans for Life’s<br/>Everyday Needs.</h1>
+            <div className="home-left me-4" style={{ flex: '1 1 420px' }}>
+              <h1 className="mt-2">Personal Loans for Life’s<br />Everyday Needs.</h1>
               <p>
-                Enjoy flexible, transparent, and quick loan options that help you manage expenses,<br/>
+                Enjoy flexible, transparent, and quick loan options that help you manage expenses,<br />
                 handle emergencies or make your plans a reality.
-                <br/><br/><b>Achieve Your Financial Goal</b><br/>
+                <br /><br /><b>Achieve Your Financial Goal</b><br />
               </p>
-              <a href="#contact" className="btn text-light" style={{backgroundColor: 'lightred', color: 'white'}}>Apply for Loan</a>
+              <a href="#contact" className="btn text-light" style={{ backgroundColor: 'lightred', color: 'white' }}>Apply for Loan</a>
             </div>
 
             <div className="home-right loan-box" >
-            {!calculatorFirstCheck && (
-              <h4 className="loan-heading">How much do you need</h4>
-            )}
-
-            <form id="loanForm" ref={formRef} onSubmit={handleSubmit}>
               {!calculatorFirstCheck && (
-                <>
-                  <div className="row">
-                    {/* AMOUNT */}
-                    <div className="col-md-6 mb-3 text-left">
-                      <label className="form-label">Amount *</label>
-                      <input
-                        type="number"
-                        name="amount"
-                        value={formState.amount}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                        min="200"
-                        max="20000"
-                        title="Amount must be between 200 and 20000"
-                      />
-                    </div>
-
-                    {/* TENURE */}
-                    <div className="col-md-6 mb-3 text-left">
-                      <label className="form-label">Tenure (Days) *</label>
-                      <input
-                        type="number"
-                        name="tenure"
-                        value={formState.tenure}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="row">
-                    {/* NAME */}
-                    <div className="col-md-6 mb-3 text-left">
-                      <label className="form-label">Name *</label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formState.name}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                        pattern="^[A-Za-z ]{3,}$"
-                        title="Name must contain only alphabets and be at least 3 characters."
-                      />
-                    </div>
-
-                    {/* PHONE */}
-                    <div className="col-md-6 mb-3 text-left">
-                      <label className="form-label">Phone *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formState.phone}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                        pattern="^[0-9]{8}$"
-                        maxLength="8"
-                        title="Phone number must be exactly 8 digits."
-                      />
-                    </div>
-
-                    {/* EMAIL */}
-                    <div className="mb-3 text-left">
-                      <label className="form-label">Email *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formState.email}
-                        onChange={handleChange}
-                        className="form-control"
-                        required
-                        title="Enter a valid email address."
-                      />
-                    </div>
-                  </div>
-                </>
+                <h4 className="loan-heading">How much do you need</h4>
               )}
 
-  {/* Repayment Display */}
-  {/* Show repayment only AFTER button click */}
+              <form id="loanForm" ref={formRef} onSubmit={handleSubmit}>
+                {!calculatorFirstCheck && (
+                  <>
+                    <div className="row">
+                      {/* AMOUNT */}
+                      <div className="col-md-6 mb-3 text-left">
+                        <label className="form-label">Amount *</label>
+                        <input
+                          type="number"
+                          name="amount"
+                          value={formState.amount}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                          min="200"
+                          max="20000"
+                          title="Amount must be between 200 and 20000"
+                        />
+                      </div>
+
+                      {/* TENURE */}
+                      <div className="col-md-6 mb-3 text-left">
+                        <label className="form-label">Tenure (Days) *</label>
+                        <input
+                          type="number"
+                          name="tenure"
+                          value={formState.tenure}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      {/* NAME */}
+                      <div className="col-md-6 mb-3 text-left">
+                        <label className="form-label">Name *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={formState.name}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                          pattern="^[A-Za-z ]{3,}$"
+                          title="Name must contain only alphabets and be at least 3 characters."
+                        />
+                      </div>
+
+                      {/* PHONE */}
+                      <div className="col-md-6 mb-3 text-left">
+                        <label className="form-label">Phone *</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formState.phone}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                          pattern="^[0-9]{8}$"
+                          maxLength="8"
+                          title="Phone number must be exactly 8 digits."
+                        />
+                      </div>
+
+                      {/* EMAIL */}
+                      <div className="mb-3 text-left">
+                        <label className="form-label">Email *</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formState.email}
+                          onChange={handleChange}
+                          className="form-control"
+                          required
+                          title="Enter a valid email address."
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Repayment Display */}
+                {/* Show repayment only AFTER button click */}
                 {showRepayment && !calculatorFirstCheck && (
                   <div
                     className="p-3 rounded-lg mb-3 text-center"
@@ -709,45 +623,45 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
                   </section>
                 )}
                 {(!calculatorFirstCheck) && (
-               <button
-  type="button"
-  className="btn btn-success btn-check-loan"
-  onClick={(e) => {
-    const formEl = formRef.current;
+                  <button
+                    type="button"
+                    className="btn btn-success btn-check-loan"
+                    onClick={(e) => {
+                      const formEl = formRef.current;
 
-    // 🔥 FIRST: Run built-in HTML validation
-    if (!formEl.checkValidity()) {
-      formEl.reportValidity();  // Show browser validation message
-      return;                   // Stop here if invalid
-    }
+                      // 🔥 FIRST: Run built-in HTML validation
+                      if (!formEl.checkValidity()) {
+                        formEl.reportValidity();  // Show browser validation message
+                        return;                   // Stop here if invalid
+                      }
 
-    // 🔥 SECOND: Run your logic only if form is valid
-    handleCheckLoan(e);
+                      // 🔥 SECOND: Run your logic only if form is valid
+                      handleCheckLoan(e);
 
-    // OPEN SLIDER SECTION
-    setCalculatorFirstCheck(true);
+                      // OPEN SLIDER SECTION
+                      setCalculatorFirstCheck(true);
 
-    // SET SLIDERS FROM INPUT FIELDS
-    setSliderAmount(Number(formState.amount));
-    setSliderFortnight(Number(formState.tenure));
+                      // SET SLIDERS FROM INPUT FIELDS
+                      setSliderAmount(Number(formState.amount));
+                      setSliderFortnight(Number(formState.tenure));
 
-    // SCROLL TO SLIDER SECTION
-    setTimeout(() => {
-      sliderRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }, 200);
-  }}
-  disabled={sending}
->
-  {sending ? "Sending..." : "Check Your Loan Now!"}
-</button>
+                      // SCROLL TO SLIDER SECTION
+                      setTimeout(() => {
+                        sliderRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start"
+                        });
+                      }, 200);
+                    }}
+                    disabled={sending}
+                  >
+                    {sending ? "Sending..." : "Check Your Loan Now!"}
+                  </button>
 
                 )}
 
-  <div className="resp mt-2">{respMsg}</div>
-</form>
+                <div className="resp mt-2">{respMsg}</div>
+              </form>
 
 
 
@@ -757,116 +671,116 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
 
 
-{/* Loan Slider Calculator (React + Validation + EMI Logic) */}
-{2+2 != 4 && (
-<section id="loan" className="py-5" style={{ backgroundColor: "#f9f9f9", display: "none !important" }}>
-  <div className="container">
+        {/* Loan Slider Calculator (React + Validation + EMI Logic) */}
+        {2 + 2 != 4 && (
+          <section id="loan" className="py-5" style={{ backgroundColor: "#f9f9f9", display: "none !important" }}>
+            <div className="container">
 
-    <h2 className="text-center fw-bold mb-5" style={{ color: "#008037" }}>
-      How much do you want to borrow?
-    </h2>
+              <h2 className="text-center fw-bold mb-5" style={{ color: "#008037" }}>
+                How much do you want to borrow?
+              </h2>
 
-    <div className="card shadow-sm border-0 p-4 mx-auto" style={{ maxWidth: "700px" }}>
+              <div className="card shadow-sm border-0 p-4 mx-auto" style={{ maxWidth: "700px" }}>
 
-      {/* Loan Amount */}
-      <div className="mb-4 text-center position-relative">
-        <h5 className="fw-semibold mb-3">Loan Amount</h5>
+                {/* Loan Amount */}
+                <div className="mb-4 text-center position-relative">
+                  <h5 className="fw-semibold mb-3">Loan Amount</h5>
 
-        <div className="d-flex align-items-center justify-content-center gap-3">
+                  <div className="d-flex align-items-center justify-content-center gap-3">
 
-          <button
-            onClick={() => setSliderAmount(prev => Math.max(200, prev - 50))}
-            className="btn btn-sm btn-outline-success"
-          >
-            −
-          </button>
-          <div className="slider-wrapper position-relative w-75">
-            <input
-              type="range"
-              min="200"
-              max="10000"
-              step="50"
-              value={sliderAmount}
-              onChange={(e) => setSliderAmount(Number(e.target.value))}
-              className="form-range"
-            />
-            <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
-              K{sliderAmount}
+                    <button
+                      onClick={() => setSliderAmount(prev => Math.max(200, prev - 50))}
+                      className="btn btn-sm btn-outline-success"
+                    >
+                      −
+                    </button>
+                    <div className="slider-wrapper position-relative w-75">
+                      <input
+                        type="range"
+                        min="200"
+                        max="10000"
+                        step="50"
+                        value={sliderAmount}
+                        onChange={(e) => setSliderAmount(Number(e.target.value))}
+                        className="form-range"
+                      />
+                      <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
+                        K{sliderAmount}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setSliderAmount(prev => Math.min(10000, prev + 50))}
+                      className="small-inc-btn"
+                    >
+                      +
+                    </button>
+
+                  </div>
+                </div>
+
+                {/* Fortnight Count */}
+                <div className="mb-4 text-center position-relative">
+                  <h5 className="fw-semibold mb-3">No. of Fortnights</h5>
+
+                  <div className="d-flex align-items-center justify-content-center gap-3">
+
+                    <button
+                      onClick={() => setSliderFortnight(prev => Math.max(5, prev - 1))}
+                      className="small-inc-btn"
+                    >
+                      −
+                    </button>
+
+                    <div className="slider-wrapper position-relative w-75">
+                      <input
+                        type="range"
+                        min="5"
+                        max="52"
+                        step="1"
+                        value={sliderFortnight}
+                        onChange={(e) => setSliderFortnight(Number(e.target.value))}
+                        className="form-range"
+                      />
+                      <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
+                        {sliderFortnight}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setSliderFortnight(prev => Math.min(52, prev + 1))}
+                      className="btn btn-sm btn-outline-success"
+                    >
+                      +
+                    </button>
+
+                  </div>
+                </div>
+
+                {/* ---------- Validation Errors ---------- */}
+                {sliderError && (
+                  <div
+                    className="p-2 mb-3 text-white fw-bold text-center"
+                    style={{ background: "#d9534f", borderRadius: 6 }}
+                  >
+                    {sliderError}
+                  </div>
+                )}
+
+                {/* ---------- EMI Display ---------- */}
+                {!sliderError && (
+                  <div className="text-center bg-light rounded p-3 mt-4">
+                    <h6 className="text-muted mb-1">Fortnightly Payment (EMI)</h6>
+                    <h3 className="fw-bold text-success mb-0">
+                      PGK {sliderEMI}
+                    </h3>
+                  </div>
+                )}
+
+              </div>
             </div>
-          </div>
-
-          <button
-            onClick={() => setSliderAmount(prev => Math.min(10000, prev + 50))}
-            className="small-inc-btn"
-          >
-            +
-          </button>
-
-        </div>
-      </div>
-
-      {/* Fortnight Count */}
-      <div className="mb-4 text-center position-relative">
-        <h5 className="fw-semibold mb-3">No. of Fortnights</h5>
-
-        <div className="d-flex align-items-center justify-content-center gap-3">
-
-          <button
-            onClick={() => setSliderFortnight(prev => Math.max(5, prev - 1))}
-            className="small-inc-btn"
-          >
-            −
-          </button>
-
-          <div className="slider-wrapper position-relative w-75">
-            <input
-              type="range"
-              min="5"
-              max="52"
-              step="1"
-              value={sliderFortnight}
-              onChange={(e) => setSliderFortnight(Number(e.target.value))}
-              className="form-range"
-            />
-            <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
-              {sliderFortnight}
-            </div>
-          </div>
-
-          <button
-            onClick={() => setSliderFortnight(prev => Math.min(52, prev + 1))}
-            className="btn btn-sm btn-outline-success"
-          >
-            +
-          </button>
-
-        </div>
-      </div>
-
-      {/* ---------- Validation Errors ---------- */}
-      {sliderError && (
-        <div
-          className="p-2 mb-3 text-white fw-bold text-center"
-          style={{ background: "#d9534f", borderRadius: 6 }}
-        >
-          {sliderError}
-        </div>
-      )}
-
-      {/* ---------- EMI Display ---------- */}
-      {!sliderError && (
-        <div className="text-center bg-light rounded p-3 mt-4">
-          <h6 className="text-muted mb-1">Fortnightly Payment (EMI)</h6>
-          <h3 className="fw-bold text-success mb-0">
-            PGK {sliderEMI}
-          </h3>
-        </div>
-      )}
-
-    </div>
-  </div>
-</section>
-)}
+          </section>
+        )}
 
 
 
@@ -875,51 +789,51 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
 
         {/* Quick Loan Bar */}
-        <div className="quick-loan-section mt-5 d-flex align-items-center"> 
+        <div className="quick-loan-section mt-5 d-flex align-items-center">
           <div className="quick-image me-3">
-          {/* <img src={heroImage1} alt="Agro hero footer" style={{maxWidth: '700px'}}/> */}
-            <img src={heroImage} alt="Agro hero footer" style={{maxWidth: '1200px'}}/>
-            
+            {/* <img src={heroImage1} alt="Agro hero footer" style={{maxWidth: '700px'}}/> */}
+            <img src={heroImage} alt="Agro hero footer" style={{ maxWidth: '1200px' }} />
+
           </div>
           <div className="quick-items d-flex gap-3">
             {/* <div className="quick-item"><i className="bi bi-stopwatch"></i><span>Quick Loans.<br/>Easy Approvals.</span></div>
             <div className="quick-item"><i className="bi bi-hand-thumbs-up"></i><span>Fast Cash.<br/>Zero Hassle.</span></div>
             <div className="quick-item"><i className="bi bi-cash-stack"></i><span>Apply Today.<br/>Approved Tomorrow.</span></div> */}
-<div className="quick-items d-flex gap-5">
+            <div className="quick-items d-flex gap-5">
 
-  <div className="quick-item d-flex align-items-center gap-3">
-    {/* <!-- Stopwatch Icon --> */}
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2">
-      <circle cx="12" cy="13" r="9"></circle>
-      <line x1="12" y1="13" x2="12" y2="8"></line>
-      <line x1="12" y1="13" x2="16" y2="13"></line>
-      <rect x="10" y="4" width="4" height="2" fill="#F1E600"></rect>
-    </svg>
-    <span>Quick Loans.<br/>Easy Approvals.</span>
-  </div>
+              <div className="quick-item d-flex align-items-center gap-3">
+                {/* <!-- Stopwatch Icon --> */}
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2">
+                  <circle cx="12" cy="13" r="9"></circle>
+                  <line x1="12" y1="13" x2="12" y2="8"></line>
+                  <line x1="12" y1="13" x2="16" y2="13"></line>
+                  <rect x="10" y="4" width="4" height="2" fill="#F1E600"></rect>
+                </svg>
+                <span>Quick Loans.<br />Easy Approvals.</span>
+              </div>
 
-  <div className="quick-item d-flex align-items-center gap-3">
-    {/* <!-- Thumbs Up Icon --> */}
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M7 10v12H3V10h4z"></path>
-      <path d="M7 10l4-7 1 7h7a2 2 0 0 1 2 2l-1 7a2 2 0 0 1-2 2H7"></path>
-    </svg>
-    <span>Fast Cash.<br/>Zero Hassle.</span>
-  </div>
+              <div className="quick-item d-flex align-items-center gap-3">
+                {/* <!-- Thumbs Up Icon --> */}
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 10v12H3V10h4z"></path>
+                  <path d="M7 10l4-7 1 7h7a2 2 0 0 1 2 2l-1 7a2 2 0 0 1-2 2H7"></path>
+                </svg>
+                <span>Fast Cash.<br />Zero Hassle.</span>
+              </div>
 
-  <div className="quick-item d-flex align-items-center gap-3">
-    {/* <!-- Money Icon --> */}
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
-      <circle cx="12" cy="12" r="3"></circle>
-      <line x1="2" y1="12" x2="5" y2="12"></line>
-      <line x1="19" y1="12" x2="22" y2="12"></line>
-    </svg>
-    <span>Apply Today.<br/>Approved Tomorrow.</span>
-  </div>
+              <div className="quick-item d-flex align-items-center gap-3">
+                {/* <!-- Money Icon --> */}
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <line x1="2" y1="12" x2="5" y2="12"></line>
+                  <line x1="19" y1="12" x2="22" y2="12"></line>
+                </svg>
+                <span>Apply Today.<br />Approved Tomorrow.</span>
+              </div>
 
-</div>
-     
+            </div>
+
           </div>
         </div>
       </section>
@@ -929,22 +843,22 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
         <div className="container">
           <div className="row align-items-center g-5">
             <div className="col-md-6 about-text-shift">
-             <b><small className="text-uppercase" style={{color:'#585858'}}>About Our Company</small></b>
+              <b><small className="text-uppercase" style={{ color: '#585858' }}>About Our Company</small></b>
 
-              <h2 className="fw-bold mb-4" style={{color:'green'}}>Empowering Lives Through<br/> Smart Finance</h2>
-              <p className="text-muted mb-3">Agro Advance Aben Limited is a trusted Papua New Guinea–based consumer finance <br/>company,
+              <h2 className="fw-bold mb-4" style={{ color: 'green' }}>Empowering Lives Through<br /> Smart Finance</h2>
+              <p className="text-muted mb-3">Agro Advance Aben Limited is a trusted Papua New Guinea–based consumer finance <br />company,
                 dedicated to helping individuals meet personal and family financial needs.
               </p>
-              <p className="text-muted mb-4">From school fees to medical expenses, we provide quick, reliable, and flexible loan<br/> solutions
+              <p className="text-muted mb-4">From school fees to medical expenses, we provide quick, reliable, and flexible loan<br /> solutions
                 that make access to finance simple and stress-free for everyone.
               </p>
-              <a href="#contact" className="btn px-4 py-2 text-light" style={{backgroundColor:'#d71920', color:'#fff', border:'none', borderRadius:6, textDecoration:'none'}}>Apply for Loan</a>
+              <a href="#contact" className="btn px-4 py-2 text-light" style={{ backgroundColor: '#d71920', color: '#fff', border: 'none', borderRadius: 6, textDecoration: 'none' }}>Apply for Loan</a>
             </div>
 
             <div className="col-md-6 text-center position-relative">
               <div className="about-images">
                 <img src={about1} alt="Agro about 1" className="img-fluid main-img" />
-                <img src={about2} alt="Agro about 2" className="img-fluid overlay-img shadow-lg" style={{width:'45%', height:326}}/>
+                <img src={about2} alt="Agro about 2" className="img-fluid overlay-img shadow-lg" style={{ width: '45%', height: 326 }} />
               </div>
             </div>
 
@@ -967,7 +881,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
 
         <div className="container-fluid">
           <div className="loan__services__list d-flex flex-wrap">
-            <div className="loan__services__item" style={{backgroundImage:`url(${loan1})`, backgroundSize:'cover', backgroundPosition:'center'}}>
+            <div className="loan__services__item" style={{ backgroundImage: `url(${loan1})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="loan__services__item__text">
                 <h4> Personal Loan</h4>
                 <p>Secure,quick financing for government employees covering immediate personal needs,emergencies,or family commitments.</p>
@@ -975,7 +889,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
               </div>
             </div>
 
-            <div className="loan__services__item" style={{backgroundImage:`url(${loan2})`, backgroundSize:'cover', backgroundPosition:'center'}}>
+            <div className="loan__services__item" style={{ backgroundImage: `url(${loan2})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="loan__services__item__text">
                 <h4> Business Loan</h4>
                 <p>Capital to support entrepreneurial ventures or side businesses, leveraging the stability of a government salary for reliable repayment.</p>
@@ -983,28 +897,28 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
               </div>
             </div>
 
-            <div className="loan__services__item" style={{backgroundImage:`url(${loan3})`, backgroundSize:'cover', backgroundPosition:'center'}}>
+            <div className="loan__services__item" style={{ backgroundImage: `url(${loan3})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="loan__services__item__text">
                 <h4>Education Loan</h4>
-                
+
                 <p>Dedicated funding to ensure dependents of government employees access high-quality education without financial strain.</p>
                 {/* <a href="#">Find Out More</a> */}
               </div>
             </div>
 
-            <div className="loan__services__item" style={{backgroundImage:`url(${loan4})`, backgroundSize:'cover', backgroundPosition:'center'}}>
+            <div className="loan__services__item" style={{ backgroundImage: `url(${loan4})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="loan__services__item__text">
                 <h4> Commercial Loan</h4>
-                
+
                 <p>High-value lending secured by the employee's stable income, typically used for significant asset purchases or investment projects.</p>
                 {/* <a href="#">Find Out More</a> */}
               </div>
             </div>
 
-            <div className="loan__services__item" style={{backgroundImage:`url(${loan5})`, backgroundSize:'cover', backgroundPosition:'center'}}>
+            <div className="loan__services__item" style={{ backgroundImage: `url(${loan5})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="loan__services__item__text">
                 <h4> Health Loan</h4>
-               
+
                 <p>Essential financial support for unexpected or planned medical expenses and treatments for the employee or their family.</p>
                 {/* <a href="#">Find Out More</a> */}
               </div>
@@ -1017,7 +931,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
       {/* Why Choose Us */}
       <section id="why" className="py-5 bg-white">
         <div className="container text-center">
-          <h2 className="fw-bold mb-2" style={{color:'#008037'}}>Why Choose Us</h2>
+          <h2 className="fw-bold mb-2" style={{ color: '#008037' }}>Why Choose Us</h2>
           <p className="text-muted mb-5">Trusted financial support that puts your needs first.</p>
 
           <div className="row g-4">
@@ -1025,23 +939,23 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
               icon: 'bi-lightning-charge-fill',
               title: 'Quick Approvals',
               text: 'Get your loan approved in the shortest possible time with our simplified process.'
-            },{
+            }, {
               icon: 'bi-shield-lock-fill',
               title: 'Easy Access',
               text: 'Enjoy hassle-free access to funds whenever you need them most.'
-            },{
+            }, {
               icon: 'bi-check2-circle',
               title: 'Flexible Terms',
               text: 'Choose repayment plans that fit your lifestyle and financial capacity.'
-            },{
+            }, {
               icon: 'bi-cash-stack',
               title: 'Transparent Process',
               text: 'No hidden fees or surprises — just clear, honest communication.'
-            },{
+            }, {
               icon: 'bi-person-check-fill',
               title: 'Customer Focused',
               text: 'We prioritize your goals and provide solutions that truly make a difference.'
-            },{
+            }, {
               icon: 'bi-calendar-check-fill',
               title: 'Local Expertise',
               text: 'Proudly PNG-based, we understand your community and financial needs better.'
@@ -1061,10 +975,10 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
       </section>
 
       {/* Testimonials (uses Bootstrap Carousel) */}
-      <section id="testimonials" className="testimonial py-5" style={{backgroundColor:'#1E2A5A'}}>
+      <section id="testimonials" className="testimonial py-5" style={{ backgroundColor: '#1E2A5A' }}>
         <div className="container">
-          <h2 className="text-center fw-bold mb-2" style={{color:'rgba(80, 196, 34, 1)'}}>What Customers Are Saying</h2>
-          <p className="text-center mb-4" style={{color:'white'}}>Hear from people across Papua New Guinea who’ve trusted Agro Advance Aben Limited for their financial needs.</p>
+          <h2 className="text-center fw-bold mb-2" style={{ color: 'rgba(80, 196, 34, 1)' }}>What Customers Are Saying</h2>
+          <p className="text-center mb-4" style={{ color: 'white' }}>Hear from people across Papua New Guinea who’ve trusted Agro Advance Aben Limited for their financial needs.</p>
 
           <div id="testimonialCarousel" className="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
             <div className="carousel-inner">
@@ -1080,7 +994,7 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
                   <div className="col-md-4">
                     <div className="testimonial-card p-4 bg-white rounded shadow-sm text-center h-100">
                       <h6 className="fw-bold mb-1">Lucy M</h6>
-                      <p className="text-muted small">Getting a loan was simple and fast. The staff  understood <br/> my situation and made the process stress-free.</p>
+                      <p className="text-muted small">Getting a loan was simple and fast. The staff  understood <br /> my situation and made the process stress-free.</p>
                     </div>
                   </div>
 
@@ -1134,257 +1048,257 @@ const isDesktop = typeof window !== "undefined" && window.innerWidth > 992;
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-5" style={{backgroundColor:'#002b10', backgroundSize:'cover', color:'#fff'}}>
+      <section id="contact" className="py-5" style={{ backgroundColor: '#002b10', backgroundSize: 'cover', color: '#fff' }}>
         <div className="container">
           <div className="row align-items-center g-4">
             <div className="col-md-5">
-              <h3 className="fw-bold mb-3" style={{color: '#fff'}}>Request A Call Back</h3>
+              <h3 className="fw-bold mb-3" style={{ color: '#fff' }}>Request A Call Back</h3>
               <p className="mb-4 text-light small">Our team is ready to assist you. Share your details, and we’ll reach out to discuss the best loan solution for your needs.</p>
               <a href="#home" className="btn btn-outline-light px-4 py-2 rounded">Contact Us</a>
             </div>
 
-           <div className="col-md-7">
-  <form className="row g-3" onSubmit={(e)=>e.preventDefault()}>
+            <div className="col-md-7">
+              <form className="row g-3" onSubmit={(e) => e.preventDefault()}>
 
-    {/* NAME */}
-    <div className="col-md-6">
-      <input
-        type="text"
-        className="form-control"
-        placeholder="Name"
-        required
-        pattern="^[A-Za-z ]{3,}$"
-        title="Name must contain only alphabets and be at least 3 characters."
-      />
-    </div>
+                {/* NAME */}
+                <div className="col-md-6">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Name"
+                    required
+                    pattern="^[A-Za-z ]{3,}$"
+                    title="Name must contain only alphabets and be at least 3 characters."
+                  />
+                </div>
 
-    {/* EMAIL */}
-    <div className="col-md-6">
-      <input
-        type="email"
-        className="form-control"
-        placeholder="Email"
-        required
-        pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$"
-        title="Enter a valid email address."
-      />
-    </div>
+                {/* EMAIL */}
+                <div className="col-md-6">
+                  <input
+                    type="email"
+                    className="form-control"
+                    placeholder="Email"
+                    required
+                    pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$"
+                    title="Enter a valid email address."
+                  />
+                </div>
 
-    {/* PHONE */}
-    <div className="col-md-6">
-      <input
-        type="tel"
-        className="form-control"
-        placeholder="Phone"
-        required
-        maxLength="8"
-        pattern="^[0-9]{8}$"
-        title="Phone must be exactly 8 digits."
-      />
-    </div>
+                {/* PHONE */}
+                <div className="col-md-6">
+                  <input
+                    type="tel"
+                    className="form-control"
+                    placeholder="Phone"
+                    required
+                    maxLength="8"
+                    pattern="^[0-9]{8}$"
+                    title="Phone must be exactly 8 digits."
+                  />
+                </div>
 
-    {/* SERVICE SELECT */}
-    <div className="col-md-6">
-      <select className="form-select" required>
-        <option value="">Choose Our Services</option>
-        <option value="1">Personal Loan</option>
-        <option value="2">Business Loan</option>
-        <option value="3">Education Loan</option>
-        <option value="4">Health Loan</option>
-      </select>
-    </div>
+                {/* SERVICE SELECT */}
+                <div className="col-md-6">
+                  <select className="form-select" required>
+                    <option value="">Choose Our Services</option>
+                    <option value="1">Personal Loan</option>
+                    <option value="2">Business Loan</option>
+                    <option value="3">Education Loan</option>
+                    <option value="4">Health Loan</option>
+                  </select>
+                </div>
 
-    <div className="col-12 text-start">
-      <button
-        className="btn"
-        type="submit"
-        style={{ backgroundColor: "#d71920", color: "#fff", border: "none" }}
-      >
-        Submit
-      </button>
-    </div>
+                <div className="col-12 text-start">
+                  <button
+                    className="btn"
+                    type="submit"
+                    style={{ backgroundColor: "#d71920", color: "#fff", border: "none" }}
+                  >
+                    Submit
+                  </button>
+                </div>
 
-  </form>
-</div>
+              </form>
+            </div>
 
           </div>
         </div>
       </section>
 
       {/* Footer */}
-<footer
-  className="text-white pt-5"
-  style={{
-    backgroundImage: `url(${footerBg})`,
-    backgroundSize: "1500px",
-    backgroundPosition: "left",
-    backgroundRepeat: "no-repeat"
-  }}
->
-  <div className="footer-overlay">
+      <footer
+        className="text-white pt-5"
+        style={{
+          backgroundImage: `url(${footerBg})`,
+          backgroundSize: "1500px",
+          backgroundPosition: "left",
+          backgroundRepeat: "no-repeat"
+        }}
+      >
+        <div className="footer-overlay">
 
-    {/* DESKTOP FOOTER (hidden on mobile) */}
-    <div className="container pb-4 d-none d-md-block">
-      <div className="row justify-content-between align-items-start g-4">
-        
-        <div className="col-md-3">
-          <h6 className="text-uppercase mb-3" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
-          <p className="small mb-4" style={{color:'#E8F5E9'}}>
-            📍 Avara Annex, Level 7, Brampton St., <br/>
-            Port Moresby, Papua New Guinea
-          </p>
+          {/* DESKTOP FOOTER (hidden on mobile) */}
+          <div className="container pb-4 d-none d-md-block">
+            <div className="row justify-content-between align-items-start g-4">
+
+              <div className="col-md-3">
+                <h6 className="text-uppercase mb-3" style={{ color: '#69F0AE' }}>Papua New Guinea</h6>
+                <p className="small mb-4" style={{ color: '#E8F5E9' }}>
+                  📍 Avara Annex, Level 7, Brampton St., <br />
+                  Port Moresby, Papua New Guinea
+                </p>
+              </div>
+
+              <div className="col-md-4 text-md-center">
+                <p className="text-uppercase small mb-1" style={{ color: '#E8F5E9' }}>Contact Us Now!</p>
+                <h4 className="fw-bold" style={{ color: '#4CAF50' }}>+675 7211 5122</h4>
+              </div>
+
+              <div className="col-md-3 text-md-end">
+                <h5 className="fw-bold mb-2" style={{ color: '#69F0AE' }}>Agro Advance Aben Limited</h5>
+                <p className="small mb-0" style={{ color: '#E8F5E9' }}>
+                  Finance with Purpose. Supporting farmers and small businesses with affordable loans.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="row g-4 mt-4">
+              <div className="col-md-3">
+                <h6 className="fw-bold mb-3" style={{ color: '#69F0AE' }}>Services  <span className="fa-arrow"></span></h6>
+                <ul className="list-unstyled small" style={{ color: '#E8F5E9' }}>
+                  <li>Personal Loans</li>
+                  <li>Business Loans</li>
+                  <li>Education Loans</li>
+                  <li>Health Loans</li>
+                  <li>Commercial Loans</li>
+                </ul>
+              </div>
+
+              <div className="col-md-3">
+                <h6 className="fw-bold mb-3" style={{ color: '#69F0AE' }}>Province  <span className="fa-arrow"></span></h6>
+                <ul className="list-unstyled small" style={{ color: '#E8F5E9' }}>
+                  <li>Enga</li>
+                  <li>Madang</li>
+                  <li>Morobe</li>
+                  <li>East New Britain</li>
+                  <li>National Capital District</li>
+                </ul>
+              </div>
+
+              <div className="col-md-3">
+                <h6 className="fw-bold mb-3" style={{ color: '#69F0AE' }}>Open Hours  <span className="fa-arrow"></span></h6>
+                <p className="small mb-1" style={{ color: '#E8F5E9' }}>Monday–Friday: 09:00 am – 4:00 pm</p>
+              </div>
+
+              <div className="col-md-3">
+                <h6 className="fw-bold mb-3" style={{ color: '#69F0AE' }}>Legal  <span className="fa-arrow"></span></h6>
+                <ul className="list-unstyled small" style={{ color: '#E8F5E9' }}>
+                  <Link href={route('terms')}>
+                    <li>Terms of Use</li>
+                  </Link>
+                  <Link href={route('privacy')}>
+                    <li>Privacy Policy</li>
+                  </Link>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* ---------------------- MOBILE FOOTER ---------------------- */}
+          <div className="mobile-footer d-md-none mt-4 px-3">
+
+            {/* TOP INFORMATION VISIBLE ALWAYS */}
+            <h6 className="text-uppercase mb-2" style={{ color: '#69F0AE' }}>Papua New Guinea</h6>
+            <p className="small mb-3" style={{ color: '#E8F5E9' }}>
+              📍 Avara Annex, Level 7, Brampton St., <br />
+              Port Moresby, Papua New Guinea
+            </p>
+
+            <p className="text-uppercase small mb-1" style={{ color: '#E8F5E9' }}>Contact Us Now!</p>
+            <h4 className="fw-bold mb-3" style={{ color: '#4CAF50' }}>+675 7211 5122</h4>
+
+            <h5 className="fw-bold mb-2" style={{ color: '#69F0AE' }}>Agro Advance Aben Limited</h5>
+            <p className="small mb-3" style={{ color: '#E8F5E9' }}>
+              Finance with Purpose. Supporting farmers and small businesses with affordable loans.
+            </p>
+
+            {/* DROPDOWN SECTIONS */}
+            <div className="fa-item">
+              <button className="fa-header">Services</button>
+              <div className="fa-content">
+                <ul>
+                  <li>Personal Loans</li>
+                  <li>Business Loans</li>
+                  <li>Education Loans</li>
+                  <li>Health Loans</li>
+                  <li>Commercial Loans</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="fa-item">
+              <button className="fa-header">Province</button>
+              <div className="fa-content">
+                <ul>
+                  <li>Enga</li>
+                  <li>Madang</li>
+                  <li>Morobe</li>
+                  <li>East New Britain</li>
+                  <li>National Capital District</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="fa-item">
+              <button className="fa-header">Open Hours</button>
+              <div className="fa-content">
+                <p>Monday–Friday: 09:00 am – 4:00 pm</p>
+              </div>
+            </div>
+
+            <div className="fa-item">
+              <button className="fa-header">Legal</button>
+              <div className="fa-content">
+                <ul>
+                  <Link href={route('terms')}>
+                    <li>Terms of Use</li>
+                  </Link>
+                  <Link href={route('privacy')}>
+                    <li>Privacy Policy</li>
+                  </Link>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+
+          {/* COPYRIGHT – SAME FOR BOTH */}
+          <div
+            className="footer-copy text-center mt-4 pt-3 border-top small"
+            style={{ borderColor: "#1E5631", color: "#E8F5E9" }}
+          >
+            Copyright 2025 All Right Reserved.{" "}
+            <a
+              href="https://www.adzguru.co/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#E8F5E9", textDecoration: "underline", cursor: "pointer" }}
+            >
+              Adzguru (PNG) Ltd
+            </a>
+          </div>
         </div>
+        {showScroll && (
+          <div
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className="scroll-to-top"
+          >
+            <i className="bi bi-arrow-up"></i>
+          </div>
+        )}
 
-        <div className="col-md-4 text-md-center">
-          <p className="text-uppercase small mb-1" style={{color:'#E8F5E9'}}>Contact Us Now!</p>
-          <h4 className="fw-bold" style={{color:'#4CAF50'}}>+675 7211 5122</h4>
-        </div>
-
-        <div className="col-md-3 text-md-end">
-          <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben Limited</h5>
-          <p className="small mb-0" style={{color:'#E8F5E9'}}>
-            Finance with Purpose. Supporting farmers and small businesses with affordable loans.
-          </p>
-        </div>
-
-      </div>
-
-      <div className="row g-4 mt-4">
-        <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Services  <span className="fa-arrow"></span></h6>
-          <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
-            <li>Personal Loans</li>
-            <li>Business Loans</li>
-            <li>Education Loans</li>
-            <li>Health Loans</li>
-            <li>Commercial Loans</li>
-          </ul>
-        </div>
-
-        <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Province  <span className="fa-arrow"></span></h6>
-          <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
-            <li>Enga</li>
-            <li>Madang</li>
-            <li>Morobe</li>
-            <li>East New Britain</li>
-            <li>National Capital District</li>
-          </ul>
-        </div>
-
-        <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Open Hours  <span className="fa-arrow"></span></h6>
-          <p className="small mb-1" style={{color:'#E8F5E9'}}>Monday–Friday: 09:00 am – 4:00 pm</p>
-        </div>
-
-        <div className="col-md-3">
-          <h6 className="fw-bold mb-3" style={{color:'#69F0AE'}}>Legal  <span className="fa-arrow"></span></h6>
-          <ul className="list-unstyled small" style={{color:'#E8F5E9'}}>
-            <Link href={route('terms')}>
-              <li>Terms of Use</li>
-            </Link>
-            <Link href={route('privacy')}>
-            <li>Privacy Policy</li>
-            </Link>
-          </ul>
-        </div>
-      </div>
+      </footer>
     </div>
-
-    {/* ---------------------- MOBILE FOOTER ---------------------- */}
-    <div className="mobile-footer d-md-none mt-4 px-3">
-
-      {/* TOP INFORMATION VISIBLE ALWAYS */}
-      <h6 className="text-uppercase mb-2" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
-      <p className="small mb-3" style={{color:'#E8F5E9'}}>
-        📍 Avara Annex, Level 7, Brampton St., <br />
-        Port Moresby, Papua New Guinea
-      </p>
-
-      <p className="text-uppercase small mb-1" style={{color:'#E8F5E9'}}>Contact Us Now!</p>
-      <h4 className="fw-bold mb-3" style={{color:'#4CAF50'}}>+675 7211 5122</h4>
-
-      <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben Limited</h5>
-      <p className="small mb-3" style={{color:'#E8F5E9'}}>
-        Finance with Purpose. Supporting farmers and small businesses with affordable loans.
-      </p>
-
-      {/* DROPDOWN SECTIONS */}
-      <div className="fa-item">
-        <button className="fa-header">Services</button>
-        <div className="fa-content">
-          <ul>
-            <li>Personal Loans</li>
-            <li>Business Loans</li>
-            <li>Education Loans</li>
-            <li>Health Loans</li>
-            <li>Commercial Loans</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="fa-item">
-        <button className="fa-header">Province</button>
-        <div className="fa-content">
-          <ul>
-            <li>Enga</li>
-            <li>Madang</li>
-            <li>Morobe</li>
-            <li>East New Britain</li>
-            <li>National Capital District</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="fa-item">
-        <button className="fa-header">Open Hours</button>
-        <div className="fa-content">
-          <p>Monday–Friday: 09:00 am – 4:00 pm</p>
-        </div>
-      </div>
-
-      <div className="fa-item">
-        <button className="fa-header">Legal</button>
-        <div className="fa-content">
-          <ul>
-            <Link href={route('terms')}>
-              <li>Terms of Use</li>
-            </Link>
-            <Link href={route('privacy')}>
-            <li>Privacy Policy</li>
-            </Link>
-          </ul>
-        </div>
-      </div>
-
-    </div>
-
-    {/* COPYRIGHT – SAME FOR BOTH */}
-<div
-  className="footer-copy text-center mt-4 pt-3 border-top small"
-  style={{ borderColor: "#1E5631", color: "#E8F5E9" }}
->
-  Copyright 2025 All Right Reserved.{" "}
-  <a
-    href="https://www.adzguru.co/"
-    target="_blank"
-    rel="noopener noreferrer"
-    style={{ color: "#E8F5E9", textDecoration: "underline", cursor: "pointer" }}
-  >
-    Adzguru (PNG) Ltd
-  </a>
-</div>
-</div>
-{showScroll && (
-  <div
-    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-    className="scroll-to-top"
-  >
-    <i className="bi bi-arrow-up"></i>
-  </div>
-)}
-
-</footer>
-</div>
   );
 }
