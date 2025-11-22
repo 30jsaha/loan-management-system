@@ -20,10 +20,7 @@ import loan4 from '../../img/Ourloansolution4.jpg';
 import loan5 from '../../img/Ourloansolution5.jpg';
 import footerBg from '../../img/png_image.png';
 import heroImage1 from '../../img/hero1.jpg';
-
-
-
-
+import Navbar from "@/Components/Navbar";
 
 export default function Home({ auth, laravelVersion, phpVersion }) {
   const formRef = useRef(null);
@@ -277,7 +274,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
     <div className="min-vh-100" data-bs-spy="scroll" data-bs-target=".navbar" data-bs-offset="70">
 
       {/* Navbar */}
-      <nav className="bg-white border-b fixed-top w-100 shadow-sm">
+      <nav className="bg-white border-b fixed-top w-100 shadow-sm" style={{ display: 'none' }}>
         <div className="container d-flex justify-content-between align-items-center py-2">
 
           {/* Logo + Title */}
@@ -353,24 +350,25 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           </div>
         )}
       </nav>
+      <Navbar auth={auth} setShowForm={setShowForm} />
 
 
       {/* Home Section */}
       <section id="home" className="py-5" style={{ paddingTop: '100px' }}>
         <div className="container">
           <div className="home-wrapper d-flex flex-wrap align-items-start">
-            <div className="home-left me-4" style={{flex: '1 1 420px'}}>
-              <h1 className="mt-2  home-title">Personal Loans for Life’s <br/>Everyday Needs.</h1>
-            <p className="loan-desc">
-  Enjoy flexible, transparent, and quick loan options that help you manage expenses,
-  <br />
-  handle emergencies or make your plans a reality.
-  <br /><br />
-  <span className="goal-text">Achieve Your Financial Goal</span><br />
-</p>
+            <div className="home-left me-4" style={{ flex: '1 1 420px' }}>
+              <h1 className="mt-2  home-title">Personal Loans for Life’s <br />Everyday Needs.</h1>
+              <p className="loan-desc">
+                Enjoy flexible, transparent, and quick loan options that help you manage expenses,
+                <br />
+                handle emergencies or make your plans a reality.
+                <br /><br />
+                <span className="goal-text">Achieve Your Financial Goal</span><br />
+              </p>
 
 
-              <a href="#contact" className="btn text-light" style={{backgroundColor: 'lightred', color: 'white'}}>Apply for Loan</a>
+              <a href="#contact" className="btn text-light" style={{ backgroundColor: 'lightred', color: 'white' }}>Apply for Loan</a>
             </div>
 
             <div className="home-right loan-box" >
@@ -790,24 +788,24 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
         {/* Quick Loan Bar */}
         <div className="quick-loan-section mt-4">
 
-       <div className="quick-image" 
-     style={{ 
-       width: "100%", 
-       height: "130px",    // jis height me chaho image dikhe
-       overflow: "hidden" 
-     }}>
-  <img
-    src={heroImage}
-    alt="Agro hero footer"
-    style={{
-      width: "180%",       // left-right stretch
-      height: "280%",
-      objectFit: "cover",
-      objectPosition: "bottom",  // center crop
-      display: "block"
-    }}
-  />
-</div>
+          <div className="quick-image"
+            style={{
+              width: "100%",
+              height: "130px",    // jis height me chaho image dikhe
+              overflow: "hidden"
+            }}>
+            <img
+              src={heroImage}
+              alt="Agro hero footer"
+              style={{
+                width: "180%",       // left-right stretch
+                height: "280%",
+                objectFit: "cover",
+                objectPosition: "bottom",  // center crop
+                display: "block"
+              }}
+            />
+          </div>
 
 
 
@@ -861,18 +859,18 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             <div className="col-md-6 about-text-shift">
               <b><small className="text-uppercase" style={{ color: '#585858' }}>About Our Company</small></b>
 
-              <h2 className="fw-bold mb-4" style={{color:'green'}}>Empowering Lives Through<br/> Smart Finance</h2>
+              <h2 className="fw-bold mb-4" style={{ color: 'green' }}>Empowering Lives Through<br /> Smart Finance</h2>
               <p className="about-desc text-muted mb-3">
-  Agro Advance Aben Limited is a trusted Papua New Guinea–based consumer finance <br/>company,
-  dedicated to helping individuals meet personal and family financial needs.
-</p>
+                Agro Advance Aben Limited is a trusted Papua New Guinea–based consumer finance <br />company,
+                dedicated to helping individuals meet personal and family financial needs.
+              </p>
 
-<p className="about-desc text-muted mb-4">
-  From school fees to medical expenses, we provide quick, reliable, and flexible loan<br/> solutions
-  that make access to finance simple and stress-free for everyone.
-</p>
+              <p className="about-desc text-muted mb-4">
+                From school fees to medical expenses, we provide quick, reliable, and flexible loan<br /> solutions
+                that make access to finance simple and stress-free for everyone.
+              </p>
 
-              <a href="#contact" className="btn px-4 py-2 text-light" style={{backgroundColor:'#d71920', color:'#fff', border:'none', borderRadius:6, textDecoration:'none'}}>Apply for Loan</a>
+              <a href="#contact" className="btn px-4 py-2 text-light" style={{ backgroundColor: '#d71920', color: '#fff', border: 'none', borderRadius: 6, textDecoration: 'none' }}>Apply for Loan</a>
             </div>
 
             <div className="col-md-6 text-center position-relative">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "@inertiajs/react";
 import logo from "../../img/logo_first.jpg";
 import footerBg from "../../img/png_image.png";
+import Navbar from "@/Components/Navbar";
 
 export default function TermsOfUse({ auth }) {
   const [isNavOpen, setIsNavOpen] = useState(false);
@@ -50,82 +51,7 @@ export default function TermsOfUse({ auth }) {
     <div className="min-vh-100">
 
       {/* ================= NAVBAR ================= */}
-      <nav className="navbar navbar-expand-lg fixed-top bg-white shadow-sm">
-        <div className="container">
-
-          {/* Brand */}
-          <a className="navbar-brand d-flex flex-column align-items-center" href="/">
-            <img src={logo} alt="Agro Logo" className="brand-logo" style={{ width: "70px" }} />
-            <span className="brand-title" style={{ color: "black", fontWeight: "700" }}>AGRO ADVANCE ABEN</span>
-            <span className="brand-subtitle" style={{ color: "black", fontStyle: "italic", marginTop: "-4px" }}>Finance with Purpose</span>
-          </a>
-
-          {/* Toggle */}
-          <button
-            className="navbar-toggler"
-            type="button"
-            aria-expanded={isDesktop}
-            onClick={() => setIsNavOpen(!isNavOpen)}
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-
-          {/* Links */}
-          <div
-            className={`navbar-collapse ${isDesktop ? "show" : isNavOpen ? "show" : "collapse"}`}
-            id="navbarNav"
-          >
-            <ul className="navbar-nav mx-auto">
-
-              {/* <li className="nav-item">
-                <Link className="nav-link" href="/">Home</Link>
-              </li> */}
-
-              <li className="nav-item">
-                <Link className="nav-link" href={`${route("homes")}#about`}>About</Link>
-              </li>
-
-              <li className="nav-item">
-                <Link className="nav-link" href={`${route("homes")}#why`}>Why Us</Link>
-              </li>
-
-              <li className="nav-item">
-                <Link className="nav-link" href={`${route("homes")}#testimonials`}>Reviews</Link>
-              </li>
-
-              <li className="nav-item">
-                <Link className="nav-link" href={`${route("homes")}#contact`}>Contact</Link>
-              </li>
-
-            </ul>
-
-            {/* Buttons */}
-            <div className="d-flex align-items-center gap-2">
-              <button
-                className="btn"
-                style={{ backgroundColor: "#008037", color: "white" }}
-                onClick={() => setShowForm(true)}
-              >
-                Download Brochure
-              </button>
-
-              {auth?.user ? (
-                <Link href={route("dashboard")}>
-                  <button className="btn" style={{ backgroundColor: "#D71920", color: "white" }}>
-                    Dashboard
-                  </button>
-                </Link>
-              ) : (
-                <Link href={route("login")}>
-                  <button className="btn" style={{ backgroundColor: "#D71920", color: "white" }}>
-                    Login
-                  </button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar auth={auth} setShowForm={setShowForm} />
 
       {/* ================= TERMS CONTENT ================= */}
   <div 
