@@ -140,11 +140,17 @@ export default function DeptDatabase({ auth }) {
 
   const filteredData = sortedData.filter((c) => {
     const matchName = c.cust_name?.toLowerCase().includes(searchName.toLowerCase());
-    const matchDate = searchDate
-      ? new Date(c.created_at).toLocaleDateString() ===
-        new Date(searchDate).toLocaleDateString()
+    const matchEmpCode = searchEmpCode
+      ? String(c.emp_code || "").toLowerCase().includes(searchEmpCode.toLowerCase())
       : true;
-    return matchName && matchDate;
+    const matchGrossPay = searchGrossPay
+      ? String(c.gross_pay || "").toLowerCase().includes(searchGrossPay.toLowerCase())
+      : true;
+    const matchDate = searchDate && c.created_at
+      ? new Date(c.created_at).toLocaleDateString() === new Date(searchDate).toLocaleDateString()
+      : !searchDate;
+
+    return matchName && matchDate && matchEmpCode && matchGrossPay;
   });
 
 

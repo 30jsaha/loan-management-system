@@ -362,26 +362,35 @@ class LoanController extends Controller
         ], 200);
     }
 
+    // public function get_all_loan_setting_data()
+    // {
+    //     $loan = LoanSetting::all();
+    //     return response()->json($loan);
+    // }
+    
     public function get_all_loan_setting_data()
     {
-        $loan = LoanSetting::all();
-        return response()->json($loan);
+        $loanSettings = LoanSetting::all();
+
+        // Attach slab list for each record
+        foreach ($loanSettings as $ls) {
+            $slabs = DB::table('assigned_slabs_under_loan')
+                ->where('loan_id', $ls->id)
+                ->where('active', 1)
+                ->pluck('slab_id')
+                ->toArray();
+
+            $ls->ss_id_list = $slabs;   // 👈 add this
+        }
+
+        return response()->json($loanSettings);
     }
+
     public function create_loan_setting(Request $request)
     {
-        // dd($request);
         $validator = Validator::make($request->all(), [
             'loan_desc' => 'required|string|max:255',
-            'org_id' => [
-                'nullable',
-                'integer',
-                function ($attribute, $value, $fail) {
-                    if (is_null($value)) {
-                        // ensure a 0 is inserted when org_id is null
-                        request()->merge([$attribute => 0]);
-                    }
-                },
-            ],
+            'org_id' => 'nullable|integer',
             'min_loan_amount' => 'required|numeric',
             'max_loan_amount' => 'required|numeric',
             'interest_rate' => 'required|numeric',
@@ -393,7 +402,8 @@ class LoanController extends Controller
             'effect_date' => 'required|date',
             'end_date' => 'required|date',
             'user_id' => 'nullable|integer',
-            'ss_id_list' => 'required|array',
+
+            'ss_id_list' => 'nullable|array',
             'ss_id_list.*' => 'integer',
         ]);
 
@@ -401,34 +411,82 @@ class LoanController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Use validated data array and ensure org_id is set to 0 when missing/null
         $data = $validator->validated();
-        if (!isset($data['org_id']) || is_null($data['org_id'])) {
-            $data['org_id'] = 0;
-        }
+        $data['org_id'] = $data['org_id'] ?? 0;
 
+        // Create loan setting
         $loanSetting = LoanSetting::create($data);
 
-        // Insert ss_id_list into assigned_slabs_under_loan table
-        foreach ($data['ss_id_list'] as $ssId) {
-            DB::table('assigned_slabs_under_loan')->insert([
-                'loan_id' => $loanSetting->id,
-                'slab_id' => $ssId,
-                'active' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        // Insert slabs
+        if (!empty($data['ss_id_list'])) {
+            foreach ($data['ss_id_list'] as $sid) {
+                DB::table('assigned_slabs_under_loan')->insert([
+                    'loan_id'   => $loanSetting->id,
+                    'slab_id'   => $sid,
+                    'active'    => 1,
+                    'created_at'=> now(),
+                    'updated_at'=> now(),
+                ]);
+            }
         }
+
+        // ⭐ Fetch slabs and return it to frontend
+        $loanSetting->ss_id_list = DB::table('assigned_slabs_under_loan')
+            ->where('loan_id', $loanSetting->id)
+            ->pluck('slab_id')
+            ->toArray();
 
         return response()->json([
             'message' => 'Loan setting created successfully',
-            'data' => $loanSetting,
+            'data' => $loanSetting
         ]);
     }
+
+
 
     /**
      * ✅ Modify an existing loan setting
      */
+    // public function modify_loan_setting(Request $request, $id)
+    // {
+    //     try {
+    //         $loanSetting = LoanSetting::findOrFail($id);
+
+    //         $validator = Validator::make($request->all(), [
+    //             'loan_desc' => 'required|string|max:255',
+    //             'org_id' => 'nullable|integer',
+    //             'min_loan_amount' => 'required|numeric',
+    //             'max_loan_amount' => 'required|numeric',
+    //             'interest_rate' => 'required|numeric',
+    //             'amt_multiplier' => 'required|numeric',
+    //             'min_loan_term_months' => 'required|integer',
+    //             'max_loan_term_months' => 'required|integer',
+    //             'process_fees' => 'required|numeric',
+    //             'min_repay_percentage_for_next_loan' => 'nullable|numeric',
+    //             'effect_date' => 'nullable|date',
+    //             'end_date' => 'nullable|date',
+    //             'user_id' => 'nullable|integer',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             Log::error('LoanSetting validation failed', $validator->errors()->toArray());
+    //             return response()->json(['errors' => $validator->errors()], 422);
+    //         }
+
+    //         $loanSetting->update($validator->validated());
+
+    //         //need to delete the previous ids and update assigned_slabs_under_loan table as well
+            
+
+    //         return response()->json([
+    //             'message' => 'Loan setting updated successfully',
+    //             'data' => $loanSetting,
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         Log::error('LoanSetting update failed: ' . $e->getMessage());
+    //         return response()->json(['message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
+    //     }
+    // }
     public function modify_loan_setting(Request $request, $id)
     {
         try {
@@ -448,6 +506,10 @@ class LoanController extends Controller
                 'effect_date' => 'nullable|date',
                 'end_date' => 'nullable|date',
                 'user_id' => 'nullable|integer',
+
+                // multiple slabs
+                'ss_id_list' => 'nullable|array',
+                'ss_id_list.*' => 'integer',
             ]);
 
             if ($validator->fails()) {
@@ -455,20 +517,58 @@ class LoanController extends Controller
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            $loanSetting->update($validator->validated());
+            $data = $validator->validated();
 
-            //need to delete the previous ids and update assigned_slabs_under_loan table as well
+            // Default org id = 0
+            $data['org_id'] = $data['org_id'] ?? 0;
 
+            // 🔹 Update main loan settings table
+            $loanSetting->update($data);
+
+            /*
+            |-------------------------------------------------------------
+            | UPDATE ASSIGNED SLABS
+            |-------------------------------------------------------------
+            */
+
+            // 1️⃣ Delete old slab assignments
+            DB::table('assigned_slabs_under_loan')
+                ->where('loan_id', $loanSetting->id)
+                ->delete();
+
+            // 2️⃣ Insert new slab assignments
+            if (!empty($data['ss_id_list'])) {
+                foreach ($data['ss_id_list'] as $slabId) {
+                    DB::table('assigned_slabs_under_loan')->insert([
+                        'loan_id'   => $loanSetting->id,
+                        'slab_id'   => $slabId,
+                        'active'    => 1,
+                        'created_at'=> now(),
+                        'updated_at'=> now(),
+                    ]);
+                }
+            }
+
+            // 3️⃣ Return updated slab IDs with the response
+            $loanSetting->ss_id_list = DB::table('assigned_slabs_under_loan')
+                ->where('loan_id', $loanSetting->id)
+                ->pluck('slab_id')
+                ->toArray();
 
             return response()->json([
                 'message' => 'Loan setting updated successfully',
                 'data' => $loanSetting,
             ]);
+
         } catch (\Exception $e) {
             Log::error('LoanSetting update failed: ' . $e->getMessage());
-            return response()->json(['message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
+
 
 
     /**

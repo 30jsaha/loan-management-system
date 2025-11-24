@@ -316,7 +316,12 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     const items = collections[collectionId];
     if (!items) return;
     setSelectedLoan(items); // items is an array of EMI records containing .loan
+    // open the side drawer and auto-open the first loan accordion
     setSideOpen(true);
+    const firstLoanId = items[0]?.loan_id ?? items[0]?.loan?.id ?? null;
+    if (firstLoanId) {
+      setAccordionOpen((prev) => ({ ...prev, [firstLoanId]: true }));
+    }
   };
 
   // Helper: open single loan in drawer (normalize to array form)
@@ -336,7 +341,10 @@ export default function EmiCollection({ auth, approved_loans = null }) {
       },
     ];
     setSelectedLoan(normalized);
+    // open the side drawer and auto-open the single loan accordion
     setSideOpen(true);
+    const loanId = loan.id;
+    if (loanId) setAccordionOpen((prev) => ({ ...prev, [loanId]: true }));
   };
 
   return (
@@ -671,7 +679,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         </div>
 
         {/* Side Drawer */}
-        <SideDrawer open={sideOpen} onClose={() => setSideOpen(false)}>
+        <SideDrawer open={sideOpen} onClose={() => { setSideOpen(false); setAccordionOpen({}); }}>
           {selectedLoan ? (
               (() => {
                 // Group EMIs by loan_id
@@ -833,7 +841,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                     </div>
 
 
-                    <button onClick={() => setSideOpen(false)} className="w-full bg-gray-800 text-white py-2 rounded">
+                    <button onClick={() => { setSideOpen(false); setAccordionOpen({}); }} className="w-full bg-gray-800 text-white py-2 rounded">
                       Close
                     </button>
 
