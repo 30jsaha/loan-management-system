@@ -173,7 +173,7 @@ class LoanController extends Controller
             $validated['organisation_id'] = $customer->organisation_id;
 
             // Default values for unset fields
-            $validated['status'] = $validated['status'] ?? 'Pending';
+            $validated['status'] = $validated['status'] ?? 'HigherApproval';
             // dd($validated);
             // exit;
             // Create loan application
@@ -920,20 +920,25 @@ class LoanController extends Controller
 
         try {
             $loan = Loan::findOrFail($validated['id']);
+            // Fill all validated fields automatically
+            $loan->fill($validated);
             $loan->is_loan_re_updated_after_higher_approval = 1;
             $loan->loan_amount_approved = $validated['loan_amount_applied'] ?? $loan->loan_amount_applied;
             $loan->emi_amount = number_format($validated['emi_amount'],2);
             // $loan->higher_approved_by = auth()->user()->name;
             // $loan->higher_approved_date = now()->toDateString();
             $loan->is_elegible = 1;
-            $loan->update();
+            $loan->save();
 
-            return response()->json(['message' => 'Loan update status updated successfully.', 'loan' => $loan], 200);
+            return response()->json([
+                'message' => 'Loan updated successfully.',
+                'loan' => $loan
+            ], 200);
         } catch (\Exception $e) {
             Log::error("Loan update after higher approval failed: " . $e->getMessage());
-            return response()->json(['error' => 'Failed to update loan status', 'details' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Failed to update loan', 'details' => $e->getMessage()], 500);
         }
-    }   
+    }
     //need to modify
     public function higherApproveLoan($id)
     {
@@ -942,7 +947,7 @@ class LoanController extends Controller
             $loan = Loan::findOrFail($id);
 
             // Update approval fields
-            $loan->status = 'HigherApproval';
+            $loan->status = 'Pending';
             $loan->higher_approved_by = auth()->user()->name;
             $loan->higher_approved_by_id = auth()->user()->id;
             $loan->higher_approved_date = now();
