@@ -126,6 +126,7 @@ export default function Navbar({ auth }) {
           {/* Desktop Menu */}
           <div className="d-none d-lg-flex gap-4 align-items-center">
             <Link className="nav-link" href={`${route("homes")}#about`}>About</Link>
+            <Link className="nav-link" href={`${route("homes")}#our-loan`}>Our Loan Solution</Link>
             <Link className="nav-link" href={`${route("homes")}#why`}>Why Choose Us</Link>
             <Link className="nav-link" href={`${route("homes")}#testimonials`}>Reviews</Link>
             <Link className="nav-link" href={`${route("homes")}#contact`}>Contact</Link>
@@ -148,7 +149,8 @@ export default function Navbar({ auth }) {
         {isNavOpen && (
           <div className="bg-white border-top p-3 d-lg-none">
             <Link className="d-block py-2" href={`${route("homes")}#about`}>About</Link>
-            <Link className="d-block py-2" href={`${route("homes")}#why`}>Why Us</Link>
+            <Link className="d-block py-2" href={`${route("homes")}#our-loan`}>Our Loan Solution</Link>
+            <Link className="d-block py-2" href={`${route("homes")}#why`}>Why Choose Us</Link>
             <Link className="d-block py-2" href={`${route("homes")}#testimonials`}>Reviews</Link>
             <Link className="d-block py-2" href={`${route("homes")}#contact`}>Contact</Link>
 

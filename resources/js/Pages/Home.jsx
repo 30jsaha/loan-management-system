@@ -808,8 +808,9 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
         </div>
       </section>
 
+      {/** Our Loan Section */}
       {/* Loan Solutions Section */}
-      <section className="loan-services spad">
+      <section className="loan-services spad" id="our-loan">
         <div className="container">
           <div className="row">
             <div className="col-lg-12">
