@@ -32,7 +32,7 @@
 /*----------------------------------------*/
 
 /* 🔹 Navbar Styling Fix */
-.navbar {
+.navbar { 
   border-bottom: none !important;
   box-shadow: none !important;
   margin-bottom: 0 !important;
