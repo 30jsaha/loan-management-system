@@ -276,6 +276,22 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     return list;
   }, [collections, orgFilter, filterCollectionId]);
 
+  // Summary totals for the currently filtered loans
+  const summary = useMemo(() => {
+    const data = filtered || [];
+    const uniqueCustomerIds = new Set(data.map((l) => l.customer?.id).filter(Boolean));
+    const totalCustomers = uniqueCustomerIds.size;
+    const totalAmount = data.reduce((s, l) => s + Number(l.loan_amount_applied || 0), 0);
+    const totalRepayment = data.reduce((s, l) => s + Number(l.total_repay_amt || 0), 0);
+    const totalOutstanding = totalRepayment - totalAmount;
+    return {
+      totalCustomers,
+      totalAmount,
+      totalRepayment,
+      totalOutstanding,
+    };
+  }, [filtered]);
+
   // Get Last EMI Paid Date
  const getLastEmiPaid = (loan) => {
   if (!loan || !Array.isArray(loan.installments)) return "N/A";
@@ -381,6 +397,30 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         </div>
 
         {/* Table area */}
+
+        {/* Summary bar */}
+        <div className="mt-2 -mb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-white p-3 border shadow-sm flex flex-col">
+            <span className="text-xs text-gray-500">Customers</span>
+            <span className="text-xl font-semibold text-gray-800">{summary.totalCustomers}</span>
+          </div>
+
+          <div className="bg-white p-3 border shadow-sm flex flex-col">
+            <span className="text-xs text-gray-500">Total Amount</span>
+            <span className="text-xl font-semibold text-gray-800">{currencyPrefix} {Number(summary.totalAmount || 0).toLocaleString()}</span>
+          </div>
+
+          <div className="bg-white p-3 border shadow-sm flex flex-col">
+            <span className="text-xs text-gray-500">Total Repayment</span>
+            <span className="text-xl font-semibold text-gray-800">{currencyPrefix} {Number(summary.totalRepayment || 0).toLocaleString()}</span>
+          </div>
+
+          <div className="bg-white p-3 border shadow-sm flex flex-col">
+            <span className="text-xs text-gray-500">Total Outstanding</span>
+            <span className="text-xl font-semibold text-gray-800">{currencyPrefix} {Number(summary.totalOutstanding || 0).toLocaleString()}</span>
+          </div>
+        </div>
+
         <div className="bg-white shadow-lg border border-gray-700 overflow-hidden mt-3">
           {/* Compact / hidden large table kept for specific layout - you can re-enable if needed */}
           <table className="w-full text-sm border border-gray-700 border-collapse table-auto d-none">
@@ -421,7 +461,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
                       <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
                         <div className="flex flex-col items-center justify-center">
-                          <span>{loan.customer.first_name || "-"}</span>
+                          <span>{loan.customer.first_name || "-"}({})</span>
                           <span>{loan.customer.last_name || "-"}</span>
                         </div>
                       </td>
@@ -514,7 +554,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
               <tr>
                 <th className="p-2 border">Collection ID</th>
                 {/* <th className="p-2 border">Organisation</th> */}
-                <th className="p-2 border">No. of Loans</th>
+                <th className="p-2 border">No. of Customers</th>
                 <th className="p-2 border">Total Amount</th>
                 <th className="p-2 border">Date</th>
                 <th className="p-2 border">Action</th>
@@ -604,7 +644,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                 <tr key={it.id} className="hover:bg-green-300">
                                   <td className="p-2 border">{it.loan_id}</td>
                                   <td className="p-2 border">
-                                    {it.loan?.customer?.first_name} {it.loan?.customer?.last_name}
+                                    {it.loan?.customer?.first_name} {it.loan?.customer?.last_name} ({it.loan?.customer?.employee_no})
                                   </td>
                                   <td className="p-2 border">{it.loan?.organisation?.organisation_name}</td>
                                   <td className="p-2 border">{it.installment_no}</td>
