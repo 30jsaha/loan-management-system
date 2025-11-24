@@ -218,16 +218,48 @@ body {
 }
 
 .brand-title {
-  font-family: 'Poppins', sans-serif;
+  font-size: 8px !important; /* Size force apply */
   font-weight: 800;
-  font-size: 6.5px;
+  font-family: "Poppins", sans-serif;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #000;
-  margin-top: 2px;
-  text-align: center;
+  letter-spacing: 0.6px;
 }
 
+
+.loan__services__list .loan__services__item .loan__services__item__text,
+.loan__services__item__text *,
+.loan__services__item:hover .loan__services__item__text {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+/* Text always visible */
+.loan__services__item__text {
+  position: absolute !important;
+  bottom: 15px !important;
+  left: 15px !important;
+  right: 15px !important;
+  z-index: 10 !important;
+  text-align: left !important;
+}
+
+/* Show description */
+.loan__services__item__text p {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+/* Remove fade-in animation */
+.loan__services__item * {
+  transition: none !important;
+}
+
+.loan__services__item h4,
+.loan__services__item p {
+  opacity: 1 !important;
+  transform: none !important;
+}
 
 
 
@@ -1134,7 +1166,7 @@ ol {
 -----------------------*/
 
 .loan-services {
-	padding-bottom: 0;
+	padding-bottom: 90px;
 	padding-top: 90px;
 	background: #f6f7f9;
 }
@@ -1159,24 +1191,48 @@ ol {
 	}
 }
 
-.loan__services__item:hover .loan__services__item__text {
-	bottom: 40px;
-}
-
-.loan__services__item:hover .loan__services__item__text h4 {
-	margin-bottom: 12px;
-}
 
 .loan__services__item__text {
-	position: absolute;
-	left: 0;
-	bottom: -150px;
-	width: 100%;
-	padding: 0 35px;
-	-webkit-transition: all, 0.4s;
-	-o-transition: all, 0.4s;
-	transition: all, 0.4s;
+	bottom: 20px !important;
+	transition: none !important;
 }
+
+.loan__services__item:hover .loan__services__item__text {
+	bottom: 20px !important;
+	transition: none !important;
+}
+
+.loan__services__item__text h4 {
+	margin-bottom: 2px !important;
+	transition: none !important;
+}
+
+
+/* Reduce header + description spacing */
+.loan__services__item__text h4 {
+  margin-bottom: 10px !important; /* gap kam */
+  line-height: 1.1 !important;
+}
+
+/* Reduce description text line space */
+.loan__services__item__text p {
+  margin-top: 0 !important;
+  line-height: 1.25 !important;
+}
+
+.loan__services__item__text h4 {
+  font-size: 20px;
+  margin-bottom: 10px !important;
+}
+
+.loan__services__item__text p {
+  margin: 10px !important;
+  line-height: 1.25 !important;
+}
+
+
+
+
 
 .loan__services__item__text h4 {
 	font-weight: 700;
@@ -5388,3 +5444,19 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
   background-color: #e7f8e9 !important;
 }
 
+/* 🔥 STOP SLIDE ANIMATION AND KEEP TEXT STATIC */
+.loan__services__item__text {
+  bottom: 20px !important;   /* always visible */
+  transition: none !important;
+}
+
+.loan__services__item:hover .loan__services__item__text {
+  bottom: 20px !important;
+  transition: none !important;
+}
+
+.loan__services__item h4,
+.loan__services__item p {
+  transition: none !important;
+  transform: none !important;
+}
