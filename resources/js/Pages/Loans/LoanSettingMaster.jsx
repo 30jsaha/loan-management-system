@@ -4,6 +4,7 @@ import { Head, Link } from "@inertiajs/react";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import Swal from 'sweetalert2';
 
 import { MultiSelect } from 'primereact/multiselect';
 import "primereact/resources/themes/lara-light-indigo/theme.css";
@@ -31,6 +32,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     min_repay_percentage_for_next_loan: "",
     effect_date: "",
     end_date: "",
+    ss_id_list: []  ,
   });
 
   // Filters and Sorting
@@ -39,7 +41,10 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
   const [endDate, setEndDate] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "loan_desc", direction: "asc" });
   const [selectedOrgs, setSelectedOrgs] = useState(null);
-  const [selectedSslabs, setSelectedSslabs] = useState([]);
+  // slabs selected in the form (create / edit)
+  const [formSelectedSslabs, setFormSelectedSslabs] = useState([]);
+  // slabs selected in the FILTER area — keep filter state separate from form state
+  const [filterSelectedSslabs, setFilterSelectedSslabs] = useState([]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -56,7 +61,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       setLoanSettings(res.data);
     } catch (error) {
       console.error("Error loading data:", error);
-      toast.error("Failed to load loan setting data.");
+      toast.error("Failed to load loan Type data.");
     } finally {
       setLoading(false);
     }
@@ -86,26 +91,25 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     e.preventDefault();
 
     try {
+      // Build payload with slab ids coming from the form-selected MultiSelect
+      const payload = {
+        ...formData,
+        ss_id_list: Array.isArray(formSelectedSslabs) && formSelectedSslabs.length > 0
+          ? formSelectedSslabs.map((s) => s.code)
+          : Array.isArray(formData.ss_id_list) ? formData.ss_id_list : [],
+      };
+
       if (isEditing && formData.id) {
-        await axios.put(`/api/loan-settings-modify/${formData.id}`, formData);
-
-        setLoanSettings(prev =>
-          prev.map(item =>
-            item.id === formData.id
-              ? { ...item, ...formData, ss_id_list: [...formData.ss_id_list] }
-              : item
-          )
-        );
-
-
-        toast.success("Loan setting updated successfully!");
-      }
-      else {
-        const res = await axios.post("/api/loan-settings-create", formData);
-        // If API returns created object under res.data.data
+        const res = await axios.put(`/api/loan-settings-modify/${formData.id}`, payload);
+        const updated = res.data?.data ?? res.data;
+        // use server returned record to keep local state authoritative
+        setLoanSettings((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        toast.success("Loan Type updated successfully!");
+      } else {
+        const res = await axios.post("/api/loan-settings-create", payload);
         const created = res.data?.data ?? res.data;
         setLoanSettings((prev) => [...prev, created]);
-        toast.success("Loan setting added successfully!");
+        toast.success("Loan Type added successfully!");
       }
       resetForm();
     } catch (error) {
@@ -135,8 +139,8 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     })
     .filter(Boolean);
 
-  // 3. Set MultiSelect selected values
-  setSelectedSslabs(preselect);
+  // 3. Set MultiSelect selected values in the FORM (do NOT change the filter selections)
+  setFormSelectedSslabs(preselect);
 
   // 4. Fill form data for update
   setFormData({
@@ -148,41 +152,53 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
-
-
-
   const handleDelete = async (id, desc) => {
-    if (!confirm(`Are you sure you want to delete "${desc}"?`)) return;
     try {
+      const result = await Swal.fire({
+        title: 'Delete Loan Type',
+        text: `Are you sure you want to delete "${desc}"? This action cannot be undone.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it',
+        cancelButtonText: 'Cancel',
+      });
+
+      if (!result.isConfirmed) return;
+
       await axios.delete(`/api/loan-settings-remove/${id}`);
       setLoanSettings((prev) => prev.filter((item) => item.id !== id));
-      toast.success("Deleted successfully!");
+      toast.success('Deleted successfully!');
     } catch (error) {
-      console.error("Error deleting:", error.response?.data || error.message);
-      toast.error("Failed to delete record!");
+      console.error('Error deleting:', error.response?.data || error.message);
+      toast.error('Failed to delete record!');
     }
   };
 
   const resetForm = () => {
-    setFormData({
-      id: null,
-      loan_desc: "",
-      org_id: "",
-      min_loan_amount: "",
-      max_loan_amount: "",
-      interest_rate: "",
-      amt_multiplier: "",
-      min_loan_term_months: "",
-      max_loan_term_months: "",
-      process_fees: "",
-      min_repay_percentage_for_next_loan: "",
-      effect_date: "",
-      end_date: "",
-      ss_id_list:[]
-    });
-    setSelectedSslabs([]);
-    setIsEditing(false);
+  setFormData({
+    id: null,
+    loan_desc: "",
+    org_id: "",
+    min_loan_amount: "",
+    max_loan_amount: "",
+    interest_rate: "",
+    amt_multiplier: "",
+    min_loan_term_months: "",
+    max_loan_term_months: "",
+    process_fees: "",
+    min_repay_percentage_for_next_loan: "",
+    effect_date: "",
+    end_date: "",
+    ss_id_list: []    // required
+  });
+
+  setFormSelectedSslabs([]);
+  setIsEditing(false);
   };
+
+
 
   // Sorting handler
   const handleSort = (key) => {
@@ -219,8 +235,8 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     const matchesSearch =
       item.loan_desc?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // slab filter
-    const selectedIds = selectedSslabs.map(s => s.code);
+    // slab filter - use filterSelectedSslabs (separate from form selection)
+    const selectedIds = filterSelectedSslabs.map((s) => s.code);
 
     // include record if:
     // - no slab filter applied OR
@@ -233,7 +249,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
 
     return matchesSearch && matchesSlabs;
   });
-}, [sortedData, searchTerm, selectedSslabs]);
+}, [sortedData, searchTerm, filterSelectedSslabs]);
 
 
   // Pagination
@@ -249,9 +265,9 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
   return (
     <AuthenticatedLayout
       user={auth.user}
-      header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan Settings</h2>}
+      header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan Type</h2>}
     >
-      <Head title="Loan Settings" />
+      <Head title="Loan Type" />
       <Toaster position="top-center" />
 
       <div className="min-h-screen bg-gray-100 p-6 space-y-6 ">
@@ -267,7 +283,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
 
         {/* Form */}
         <div className="max-w-9xl mx-auto bg-white rounded-0xl shadow-lg p-6 border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-700 mb-4">{isEditing ? "Edit Loan Setting" : "Add Loan Setting"}</h4>
+          <h4 className="text-lg font-semibold text-gray-700 mb-4">{isEditing ? "Edit Loan Setting" : "Add Loan Type"}</h4>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Loan Description <span className="text-red-500">*</span></label>
@@ -312,20 +328,19 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                 Income Slabs
               </label>
               <div className="card flex justify-content-center">
-                  <MultiSelect 
-                    value={selectedSslabs} 
+                  <MultiSelect
+                    value={formSelectedSslabs}
                     onChange={(e) => {
-                      setSelectedSslabs(e.value);
-                      setFormData({ ...formData, ss_id_list: e.value.map(s => s.code) });
-                      console.log("formData on slab select: ",formData);
-                      console.log("Selected Slabs:", e.value);
+                      setFormSelectedSslabs(e.value);
+                      setFormData({ ...formData, ss_id_list: e.value.map((s) => s.code) });
                     }}
                     options={salarySlabOptions}
-                    optionLabel="name" 
-                    filter filterDelay={400} 
-                    placeholder="Income Slab(s)" 
+                    optionLabel="name"
+                    filter
+                    filterDelay={400}
+                    placeholder="Income Slab(s)"
                     display="chip"
-                    maxSelectedLabels={3} 
+                    maxSelectedLabels={3}
                     className="w-full md:w-20rem"
                   />
               </div>
@@ -336,8 +351,8 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
               ["max_loan_amount", "Maximum Loan Amount (PGK)"],
               ["interest_rate", "Interest Rate (%)"],
               ["amt_multiplier", "Amount Multiplier"],
-              ["min_loan_term_months", "Minimum Term Months"],
-              ["max_loan_term_months", "Maximum Term Months"],
+              ["min_loan_term_months", "Minimum F/N"],
+              ["max_loan_term_months", "Maximum F/N"],
               ["process_fees", "Processing Fees (PGK)"],
               ["min_repay_percentage_for_next_loan", "Min Repay % for Next Loan"],
               ["effect_date", "Effect Date"],
@@ -362,7 +377,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
             )}
             <button type="submit" onClick={handleSubmit}
               className={`${isEditing ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-600 hover:bg-emerald-700"} text-white px-6 py-2 rounded-lg font-semibold shadow-md`}>
-              {isEditing ? "Update Loan Setting" : "Save Loan Setting"}
+              {isEditing ? "Update Loan Type" : "Save Loan Type"}
             </button>
           </div>
         </div>
@@ -390,9 +405,9 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
           {/* Income Slab Filter */}
           <div className="flex flex-col w-full md:w-1/3 border border-gray-200 ">
             <MultiSelect
-              value={selectedSslabs}
+              value={filterSelectedSslabs}
               onChange={(e) => {
-                setSelectedSslabs(e.value);
+                setFilterSelectedSslabs(e.value);
                 setCurrentPage(1);
               }}
               options={salarySlabOptions}

@@ -316,7 +316,12 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     const items = collections[collectionId];
     if (!items) return;
     setSelectedLoan(items); // items is an array of EMI records containing .loan
+    // open the side drawer and auto-open the first loan accordion
     setSideOpen(true);
+    const firstLoanId = items[0]?.loan_id ?? items[0]?.loan?.id ?? null;
+    if (firstLoanId) {
+      setAccordionOpen((prev) => ({ ...prev, [firstLoanId]: true }));
+    }
   };
 
   // Helper: open single loan in drawer (normalize to array form)
@@ -336,7 +341,10 @@ export default function EmiCollection({ auth, approved_loans = null }) {
       },
     ];
     setSelectedLoan(normalized);
+    // open the side drawer and auto-open the single loan accordion
     setSideOpen(true);
+    const loanId = loan.id;
+    if (loanId) setAccordionOpen((prev) => ({ ...prev, [loanId]: true }));
   };
 
   return (
@@ -544,7 +552,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                             e.stopPropagation();
                             openCollectionDetails(row.collection_id);
                           }}
-                          className="bg-blue-500 text-white px-3 py-1 rounded"
+                          className="bg-gray-300 text-black px-3 py-1 rounded"
                         >
                           View Details
                         </button>
@@ -552,11 +560,11 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                     </tr>
 
                     {expandedRows[row.collection_id] && (
-                      <tr className="bg-gray-100">
-                        <td colSpan="6" className="px-3 py-3 border text-sm">
+                      <tr className="bg-green-100">
+                        <td colSpan="6" className="px-3 py-3 border  text-sm">
                           <table className="w-full text-sm border">
                             <thead>
-                            <tr className="bg-[#E8F0FE]">
+                            <tr className="bg-[#E8F0FE] ">
                               <th className="px-2 py-1 bg-[#1A73E8] text-[#E8F0FE]  ">
                                 Loan ID
                               </th>
@@ -593,7 +601,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
                             <tbody>
                               {collections[row.collection_id]?.map((it) => (
-                                <tr key={it.id} className="hover:bg-gray-100">
+                                <tr key={it.id} className="hover:bg-green-300">
                                   <td className="p-2 border">{it.loan_id}</td>
                                   <td className="p-2 border">
                                     {it.loan?.customer?.first_name} {it.loan?.customer?.last_name}
@@ -671,7 +679,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         </div>
 
         {/* Side Drawer */}
-        <SideDrawer open={sideOpen} onClose={() => setSideOpen(false)}>
+        <SideDrawer open={sideOpen} onClose={() => { setSideOpen(false); setAccordionOpen({}); }}>
           {selectedLoan ? (
               (() => {
                 // Group EMIs by loan_id
@@ -723,7 +731,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                 <div className="bg-white shadow border rounded-md p-4">
 
                                   {/* GRID: 2 columns */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
 
                                     {/* LEFT COLUMN ================================================= */}
                                     <div className="space-y-3">
@@ -733,9 +741,6 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                         <h4 className="font-semibold text-gray-700 text-sm mb-1">Customer</h4>
                                         <p className="text-sm leading-5">
                                           <b>{customer.first_name} {customer.last_name}</b> — {customer.email || "-"}
-                                        </p>
-                                        <p className="text-sm">
-                                          <b>Customer ID:</b> {customer.id}
                                         </p>
                                         <p className="text-sm">
                                           <b>Phone:</b> {customer.phone || "-"}
@@ -757,16 +762,16 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                     </div>
 
                                     {/* RIGHT COLUMN ================================================= */}
-                                    <div>
+                                    <div className="flex flex-col justify-start h-full">
                                       <h4 className="font-semibold text-gray-700 text-sm mb-2">Loan Details</h4>
 
-                                      {/* 3-column compact grid */}
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 gap-x-4 text-sm leading-5">
+                                      {/* 2-column compact grid */}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 -gap-x-4 text-sm leading-5 text-left">
 
                                   
                                         {/* LARGE LOAN AMOUNT */}
-                                        <p className="md:col-span-2 text-lg  ">
-                                          <b>Loan Amount: </b>{currencyPrefix}{Number(loan.loan_amount_applied).toLocaleString()}
+                                        <p className="md:col-span-2 text-lg text-left">
+                                          <b>Amount: </b>{currencyPrefix}{Number(loan.loan_amount_applied).toLocaleString()}
                                         </p>
 
                                         <p><b>Tenure:</b> {loan.tenure_fortnight} FN</p>
@@ -800,71 +805,35 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
                                 {/* EMI TABLE =============================================================== */}
                                   <div className="border rounded-md overflow-hidden mt-2">
+                                    <div className="max-h-[150px] overflow-y-auto">
+                                      <table className="w-full table-fixed border border-gray-500">
+                                        <thead>
+                                          <tr>
+                                            <th className="w-[80px] p-2 text-left border-r border-gray-500 bg-emerald-500 text-white sticky top-0 z-10">EMI No.</th>
+                                            <th className="w-[130px] p-2 text-left border-r border-gray-500 bg-emerald-500 text-white sticky top-0 z-10">Due Date</th>
+                                            <th className="w-[150px] p-2 text-left border-r border-gray-500 bg-emerald-500 text-white sticky top-0 z-10">Payment Date</th>
+                                            <th className="w-[120px] p-2 text-left border-r border-gray-500 bg-emerald-500 text-white sticky top-0 z-10">Status</th>
+                                            <th className="w-[120px] p-2 text-left bg-emerald-500 text-white sticky top-0 z-10">Amount</th>
+                                          </tr>
+                                        </thead>
 
-                                    {/* FIXED HEADER */}
-                                    <table className="w-full table-fixed border border-gray-500">
-                                      <thead>
-                                        <tr className="bg-emerald-500 text-white text-sm border-b border-gray-500">
-
-                                          <th className="w-[80px] p-2 text-left border-r border-gray-500">EMI No.</th>
-                                          <th className="w-[130px] p-2 text-left border-r border-gray-500">Due Date</th>
-                                          <th className="w-[150px] p-2 text-left border-r border-gray-500">Payment Date</th>
-                                          <th className="w-[120px] p-2 text-left border-r border-gray-500">Status</th>
-                                          <th className="w-[120px] p-2 text-left">Amount</th>
-
-                                        </tr>
-                                      </thead>
-                                    </table>
-
-                                    {/* SCROLLABLE BODY */}
-                                    <div className="max-h-[150px] overflow-y-auto border border-gray-500 border-t-0">
-                                      <table className="w-full table-fixed">
                                         <tbody>
-
                                           {items.map((it, i) => (
-                                            <tr
-                                              key={i}
-                                              className="border-b border-gray-500 hover:bg-gray-50 text-sm"
-                                            >
-
-                                              <td className="w-[80px] p-2 border-r border-gray-500">
-                                                {it.installment_no}
-                                              </td>
-
-                                              <td className="w-[130px] p-2 border-r border-gray-500">
-                                                {it.due_date}
-                                              </td>
-
-                                              <td className="w-[150px] p-2 border-r border-gray-500">
-                                                {it.payment_date
-                                                  ? new Date(it.payment_date).toLocaleDateString("en-GB")
-                                                  : "—"}
-                                              </td>
-
-                                              <td className="w-[120px] p-2 border-r border-gray-500">
-                                                <span
-                                                  className={
-                                                    it.status === "Paid" ? "text-green-600" : "text-red-500"
-                                                  }
-                                                >
-                                                  {it.status}
-                                                </span>
-                                              </td>
-
-                                              <td className="w-[120px] p-2">
-                                                {currencyPrefix} {Number(it.emi_amount).toFixed(2)}
-                                              </td>
-
+                                            <tr key={i} className="border-b border-gray-500 hover:bg-gray-50 text-sm">
+                                              <td className="w-[80px] p-2 border-r border-gray-500">{it.installment_no}</td>
+                                              <td className="w-[130px] p-2 border-r border-gray-500">{it.due_date}</td>
+                                              <td className="w-[150px] p-2 border-r border-gray-500">{it.payment_date ? new Date(it.payment_date).toLocaleDateString("en-GB") : "—"}</td>
+                                              <td className="w-[120px] p-2 border-r border-gray-500"><span className={it.status === "Paid" ? "text-green-600" : "text-red-500"}>{it.status}</span></td>
+                                              <td className="w-[120px] p-2">{currencyPrefix} {Number(it.emi_amount).toFixed(2)}</td>
                                             </tr>
                                           ))}
-
                                         </tbody>
                                       </table>
                                     </div>
                                   </div>
 
                               </div>
-                            )}
+                            )}   
 
                           </div>
                         );
@@ -872,7 +841,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                     </div>
 
 
-                    <button onClick={() => setSideOpen(false)} className="w-full bg-gray-800 text-white py-2 rounded">
+                    <button onClick={() => { setSideOpen(false); setAccordionOpen({}); }} className="w-full bg-gray-800 text-white py-2 rounded">
                       Close
                     </button>
 
