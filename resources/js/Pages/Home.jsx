@@ -301,7 +301,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           {/* Desktop Nav */}
           <div className="d-none d-lg-flex align-items-center gap-4">
             <a href="#about" className="nav-link">About Us </a>
-            <a href="#why" className="nav-link">Why Us</a>
+            <a href="#why" className="nav-link">Why Choose Us</a>
             <a href="#testimonials" className="nav-link">Reviews</a>
             <a href="#contact" className="nav-link">Contact</a>
 
@@ -327,7 +327,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           <div className="bg-white border-top py-3 px-4 d-lg-none">
 
             <a href="#about" className="mobile-nav-link d-block py-2">About</a>
-            <a href="#why" className="mobile-nav-link d-block py-2">Why Us</a>
+            <a href="#why" className="mobile-nav-link d-block py-2">Why Choose Us</a>
             <a href="#testimonials" className="mobile-nav-link d-block py-2">Reviews</a>
             <a href="#contact" className="mobile-nav-link d-block py-2">Contact</a>
 
