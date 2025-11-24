@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
+import Swal from 'sweetalert2';
 import toast, { Toaster } from "react-hot-toast";
 import { AutoComplete } from 'primereact/autocomplete';
 
@@ -27,7 +28,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
     const [formData, setFormData] = useState({
         id: null,
         slab_desc: "",
-        org_id: 0,
+        org_id: "",
         starting_salary: 0.00,
         ending_salary: 0.00
     });
@@ -108,14 +109,26 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
         e.preventDefault();
 
         try {
+            // Ensure org_id is set — backend requires a non-null org_id
+            const defaultOrgId = orgList?.[0]?.id ?? (organizations && organizations[0]?.id) ?? null;
+            const submitData = {
+                ...formData,
+                org_id: formData.org_id || defaultOrgId,
+            };
+
+            if (!submitData.org_id) {
+                toast.error("Please select an Organisation before saving the slab.");
+                return;
+            }
+
             if (isEditing && formData.id) {
-                await axios.put(`/api/salary-slab-modify/${formData.id}`, formData);
+                await axios.put(`/api/salary-slab-modify/${formData.id}`, submitData);
                 setSalarySlabs((prev) =>
                     prev.map((item) => (item.id === formData.id ? { ...item, ...formData } : item))
                 );
                 toast.success("Income slab updated successfully!");
             } else {
-                const res = await axios.post("/api/salary-slab-create", formData);
+                const res = await axios.post("/api/salary-slab-create", submitData);
                 // If API returns created object under res.data.data
                 const created = res.data?.data ?? res.data;
                 setSalarySlabs((prev) => [...prev, created]);
@@ -135,15 +148,26 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
     };
 
     const handleDelete = async (id, desc) => {
-        if (!confirm(`Are you sure you want to delete "${desc}"?`)) return;
-        try {
-            await axios.delete(`/api/salary-slab-remove/${id}`);
-            setSalarySlabs((prev) => prev.filter((item) => item.id !== id));
-            toast.success("Deleted successfully!");
-        } catch (error) {
-            console.error("Error deleting:", error.response?.data || error.message);
-            toast.error("Failed to delete record!");
-        }
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `Delete "${desc}"? This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, delete it',
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await axios.delete(`/api/salary-slab-remove/${id}`);
+                    setSalarySlabs((prev) => prev.filter((item) => item.id !== id));
+                    Swal.fire('Deleted!', 'Record has been deleted.', 'success');
+                } catch (error) {
+                    console.error('Error deleting:', error.response?.data || error.message);
+                    Swal.fire('Error', 'Failed to delete record.', 'error');
+                }
+            }
+        });
     };
 
     const resetForm = () => {
@@ -377,7 +401,6 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                                 {[
                                     ["#", "id"],
                                     ["Slab Desc", "slab_desc"],
-                                    ["Org Name", "org_id"],
                                     ["Starting Salary", "starting_salary"],
                                     ["Ending Salary", "ending_salary"]
                                 ].map(([header, key]) => (
@@ -425,9 +448,9 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                                         <td className="px-2 py-2 font-semibold text-gray-800 text-center border border-gray-700">
                                             {slab.slab_desc}
                                         </td>
-                                        <td className="px-2 py-2 text-center border border-gray-700">
+                                        {/* <td className="px-2 py-2 text-center border border-gray-700">
                                             {orgList.find((o) => Number(o.id) === Number(slab.org_id))?.organisation_name ?? slab.org_id ?? "—"}
-                                        </td>
+                                        </td> */}
                                         <td className="px-2 py-2 text-center border border-gray-700">
                                             {slab.starting_salary}
                                         </td>
