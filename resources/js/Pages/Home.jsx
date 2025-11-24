@@ -37,7 +37,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   const [respMsg, setRespMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [showScroll, setShowScroll] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -350,7 +350,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           </div>
         )}
       </nav>
-      <Navbar auth={auth} setShowForm={setShowForm} />
+      <Navbar auth={auth} />
 
 
       {/* Home Section */}

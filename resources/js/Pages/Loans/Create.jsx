@@ -27,7 +27,7 @@ export default function Create({ auth, loan_settings }) {
     // const [loanSettings, setLoanSettings] = useState(JSON.stringify(loan_settings, null, 2));
     const [loanSettings, setLoanSettings] = useState(loan_settings);
     console.log("loanSettings: ", loanSettings);
-    // setLoanSettings(loan_settings);
+    // setLoanSettings(loa        n_settings);
     // const [tempCusFormData, settempCusFormData] = useState({
     const [formData, setFormData] = useState({
         cus_id: 0,
