@@ -300,7 +300,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
           {/* Desktop Nav */}
           <div className="d-none d-lg-flex align-items-center gap-4">
-            <a href="#about" className="nav-link">About</a>
+            <a href="#about" className="nav-link">About Us </a>
             <a href="#why" className="nav-link">Why Us</a>
             <a href="#testimonials" className="nav-link">Reviews</a>
             <a href="#contact" className="nav-link">Contact</a>
@@ -902,8 +902,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             <div className="loan__services__item" style={{ backgroundImage: `url(${loan1})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="loan__services__item__text">
                 <h4> Personal Loan</h4>
-                <p>Secure,quick financing for government employees covering immediate personal needs,emergencies,or family commitments.</p>
-                {/* <a href="#">Find Out More</a> */}
+                <p>Secure, quick financing for government employees covering immediate personal needs, emergencies, or family commitments.</p>
+                
               </div>
             </div>
 
@@ -911,7 +911,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               <div className="loan__services__item__text">
                 <h4> Business Loan</h4>
                 <p>Capital to support entrepreneurial ventures or side businesses, leveraging the stability of a government salary for reliable repayment.</p>
-                {/* <a href="#">Find Out More</a> */}
+               
               </div>
             </div>
 
@@ -920,7 +920,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <h4>Education Loan</h4>
 
                 <p>Dedicated funding to ensure dependents of government employees access high-quality education without financial strain.</p>
-                {/* <a href="#">Find Out More</a> */}
+               
               </div>
             </div>
 
@@ -928,8 +928,9 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               <div className="loan__services__item__text">
                 <h4> Commercial Loan</h4>
 
-                <p>High-value lending secured by the employee's stable income, typically used for significant asset purchases or investment projects.</p>
-                {/* <a href="#">Find Out More</a> */}
+                <p>
+                High-value lending secured by the employee's stable income, typically used for significant asset purchases or investment projects.</p>
+             
               </div>
             </div>
 
@@ -938,7 +939,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <h4> Health Loan</h4>
 
                 <p>Essential financial support for unexpected or planned medical expenses and treatments for the employee or their family.</p>
-                {/* <a href="#">Find Out More</a> */}
+            
               </div>
             </div>
 
