@@ -117,7 +117,7 @@ export default function Create({ auth, loan_settings }) {
     useEffect(() => {
         // Fetch Companies from the API
         fetch('/api/company-list')
-            .then((res)=>res.json())
+            .then((res) => res.json())
             .then(data => {
                 setCompanies(data);
             })
@@ -128,7 +128,7 @@ export default function Create({ auth, loan_settings }) {
     useEffect(() => {
         // Fetch Companies from the API
         fetch('/api/all-cust-list')
-            .then((res)=>res.json())
+            .then((res) => res.json())
             .then(data => {
                 setAllCustMast(data);
             })
@@ -139,7 +139,7 @@ export default function Create({ auth, loan_settings }) {
     useEffect(() => {
         // Fetch Organisations from the API
         fetch('/api/organisation-list')
-            .then((res)=>res.json())
+            .then((res) => res.json())
             .then(data => {
                 setOrganisations(data);
             })
@@ -156,11 +156,11 @@ export default function Create({ auth, loan_settings }) {
         }
     }, [loanFormData.customer_id]);
 
-    useEffect(()=>{
+    useEffect(() => {
         if (loanFormData.customer_id !== 0 && loanFormData.customer_id !== "") {
             fetchLoanTypes();
         }
-    },[fetchLoanTypes]);
+    }, [fetchLoanTypes]);
 
     const handleChange = (e) => {
         setIsFormDirty(false);
@@ -251,7 +251,7 @@ export default function Create({ auth, loan_settings }) {
                 icon: "warning"
             });
             return;
-        } 
+        }
         // else {
         //     if (Number(loanFormData.loan_amount_applied) < Number(recProposedPvaAmt)) {
         //         //check if the amount is divisable by 50
@@ -421,8 +421,8 @@ export default function Create({ auth, loan_settings }) {
             // loanFormData.total_repay_amt = parseFloat(loanFormData.total_repay_amt)
 
             console.log("loanFormData before submit", loanFormData);
-            console.log(typeof(loanFormData.loan_amount_applied));
-            
+            console.log(typeof (loanFormData.loan_amount_applied));
+
             // return;
             const res = await axios.post('/api/loans', loanFormData);
             setMessage('✅ Loan application data saved successfully!');
@@ -496,24 +496,24 @@ export default function Create({ auth, loan_settings }) {
         }
 
     };
-    useEffect(()=>{
-        axios.get("/api/fetch-loan-temp-customer",{withCredentials:true})
+    useEffect(() => {
+        axios.get("/api/fetch-loan-temp-customer", { withCredentials: true })
 
-        .then((res) => {
-            if(isEmpty(res.data)){
-                // setMessage('ℹ️ No saved customer data found. Please fill out the form.')
-                setMessage('')
-            } else {
-                setMessage('✅ Loaded saved customer data. You can continue editing.');
-                const cleanData = Object.fromEntries(
-                    Object.entries(res.data).map(([k, v]) => [k, v ?? ""])
-                );
-                setFormData(cleanData);
-                console.log("Loaded saved customer:",res.data);
-                // setMessage('✅ Loaded saved customer.');
-            }
-        }).catch((err)=>console.error("Error loading temp customer:",err));
-    },[]);
+            .then((res) => {
+                if (isEmpty(res.data)) {
+                    // setMessage('ℹ️ No saved customer data found. Please fill out the form.')
+                    setMessage('')
+                } else {
+                    setMessage('✅ Loaded saved customer data. You can continue editing.');
+                    const cleanData = Object.fromEntries(
+                        Object.entries(res.data).map(([k, v]) => [k, v ?? ""])
+                    );
+                    setFormData(cleanData);
+                    console.log("Loaded saved customer:", res.data);
+                    // setMessage('✅ Loaded saved customer.');
+                }
+            }).catch((err) => console.error("Error loading temp customer:", err));
+    }, []);
 
     const handleStep = (stepNumber) => () => {
         setStep(stepNumber);
@@ -565,9 +565,9 @@ export default function Create({ auth, loan_settings }) {
         }
 
         try {
-            loanFormData.loan_amount_applied = (recProposedPvaAmt!=0) ? parseFloat(recProposedPvaAmt): parseFloat(loanFormData.loan_amount_applied);
+            loanFormData.loan_amount_applied = (recProposedPvaAmt != 0) ? parseFloat(recProposedPvaAmt) : parseFloat(loanFormData.loan_amount_applied);
             loanFormData.is_elegible = 0;
-            
+
             // return;
             const res = await axios.post('/api/loans-not-elegible', loanFormData);
             setMessage('✅ Loan application data saved successfully!');
@@ -631,7 +631,7 @@ export default function Create({ auth, loan_settings }) {
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">New Loan Application</h2>}
         >
-        
+
             {/*  map the loan_settings passed from controller for debugging */}
             {/* <pre>
                 {JSON.stringify(loan_settings, null, 2)}
@@ -655,26 +655,25 @@ export default function Create({ auth, loan_settings }) {
                                 </Link>
                             </Col>
                         </Row>
-                        {/* <div className="flex justify-between items-center sm:rounded-lg px-4 pt-4">
-                            <h3 className="text-lg font-semibold text-gray-700">
-                                &nbsp;
-                            </h3>
-                            <Link
-                                href={route('loans')}
-                                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap w-fit"
-                            >
-                                <ArrowLeft size={18} strokeWidth={2} />
-                                <span>Back to the List</span>
-                            </Link>
-                        </div> */}
+                        {/*<div className="flex justify-between items-center sm:rounded-lg px-4 pt-4">
+                                                    <h3 className="text-lg font-semibold text-gray-700">
+                                                        &nbsp;
+                                                    </h3>
+                                                    <Link
+                                                        href={route('loans')}
+                                                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap w-fit"
+                                                    >
+                                                        <ArrowLeft size={18} strokeWidth={2} />
+                                                        <span>Back to the List</span>
+                                                    </Link>
+                                                </div> */}
                         <div className="p-6 pt-2 text-gray-900">
                             {message && (
-                                <div className={`mb-4 p-3 rounded ${
-                                    message.startsWith('✅') 
-                                        ? 'bg-green-100 text-green-700' 
-                                        : message.startsWith('ℹ️') 
-                                        ? 'bg-sky-200 text-black-700' 
-                                        : 'bg-red-100 text-red-700'
+                                <div className={`mb-4 p-3 rounded ${message.startsWith('✅')
+                                        ? 'bg-green-100 text-green-700'
+                                        : message.startsWith('ℹ️')
+                                            ? 'bg-sky-200 text-black-700'
+                                            : 'bg-red-100 text-red-700'
                                     }`
                                 }>
 
@@ -685,13 +684,13 @@ export default function Create({ auth, loan_settings }) {
                             <div className="tabs">
                                 <ul className="flex border-b">
                                     <li className={`px-4 py-2 newloanSteps ${step === 1 ? 'border-b-2 border-indigo-600 font-semibold' : ''}`} onClick={handleStep(1)}>
-                                    Customer Info
+                                        Customer Info
                                     </li>
                                     <li className={`px-4 py-2 newloanSteps ${step === 2 ? 'border-b-2 border-indigo-600 font-semibold' : ''}`} onClick={handleStep(2)}>
-                                    Loan Application
+                                        Loan Application
                                     </li>
                                     <li className={`px-4 py-2 newloanSteps ${step === 3 ? 'border-b-2 border-indigo-600 font-semibold' : ''}`} onClick={handleStep(3)}>
-                                    Document Upload
+                                        Document Upload
                                     </li>
                                 </ul>
                             </div>
@@ -706,6 +705,15 @@ export default function Create({ auth, loan_settings }) {
                                     setMessage={setMessage}
                                     setIsFormDirty={setIsFormDirty}
                                     onNext={(savedCustomer) => {
+                                        const infoMsg = '✅ customer data saved. You can continue editing.';
+                                        setMessage(infoMsg);
+                                        // show same message in SweetAlert
+                                        Swal.fire({
+                                            title: "Success",
+                                            text: infoMsg,
+                                            icon: "success"
+                                        });
+
                                         setIsFormDirty(false);
                                         fetchCustomers();
 
@@ -781,7 +789,7 @@ export default function Create({ auth, loan_settings }) {
                                                 <option value="">Select Customer</option>
                                                 {customers.map((c) => (
                                                     <option key={c.id} value={c.id}>
-                                                    {c.first_name} {c.last_name}
+                                                        {c.first_name} {c.last_name}
                                                     </option>
                                                 ))}
                                             </select>
@@ -797,217 +805,216 @@ export default function Create({ auth, loan_settings }) {
                                             </select>
                                         </div> */}
                                     </div>
-                                <fieldset className="fldset">
-                                    <legend className="font-semibold">Eligibility</legend>
-                                    <div className="mt-6">
-                                        {/* {loanFormData.customer_id && (
+                                    <fieldset className="fldset">
+                                        <legend className="font-semibold">Eligibility</legend>
+                                        <div className="mt-6">
+                                            {/* {loanFormData.customer_id && (
                                             <CustomerEligibilityForm key={loanFormData.customer_id} customerId={loanFormData.customer_id} />
                                         )} */}
-                                        <CustomerEligibilityForm
-                                            customerId={loanFormData.customer_id}
-                                            onEligibilityChange={(eligible) => {
-                                                setIsEligible(eligible);
-                                                console.log("isEligible on CustomerEligibilityCheck", isEligible);
-                                            }}
-                                            onEligibilityChangeTruely={(isTruelyEligible) => {
-                                                setIsTruelyEligible(isTruelyEligible);
-                                                console.log("isTruelyEligible on CustomerEligibilityCheck", isTruelyEligible);
-                                            }}
-                                            proposedPvaAmt={(recProposedPvaAmt) => {
-                                                setRecProposedPvaAmt(recProposedPvaAmt);
-                                                setLoanFormData((prev) => ({ ...prev, loan_amount_applied: recProposedPvaAmt }));
-                                            }}
-                                            eleigibleAmount={(recEleigibleAmount) => {
-                                                setRecEleigibleAmount(recEleigibleAmount);
-                                                setLoanFormData((prev) => ({ ...prev, elegible_amount: parseFloat(recEleigibleAmount) }));
-                                            }}
-                                        />
-                                    </div>
-                                    {console.log("recEleigibleAmount", recEleigibleAmount)}
-                                    {console.log("isEligible", isEligible)}
-                                    {(!isTruelyEligible && recEleigibleAmount != 0) ? (
-                                        <Row>
-                                            <Col md={12} className='text-center'>
-                                                <Button variant="primary" type="button" onClick={handleNotElegibleSubmit}>
-                                                    Make Elegible
-                                                </Button>
-                                            </Col>
-                                        </Row>
-                                    ) : ("")}
-                                </fieldset>
-                                <fieldset className="fldset" disabled={!isEligible}>
-                                    <legend className="font-semibold">Loan Details</legend>
-                                    <div className="row mb-3">
-                                        <div className="col-md-4">
-                                            <label className="form-label">Loan Type</label>
-                                            <select 
-                                                className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50":""}`} 
-                                                name="loan_type" value={loanFormData.loan_type}
-                                                onChange={(e)=>{
-                                                    loanHandleChange(e);
-                                                    //fetch loan settings based on selected loan type
-                                                    const selectedLoanTypeId = e.target.value;
-
-                                                    if (Array.isArray(loanSettings) && loanSettings.length > 0) {
-                                                        // Find selected loan setting based on loan type
-                                                        const selectedLoanSetting = loanSettings.find(
-                                                            (ls) => ls.id === Number(selectedLoanTypeId)
-                                                        );
-
-                                                        console.log("loanSettings:", loanSettings);
-                                                        console.log("loanFormData.loan_type:", loanFormData.loan_type);
-                                                        console.log("selectedLoanSetting:", selectedLoanSetting);
-                                                        // return;
-                                                        if (selectedLoanSetting) {
-                                                            const {
-                                                                process_fees,
-                                                                interest_rate,
-                                                            } = selectedLoanSetting;
-
-                                                            // Auto-fill processing fee and interest rate
-                                                            setLoanFormData((prev) => ({
-                                                                ...prev,
-                                                                processing_fee: parseFloat(process_fees),
-                                                                interest_rate: parseFloat(interest_rate)
-                                                            }));
-                                                            //make the form read-only and disabled for these two fields
-                                                            document.querySelector('input[name="processing_fee"]').readOnly = true;
-                                                            document.querySelector('input[name="interest_rate"]').readOnly = true;
-                                                            document.querySelector('input[name="processing_fee"]').disabled = true;
-                                                            document.querySelector('input[name="interest_rate"]').disabled = true;
-                                                        }
-                                                    }
+                                            <CustomerEligibilityForm
+                                                customerId={loanFormData.customer_id}
+                                                onEligibilityChange={(eligible) => {
+                                                    setIsEligible(eligible);
+                                                    console.log("isEligible on CustomerEligibilityCheck", isEligible);
                                                 }}
-                                                // required
-                                            >
-                                                (<option value="">Select Loan Type</option>
-                                                {loanTypes.map((lt) => (
-                                                    <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
-                                                ))})
-                                            </select>
-                                        </div>
-
-                                        <div className="col-md-4">
-                                            <label className="form-label">Purpose</label>
-                                            <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
-                                                <option value="">Select Purpose</option>
-                                                <option>Tuition</option>
-                                                <option>Living</option>
-                                                <option>Medical</option>
-                                                <option>Appliance</option>
-                                                <option>Car</option>
-                                                <option>Travel</option>
-                                                <option>HomeImprovement</option>
-                                                <option>Other</option>
-                                            </select>
-                                        </div>
-
-                                        {loanFormData.purpose === "Other" && (
-                                            <div className="col-md-4">
-                                            <label className="form-label">Other Purpose</label>
-                                            <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="row mb-3">
-                                        <div className="col-md-3">
-                                            <label className="form-label">Loan Amount Applied</label>
-                                            <input 
-                                                type="number" step="0.01"
-                                                className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`}
-                                                name="loan_amount_applied"
-                                                value={loanFormData.loan_amount_applied}
-                                                onChange={(e) => loanHandleChange(e)}
-                                                onKeyUp={calculateRepaymentDetails}
-                                                required
-                                                />
-                                        </div>
-
-                                        <div className="col-md-3">
-                                            <label className="form-label">Tenure (Fortnight)</label>
-                                            <input 
-                                                type="number" step="1"
-                                                name="tenure_fortnight"
-                                                className={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50":""}`} 
-                                                value={loanFormData.tenure_fortnight}
-                                                onChange={(e) => loanHandleChange(e)}
-                                                onKeyUp={calculateRepaymentDetails}
-                                                required
+                                                onEligibilityChangeTruely={(isTruelyEligible) => {
+                                                    setIsTruelyEligible(isTruelyEligible);
+                                                    console.log("isTruelyEligible on CustomerEligibilityCheck", isTruelyEligible);
+                                                }}
+                                                proposedPvaAmt={(recProposedPvaAmt) => {
+                                                    setRecProposedPvaAmt(recProposedPvaAmt);
+                                                    setLoanFormData((prev) => ({ ...prev, loan_amount_applied: recProposedPvaAmt }));
+                                                }}
+                                                eleigibleAmount={(recEleigibleAmount) => {
+                                                    setRecEleigibleAmount(recEleigibleAmount);
+                                                    setLoanFormData((prev) => ({ ...prev, elegible_amount: parseFloat(recEleigibleAmount) }));
+                                                }}
                                             />
                                         </div>
+                                        {console.log("recEleigibleAmount", recEleigibleAmount)}
+                                        {console.log("isEligible", isEligible)}
+                                        {(!isTruelyEligible && recEleigibleAmount != 0) ? (
+                                            <Row>
+                                                <Col md={12} className='text-center'>
+                                                    <Button variant="primary" type="button" onClick={handleNotElegibleSubmit}>
+                                                        Make Elegible
+                                                    </Button>
+                                                </Col>
+                                            </Row>
+                                        ) : ("")}
+                                    </fieldset>
+                                    <fieldset className="fldset" disabled={!isEligible}>
+                                        <legend className="font-semibold">Loan Details</legend>
+                                        <div className="row mb-3">
+                                            <div className="col-md-4">
+                                                <label className="form-label">Loan Type</label>
+                                                <select
+                                                    className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                    name="loan_type" value={loanFormData.loan_type}
+                                                    onChange={(e) => {
+                                                        loanHandleChange(e);
+                                                        //fetch loan settings based on selected loan type
+                                                        const selectedLoanTypeId = e.target.value;
 
-                                        <div className="col-md-3">
-                                            <label className="form-label">Interest Rate (%)</label>
-                                            <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="interest_rate" value={loanFormData.interest_rate} onChange={loanHandleChange} />
-                                        </div>
+                                                        if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+                                                            // Find selected loan setting based on loan type
+                                                            const selectedLoanSetting = loanSettings.find(
+                                                                (ls) => ls.id === Number(selectedLoanTypeId)
+                                                            );
 
-                                        <div className="col-md-3">
-                                            <label className="form-label">Processing Fee</label>
-                                            <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="processing_fee" value={loanFormData.processing_fee} onChange={loanHandleChange} />
-                                        </div>
-                                    </div>
+                                                            console.log("loanSettings:", loanSettings);
+                                                            console.log("loanFormData.loan_type:", loanFormData.loan_type);
+                                                            console.log("selectedLoanSetting:", selectedLoanSetting);
+                                                            // return;
+                                                            if (selectedLoanSetting) {
+                                                                const {
+                                                                    process_fees,
+                                                                    interest_rate,
+                                                                } = selectedLoanSetting;
 
-                                    {loanFormData.total_interest_amt && (
-                                    <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id='repayDetailsDiv'>
-                                        <fieldset className="fldset w-full">
-                                            <legend className="font-semibold">Repayment Details</legend>
-                                            <div className="row mt-3">
-                                                <div className="col-md-3">
-                                                    <label className="form-label fw-bold">Total Interest (PGK)</label>
-                                                    <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
-                                                </div>
-                                                <div className="col-md-3">
-                                                    <label className="form-label fw-bold">Total Repay (PGK)</label>
-                                                    <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
-                                                </div>
-                                                <div className="col-md-3">
-                                                    <label className="form-label fw-bold">Repay per FN (PGK)</label>
-                                                    <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
-                                                </div>
+                                                                // Auto-fill processing fee and interest rate
+                                                                setLoanFormData((prev) => ({
+                                                                    ...prev,
+                                                                    processing_fee: parseFloat(process_fees),
+                                                                    interest_rate: parseFloat(interest_rate)
+                                                                }));
+                                                                //make the form read-only and disabled for these two fields
+                                                                document.querySelector('input[name="processing_fee"]').readOnly = true;
+                                                                document.querySelector('input[name="interest_rate"]').readOnly = true;
+                                                                document.querySelector('input[name="processing_fee"]').disabled = true;
+                                                                document.querySelector('input[name="interest_rate"]').disabled = true;
+                                                            }
+                                                        }
+                                                    }}
+                                                // required
+                                                >
+                                                    (<option value="">Select Loan Type</option>
+                                                    {loanTypes.map((lt) => (
+                                                        <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
+                                                    ))})
+                                                </select>
                                             </div>
-                                        </fieldset>
-                                    </div>
-                                    )}
 
-                                    <div className="row mb-3">
-                                        <div className="col-md-4">
-                                            <label className="form-label">Bank Name</label>
-                                            <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="bank_name" value={loanFormData.bank_name} onChange={loanHandleChange} />
+                                            <div className="col-md-4">
+                                                <label className="form-label">Purpose</label>
+                                                <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
+                                                    <option value="">Select Purpose</option>
+                                                    <option>Tuition</option>
+                                                    <option>Living</option>
+                                                    <option>Medical</option>
+                                                    <option>Appliance</option>
+                                                    <option>Car</option>
+                                                    <option>Travel</option>
+                                                    <option>HomeImprovement</option>
+                                                    <option>Other</option>
+                                                </select>
+                                            </div>
+
+                                            {loanFormData.purpose === "Other" && (
+                                                <div className="col-md-4">
+                                                    <label className="form-label">Other Purpose</label>
+                                                    <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
+                                                </div>
+                                            )}
                                         </div>
 
-                                        <div className="col-md-4">
-                                            <label className="form-label">Bank Branch</label>
-                                            <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="bank_branch" value={loanFormData.bank_branch} onChange={loanHandleChange} />
+                                        <div className="row mb-3">
+                                            <div className="col-md-3">
+                                                <label className="form-label">Loan Amount Applied</label>
+                                                <input
+                                                    type="number" step="0.01"
+                                                    className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                    name="loan_amount_applied"
+                                                    value={loanFormData.loan_amount_applied}
+                                                    onChange={(e) => loanHandleChange(e)}
+                                                    onKeyUp={calculateRepaymentDetails}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="col-md-3">
+                                                <label className="form-label">Tenure (Fortnight)</label>
+                                                <input
+                                                    type="number" step="1"
+                                                    name="tenure_fortnight"
+                                                    className={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                    value={loanFormData.tenure_fortnight}
+                                                    onChange={(e) => loanHandleChange(e)}
+                                                    onKeyUp={calculateRepaymentDetails}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="col-md-3">
+                                                <label className="form-label">Interest Rate (%)</label>
+                                                <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="interest_rate" value={loanFormData.interest_rate} onChange={loanHandleChange} />
+                                            </div>
+
+                                            <div className="col-md-3">
+                                                <label className="form-label">Processing Fee</label>
+                                                <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="processing_fee" value={loanFormData.processing_fee} onChange={loanHandleChange} />
+                                            </div>
                                         </div>
 
-                                        <div className="col-md-4">
-                                            <label className="form-label">Bank Account No</label>
-                                            <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="bank_account_no" value={loanFormData.bank_account_no} onChange={loanHandleChange} />
-                                        </div>
-                                    </div>
+                                        {(loanFormData.total_interest_amt) && (
+                                            <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id='repayDetailsDiv'>
+                                                <fieldset className="fldset w-full">
+                                                    <legend className="font-semibold">Repayment Details</legend>
+                                                    <div className="row mt-3">
+                                                        <div className="col-md-3">
+                                                            <label className="form-label fw-bold">Total Interest (PGK)</label>
+                                                            <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
+                                                        </div>
+                                                        <div className="col-md-3">
+                                                            <label className="form-label fw-bold">Total Repay (PGK)</label>
+                                                            <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
+                                                        </div>
+                                                        <div className="col-md-3">
+                                                            <label className="form-label fw-bold">Repay per FN (PGK)</label>
+                                                            <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
+                                                        </div>
+                                                    </div>
+                                                </fieldset>
+                                            </div>
+                                        )}
 
-                                    <div className="mb-3">
-                                        <label className="form-label">Remarks</label>
-                                        <textarea className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50":""}`} name="remarks" rows="3" value={loanFormData.remarks} onChange={loanHandleChange}></textarea>
-                                    </div>
-                                </fieldset>
+                                        <div className="row mb-3">
+                                            <div className="col-md-4">
+                                                <label className="form-label">Bank Name</label>
+                                                <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="bank_name" value={loanFormData.bank_name} onChange={loanHandleChange} />
+                                            </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label">Bank Branch</label>
+                                                <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="bank_branch" value={loanFormData.bank_branch} onChange={loanHandleChange} />
+                                            </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label">Bank Account No</label>
+                                                <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="bank_account_no" value={loanFormData.bank_account_no} onChange={loanHandleChange} />
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-3">
+                                            <label className="form-label">Remarks</label>
+                                            <textarea className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="remarks" rows="3" value={loanFormData.remarks} onChange={loanHandleChange}></textarea>
+                                        </div>
+                                    </fieldset>
                                     <Row className="mt-4 text-end">
                                         <Col>
                                             <button
                                                 type="submit"
-                                                className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${
-                                                    !isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""
-                                                }`}
+                                                className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${!isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""
+                                                    }`}
                                                 disabled={!isEligible || isChecking}
                                             >
                                                 {isChecking ? (
                                                     <>
-                                                    <span
-                                                        className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
-                                                        role="status"
-                                                    ></span>
-                                                    Checking...
+                                                        <span
+                                                            className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+                                                            role="status"
+                                                        ></span>
+                                                        Checking...
                                                     </>
                                                 ) : (
                                                     "Save & Upload Documents →"
@@ -1018,7 +1025,7 @@ export default function Create({ auth, loan_settings }) {
                                     </Row>
                                 </form>
                             )}
-                            {step === 3 && ( 
+                            {step === 3 && (
                                 <LoanDocumentsUpload
                                     loanFormData={loanFormData}
                                     setLoanFormData={setLoanFormData}

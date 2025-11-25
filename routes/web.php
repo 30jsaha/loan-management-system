@@ -98,9 +98,11 @@ Route::middleware(['auth', 'verified'])->prefix('loans')->name('loan.')->group(f
 
 Route::middleware('auth')->get('/customers/dept-database', fn() => Inertia::render('Customers/DeptDatabase'))->name('customer.dept');
 
-Route::middleware('auth')->get('/loans/{id}', function ($id) {
-    return Inertia::render('Loans/View', ['loanId' => $id]);
-})->name('loan.view');
+// Route::middleware('auth')->get('/loans/{id}', function ($id) {
+//     return Inertia::render('Loans/View', ['loanId' => $id]);
+// })->name('loan.view');
+Route::get('/loans/{id}', [LoansController::class, 'loanDetailsView'])
+->middleware(['auth', 'verified'])->name('loan.view');
 
 Route::middleware('auth')->get('/loans/{id}/edit', fn($id) => Inertia::render('Loans/Edit', ['loanId' => $id]))->name('loan.edit');
 

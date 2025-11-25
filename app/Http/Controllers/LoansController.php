@@ -10,6 +10,7 @@ use App\Models\allCustMaster;
 use App\Models\SalarySlab;
 use App\Models\OrganisationMaster as Org;
 use App\Models\InstallmentDetail;
+use App\Models\RejectionReson;
 
 class LoansController extends Controller
 {
@@ -21,6 +22,20 @@ class LoansController extends Controller
         $salary_slabs = SalarySlab::all();
         return inertia('Loans/Index', [
             'salary_slabs'=>$salary_slabs
+        ]);
+    }
+    public function loanDetailsView($id)
+    {
+        $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        ->where('id',$id)
+        ->orderBy('created_at','desc')->get();
+
+        $rejectionReasons = RejectionReson::all();
+
+        return inertia('Loans/View', [
+            'loans' => $loans,
+            'loanId' => $id,
+            'rejectionReasons' => $rejectionReasons
         ]);
     }
     public function create()
