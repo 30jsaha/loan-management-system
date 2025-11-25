@@ -7,6 +7,7 @@ import { Eye, Trash2, Search, X, ArrowLeft } from "lucide-react";
 import Swal from "sweetalert2";
 import { currencyPrefix } from "@/config";
 
+
 /**
  * SideDrawer - simple right-side drawer
  */
@@ -96,6 +97,9 @@ export default function EmiCollection({ auth, approved_loans = null }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRows, setExpandedRows] = useState({});
   const [accordionOpen, setAccordionOpen] = useState({});
+  const [searchEmpId, setSearchEmpId] = useState("");
+  const [orgTypeFilter, setOrgTypeFilter] = useState("");  
+  const [summaryBase, setSummaryBase] = useState([]);
 
   const itemsPerPage = 8;
 
@@ -182,31 +186,52 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
   // Filters + search
   const filtered = useMemo(() => {
-    return loans.filter((loan) => {
-      const custFull = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
-      const matchesName = custFull.includes(searchName.trim().toLowerCase());
-      const appliedAmt = (loan.loan_amount_applied ?? "").toString();
-      const matchesAmt = searchLoanAmt.trim() === "" || appliedAmt.includes(searchLoanAmt.trim());
-      const matchesOrg = !orgFilter || (loan.organisation && String(loan.organisation.id) === String(orgFilter));
-      const matchesElig =
-        eligibilityFilter === "all"
-          ? true
-          : eligibilityFilter === "eligible"
-          ? Number(loan.is_elegible) === 1
-          : Number(loan.is_elegible) === 0;
-      // normalize created_at
-      const loanDate = loan.created_at ? new Date(loan.created_at.replace(" ", "T")) : null;
+  return loans.filter((loan) => {
+    const custFull = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
 
-      // normalize toDate — include full day
-      const toDateEnd = toDate ? new Date(toDate + "T23:59:59") : null;
+    const matchesName = custFull.includes(searchName.trim().toLowerCase());
 
-      const matchesFrom = !fromDate || (loanDate && loanDate >= new Date(fromDate + "T00:00:00"));
+    const appliedAmt = (loan.loan_amount_applied ?? "").toString();
+    const matchesAmt = searchLoanAmt.trim() === "" || appliedAmt.includes(searchLoanAmt.trim());
 
-      const matchesTo = !toDate || (loanDate && loanDate <= toDateEnd);
+    const matchesOrg = !orgFilter || (loan.organisation && String(loan.organisation.id) === String(orgFilter));
 
-      return matchesName && matchesAmt && matchesOrg && matchesElig && matchesFrom && matchesTo;
-    });
-  }, [loans, searchName, searchLoanAmt, orgFilter, eligibilityFilter, fromDate, toDate]);
+    const matchesElig =
+      eligibilityFilter === "all"
+        ? true
+        : eligibilityFilter === "eligible"
+        ? Number(loan.is_elegible) === 1
+        : Number(loan.is_elegible) === 0;
+
+    // DATE FILTER
+    const loanDate = loan.created_at ? new Date(loan.created_at.replace(" ", "T")) : null;
+    const toDateEnd = toDate ? new Date(toDate + "T23:59:59") : null;
+
+    const matchesFrom = !fromDate || (loanDate && loanDate >= new Date(fromDate + "T00:00:00"));
+    const matchesTo = !toDate || (loanDate && loanDate <= toDateEnd);
+
+    // 🔍 EMPLOYEE ID FILTER
+    const empId = loan.customer?.employee_no?.toString() || "";
+    const matchesEmpId = searchEmpId.trim() === "" || empId.includes(searchEmpId.trim());
+
+    // 🏢 ORG TYPE FILTER (Health, Education)
+    const orgType = loan.organisation?.sector_type || "";
+    const matchesOrgType =
+      !orgTypeFilter || orgType.toLowerCase() === orgTypeFilter.toLowerCase();
+
+    return (
+      matchesName &&
+      matchesAmt &&
+      matchesOrg &&
+      matchesElig &&
+      matchesFrom &&
+      matchesTo &&
+      matchesEmpId &&
+      matchesOrgType
+    );
+  });
+  }, [loans, searchName, searchLoanAmt, orgFilter, eligibilityFilter, fromDate, toDate, searchEmpId, orgTypeFilter]);
+
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   useEffect(() => {
@@ -250,47 +275,169 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     }
   };
 
+  // Filter the Collections Table
   const formattedCollections = useMemo(() => {
     const list = [];
 
     Object.keys(collections).forEach((cid) => {
       const group = collections[cid];
 
-      const first = group[0];
+      // 1. Check Collection ID Filter (Parent Level)
+      const matchesId = !filterCollectionId || cid.toLowerCase().includes(filterCollectionId.toLowerCase());
 
-      const orgId = first?.loan?.organisation_id ?? null;
-      const matchesOrg = !orgFilter || orgFilter == orgId;
-      const matchesId = !filterCollectionId || cid.includes(filterCollectionId);
+      // 2. Filter the items INSIDE this collection group
+      const matchingItems = group.filter((item) => {
+        const loan = item.loan;
+        const customer = loan?.customer;
+        const org = loan?.organisation;
 
-      if (matchesOrg && matchesId) {
+        // --- Organisation Filter ---
+        const matchesOrg = !orgFilter || (loan?.organisation_id && String(loan.organisation_id) === String(orgFilter));
+
+        // --- Sector Type Filter ---
+        const matchesOrgType = !orgTypeFilter || (org?.sector_type?.toLowerCase() === orgTypeFilter.toLowerCase());
+
+        // --- Name Search (Case Insensitive) ---
+        const custFull = `${customer?.first_name || ""} ${customer?.last_name || ""}`.toLowerCase();
+        const matchesName = !searchName || custFull.includes(searchName.trim().toLowerCase());
+
+        // --- Employee ID Search (Case Insensitive) ---
+        // Convert both the database value and search input to lowercase
+        const empId = (customer?.employee_no?.toString() || "").toLowerCase();
+        const matchesEmpId = !searchEmpId || empId.includes(searchEmpId.trim().toLowerCase());
+
+        // --- Loan Amount Filter ---
+        const appliedAmt = (loan?.loan_amount_applied ?? "").toString();
+        const matchesAmt = !searchLoanAmt || appliedAmt.includes(searchLoanAmt.trim());
+
+        // --- Eligibility Filter ---
+        const matchesElig =
+          eligibilityFilter === "all"
+            ? true
+            : eligibilityFilter === "eligible"
+            ? Number(loan?.is_elegible) === 1
+            : Number(loan?.is_elegible) === 0;
+
+        // --- Date Filter ---
+        const paymentDate = item.payment_date ? new Date(item.payment_date) : null;
+        const toDateEnd = toDate ? new Date(toDate + "T23:59:59") : null;
+        const matchesFrom = !fromDate || (paymentDate && paymentDate >= new Date(fromDate + "T00:00:00"));
+        const matchesTo = !toDate || (paymentDate && paymentDate <= toDateEnd);
+
+        return (
+          matchesOrg &&
+          matchesOrgType &&
+          matchesName &&
+          matchesEmpId &&
+          matchesAmt &&
+          matchesElig &&
+          matchesFrom &&
+          matchesTo
+        );
+      });
+
+      // 3. Show row if Collection ID matches AND items match filters
+      if (matchesId && matchingItems.length > 0) {
         list.push({
           collection_id: cid,
-          count: group.length,
-          total_amount: group.reduce((t, r) => t + Number(r.emi_amount), 0),
-          date: group[0].payment_date,
-          orgName: first?.loan?.organisation?.organisation_name,
+          count: matchingItems.length,
+          total_amount: matchingItems.reduce((t, r) => t + Number(r.emi_amount), 0),
+          date: matchingItems[0].payment_date,
+          orgName: matchingItems[0].loan?.organisation?.organisation_name,
+          items: matchingItems 
         });
       }
     });
 
     return list;
-  }, [collections, orgFilter, filterCollectionId]);
+  }, [
+    collections,
+    filterCollectionId,
+    orgFilter,
+    searchName,
+    searchEmpId,
+    orgTypeFilter,
+    searchLoanAmt,
+    eligibilityFilter,
+    fromDate,
+    toDate
+  ]);
+  
 
+  // 1. Check if any filter is currently active
+  const hasActiveFilters = 
+    filterCollectionId || 
+    orgFilter || 
+    searchName || 
+    searchEmpId || 
+    orgTypeFilter || 
+    searchLoanAmt || 
+    eligibilityFilter !== "all" || 
+    fromDate || 
+    toDate;
+
+  // 2. Auto-expand rows when results change AND filters are active
+  useEffect(() => {
+    if (hasActiveFilters && formattedCollections.length > 0) {
+      const newExpandedState = {};
+      
+      // Loop through currently visible results and set them to expanded
+      formattedCollections.forEach((row) => {
+        newExpandedState[row.collection_id] = true;
+      });
+
+      setExpandedRows(newExpandedState);
+    } else if (!hasActiveFilters) {
+      // Optional: Collapse all if filters are cleared to keep UI clean
+      setExpandedRows({});
+    }
+  }, [formattedCollections, hasActiveFilters]);
+
+  // ... before summary useMemo ...
   // Summary totals for the currently filtered loans
+  // Calculate Summary based on the VISIBLE Collections in the table
   const summary = useMemo(() => {
-    const data = filtered || [];
-    const uniqueCustomerIds = new Set(data.map((l) => l.customer?.id).filter(Boolean));
-    const totalCustomers = uniqueCustomerIds.size;
-    const totalAmount = data.reduce((s, l) => s + Number(l.loan_amount_applied || 0), 0);
-    const totalRepayment = data.reduce((s, l) => s + Number(l.total_repay_amt || 0), 0);
-    const totalOutstanding = totalRepayment - totalAmount;
+    let totalCustomers = 0;
+    let totalAmount = 0; // Total collected in these visible rows
+    
+    // If you want "Total Loan Amount" of the people in the list:
+    let totalLoanAmountApplied = 0;
+    let totalRepaymentAmt = 0;
+    let totalOutstandingAmt = 0;
+
+    // Set to track unique customers across collections to avoid double counting if a user appears in multiple collections (unlikely but safe)
+    const uniqueCustomerIds = new Set();
+
+    formattedCollections.forEach((row) => {
+      // Add the total collected amount for this row
+      totalAmount += row.total_amount;
+
+      // Iterate through items in this collection to get loan details
+      row.items.forEach((item) => {
+        const loan = item.loan;
+        if(loan && loan.customer?.id) {
+           if(!uniqueCustomerIds.has(loan.customer.id)){
+               uniqueCustomerIds.add(loan.customer.id);
+               
+               // Sum up loan totals (only once per customer/loan)
+               totalLoanAmountApplied += Number(loan.loan_amount_applied || 0);
+               totalRepaymentAmt += Number(loan.total_repay_amt || 0);
+           }
+        }
+      });
+    });
+
+    totalCustomers = uniqueCustomerIds.size;
+    totalOutstandingAmt = totalRepaymentAmt - totalLoanAmountApplied; // Or however you calculate outstanding
+
     return {
       totalCustomers,
-      totalAmount,
-      totalRepayment,
-      totalOutstanding,
+      totalAmount, // This is Total EMI Collected in the current view
+      totalLoanApplied: totalLoanAmountApplied, 
+      totalRepayment: totalRepaymentAmt,
+      totalOutstanding: totalOutstandingAmt,
     };
-  }, [filtered]);
+   }, [formattedCollections]);
 
   // Get Last EMI Paid Date
  const getLastEmiPaid = (loan) => {
@@ -369,7 +516,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
       <div className="py-6 max-w-9xl mx-auto sm:px-6 lg:px-8">
         {/* Top Bar */}
-        <div className="bg-white shadow-sm p-3 py-2 mb-4 border border-gray-200 flex justify-between items-center">
+        <div className="bg-white shadow-sm p-3 py-2 mb-1 border border-gray-200 flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold text-gray-700">EMI List</h3>
           </div>
@@ -382,10 +529,33 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         </div>
 
         {/* Filters */}
-        <div className="bg-white border border-gray-200 shadow-sm p-4 flex flex-col lg:flex-row gap-4 items-center">
-          <div className="flex gap-3 mt-3">
-            <input type="text" placeholder="Search Collection ID" value={filterCollectionId} onChange={(e) => setFilterCollectionId(e.target.value)} className="border p-2 rounded w-48" />
-            <select className="border p-2 rounded" value={orgFilter} onChange={(e) => setOrgFilter(e.target.value)}>
+        <div className="bg-white border border-gray-200 shadow-sm p-2 flex flex-col lg:flex-row gap-4 items-center">
+          <div className="flex flex-wrap gap-3">
+
+            {/* Search Collection ID */}
+            <input
+              type="text"
+              placeholder="Search Collection ID"
+              value={filterCollectionId}
+              onChange={(e) => setFilterCollectionId(e.target.value)}
+              className="border p-2 rounded w-48"
+            />
+
+            {/* 🔍 Search by Employee ID */}
+            <input
+              type="text"
+              placeholder="Search Employee ID"
+              value={searchEmpId}
+              onChange={(e) => setSearchEmpId(e.target.value)}
+              className="border p-2 rounded w-48"
+            />
+
+            {/* Select Organisation */}
+            <select
+              className="border w-auto p-2 rounded"
+              value={orgFilter}
+              onChange={(e) => setOrgFilter(e.target.value)}
+            >
               <option value="">All Organisations</option>
               {orgs.map((o) => (
                 <option key={o.id} value={o.id}>
@@ -393,8 +563,21 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                 </option>
               ))}
             </select>
+
+            {/* 🏢 Organisation Type (Health / Education) */}
+            <select
+              className=" w-40 border p-2 rounded"
+              value={orgTypeFilter}
+              onChange={(e) => setOrgTypeFilter(e.target.value)}
+            >
+              <option value="">All Types</option>
+              <option value="Health">Health</option>
+              <option value="Education">Education</option>
+            </select>
+
           </div>
         </div>
+
 
         {/* Table area */}
 
@@ -646,7 +829,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                   <td className="p-2 border">
                                     {it.loan?.customer?.first_name} {it.loan?.customer?.last_name} ({it.loan?.customer?.employee_no})
                                   </td>
-                                  <td className="p-2 border">{it.loan?.organisation?.organisation_name}</td>
+                                  <td className="p-2 border">{it.loan?.organisation?.organisation_name} ({it.loan?.organisation?.sector_type})</td>
                                   <td className="p-2 border">{it.installment_no}</td>
                                   <td className="p-2 border">
                                     {currencyPrefix}

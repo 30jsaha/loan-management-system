@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"; 
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { currencyPrefix } from "@/config";
@@ -9,6 +9,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
+import Swal from 'sweetalert2';
 
 export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
   const [orgList, setOrgList] = useState([]);
@@ -16,7 +17,6 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
   const [isEditing, setIsEditing] = useState(false);
   const [loanTypeList, setLoanTypeList] = useState(loan_types);
   const [selectedLoanTypes, setSelectedLoanTypes] = useState([]);
-
 
   const [formData, setFormData] = useState({
     id: null,
@@ -41,8 +41,18 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  console.log("salary_slabs from parameter: ",salary_slabs);
-  console.log("loan_types from parameter: ",loan_types);
+  // Sorting
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        // Toggle direction
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
 
   const loanTypeOptions = loanTypeList.map((lt) => ({
       name: `${lt.loan_desc} - [${currencyPrefix} ${lt.min_loan_amount} - ${currencyPrefix} ${lt.max_loan_amount}]`,
@@ -100,24 +110,23 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
       resetForm();
       loadOrganisationList();
     } catch (err) {
-      toast.error("Error saving organisation");
+      console.error(err);
+      const errorMsg = err.response?.data?.message || err.message || "Error saving organisation";
+      toast.error(errorMsg);
     }
   };
-
-  // const handleEdit = (org) => {
-  //   setFormData(org);
-  //   setIsEditing(true);
-  //   window.scrollTo({ top: 0, behavior: "smooth" });
-  // };
   
   const handleEdit = (org) => {
-      // Convert loan list to MultiSelect format
-      const selectedLoanTypes = org.loans_under_org.map(item => ({
-          name: item.loan.loan_desc,  // label
-          code: item.loan_id          // unique ID
-      }));
+      // Map loans from API response to MultiSelect format with full loan object
+      const selectedLoanTypes = org.loans_under_org.map(item => {
+          const loanType = loanTypeList.find(lt => lt.id === item.loan_id);
+          return {
+              name: loanType ? `${loanType.loan_desc} - [${currencyPrefix} ${loanType.min_loan_amount} - ${currencyPrefix} ${loanType.max_loan_amount}]` : item.loan.loan_desc,
+              code: item.loan_id
+          };
+      });
 
-      setSelectedLoanTypes(selectedLoanTypes); // <-- this sets MultiSelect
+      setSelectedLoanTypes(selectedLoanTypes);
       setFormData({
           ...org,
           loan_type_ids: selectedLoanTypes.map(l => l.code)
@@ -128,28 +137,84 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this organisation?")) return;
-
-    try {
-      await axios.delete(`/api/org-remove/${id}`);
-      toast.success("Deleted successfully!");
-      loadOrganisationList();
-    } catch {
-      toast.error("Failed to delete");
-    }
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axios.delete(`/api/org-remove/${id}`);
+          toast.success("Deleted successfully!");
+          loadOrganisationList();
+        } catch (err) {
+           const errorMsg = err.response?.data?.message || err.message || "Failed to delete";
+           toast.error(errorMsg);
+        }
+      }
+    });
   };
 
-  // Search filter
+  // Search filter + Sorting
   const filteredList = useMemo(() => {
-    return orgList.filter((o) =>
+    let filtered = orgList.filter((o) =>
       o.organisation_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [orgList, searchTerm]);
+    if (sortConfig.key) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = a[sortConfig.key];
+        let bValue = b[sortConfig.key];
+        // For loans_under_org, sort by count
+        if (sortConfig.key === 'loans_under_org') {
+          aValue = a.loans_under_org.length;
+          bValue = b.loans_under_org.length;
+        }
+        if (aValue === undefined || aValue === null) aValue = '';
+        if (bValue === undefined || bValue === null) bValue = '';
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = bValue.toLowerCase();
+        }
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return filtered;
+  }, [orgList, searchTerm, sortConfig]);
 
   const totalPages = Math.ceil(filteredList.length / itemsPerPage);
   const paginatedData = filteredList.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
+  );
+
+  // Helper to render sort icon
+  const renderSortIcon = (columnKey) => {
+    if (sortConfig.key !== columnKey) {
+        return <ArrowUpDown size={14} className="text-emerald-200/70" />;
+    }
+    return sortConfig.direction === 'asc' 
+        ? <ArrowUp size={14} className="text-white" /> 
+        : <ArrowDown size={14} className="text-white" />;
+  };
+
+  // Helper component for Sortable Header (Centered)
+  const SortableHeader = ({ label, columnKey }) => (
+    <th 
+        className="border px-2 py-3 cursor-pointer hover:bg-emerald-700 transition-colors select-none text-center" 
+        onClick={() => handleSort(columnKey)}
+    >
+        {/* Changed justify-between to justify-center to center content */}
+        <div className="flex items-center justify-center gap-2"> 
+            <span>{label}</span>
+            {renderSortIcon(columnKey)}
+        </div>
+    </th>
   );
 
   return (
@@ -233,8 +298,6 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                           ...formData, 
                           loan_type_ids: e.value.map(l => l.code) 
                       });
-                      console.log("formData on loan types select: ",formData);
-                      console.log("Selected loan types:", e.value);
                     }}
                     options={loanTypeOptions}
                     optionLabel="name" 
@@ -300,31 +363,31 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
           <table className="w-full border-collapse text-sm">
             <thead className="bg-emerald-600 text-white">
               <tr>
-                <th className="border px-2 py-3">#</th>
-                <th className="border px-2 py-3">Organisation Name</th>
-                <th className="border px-2 py-3">Sector</th>
-                <th className="border px-2 py-3">Dept Code</th>
-                <th className="border px-2 py-3">Location Code</th>
-                <th className="border px-2 py-3">Province</th>
-                <th className="border px-2 py-3">Loans</th>
-                <th className="border px-2 py-3">Contact Person</th>
-                <th className="border px-2 py-3">Contact No</th>
-                <th className="border px-2 py-3">Email</th>
-                <th className="border px-2 py-3">Status</th>
-                <th className="border px-2 py-3">Actions</th>
+                <th className="border px-2 py-3 cursor-pointer text-center" onClick={() => handleSort(null)}>#</th>
+                <SortableHeader label="Organisation Name" columnKey="organisation_name" />
+                <SortableHeader label="Sector" columnKey="sector_type" />
+                <SortableHeader label="Dept Code" columnKey="department_code" />
+                <SortableHeader label="Location Code" columnKey="location_code" />
+                <SortableHeader label="Province" columnKey="province" />
+                <SortableHeader label="Loans" columnKey="loans_under_org" />
+                <SortableHeader label="Contact Person" columnKey="contact_person" />
+                <SortableHeader label="Contact No" columnKey="contact_no" />
+                <SortableHeader label="Email" columnKey="email" />
+                <SortableHeader label="Status" columnKey="status" />
+                <th className="border px-2 py-3 text-center">Actions</th>
               </tr>
             </thead>
 
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="10" className="text-center py-4">
+                  <td colSpan="12" className="text-center py-4">
                     Loading...
                   </td>
                 </tr>
               ) : paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="text-center py-4">
+                  <td colSpan="12" className="text-center py-4">
                     No records found.
                   </td>
                 </tr>
@@ -364,13 +427,13 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleEdit(org)}
-                          className="bg-amber-500 text-white p-2 rounded"
+                          className="bg-amber-500 text-white p-2 rounded hover:bg-amber-600 transition"
                         >
                           <Pencil size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(org.id)}
-                          className="bg-red-500 text-white p-2 rounded"
+                          className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -393,7 +456,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
             <button
               disabled={currentPage === 1}
               onClick={() => setCurrentPage((p) => p - 1)}
-              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 hover:bg-gray-300"
             >
               Prev
             </button>
@@ -401,7 +464,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
             <button
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage((p) => p + 1)}
-              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50 hover:bg-gray-300"
             >
               Next
             </button>
