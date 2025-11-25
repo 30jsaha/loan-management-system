@@ -41,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/upload-org-signed', [LoanController::class, 'uploadOrgSigned']);
     Route::get('/loans/{id}', [LoanController::class, 'show']);
     Route::post('/loans/{id}/approve', [LoanController::class, 'approve']);
-    Route::post('/loans/{id}/reject', [LoanController::class, 'reject']);
+    Route::post('/loans/{id}/reject', [LoanController::class, 'rejectLoan']);
     Route::delete('/loans/{id}', [LoanController::class, 'destroy']);
     Route::get('/loan-types/{cid}', [LoanController::class, 'loan_types']);
     Route::get('/loan-settings-data', [LoanController::class, 'get_all_loan_setting_data']);

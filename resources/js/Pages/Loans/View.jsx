@@ -50,6 +50,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectingDocId, setRejectingDocId] = useState(null);
     const [selectedRejectionReason, setSelectedRejectionReason] = useState("");
+    // 🔥 For Loan Rejection (Full loan reject)
+    const [showLoanRejectModal, setShowLoanRejectModal] = useState(false);
+    const [selectedLoanRejectionReason, setSelectedLoanRejectionReason] = useState("");
+
 
 
 
@@ -187,26 +191,57 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         }
     };
 
-    const handleReject = async () => {
+    // const handleReject = async () => {
+    //     try {
+    //         await axios.post(`/api/loans/${loanId}/reject`);
+    //         setMessage("❌ Loan rejected.");
+    //         Swal.fire({
+    //             title: "Info !",
+    //             text: "Loan rejected",
+    //             icon: "success"
+    //         });
+    //         router.visit(route("loans"));
+    //     } catch (error) {
+    //         console.error(error);
+    //         setMessage("❌ Failed to reject loan.");
+    //         Swal.fire({
+    //             title: "Error !",
+    //             text: "Failed to reject loan",
+    //             icon: "error"
+    //         });
+    //     }
+    // };
+    
+    const handleReject = () => {
+        setShowLoanRejectModal(true); // 🔥 Open modal instead of rejecting immediately
+    };
+
+    const submitLoanRejection = async () => {
+        if (!selectedLoanRejectionReason) {
+            Swal.fire("Warning", "Please select a rejection reason!", "warning");
+            return;
+        }
+
         try {
-            await axios.post(`/api/loans/${loanId}/reject`);
-            setMessage("❌ Loan rejected.");
+            const fd = new FormData();
+            fd.append("rejection_reason_id", selectedLoanRejectionReason);
+
+            await axios.post(`/api/loans/${loanId}/reject`, fd);
+
             Swal.fire({
-                title: "Info !",
-                text: "Loan rejected",
+                title: "Loan Rejected",
+                text: "The loan has been rejected successfully.",
                 icon: "success"
             });
+
+            setShowLoanRejectModal(false);
             router.visit(route("loans"));
         } catch (error) {
             console.error(error);
-            setMessage("❌ Failed to reject loan.");
-            Swal.fire({
-                title: "Error !",
-                text: "Failed to reject loan",
-                icon: "error"
-            });
+            Swal.fire("Error", "Failed to reject loan", "error");
         }
     };
+
 
     const handleUpload = async (type) => {
         let file = type === "video" ? videoFile : type === "pdf1" ? pdfFile1 : pdfFile;
@@ -1123,20 +1158,27 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                             );
                                                                         })()
                                                                     ) : (
-                                                                        <div className="flex gap-2 justify-center">
-                                                                            <button
-                                                                                onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                                            >
-                                                                                Verify
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                                            >
-                                                                                Reject
-                                                                            </button>
-                                                                        </div>
+                                                                        <>
+                                                                            <div className="flex gap-2 justify-center">
+                                                                                <button
+                                                                                    onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                                >
+                                                                                    Verify
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                                >
+                                                                                    Reject
+                                                                                </button>
+                                                                            </div>
+                                                                            {Number(doc.has_reuploaded_after_rejection) === 1 && doc.reupload_date && (
+                                                                                <div className="mt-2 text-sm text-gray-600">
+                                                                                    Re-uploaded: {new Date(doc.reupload_date).toLocaleString()}
+                                                                                </div>
+                                                                            )}
+                                                                        </>
                                                                     )}
                                                                 </td>
                                                             ) : (
@@ -1859,22 +1901,69 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                 {(auth.user.is_admin == 1) ? (
                                     <Col md={12}>
                                         {(loan.status === "Pending") && (
-                                            <div className="mt-6 flex justify-center gap-4">
-                                                <button
-                                                    onClick={handleApprove}
-                                                    disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
-                                                    className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    onClick={handleReject}
-                                                    disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
-                                                    className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                >
-                                                    Reject
-                                                </button>
-                                            </div>
+                                            <>
+                                                <div className="mt-6 flex justify-center gap-4">
+                                                    <button
+                                                        onClick={handleApprove}
+                                                        disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
+                                                        className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={handleReject}
+                                                        disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
+                                                        className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
+
+                                                {showLoanRejectModal && (
+                                                    <div className="fixed inset-0 bg-slate-600 bg-opacity-40 flex items-center justify-center z-50">
+                                                        <div className="bg-white p-5 rounded-lg shadow-lg w-96">
+                                                            <h2 className="text-lg font-semibold mb-3">Reject Loan</h2>
+
+                                                            <label className="block text-sm font-medium mb-1">
+                                                                Select Rejection Reason
+                                                            </label>
+
+                                                            <select
+                                                                className="border rounded w-full px-3 py-2 mb-4"
+                                                                value={selectedLoanRejectionReason}
+                                                                onChange={(e) => setSelectedLoanRejectionReason(e.target.value)}
+                                                            >
+                                                                <option value="">-- Select Reason --</option>
+
+                                                                {rejectReasons.map((reason) => (
+                                                                    <option key={reason.id} value={reason.id}>
+                                                                        {reason.reason_desc}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+
+                                                            <div className="flex justify-end gap-2">
+                                                                <button
+                                                                    className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
+                                                                    onClick={() => {
+                                                                        setShowLoanRejectModal(false);
+                                                                        setSelectedLoanRejectionReason("");
+                                                                    }}
+                                                                >
+                                                                    Cancel
+                                                                </button>
+
+                                                                <button
+                                                                    className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                                                                    onClick={submitLoanRejection}
+                                                                >
+                                                                    Reject Loan
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </Col>
                                 ) : (

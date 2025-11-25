@@ -222,15 +222,29 @@ class LoanController extends Controller
         return response()->json(['message' => 'Loan approved successfully.']);
     }
 
-    public function reject($id)
+    // public function reject($id)
+    // {
+    //     $loan = Loan::findOrFail($id);
+    //     $loan->status = 'Rejected';
+    //     $loan->remarks = 'Rejected by ' . auth()->user()->name;
+    //     $loan->save();
+
+    //     return response()->json(['message' => 'Loan rejected successfully.']);
+    // }
+    public function rejectLoan(Request $request, $loanId)
     {
-        $loan = Loan::findOrFail($id);
-        $loan->status = 'Rejected';
-        $loan->remarks = 'Rejected by ' . auth()->user()->name;
+        $loan = Loan::findOrFail($loanId);
+
+        $loan->status = "Rejected";
+        $loan->loan_reject_reason_id = $request->rejection_reason_id ?? null;
+        $loan->loan_reject_by_id = auth()->user()->id;
+        $loan->loan_reject_date = now();
+
         $loan->save();
 
-        return response()->json(['message' => 'Loan rejected successfully.']);
+        return response()->json(['message' => 'Loan rejected successfully']);
     }
+
 
     /**
      * Remove the specified resource from storage.
