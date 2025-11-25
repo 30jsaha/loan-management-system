@@ -17,7 +17,7 @@ export default function Index({ auth }) {
   const [searchEmp, setSearchEmp] = useState("");
   const [searchOrg, setSearchOrg] = useState("");
 
-  const itemsPerPage = 15; // ✅ Now shows 10 items per page
+  const itemsPerPage = 15; // Now shows 10 items per page
 
   useEffect(() => {
     fetchCustomers();
@@ -35,7 +35,7 @@ export default function Index({ auth }) {
     }
   };
 
-  // ✅ SweetAlert Delete Confirmation
+  // SweetAlert Delete Confirmation
   const handleDelete = async (id) => {
     Swal.fire({
       title: "Are you sure?",
@@ -106,13 +106,12 @@ export default function Index({ auth }) {
     );
   });
 
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
   const paginatedCustomers = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
+  
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
   const nextPage = () => currentPage < totalPages && setCurrentPage((p) => p + 1);
   const prevPage = () => currentPage > 1 && setCurrentPage((p) => p - 1);
 
@@ -134,7 +133,7 @@ export default function Index({ auth }) {
         </div>
        
         {/* Top Bar */}
-        <div className="flex justify-between items-center bg-white shadow-md  px-6 py-2 border border-gray-100 -mb-2">
+        <div className="flex justify-between items-center bg-white shadow-md  px-4 py-2 border border-gray-100 -mb-4">
           <h3 className="text-lg font-semibold text-gray-800 tracking-wide">
             Customer Records
           </h3>
@@ -255,8 +254,10 @@ export default function Index({ auth }) {
                         <td className="px-2 py-2 text-center text-gray-700 font-medium border border-gray-700">
                           {(currentPage - 1) * itemsPerPage + i + 1}
                         </td>
-                        <td className="px-2 py-2 text-center font-semibold text-gray-800 whitespace-nowrap border border-gray-700">
-                          {cust.first_name} {cust.last_name}
+                        <td className="px-2 py-2 text-center font-semibold text-gray-800 whitespace-normal border border-gray-700">
+                          <div className="break-words">
+                            {cust.first_name} {cust.last_name}
+                          </div>
                         </td>
                         <td className="px-2 py-2 text-center border border-gray-700">{cust.employee_no}</td>
                         <td className="px-2 py-2 text-center border border-gray-700">{cust.organisation_name}</td>

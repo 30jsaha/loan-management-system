@@ -75,26 +75,34 @@ class DocumentUploadController extends Controller
     /**
      * Verify uploaded document (Admin)
      */
-    public function verify(Request $request, $id)
+    public function verify($id, Request $request)
     {
         $validated = $request->validate([
-            'verification_status' => 'required|in:Pending,Verified,Rejected',
-            'notes' => 'nullable|string'
+            'verification_status' => 'required|in:Verified,Rejected',
+            'rejection_reason_id' => 'nullable|exists:rejection_reasons,id'
         ]);
 
-        $document = DocumentUpload::findOrFail($id);
-        $document->update([
-            'verification_status' => $validated['verification_status'],
-            'verified_by' => auth()->user()->id ?? 0,
-            'verified_on' => now(),
-            'notes' => $validated['notes'] ?? $document->notes,
-        ]);
+        $doc = DocumentUpload::findOrFail($id);
 
-        return response()->json([
-            'message' => '✅ Document verification updated.',
-            'document' => $document
-        ]);
+        $doc->verification_status = $validated['verification_status'];
+
+        if ($validated['verification_status'] === 'Rejected') {
+            $doc->rejected_by_user_id = auth()->id();
+            $doc->rejected_on = now();
+            $doc->rejection_reason_id = $validated['rejection_reason_id'];
+        }
+
+        if ($validated['verification_status'] === 'Verified') {
+            $doc->verified_by = auth()->id();
+            $doc->verified_on = now();
+            $doc->rejection_reason_id = 0;
+        }
+
+        $doc->save();
+
+        return response()->json(['success' => true]);
     }
+
 
     /**
      * Download a document

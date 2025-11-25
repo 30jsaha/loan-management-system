@@ -173,7 +173,7 @@ class LoanController extends Controller
             $validated['organisation_id'] = $customer->organisation_id;
 
             // Default values for unset fields
-            $validated['status'] = $validated['status'] ?? 'Pending';
+            $validated['status'] = $validated['status'] ?? 'HigherApproval';
             // dd($validated);
             // exit;
             // Create loan application
@@ -882,6 +882,57 @@ class LoanController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+    public function getEligibleLoanTypesFromLoan($loanId)
+    {
+        try {
+            // fetch customer id from loan id
+            $loan = Loan::findOrFail($loanId);
+            $customerId = $loan->customer_id;
+            // 1️⃣ Fetch Customer
+            $customer = Customer::findOrFail($customerId);
+
+            $salary = floatval($customer->monthly_salary);
+            $orgId = $customer->organisation_id;
+
+            if (!$orgId) {
+                return response()->json([], 200);
+            }
+
+            // 2️⃣ Get all loan types assigned to this organisation
+            $loanIds = DB::table('assigned_loans_under_org')
+                ->where('org_id', $orgId)
+                ->where('active', 1)
+                ->pluck('loan_id')
+                ->toArray();
+
+            if (empty($loanIds)) {
+                return response()->json([], 200);
+            }
+
+            // 3️⃣ For each loan type → fetch its salary slabs
+            $eligibleLoanIds = DB::table('assigned_slabs_under_loan AS al')
+                ->join('salary_slabs AS ss', 'ss.id', '=', 'al.slab_id')
+                ->whereIn('al.loan_id', $loanIds)
+                ->where('al.active', 1)
+                ->where('ss.active', 1)
+                ->where(function ($q) use ($salary) {
+                    $q->where('ss.starting_salary', '<=', $salary)
+                    ->where('ss.ending_salary', '>=', $salary);
+                })
+                ->pluck('al.loan_id')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            // 4️⃣ Return loan settings for only matched loan IDs
+            $matchedLoanTypes = LoanSetting::whereIn('id', $eligibleLoanIds)->get();
+
+            return response()->json($matchedLoanTypes, 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
     public function loan_update_after_higher_approval(Request $request)
     {
@@ -920,20 +971,26 @@ class LoanController extends Controller
 
         try {
             $loan = Loan::findOrFail($validated['id']);
+            // Fill all validated fields automatically
+            $loan->fill($validated);
             $loan->is_loan_re_updated_after_higher_approval = 1;
             $loan->loan_amount_approved = $validated['loan_amount_applied'] ?? $loan->loan_amount_applied;
+            $loan->total_no_emi = $loan->tenure_fortnight;
             $loan->emi_amount = number_format($validated['emi_amount'],2);
             // $loan->higher_approved_by = auth()->user()->name;
             // $loan->higher_approved_date = now()->toDateString();
             $loan->is_elegible = 1;
-            $loan->update();
+            $loan->save();
 
-            return response()->json(['message' => 'Loan update status updated successfully.', 'loan' => $loan], 200);
+            return response()->json([
+                'message' => 'Loan updated successfully.',
+                'loan' => $loan
+            ], 200);
         } catch (\Exception $e) {
             Log::error("Loan update after higher approval failed: " . $e->getMessage());
-            return response()->json(['error' => 'Failed to update loan status', 'details' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Failed to update loan', 'details' => $e->getMessage()], 500);
         }
-    }   
+    }
     //need to modify
     public function higherApproveLoan($id)
     {
@@ -942,7 +999,7 @@ class LoanController extends Controller
             $loan = Loan::findOrFail($id);
 
             // Update approval fields
-            $loan->status = 'HigherApproval';
+            $loan->status = 'Pending';
             $loan->higher_approved_by = auth()->user()->name;
             $loan->higher_approved_by_id = auth()->user()->id;
             $loan->higher_approved_date = now();
@@ -977,5 +1034,22 @@ class LoanController extends Controller
             'collections' => $collections
         ]);
     }  
+
+    public function markAckDownloaded($loanId)
+    {
+        $loan = Loan::findOrFail($loanId);
+
+        // Only update if value is still 0
+        if ($loan->is_ack_downloaded == 0) {
+            $loan->is_ack_downloaded = 1;
+            $loan->ack_downloaded_date = now(); // optional if you want timestamp
+            $loan->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'is_ack_downloaded' => $loan->is_ack_downloaded,
+        ]);
+    }
 
 }

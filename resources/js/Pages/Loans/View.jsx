@@ -11,8 +11,12 @@ import Swal from "sweetalert2";
 import { MultiSelect } from 'primereact/multiselect';
 import { currencyPrefix } from "@/config";
 
-export default function View({ auth, loanId }) {
-    const [loan, setLoan] = useState(null);
+export default function View({ auth, loans, loanId, rejectionReasons }) {
+    console.log("Initial rejectionReasons prop: ", rejectionReasons);
+    const [loan, setLoan] = useState(loans && loans.length > 0 ? loans[0] : null);
+    const [rejectReasons, setRejectReasons] = useState(
+        Array.isArray(rejectionReasons) ? rejectionReasons : []
+    );
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [allDocVerivied, setAllDocVerified] = useState(false);
@@ -42,6 +46,28 @@ export default function View({ auth, loanId }) {
     //loan types state
     const [loanTypes, setLoanTypes] = useState([]);
     const [loanSettings, setLoanSettings] = useState([]);
+    // For rejection flow
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [rejectingDocId, setRejectingDocId] = useState(null);
+    const [selectedRejectionReason, setSelectedRejectionReason] = useState("");
+
+
+
+    const [loanFormData, setLoanFormData] = useState({
+        id: loan ? loan.id : null,
+        loan_type: 0,
+        purpose: "",
+        other_purpose_text: "",
+        loan_amount_applied: loan?.loan_amount_applied || 0.00,
+        tenure_fortnight: 0,
+        interest_rate: 0.00,
+        processing_fee: 0.00,
+        emi_amount: "",
+        bank_name: "",
+        bank_branch: "",
+        bank_account_no: "",
+        remarks: "",
+    });
 
     // Open modal with selected document
     const openDocModal = (doc) => {
@@ -83,6 +109,23 @@ export default function View({ auth, loanId }) {
     axios.defaults.withCredentials = true;
 
     useEffect(() => {
+        if (loan && loan.length > 0) {
+            setLoanFormData((prev) => ({
+                ...prev,
+                id: loan.id,
+                loan_type: loan.loan_type,
+                purpose: loan.purpose,
+                other_purpose_text: loan.other_purpose_text,
+                loan_amount_applied: loan.loan_amount_applied,
+                tenure_fortnight: loan.tenure_fortnight,
+                interest_rate: loan.interest_rate,
+                processing_fee: loan.processing_fee,
+                bank_name: loan.bank_name,
+                bank_branch: loan.bank_branch,
+                bank_account_no: loan.bank_account_no,
+                remarks: loan.remarks
+            }));
+        }
         axios
             .get(`/api/loans/${loanId}`)
             .then((res) => {
@@ -240,40 +283,6 @@ export default function View({ auth, loanId }) {
             setUploadProgress((prev) => ({ ...prev, [type]: 0 }));
         }
     };
-    const [loanFormData, setLoanFormData] = useState({
-        id: loan ? loan.id : null,
-        loan_type: 0,
-        purpose: "",
-        other_purpose_text: "",
-        loan_amount_applied: loan?.loan_amount_applied || 0.00,
-        tenure_fortnight: 0,
-        interest_rate: 0.00,
-        processing_fee: 0.00,
-        emi_amount: "",
-        bank_name: "",
-        bank_branch: "",
-        bank_account_no: "",
-        remarks: "",
-    });
-    useEffect(() => {
-        if (loan) {
-            setLoanFormData((prev) => ({
-                ...prev,
-                id: loan.id,
-                loan_type: loan.loan_type,
-                purpose: loan.purpose,
-                other_purpose_text: loan.other_purpose_text,
-                loan_amount_applied: loan.loan_amount_applied,
-                tenure_fortnight: loan.tenure_fortnight,
-                interest_rate: loan.interest_rate,
-                processing_fee: loan.processing_fee,
-                bank_name: loan.bank_name,
-                bank_branch: loan.bank_branch,
-                bank_account_no: loan.bank_account_no,
-                remarks: loan.remarks,
-            }));
-        }
-    }, [loan]);
     //fetch loan types and settings on component mount
     useEffect(() => {
         //fetch loan settings
@@ -287,7 +296,7 @@ export default function View({ auth, loanId }) {
                 console.error("Error fetching loan settings:", error);
             });
         // 🔥 Fetch loan types based on salary and organisation
-        axios.get(`/api/filtered-loan-types/${loan?.customer.id}`)
+        axios.get(`/api/filtered-loan-types-from-loan/${loan?.customer.id}`)
             .then((res) => {
                 // if (res.data.length === 0) {
                 //     setIsEligible(false);
@@ -435,35 +444,6 @@ export default function View({ auth, loanId }) {
             }
         }
         // Submit the updated loan details to the server
-        // axios
-        //     .post(`/api/loans/${loanId}/update-details`, loanFormData)
-        //     .then((res) => {
-        //         setMessage("✅ Loan details updated successfully!");
-        //         // Optionally refresh loan data
-        //         setLoan(res.data);
-        //         const savedLoan = res.data.loan;
-        //         setLoanFormData({
-        //             id: savedLoan.id,
-        //             // company_id: savedLoan.company_id,
-        //             customer_id: savedLoan.customer_id,
-        //             // organisation_id: savedLoan.organisation_id,
-        //             loan_type: savedLoan.loan_type,
-        //             purpose: savedLoan.purpose || "",
-        //             other_purpose_text: savedLoan.other_purpose_text || "",
-        //             loan_amount_applied: savedLoan.loan_amount_applied || 0.00,
-        //             tenure_fortnight: savedLoan.tenure_fortnight || 0,
-        //             interest_rate: savedLoan.interest_rate || 0.00,
-        //             processing_fee: savedLoan.processing_fee || 0.00,
-        //             bank_name: savedLoan.bank_name || "",
-        //             bank_branch: savedLoan.bank_branch || "",
-        //             bank_account_no: savedLoan.bank_account_no || "",
-        //             remarks: savedLoan.remarks || "",
-        //         });
-        //     })
-        //     .catch((error) => {
-        //         console.error("Error updating loan details:", error);
-        //         setMessage("❌ Failed to update loan details.");
-        //     });
         try {
             const selectedLoanSetting = loanSettings.find(
                 (ls) => ls.id === Number(loanFormData.loan_type)
@@ -522,6 +502,9 @@ export default function View({ auth, loanId }) {
                 bank_account_no: savedLoan.bank_account_no || "",
                 remarks: savedLoan.remarks || "",
             });
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } catch (error) {
             console.error(error);
             setMessage('❌ Failed to save. Please check your input.');
@@ -596,6 +579,11 @@ export default function View({ auth, loanId }) {
     }
 
     const handleVerifyDoc = async (docId, status) => {
+        if (status === "Rejected") {
+            setRejectingDocId(docId);
+            setShowRejectModal(true);
+            return;
+        }
         try {
             const docVData = new FormData();
             docVData.append("verification_status", status);
@@ -617,6 +605,58 @@ export default function View({ auth, loanId }) {
         }
     };
     console.log("allDocVerivied: ", allDocVerivied);
+
+    const submitRejection = async () => {
+        if (!selectedRejectionReason) {
+            setMessage("❌ Please select a rejection reason.");
+            return;
+        }
+
+        try {
+            const docVData = new FormData();
+            docVData.append("verification_status", "Rejected");
+            docVData.append("rejection_reason_id", selectedRejectionReason);
+
+            await axios.post(`/api/document-upload/verify/${rejectingDocId}`, docVData);
+
+            setMessage("❌ Document Rejected");
+            Swal.fire({
+                title: "Info !",
+                text: "Document Rejected",
+                icon: "success"
+            });
+
+            // Refresh loan
+            const res = await axios.get(`/api/loans/${loanId}`);
+            setLoan(res.data);
+
+            setAllDocVerified(
+                res.data.documents.every((doc) => doc.verification_status === "Verified")
+            );
+
+            // Reset modal
+            setShowRejectModal(false);
+            setSelectedRejectionReason("");
+            setRejectingDocId(null);
+
+        } catch (error) {
+            console.error(error);
+            setMessage("❌ Failed to reject document.");
+        }
+    };
+
+
+    // 🔥 Marks ack as downloaded and refresh loan
+    const markAckDownloaded = async () => {
+        try {
+            await axios.post(`/api/loans/${loanId}/mark-ack-downloaded`);
+            const res = await axios.get(`/api/loans/${loanId}`);
+            setLoan(res.data);
+        } catch (err) {
+            console.error("Failed to update ack download status", err);
+        }
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -694,9 +734,13 @@ export default function View({ auth, loanId }) {
                                                 <tr>
                                                     <td className="border p-2 font-semibold">Bank Details</td>
                                                     <td className="border p-2">
-                                                        <strong>Account No: </strong>{loan.bank_account_no || "-"}<br />
-                                                        <strong>Branch: </strong>{loan.bank_branch || "-"}<br />
-                                                        <strong>Bank Name: </strong>{loan.bank_name || "-"}
+                                                        {loan.bank_account_no == null && loan.bank_branch == null && loan.bank_name == null ? "N/A" : (
+                                                            <>
+                                                                <strong>Account No: </strong>{loan.bank_account_no || "-"}<br />
+                                                                <strong>Branch: </strong>{loan.bank_branch || "-"}<br />
+                                                                <strong>Bank Name: </strong>{loan.bank_name || "-"}
+                                                            </>
+                                                        )}
                                                     </td>
                                                 </tr>
                                                 <tr><td className="border p-2 font-semibold">Status</td><td className="border p-2">{loan.status} {(loan.video_consent_path == null) ? "[Video Consent Pending]" : ""}</td></tr>
@@ -740,9 +784,13 @@ export default function View({ auth, loanId }) {
                                                 <tr>
                                                     <td className="border p-2 font-semibold">Marital Info</td>
                                                     <td className="border p-2">
-                                                        {loan.customer.marital_status} <br />
-                                                        <strong>Spouse: </strong> {loan.customer.spouse_full_name || "-"} <br />
-                                                        <strong>Contact: </strong> {loan.customer.spouse_contact || "-"} <br />
+                                                        {loan.customer.marital_status == null && loan.customer.spouse_full_name == null && loan.customer.spouse_contact == null ? "N/A" : (
+                                                            <>
+                                                                {loan.customer.marital_status} <br />
+                                                                <strong>Spouse: </strong> {loan.customer.spouse_full_name || "-"} <br />
+                                                                <strong>Contact: </strong> {loan.customer.spouse_contact || "-"}
+                                                            </>
+                                                        )}
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -754,12 +802,14 @@ export default function View({ auth, loanId }) {
                                                 <tr>
                                                     <td className="border p-2 font-semibold">Address</td>
                                                     <td className="border p-2">
-                                                        Home Province: {loan.customer.home_province} <br />
-                                                        District & Village: {loan.customer.district_village}
-                                                        <br />
-                                                        Present Address: {loan.customer.present_address}
-                                                        <br />
-                                                        Permanent Address: {loan.customer.permanent_address}
+                                                        {loan.customer.home_province == null && loan.customer.district_village == null && loan.customer.present_address == null && loan.customer.permanent_address == null ? "N/A" : (
+                                                            <>
+                                                                Home Province: {loan.customer.home_province} <br />
+                                                                District & Village: {loan.customer.district_village}<br />
+                                                                Present Address: {loan.customer.present_address}<br />
+                                                                Permanent Address: {loan.customer.permanent_address}
+                                                            </>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -769,14 +819,14 @@ export default function View({ auth, loanId }) {
                                 {(loan?.higher_approved_by != null) && (
                                     <Col md={12} className="mb-4">
                                         <Alert variant="info">
-                                            <Alert.Heading>ℹ Higher Approved</Alert.Heading>
+                                            <Alert.Heading style={{ fontSize: '18px' }}>ℹ Higher Approved</Alert.Heading>
                                             <p>
-                                                This customer was marked as <strong>Not Eligible</strong> for the applied loan amount based on their salary and organisation criteria. However, the loan has been <strong>Higher Approved</strong> by 
+                                                This customer was marked as <strong>Not Eligible</strong> for the applied loan amount based on their salary and organisation criteria. However, the loan has been <strong>Higher Approved</strong> by
                                                 {
-                                                (!auth.user.is_admin && 
-                                                auth.user.name.trim().toLowerCase() === loan.higher_approved_by.trim().toLowerCase())
-                                                    ? "You"
-                                                    : loan.higher_approved_by
+                                                    (!auth.user.is_admin &&
+                                                        auth.user.name.trim().toLowerCase() === loan.higher_approved_by.trim().toLowerCase())
+                                                        ? "You"
+                                                        : loan.higher_approved_by
                                                 }.
                                             </p>
                                         </Alert>
@@ -785,194 +835,194 @@ export default function View({ auth, loanId }) {
                                 {(loan?.is_elegible == 0) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
                                     //alert box
                                     <>
-                                    <form onSubmit={handleLoanSubmit}> {/* Loan application form here */}
-                                        <div className="row mb-3">
-                                        </div>
-                                        <fieldset className="fldset">
-                                            <legend className="font-semibold">Loan Details</legend>
+                                        <form onSubmit={handleLoanSubmit}> {/* Loan application form here */}
                                             <div className="row mb-3">
-                                                <div className="col-md-4">
-                                                    <label className="form-label">Loan Type</label>
-                                                    <select
-                                                        className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
-                                                        name="loan_type" value={loanFormData.loan_type}
-                                                        onChange={(e) => {
-                                                            loanHandleChange(e);
-                                                            //fetch loan settings based on selected loan type
-                                                            const selectedLoanTypeId = e.target.value;
-
-                                                            if (Array.isArray(loanSettings) && loanSettings.length > 0) {
-                                                                // Find selected loan setting based on loan type
-                                                                const selectedLoanSetting = loanSettings.find(
-                                                                    (ls) => ls.id === Number(selectedLoanTypeId)
-                                                                );
-
-                                                                console.log("loanSettings:", loanSettings);
-                                                                console.log("loanFormData.loan_type:", loanFormData.loan_type);
-                                                                console.log("selectedLoanSetting:", selectedLoanSetting);
-                                                                // return;
-                                                                if (selectedLoanSetting) {
-                                                                    const {
-                                                                        process_fees,
-                                                                        interest_rate,
-                                                                    } = selectedLoanSetting;
-
-                                                                    // Auto-fill processing fee and interest rate
-                                                                    setLoanFormData((prev) => ({
-                                                                        ...prev,
-                                                                        processing_fee: parseFloat(process_fees),
-                                                                        interest_rate: parseFloat(interest_rate)
-                                                                    }));
-                                                                    //make the form read-only and disabled for these two fields
-                                                                    document.querySelector('input[name="processing_fee"]').readOnly = true;
-                                                                    document.querySelector('input[name="interest_rate"]').readOnly = true;
-                                                                    document.querySelector('input[name="processing_fee"]').disabled = true;
-                                                                    document.querySelector('input[name="interest_rate"]').disabled = true;
-                                                                }
-                                                            }
-                                                        }}
-                                                        required
-                                                    >
-                                                        (<option value="">Select Loan Type</option>
-                                                        {loanTypes.map((lt) => (
-                                                            <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
-                                                        ))})
-                                                    </select>
-                                                </div>
-
-                                                <div className="col-md-4">
-                                                    <label className="form-label">Purpose</label>
-                                                    <select className={`form-select`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
-                                                        <option value="">Select Purpose</option>
-                                                        <option>Tuition</option>
-                                                        <option>Living</option>
-                                                        <option>Medical</option>
-                                                        <option>Appliance</option>
-                                                        <option>Car</option>
-                                                        <option>Travel</option>
-                                                        <option>HomeImprovement</option>
-                                                        <option>Other</option>
-                                                    </select>
-                                                </div>
-
-                                                {loanFormData.purpose === "Other" && (
+                                            </div>
+                                            <fieldset className="fldset">
+                                                <legend className="font-semibold">Loan Details</legend>
+                                                <div className="row mb-3">
                                                     <div className="col-md-4">
-                                                        <label className="form-label">Other Purpose</label>
-                                                        <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
+                                                        <label className="form-label">Loan Type</label>
+                                                        <select
+                                                            className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                            name="loan_type" value={loanFormData.loan_type}
+                                                            onChange={(e) => {
+                                                                loanHandleChange(e);
+                                                                //fetch loan settings based on selected loan type
+                                                                const selectedLoanTypeId = e.target.value;
+
+                                                                if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+                                                                    // Find selected loan setting based on loan type
+                                                                    const selectedLoanSetting = loanSettings.find(
+                                                                        (ls) => ls.id === Number(selectedLoanTypeId)
+                                                                    );
+
+                                                                    console.log("loanSettings:", loanSettings);
+                                                                    console.log("loanFormData.loan_type:", loanFormData.loan_type);
+                                                                    console.log("selectedLoanSetting:", selectedLoanSetting);
+                                                                    // return;
+                                                                    if (selectedLoanSetting) {
+                                                                        const {
+                                                                            process_fees,
+                                                                            interest_rate,
+                                                                        } = selectedLoanSetting;
+
+                                                                        // Auto-fill processing fee and interest rate
+                                                                        setLoanFormData((prev) => ({
+                                                                            ...prev,
+                                                                            processing_fee: parseFloat(process_fees),
+                                                                            interest_rate: parseFloat(interest_rate)
+                                                                        }));
+                                                                        //make the form read-only and disabled for these two fields
+                                                                        document.querySelector('input[name="processing_fee"]').readOnly = true;
+                                                                        document.querySelector('input[name="interest_rate"]').readOnly = true;
+                                                                        document.querySelector('input[name="processing_fee"]').disabled = true;
+                                                                        document.querySelector('input[name="interest_rate"]').disabled = true;
+                                                                    }
+                                                                }
+                                                            }}
+                                                            required
+                                                        >
+                                                            (<option value="">Select Loan Type</option>
+                                                            {loanTypes.map((lt) => (
+                                                                <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
+                                                            ))})
+                                                        </select>
+                                                    </div>
+
+                                                    <div className="col-md-4">
+                                                        <label className="form-label">Purpose</label>
+                                                        <select className={`form-select`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
+                                                            <option value="">Select Purpose</option>
+                                                            <option>Tuition</option>
+                                                            <option>Living</option>
+                                                            <option>Medical</option>
+                                                            <option>Appliance</option>
+                                                            <option>Car</option>
+                                                            <option>Travel</option>
+                                                            <option>HomeImprovement</option>
+                                                            <option>Other</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {loanFormData.purpose === "Other" && (
+                                                        <div className="col-md-4">
+                                                            <label className="form-label">Other Purpose</label>
+                                                            <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="row mb-3">
+                                                    <div className="col-md-3">
+                                                        <label className="form-label">Loan Amount Applied</label>
+                                                        <input
+                                                            type="number" step="0.01"
+                                                            className={`form-control`}
+                                                            name="loan_amount_applied"
+                                                            value={loanFormData.loan_amount_applied}
+                                                            onChange={(e) => loanHandleChange(e)}
+                                                            onKeyUp={calculateRepaymentDetails}
+                                                            disabled={true}
+                                                            required
+                                                        />
+                                                    </div>
+
+                                                    <div className="col-md-3">
+                                                        <label className="form-label">Tenure (Fortnight)</label>
+                                                        <input
+                                                            type="number" step="1"
+                                                            name="tenure_fortnight"
+                                                            className={`form-control tenure_fortnight`}
+                                                            value={loanFormData.tenure_fortnight}
+                                                            onChange={(e) => loanHandleChange(e)}
+                                                            onKeyUp={calculateRepaymentDetails}
+                                                            required
+                                                        />
+                                                    </div>
+
+                                                    <div className="col-md-3">
+                                                        <label className="form-label">Interest Rate (%)</label>
+                                                        <input type="number" step="0.01" className={`form-control`} name="interest_rate" value={loanFormData.interest_rate} onChange={loanHandleChange} />
+                                                    </div>
+
+                                                    <div className="col-md-3">
+                                                        <label className="form-label">Processing Fee</label>
+                                                        <input type="number" step="0.01" className={`form-control`} name="processing_fee" value={loanFormData.processing_fee} onChange={loanHandleChange} />
+                                                    </div>
+                                                </div>
+
+                                                {loanFormData.total_interest_amt && (
+                                                    <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id='repayDetailsDiv'>
+                                                        <fieldset className="fldset w-full">
+                                                            <legend className="font-semibold">Repayment Details</legend>
+                                                            <div className="row mt-3">
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Total Interest (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
+                                                                </div>
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Total Repay (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
+                                                                </div>
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Repay per FN (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
+                                                                </div>
+                                                            </div>
+                                                        </fieldset>
                                                     </div>
                                                 )}
-                                            </div>
 
-                                            <div className="row mb-3">
-                                                <div className="col-md-3">
-                                                    <label className="form-label">Loan Amount Applied</label>
-                                                    <input
-                                                        type="number" step="0.01"
-                                                        className={`form-control`}
-                                                        name="loan_amount_applied"
-                                                        value={loanFormData.loan_amount_applied}
-                                                        onChange={(e) => loanHandleChange(e)}
-                                                        onKeyUp={calculateRepaymentDetails}
-                                                        disabled={true}
-                                                        required
-                                                    />
+                                                <div className="row mb-3">
+                                                    <div className="col-md-4">
+                                                        <label className="form-label">Bank Name</label>
+                                                        <input type="text" className={`form-control`} name="bank_name" value={loanFormData.bank_name} onChange={loanHandleChange} />
+                                                    </div>
+
+                                                    <div className="col-md-4">
+                                                        <label className="form-label">Bank Branch</label>
+                                                        <input type="text" className={`form-control`} name="bank_branch" value={loanFormData.bank_branch} onChange={loanHandleChange} />
+                                                    </div>
+
+                                                    <div className="col-md-4">
+                                                        <label className="form-label">Bank Account No</label>
+                                                        <input type="text" className={`form-control`} name="bank_account_no" value={loanFormData.bank_account_no} onChange={loanHandleChange} />
+                                                    </div>
                                                 </div>
 
-                                                <div className="col-md-3">
-                                                    <label className="form-label">Tenure (Fortnight)</label>
-                                                    <input
-                                                        type="number" step="1"
-                                                        name="tenure_fortnight"
-                                                        className={`form-control tenure_fortnight`}
-                                                        value={loanFormData.tenure_fortnight}
-                                                        onChange={(e) => loanHandleChange(e)}
-                                                        onKeyUp={calculateRepaymentDetails}
-                                                        required
-                                                    />
+                                                <div className="mb-3">
+                                                    <label className="form-label">Remarks</label>
+                                                    <textarea className={`form-control`} name="remarks" rows="3" value={loanFormData.remarks} onChange={loanHandleChange}></textarea>
                                                 </div>
-
-                                                <div className="col-md-3">
-                                                    <label className="form-label">Interest Rate (%)</label>
-                                                    <input type="number" step="0.01" className={`form-control`} name="interest_rate" value={loanFormData.interest_rate} onChange={loanHandleChange} />
-                                                </div>
-
-                                                <div className="col-md-3">
-                                                    <label className="form-label">Processing Fee</label>
-                                                    <input type="number" step="0.01" className={`form-control`} name="processing_fee" value={loanFormData.processing_fee} onChange={loanHandleChange} />
-                                                </div>
-                                            </div>
-
-                                            {loanFormData.total_interest_amt && (
-                                                <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id='repayDetailsDiv'>
-                                                    <fieldset className="fldset w-full">
-                                                        <legend className="font-semibold">Repayment Details</legend>
-                                                        <div className="row mt-3">
-                                                            <div className="col-md-3">
-                                                                <label className="form-label fw-bold">Total Interest (PGK)</label>
-                                                                <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
-                                                            </div>
-                                                            <div className="col-md-3">
-                                                                <label className="form-label fw-bold">Total Repay (PGK)</label>
-                                                                <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
-                                                            </div>
-                                                            <div className="col-md-3">
-                                                                <label className="form-label fw-bold">Repay per FN (PGK)</label>
-                                                                <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
-                                                            </div>
-                                                        </div>
-                                                    </fieldset>
-                                                </div>
-                                            )}
-
-                                            <div className="row mb-3">
-                                                <div className="col-md-4">
-                                                    <label className="form-label">Bank Name</label>
-                                                    <input type="text" className={`form-control`} name="bank_name" value={loanFormData.bank_name} onChange={loanHandleChange} />
-                                                </div>
-
-                                                <div className="col-md-4">
-                                                    <label className="form-label">Bank Branch</label>
-                                                    <input type="text" className={`form-control`} name="bank_branch" value={loanFormData.bank_branch} onChange={loanHandleChange} />
-                                                </div>
-
-                                                <div className="col-md-4">
-                                                    <label className="form-label">Bank Account No</label>
-                                                    <input type="text" className={`form-control`} name="bank_account_no" value={loanFormData.bank_account_no} onChange={loanHandleChange} />
-                                                </div>
-                                            </div>
-
-                                            <div className="mb-3">
-                                                <label className="form-label">Remarks</label>
-                                                <textarea className={`form-control`} name="remarks" rows="3" value={loanFormData.remarks} onChange={loanHandleChange}></textarea>
-                                            </div>
-                                        </fieldset>
-                                        <Row className="mt-4">
-                                            <Col md={12} className="d-flex justify-content-end">
-                                                <button
-                                                    type="submit"
-                                                    className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${isChecking ? "cursor-not-allowed opacity-50" : ""
-                                                        }`}
-                                                    disabled={isChecking}
-                                                >
-                                                    {isChecking ? (
-                                                        <>
-                                                            <span
-                                                                className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
-                                                                role="status"
-                                                            ></span>
-                                                            Checking...
-                                                        </>
-                                                    ) : (
-                                                        "Save Loan Details →"
-                                                    )}
-                                                </button>
-                                            </Col>
-                                        </Row>
-                                    </form>
+                                            </fieldset>
+                                            <Row className="mt-4">
+                                                <Col md={12} className="d-flex justify-content-end">
+                                                    <button
+                                                        type="submit"
+                                                        className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${isChecking ? "cursor-not-allowed opacity-50" : ""
+                                                            }`}
+                                                        disabled={isChecking}
+                                                    >
+                                                        {isChecking ? (
+                                                            <>
+                                                                <span
+                                                                    className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+                                                                    role="status"
+                                                                ></span>
+                                                                Checking...
+                                                            </>
+                                                        ) : (
+                                                            "Save Loan Details →"
+                                                        )}
+                                                    </button>
+                                                </Col>
+                                            </Row>
+                                        </form>
                                     </>
                                 )}
                                 {((loan?.is_elegible == 0) && (loan?.higher_approved_by == null)) && (
-                                    ((auth.user.is_admin == 1) ) ? (
+                                    ((auth.user.is_admin == 1)) ? (
                                         <Alert variant="warning" className="d-flex align-items-center justify-content-between">
                                             <div>
                                                 <strong>Need Approval ⚠️</strong>
@@ -1064,7 +1114,14 @@ export default function View({ auth, loanId }) {
                                                                     {doc.verification_status === "Verified" ? (
                                                                         <span className="text-green-600 font-semibold">Verified ✅</span>
                                                                     ) : doc.verification_status === "Rejected" ? (
-                                                                        <span className="text-red-600 font-semibold">Rejected ❌</span>
+                                                                        (() => {
+                                                                            const r = rejectReasons.find(rr => rr.id === doc.rejection_reason_id);
+                                                                            return (
+                                                                                <span className="text-red-600 font-semibold">
+                                                                                    Rejected ❌{r ? ` — ${r.reason_desc}` : ""}
+                                                                                </span>
+                                                                            );
+                                                                        })()
                                                                     ) : (
                                                                         <div className="flex gap-2 justify-center">
                                                                             <button
@@ -1087,7 +1144,76 @@ export default function View({ auth, loanId }) {
                                                                     {doc.verification_status === "Verified" ? (
                                                                         <span className="text-green-600 font-semibold">Verified ✅</span>
                                                                     ) : doc.verification_status === "Rejected" ? (
-                                                                        <span className="text-red-600 font-semibold">Rejected ❌</span>
+                                                                        (() => {
+                                                                            const r = rejectReasons.find(rr => rr.id === doc.rejection_reason_id);
+                                                                            return (
+                                                                                <>
+                                                                                    <span className="text-red-600 font-semibold">
+                                                                                        Rejected ❌{r ? ` — ${r.reason_desc}` : ""}
+                                                                                    </span>
+
+                                                                                    <div className="mt-2" id="rejectedDocReUploadSection">
+                                                                                        <input
+                                                                                            id={`replace-file-${doc.id}`}
+                                                                                            type="file"
+                                                                                            accept={
+                                                                                                doc.file_name?.toLowerCase().endsWith(".pdf")
+                                                                                                    ? "application/pdf"
+                                                                                                    : doc.file_name?.toLowerCase().endsWith(".mp4")
+                                                                                                    ? "video/mp4"
+                                                                                                    : "*/*"
+                                                                                            }
+                                                                                            style={{ display: "none" }}
+                                                                                            onChange={async (e) => {
+                                                                                                const file = e.target.files?.[0];
+                                                                                                if (!file) return;
+
+                                                                                                try {
+                                                                                                    const fd = new FormData();
+                                                                                                    fd.append("loan_id", loan.id);
+                                                                                                    fd.append("file", file);
+                                                                                                    // adjust endpoint if your backend expects a different route/name
+                                                                                                    await axios.post(`/api/document-upload/replace/${doc.id}`, fd, {
+                                                                                                        headers: { "Content-Type": "multipart/form-data" },
+                                                                                                    });
+
+                                                                                                    setMessage("✅ File re-uploaded successfully!");
+                                                                                                    Swal.fire({
+                                                                                                        title: "Success",
+                                                                                                        text: "File re-uploaded successfully!",
+                                                                                                        icon: "success",
+                                                                                                    });
+
+                                                                                                    // refresh loan data to reflect new file/status
+                                                                                                    const res = await axios.get(`/api/loans/${loanId}`);
+                                                                                                    setLoan(res.data);
+                                                                                                } catch (err) {
+                                                                                                    console.error(err);
+                                                                                                    setMessage("❌ Failed to re-upload file.");
+                                                                                                    Swal.fire({
+                                                                                                        title: "Error",
+                                                                                                        text: "Failed to re-upload file.",
+                                                                                                        icon: "error",
+                                                                                                    });
+                                                                                                } finally {
+                                                                                                    // reset input so same file can be selected again if needed
+                                                                                                    e.target.value = "";
+                                                                                                }
+                                                                                            }}
+                                                                                        />
+
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md ml-2"
+                                                                                            onClick={() => document.getElementById(`replace-file-${doc.id}`).click()}
+                                                                                            disabled={loan.status === "Approved"}
+                                                                                        >
+                                                                                            Re-upload Document
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </>
+                                                                            );
+                                                                        })()
                                                                     ) : <span className="text-yellow-600 font-semibold">Pending !</span>
                                                                     }
                                                                 </td>
@@ -1299,26 +1425,26 @@ export default function View({ auth, loanId }) {
                                             </Modal.Body>
 
                                             <Modal.Footer>
-                                                {auth.user.is_admin ==1 && (
+                                                {auth.user.is_admin == 1 && (
                                                     <>
-                                                    <Button
-                                                        variant="success"
-                                                        onClick={async () => {
-                                                            await handleVerifyDoc(selectedDoc.id, "Verified");
-                                                            closeDocModal();
-                                                        }}
-                                                    >
-                                                        Approve
-                                                    </Button>
-                                                    <Button
-                                                        variant="danger"
-                                                        onClick={async () => {
-                                                            await handleVerifyDoc(selectedDoc.id, "Rejected");
-                                                            closeDocModal();
-                                                        }}
-                                                    >
-                                                        Reject
-                                                    </Button>
+                                                        <Button
+                                                            variant="success"
+                                                            onClick={async () => {
+                                                                await handleVerifyDoc(selectedDoc.id, "Verified");
+                                                                closeDocModal();
+                                                            }}
+                                                        >
+                                                            Approve
+                                                        </Button>
+                                                        <Button
+                                                            variant="danger"
+                                                            onClick={async () => {
+                                                                await handleVerifyDoc(selectedDoc.id, "Rejected");
+                                                                closeDocModal();
+                                                            }}
+                                                        >
+                                                            Reject
+                                                        </Button>
                                                     </>
                                                 )}
                                                 <Button variant="secondary" onClick={closeDocModal}>
@@ -1326,115 +1452,164 @@ export default function View({ auth, loanId }) {
                                                 </Button>
                                             </Modal.Footer>
                                         </Modal>
+                                        {showRejectModal && (
+                                            <div className="fixed inset-0 bg-slate-600 bg-opacity-40 flex items-center justify-center z-50">
+                                                <div className="bg-white p-5 rounded-lg shadow-lg w-96">
+                                                    <h2 className="text-lg font-semibold mb-3">Reject Document</h2>
+
+                                                    <label className="block text-sm font-medium mb-1">Select Rejection Reason</label>
+                                                    <select
+                                                        className="border rounded w-full px-3 py-2 mb-4"
+                                                        value={selectedRejectionReason}
+                                                        onChange={(e) => setSelectedRejectionReason(e.target.value)}
+                                                    >
+                                                        <option value="">-- Select Reason --</option>
+                                                        {rejectReasons.map((r) => (
+                                                            <option key={r.id} value={r.id}>{r.reason_desc}</option>
+                                                        ))}
+                                                    </select>
+
+                                                    <div className="flex justify-end gap-2">
+                                                        <button
+                                                            className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
+                                                            onClick={() => {
+                                                                setShowRejectModal(false);
+                                                                setSelectedRejectionReason("");
+                                                                setRejectingDocId(null);
+                                                            }}
+                                                        >
+                                                            Cancel
+                                                        </button>
+
+                                                        <button
+                                                            className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                                                            onClick={submitRejection}
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </fieldset>
                                 </Col>
                                 {(loan?.is_elegible == 1) && (loan?.is_loan_re_updated_after_higher_approval == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
                                     <>
-                                    <fieldset className="fldset mb-5">
-                                        <legend className="font-semibold mb-2">📑 Acknowledgement</legend>
+                                        <fieldset className="fldset mb-5">
+                                            <legend className="font-semibold mb-2">📑 Acknowledgement</legend>
 
-                                        <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
-                                            <thead className="bg-indigo-600 text-white">
-                                                <tr>
-                                                    <th className="border p-2 text-center">Document Type</th>
-                                                    <th className="border p-2 text-center">File Name</th>
-                                                    <th className="border p-2 text-center">View</th>
-                                                    <th className="border p-2 text-center">Download</th>
-                                                    <th className="border p-2 text-center">Print</th>
-                                                </tr>
-                                            </thead>
+                                            <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
+                                                <thead className="bg-indigo-600 text-white">
+                                                    <tr>
+                                                        <th className="border p-2 text-center">Document Type</th>
+                                                        <th className="border p-2 text-center">File Name</th>
+                                                        <th className="border p-2 text-center">View</th>
+                                                        <th className="border p-2 text-center">Download</th>
+                                                        <th className="border p-2 text-center">Print</th>
+                                                    </tr>
+                                                </thead>
 
-                                            <tbody>
-                                                <tr className="hover:bg-gray-50 transition">
-                                                    <td className="border p-2 text-center">Application Form</td>
-                                                    <td className="border p-2 text-center">Application Form</td>
+                                                <tbody>
+                                                    <tr className="hover:bg-gray-50 transition">
+                                                        <td className="border p-2 text-center">Application Form</td>
+                                                        <td className="border p-2 text-center">Application Form</td>
 
-                                                    {/* View Button */}
-                                                    <td className="border p-2 text-center">
-                                                        <button
-                                                            onClick={() => setShowModal1(true)}
-                                                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                        >
-                                                            <Eye size={14} /> View
-                                                        </button>
-                                                    </td>
-
-                                                    {/* Download Button */}
-                                                    <td className="border p-2 text-center">
-                                                        <a
-                                                            href={pdfPath}
-                                                            download
-                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                        >
-                                                            <Download size={14} /> Download
-                                                        </a>
-                                                    </td>
-
-                                                    {/* 🖨️ Print Button */}
-                                                    <td className="border p-2 text-center">
-                                                        <button
-                                                            onClick={() => {
-                                                                const printWindow = window.open(pdfPath, "_blank");
-                                                                if (printWindow) {
-                                                                    printWindow.onload = () => {
-                                                                        printWindow.focus();
-                                                                        printWindow.print();
-                                                                    };
-                                                                }
-                                                            }}
-                                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                        >
-                                                            <svg
-                                                                xmlns="http://www.w3.org/2000/svg"
-                                                                fill="none"
-                                                                viewBox="0 0 24 24"
-                                                                strokeWidth="1.5"
-                                                                stroke="currentColor"
-                                                                className="w-4 h-4"
+                                                        {/* View Button */}
+                                                        <td className="border p-2 text-center">
+                                                            <button
+                                                                onClick={() => setShowModal1(true)}
+                                                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
                                                             >
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6"
-                                                                />
-                                                            </svg>
-                                                            Print
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                                                <Eye size={14} /> View
+                                                            </button>
+                                                        </td>
+
+                                                        {/* Download Button */}
+                                                        <td className="border p-2 text-center">
+                                                            <a
+                                                                href={pdfPath}
+                                                                download
+                                                                onClick={async (e) => {
+                                                                    e.preventDefault(); // stop automatic navigation
+                                                                    await markAckDownloaded(); // update DB + refresh
+
+                                                                    // Now continue download normally
+                                                                    window.location.href = pdfPath;
+                                                                }}
+                                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                            >
+                                                                <Download size={14} /> Download
+                                                            </a>
+
+                                                        </td>
+
+                                                        {/* 🖨️ Print Button */}
+                                                        <td className="border p-2 text-center">
+                                                            <button
+                                                                onClick={async () => {
+                                                                    await markAckDownloaded(); // update DB + refresh
+
+                                                                    const printWindow = window.open(pdfPath, "_blank");
+                                                                    if (printWindow) {
+                                                                        printWindow.onload = () => {
+                                                                            printWindow.focus();
+                                                                            printWindow.print();
+                                                                        };
+                                                                    }
+                                                                }}
+                                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                            >
+                                                                <svg
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    fill="none"
+                                                                    viewBox="0 0 24 24"
+                                                                    strokeWidth="1.5"
+                                                                    stroke="currentColor"
+                                                                    className="w-4 h-4"
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6"
+                                                                    />
+                                                                </svg>
+                                                                Print
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
 
 
-                                        {/* PDF Modal */}
-                                        <Modal
-                                            show={showModal1}
-                                            onHide={() => setShowModal1(false)}
-                                            size="xl"
-                                            centered
-                                            dialogClassName="max-w-[900px]"
-                                        >
-                                            <Modal.Header closeButton>
-                                                <Modal.Title>📄 Application Form Preview</Modal.Title>
-                                            </Modal.Header>
+                                            {/* PDF Modal */}
+                                            <Modal
+                                                show={showModal1}
+                                                onHide={() => setShowModal1(false)}
+                                                size="xl"
+                                                centered
+                                                dialogClassName="max-w-[900px]"
+                                            >
+                                                <Modal.Header closeButton>
+                                                    <Modal.Title>📄 Application Form Preview</Modal.Title>
+                                                </Modal.Header>
 
-                                            <Modal.Body>
-                                                <iframe
-                                                    src={`${pdfPath}#toolbar=1`}
-                                                    width="100%"
-                                                    height="600"
-                                                    title="Loan Application PDF"
-                                                    className="rounded border shadow-sm"
-                                                />
-                                            </Modal.Body>
+                                                <Modal.Body>
+                                                    <iframe
+                                                        src={`${pdfPath}#toolbar=1`}
+                                                        width="100%"
+                                                        height="600"
+                                                        title="Loan Application PDF"
+                                                        className="rounded border shadow-sm"
+                                                    />
+                                                </Modal.Body>
 
-                                            <Modal.Footer>
-                                                <Button variant="secondary" onClick={() => setShowModal1(false)}>
-                                                    Close
-                                                </Button>
-                                            </Modal.Footer>
-                                        </Modal>
-                                    </fieldset>
+                                                <Modal.Footer>
+                                                    <Button variant="secondary" onClick={() => setShowModal1(false)}>
+                                                        Close
+                                                    </Button>
+                                                </Modal.Footer>
+                                            </Modal>
+                                        </fieldset>
                                     </>
                                 )}
 
@@ -1442,227 +1617,227 @@ export default function View({ auth, loanId }) {
                                 {(loan?.is_elegible == 1) && (loan?.is_loan_re_updated_after_higher_approval == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
                                     (loan?.is_ack_downloaded == 1) && (
                                         <>
-                                        <React.Fragment>
-                                            <Row className="g-4 align-items-start mb-5">
-                                                <Col md={6}>
-                                                    <fieldset className="fldset mb-4">
-                                                        <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                            <span>🎥 Video Consent</span>
-                                                            {loan.video_consent_path && (
-                                                                <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
-                                                            )}
-                                                        </legend>
+                                            <React.Fragment>
+                                                <Row className="g-4 align-items-start mb-5">
+                                                    <Col md={6}>
+                                                        <fieldset className="fldset mb-4">
+                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                <span>🎥 Video Consent</span>
+                                                                {loan.video_consent_path && (
+                                                                    <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
+                                                                )}
+                                                            </legend>
 
-                                                        <Form.Group>
-                                                            <Form.Label className="font-medium">
-                                                                Upload Consent Video (MP4 only)
-                                                            </Form.Label>
+                                                            <Form.Group>
+                                                                <Form.Label className="font-medium">
+                                                                    Upload Consent Video (MP4 only)
+                                                                </Form.Label>
 
-                                                            <Form.Control
-                                                                type="file"
-                                                                accept="video/mp4"
-                                                                key={videoFile ? videoFile.name : ""}
-                                                                disabled={loan.status === "Approved"}
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files[0];
-                                                                    if (file) {
-                                                                        setVideoFile(file);
-                                                                        setVideoPreview(URL.createObjectURL(file));
-                                                                    }
-                                                                }}
-                                                            />
+                                                                <Form.Control
+                                                                    type="file"
+                                                                    accept="video/mp4"
+                                                                    key={videoFile ? videoFile.name : ""}
+                                                                    disabled={loan.status === "Approved"}
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files[0];
+                                                                        if (file) {
+                                                                            setVideoFile(file);
+                                                                            setVideoPreview(URL.createObjectURL(file));
+                                                                        }
+                                                                    }}
+                                                                />
 
-                                                            <Form.Text className="text-muted">Max size: 20MB</Form.Text>
-                                                        </Form.Group>
+                                                                <Form.Text className="text-muted">Max size: 20MB</Form.Text>
+                                                            </Form.Group>
 
-                                                        <Button
-                                                            className="mt-3 bg-blue-600 hover:bg-blue-700 text-white"
-                                                            onClick={() => handleUpload("video")}
-                                                            disabled={!videoFile}
-                                                        >
-                                                            {uploadProgress.video > 0 && uploadProgress.video < 100
-                                                                ? "Uploading..."
-                                                                : loan.video_consent_path
-                                                                    ? "Replace Video Consent"
-                                                                    : "Upload Video Consent"}
-                                                        </Button>
-
-                                                        {uploadProgress.video > 0 && (
-                                                            <ProgressBar
-                                                                now={uploadProgress.video}
-                                                                label={`${uploadProgress.video}%`}
-                                                                animated
-                                                                variant={uploadProgress.video < 100 ? "info" : "success"}
-                                                                className="mt-3"
-                                                            />
-                                                        )}
-                                                    </fieldset>
-                                                </Col>
-
-                                                <Col md={6}>
-                                                    {(videoPreview || loan.video_consent_path) && (
-                                                        <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                            <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                            <video
-                                                                width="100%"
-                                                                height="auto"
-                                                                controls
-                                                                src={videoPreview || loan.video_consent_path}
-                                                                className="rounded shadow-sm"
+                                                            <Button
+                                                                className="mt-3 bg-blue-600 hover:bg-blue-700 text-white"
+                                                                onClick={() => handleUpload("video")}
+                                                                disabled={!videoFile}
                                                             >
-                                                                Your browser does not support video.
-                                                            </video>
-                                                        </div>
-                                                    )}
-                                                </Col>
-                                            </Row>
+                                                                {uploadProgress.video > 0 && uploadProgress.video < 100
+                                                                    ? "Uploading..."
+                                                                    : loan.video_consent_path
+                                                                        ? "Replace Video Consent"
+                                                                        : "Upload Video Consent"}
+                                                            </Button>
 
-                                            <Row className="g-4 align-items-start mb-5">
-                                                <Col md={6}>
-                                                    <fieldset className="fldset mb-4">
-                                                        <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                            <span>📄 ISDA Signed Document</span>
-                                                            {loan.isda_signed_upload_path && (
-                                                                <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                            {uploadProgress.video > 0 && (
+                                                                <ProgressBar
+                                                                    now={uploadProgress.video}
+                                                                    label={`${uploadProgress.video}%`}
+                                                                    animated
+                                                                    variant={uploadProgress.video < 100 ? "info" : "success"}
+                                                                    className="mt-3"
+                                                                />
                                                             )}
-                                                        </legend>
+                                                        </fieldset>
+                                                    </Col>
 
-                                                        <Form.Group>
-                                                            <Form.Label className="font-medium">Upload Signed ISDA (PDF only)</Form.Label>
-                                                            <Form.Control
-                                                                type="file"
-                                                                accept="application/pdf"
-                                                                disabled={loan.status === "Approved"}
-                                                                key={pdfFile ? pdfFile.name : ""}
-                                                                onChange={(e) => {
-                                                                    const file = e.target.files[0];
-                                                                    if (file) {
-                                                                        setPdfFile(file);
-                                                                        setPdfPreview(URL.createObjectURL(file));
-                                                                    }
-                                                                }}
-                                                            />
-                                                            <Form.Text className="text-muted">Max size: 5MB</Form.Text>
-                                                        </Form.Group>
-
-                                                        <Button
-                                                            className="mt-3 bg-green-600 hover:bg-green-700 text-white"
-                                                            onClick={() => handleUpload("pdf")}
-                                                            disabled={!pdfFile}
-                                                        >
-                                                            {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
-                                                                ? "Uploading..."
-                                                                : loan.isda_signed_upload_path
-                                                                    ? "Replace ISDA Signed PDF"
-                                                                    : "Upload ISDA Signed PDF"}
-                                                        </Button>
-
-                                                        {uploadProgress.pdf > 0 && (
-                                                            <ProgressBar
-                                                                now={uploadProgress.pdf}
-                                                                label={`${uploadProgress.pdf}%`}
-                                                                animated
-                                                                variant={uploadProgress.pdf < 100 ? "info" : "success"}
-                                                                className="mt-3"
-                                                            />
+                                                    <Col md={6}>
+                                                        {(videoPreview || loan.video_consent_path) && (
+                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                <video
+                                                                    width="100%"
+                                                                    height="auto"
+                                                                    controls
+                                                                    src={videoPreview || loan.video_consent_path}
+                                                                    className="rounded shadow-sm"
+                                                                >
+                                                                    Your browser does not support video.
+                                                                </video>
+                                                            </div>
                                                         )}
-                                                    </fieldset>
-                                                </Col>
+                                                    </Col>
+                                                </Row>
 
-                                                <Col md={6}>
-                                                    {(pdfPreview || loan.isda_signed_upload_path) && (
-                                                        <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                            <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                            <iframe
-                                                                src={`${pdfPreview || loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                                width="100%"
-                                                                height="500"
-                                                                className="rounded shadow-sm border"
-                                                                style={{
-                                                                    border: "1px solid #ddd",
-                                                                    borderRadius: "8px",
-                                                                    overflow: "hidden",
-                                                                }}
-                                                                title="ISDA Signed Document"
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </Col>
-                                            </Row>
+                                                <Row className="g-4 align-items-start mb-5">
+                                                    <Col md={6}>
+                                                        <fieldset className="fldset mb-4">
+                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                <span>📄 ISDA Signed Document</span>
+                                                                {loan.isda_signed_upload_path && (
+                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                                )}
+                                                            </legend>
 
-                                            <Row className="g-4 align-items-start mb-5">
-                                                <Col md={6}>
-                                                    <fieldset className="fldset mb-4">
-                                                        <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                            <span>📄 Organization Signed Document</span>
-                                                            {loan.org_signed_upload_path && (
-                                                                <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                            <Form.Group>
+                                                                <Form.Label className="font-medium">Upload Signed ISDA (PDF only)</Form.Label>
+                                                                <Form.Control
+                                                                    type="file"
+                                                                    accept="application/pdf"
+                                                                    disabled={loan.status === "Approved"}
+                                                                    key={pdfFile ? pdfFile.name : ""}
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files[0];
+                                                                        if (file) {
+                                                                            setPdfFile(file);
+                                                                            setPdfPreview(URL.createObjectURL(file));
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                                            </Form.Group>
+
+                                                            <Button
+                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                                                onClick={() => handleUpload("pdf")}
+                                                                disabled={!pdfFile}
+                                                            >
+                                                                {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
+                                                                    ? "Uploading..."
+                                                                    : loan.isda_signed_upload_path
+                                                                        ? "Replace ISDA Signed PDF"
+                                                                        : "Upload ISDA Signed PDF"}
+                                                            </Button>
+
+                                                            {uploadProgress.pdf > 0 && (
+                                                                <ProgressBar
+                                                                    now={uploadProgress.pdf}
+                                                                    label={`${uploadProgress.pdf}%`}
+                                                                    animated
+                                                                    variant={uploadProgress.pdf < 100 ? "info" : "success"}
+                                                                    className="mt-3"
+                                                                />
                                                             )}
-                                                        </legend>
+                                                        </fieldset>
+                                                    </Col>
 
-                                                        <Form.Group>
-                                                            <Form.Label className="font-medium">Upload Signed Organization Standard (PDF only)</Form.Label>
-                                                            <Form.Control
-                                                                type="file"
-                                                                accept="application/pdf"
-                                                                disabled={loan.status === "Approved"}
-                                                                key={pdfFile1 ? pdfFile1.name : ""}
-                                                                onChange={(e) => {
-                                                                    const file1 = e.target.files[0];
-                                                                    if (file1) {
-                                                                        setPdfFile1(file1);
-                                                                        setPdfPreview1(URL.createObjectURL(file1));
-                                                                    }
-                                                                }}
-                                                            />
-                                                            <Form.Text className="text-muted">Max size: 5MB</Form.Text>
-                                                        </Form.Group>
-
-                                                        <Button
-                                                            className="mt-3 bg-green-600 hover:bg-green-700 text-white"
-                                                            onClick={() => handleUpload("pdf1")}
-                                                            disabled={!pdfFile1}
-                                                        >
-                                                            {uploadProgress.pdf1 > 0 && uploadProgress.pdf1 < 100
-                                                                ? "Uploading..."
-                                                                : loan.org_signed_upload_path
-                                                                    ? "Replace Organization Signed PDF"
-                                                                    : "Upload Organization Signed PDF"}
-                                                        </Button>
-
-                                                        {uploadProgress.pdf1 > 0 && (
-                                                            <ProgressBar
-                                                                now={uploadProgress.pdf1}
-                                                                label={`${uploadProgress.pdf1}%`}
-                                                                animated
-                                                                variant={uploadProgress.pdf1 < 100 ? "info" : "success"}
-                                                                className="mt-3"
-                                                            />
+                                                    <Col md={6}>
+                                                        {(pdfPreview || loan.isda_signed_upload_path) && (
+                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                <iframe
+                                                                    src={`${pdfPreview || loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                    width="100%"
+                                                                    height="500"
+                                                                    className="rounded shadow-sm border"
+                                                                    style={{
+                                                                        border: "1px solid #ddd",
+                                                                        borderRadius: "8px",
+                                                                        overflow: "hidden",
+                                                                    }}
+                                                                    title="ISDA Signed Document"
+                                                                />
+                                                            </div>
                                                         )}
-                                                    </fieldset>
-                                                </Col>
+                                                    </Col>
+                                                </Row>
 
-                                                <Col md={6}>
-                                                    {(pdfPreview1 || loan.org_signed_upload_path) && (
-                                                        <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                            <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                            <iframe
-                                                                src={`${pdfPreview1 || loan.org_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                                width="100%"
-                                                                height="500"
-                                                                className="rounded shadow-sm border"
-                                                                style={{
-                                                                    border: "1px solid #ddd",
-                                                                    borderRadius: "8px",
-                                                                    overflow: "hidden",
-                                                                }}
-                                                                title="Organization Signed Document"
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </Col>
-                                            </Row>
-                                        </React.Fragment>
+                                                <Row className="g-4 align-items-start mb-5">
+                                                    <Col md={6}>
+                                                        <fieldset className="fldset mb-4">
+                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                <span>📄 Organization Signed Document</span>
+                                                                {loan.org_signed_upload_path && (
+                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                                )}
+                                                            </legend>
+
+                                                            <Form.Group>
+                                                                <Form.Label className="font-medium">Upload Signed Organization Standard (PDF only)</Form.Label>
+                                                                <Form.Control
+                                                                    type="file"
+                                                                    accept="application/pdf"
+                                                                    disabled={loan.status === "Approved"}
+                                                                    key={pdfFile1 ? pdfFile1.name : ""}
+                                                                    onChange={(e) => {
+                                                                        const file1 = e.target.files[0];
+                                                                        if (file1) {
+                                                                            setPdfFile1(file1);
+                                                                            setPdfPreview1(URL.createObjectURL(file1));
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                                            </Form.Group>
+
+                                                            <Button
+                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                                                onClick={() => handleUpload("pdf1")}
+                                                                disabled={!pdfFile1}
+                                                            >
+                                                                {uploadProgress.pdf1 > 0 && uploadProgress.pdf1 < 100
+                                                                    ? "Uploading..."
+                                                                    : loan.org_signed_upload_path
+                                                                        ? "Replace Organization Signed PDF"
+                                                                        : "Upload Organization Signed PDF"}
+                                                            </Button>
+
+                                                            {uploadProgress.pdf1 > 0 && (
+                                                                <ProgressBar
+                                                                    now={uploadProgress.pdf1}
+                                                                    label={`${uploadProgress.pdf1}%`}
+                                                                    animated
+                                                                    variant={uploadProgress.pdf1 < 100 ? "info" : "success"}
+                                                                    className="mt-3"
+                                                                />
+                                                            )}
+                                                        </fieldset>
+                                                    </Col>
+
+                                                    <Col md={6}>
+                                                        {(pdfPreview1 || loan.org_signed_upload_path) && (
+                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                <iframe
+                                                                    src={`${pdfPreview1 || loan.org_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                    width="100%"
+                                                                    height="500"
+                                                                    className="rounded shadow-sm border"
+                                                                    style={{
+                                                                        border: "1px solid #ddd",
+                                                                        borderRadius: "8px",
+                                                                        overflow: "hidden",
+                                                                    }}
+                                                                    title="Organization Signed Document"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </Col>
+                                                </Row>
+                                            </React.Fragment>
                                         </>
                                     )
                                 )}
@@ -1671,10 +1846,10 @@ export default function View({ auth, loanId }) {
                                 {message && (
                                     <div
                                         className={`mt-3 p-2 rounded text-center transition-all ${message.startsWith("✅")
-                                                ? "bg-green-100 text-green-700"
-                                                : message.startsWith("⚠️")
-                                                    ? "bg-yellow-100 text-yellow-700"
-                                                    : "bg-red-100 text-red-700"
+                                            ? "bg-green-100 text-green-700"
+                                            : message.startsWith("⚠️")
+                                                ? "bg-yellow-100 text-yellow-700"
+                                                : "bg-red-100 text-red-700"
                                             }`}
                                     >
                                         {message}

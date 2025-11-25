@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"; // Added Arrow icons
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Swal from 'sweetalert2';
@@ -10,6 +10,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
+import { currencyPrefix } from "@/config";
 
 export default function LoanSettingMaster({ auth, salary_slabs }) {
   const [orgList, setOrgList] = useState([]);
@@ -32,15 +33,13 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     min_repay_percentage_for_next_loan: "",
     effect_date: "",
     end_date: "",
-    ss_id_list: []  ,
+    ss_id_list: [],
   });
 
   // Filters and Sorting
   const [searchTerm, setSearchTerm] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "loan_desc", direction: "asc" });
-  const [selectedOrgs, setSelectedOrgs] = useState(null);
+  
   // slabs selected in the form (create / edit)
   const [formSelectedSslabs, setFormSelectedSslabs] = useState([]);
   // slabs selected in the FILTER area — keep filter state separate from form state
@@ -76,14 +75,12 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       toast.error("Failed to load organisation list");
     }
   };
-  const organisationOptions = orgList.map((org) => ({
-      name: `${org.organisation_name}`,
-      code: org.id
-  }));
+
   const salarySlabOptions = salarySlabList.map((ss) => ({
-      name: `${ss.slab_desc} - [${ss.starting_salary} - ${ss.ending_salary}]`,
-      code: ss.id
+    name: `${ss.slab_desc} - [${ss.starting_salary} - ${ss.ending_salary}]`,
+    code: ss.id
   }));
+
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -113,44 +110,63 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       }
       resetForm();
     } catch (error) {
-      console.error("Error saving:", error.response?.data || error.message);
-      toast.error("Failed to save loan setting");
+      console.error("Error saving:", error);
+      
+      // --- UPDATED ERROR HANDLING ---
+      let errorMsg = "Failed to save loan setting";
+      
+      if (error.response && error.response.data) {
+        // Check for specific backend message
+        if (error.response.data.message) {
+          errorMsg = error.response.data.message;
+        } 
+        // Check for validation errors (common in Laravel)
+        else if (error.response.data.errors) {
+            // Join validation errors into a single string
+            errorMsg = Object.values(error.response.data.errors).flat().join(" ");
+        }
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+
+      toast.error(errorMsg);
+      // -----------------------------
     }
   };
 
   const handleEdit = (loan) => {
-  // 1. Normalize slab list from either slab_id or ss_id_list
-  const slabIds = Array.isArray(loan.ss_id_list)
-    ? loan.ss_id_list                // multiple slabs
-    : loan.slab_id
-    ? [loan.slab_id]                 // single slab
-    : [];
+    // 1. Normalize slab list from either slab_id or ss_id_list
+    const slabIds = Array.isArray(loan.ss_id_list)
+      ? loan.ss_id_list                // multiple slabs
+      : loan.slab_id
+      ? [loan.slab_id]                 // single slab
+      : [];
 
-  // 2. Convert ID list to MultiSelect object format
-  const preselect = slabIds
-    .map((sid) => {
-      const slab = salarySlabList.find((s) => s.id === sid);
-      return slab
-        ? {
-            name: `${slab.slab_desc} - [${slab.starting_salary} - ${slab.ending_salary}]`,
-            code: slab.id,
-          }
-        : null;
-    })
-    .filter(Boolean);
+    // 2. Convert ID list to MultiSelect object format
+    const preselect = slabIds
+      .map((sid) => {
+        const slab = salarySlabList.find((s) => s.id === sid);
+        return slab
+          ? {
+              name: `${slab.slab_desc} - [${slab.starting_salary} - ${slab.ending_salary}]`,
+              code: slab.id,
+            }
+          : null;
+      })
+      .filter(Boolean);
 
-  // 3. Set MultiSelect selected values in the FORM (do NOT change the filter selections)
-  setFormSelectedSslabs(preselect);
+    // 3. Set MultiSelect selected values in the FORM (do NOT change the filter selections)
+    setFormSelectedSslabs(preselect);
 
-  // 4. Fill form data for update
-  setFormData({
-    ...loan,
-    ss_id_list: slabIds,
-  });
+    // 4. Fill form data for update
+    setFormData({
+      ...loan,
+      ss_id_list: slabIds,
+    });
 
-  setIsEditing(true);
-  window.scrollTo({ top: 0, behavior: "smooth" });
-};
+    setIsEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleDelete = async (id, desc) => {
     try {
@@ -171,34 +187,35 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       setLoanSettings((prev) => prev.filter((item) => item.id !== id));
       toast.success('Deleted successfully!');
     } catch (error) {
-      console.error('Error deleting:', error.response?.data || error.message);
-      toast.error('Failed to delete record!');
+      console.error('Error deleting:', error);
+      
+      // --- UPDATED ERROR HANDLING ---
+      const errorMsg = error.response?.data?.message || "Failed to delete record!";
+      toast.error(errorMsg);
     }
   };
 
   const resetForm = () => {
-  setFormData({
-    id: null,
-    loan_desc: "",
-    org_id: "",
-    min_loan_amount: "",
-    max_loan_amount: "",
-    interest_rate: "",
-    amt_multiplier: "",
-    min_loan_term_months: "",
-    max_loan_term_months: "",
-    process_fees: "",
-    min_repay_percentage_for_next_loan: "",
-    effect_date: "",
-    end_date: "",
-    ss_id_list: []    // required
-  });
+    setFormData({
+      id: null,
+      loan_desc: "",
+      org_id: "",
+      min_loan_amount: "",
+      max_loan_amount: "",
+      interest_rate: "",
+      amt_multiplier: "",
+      min_loan_term_months: "",
+      max_loan_term_months: "",
+      process_fees: "",
+      min_repay_percentage_for_next_loan: "",
+      effect_date: "",
+      end_date: "",
+      ss_id_list: []    // required
+    });
 
-  setFormSelectedSslabs([]);
-  setIsEditing(false);
+    setFormSelectedSslabs([]);
+    setIsEditing(false);
   };
-
-
 
   // Sorting handler
   const handleSort = (key) => {
@@ -228,29 +245,43 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     return sortableItems;
   }, [loanSettings, sortConfig]);
 
-  // Filtered data (search + date range)
+  // Filtered data (search + slab filter)
   const filteredData = useMemo(() => {
-  return sortedData.filter((item) => {
-    // search filter
-    const matchesSearch =
-      item.loan_desc?.toLowerCase().includes(searchTerm.toLowerCase());
+    return sortedData.filter((item) => {
+      // 1. Search Filter
+      const matchesSearch =
+        item.loan_desc?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // slab filter - use filterSelectedSslabs (separate from form selection)
-    const selectedIds = filterSelectedSslabs.map((s) => s.code);
+      // 2. Slab Filter
+      // If no slabs are selected in the filter, return true (show all)
+      if (filterSelectedSslabs.length === 0) return matchesSearch;
 
-    // include record if:
-    // - no slab filter applied OR
-    // - item slab matches selected slab(s)
-    const matchesSlabs =
-      selectedIds.length === 0 ||
-      selectedIds.includes(item.slab_id) ||
-      (Array.isArray(item.ss_id_list) &&
-       item.ss_id_list.some(id => selectedIds.includes(id)));
+      // Normalize selected filter IDs to Strings to ensure type safety
+      const selectedIds = filterSelectedSslabs.map((s) => String(s.code));
 
-    return matchesSearch && matchesSlabs;
-  });
-}, [sortedData, searchTerm, filterSelectedSslabs]);
+      // Get the item's slab IDs, handling both single ID (legacy) and List (new)
+      const itemSingleSlabId = item.slab_id ? String(item.slab_id) : null;
+      
+      let itemSlabList = [];
+      if (Array.isArray(item.ss_id_list)) {
+        itemSlabList = item.ss_id_list.map(id => String(id));
+      } else if (item.ss_id_list && typeof item.ss_id_list === 'string') {
+         // Handle edge case where backend returns a JSON string instead of array
+         try { 
+            const parsed = JSON.parse(item.ss_id_list);
+            if(Array.isArray(parsed)) itemSlabList = parsed.map(id => String(id));
+         } catch(e) {}
+      }
 
+      // Check if the single slab matches
+      const singleMatch = itemSingleSlabId && selectedIds.includes(itemSingleSlabId);
+      
+      // Check if ANY of the loan's multiple slabs match the selected filter
+      const listMatch = itemSlabList.some(id => selectedIds.includes(id));
+
+      return matchesSearch && (singleMatch || listMatch);
+    });
+  }, [sortedData, searchTerm, filterSelectedSslabs]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
@@ -291,38 +322,6 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
             </div>
 
-            {/* <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Organisation</label>
-              <select name="org_id" value={formData.org_id} onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                <option value="">Select Organisation</option>
-                {orgList.map((org) => (
-                  <option key={org.id} value={org.id}>{org.id} - {org.organisation_name}</option>
-                ))}
-              </select>
-            </div> */}
-
-            {/* <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Organisation
-              </label>
-              <div className="card flex justify-content-center">
-                  <MultiSelect 
-                    value={selectedOrgs} 
-                    onChange={(e) => {
-                      setSelectedOrgs(e.value);
-                      setFormData({ ...formData, org_id_list: selectedOrgs })
-                    }} 
-                    options={organisationOptions} 
-                    optionLabel="name" 
-                    filter filterDelay={400} 
-                    placeholder="Organisation(s)" 
-                    display="chip"
-                    maxSelectedLabels={3} 
-                    className="w-full md:w-20rem"
-                  />
-              </div>
-            </div> */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Income Slabs
@@ -353,7 +352,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
               ["amt_multiplier", "Amount Multiplier"],
               ["min_loan_term_months", "Minimum F/N"],
               ["max_loan_term_months", "Maximum F/N"],
-              ["process_fees", "Processing Fees (PGK)"],
+              ["process_fees", `Processing Fees (${currencyPrefix})`],
               ["min_repay_percentage_for_next_loan", "Min Repay % for Next Loan"],
               ["effect_date", "Effect Date"],
               ["end_date", "End Date"],
@@ -383,7 +382,6 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         </div>
 
         {/* --- FILTER BAR --- */}
-        
         <div className="max-w-9xl mx-auto bg-white shadow-sm border border-gray-100 p-3 
             flex flex-wrap md:flex-nowrap items-center justify-between ">
 
@@ -420,8 +418,6 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
 
         </div>
 
-
-
         {/* Table - compact, no horizontal scroll */}
         <div className="w-full bg-white shadow-lg border border-gray-700 overflow-hidden">
           <table className="w-full text-sm text-left border border-gray-700 border-collapse">
@@ -430,13 +426,12 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                 {[
                   ["#", "id"],
                   ["Loan Desc", "loan_desc"],
-                  ["Org ID", "org_id"],
                   ["Min Loan", "min_loan_amount"],
                   ["Max Loan", "max_loan_amount"],
                   ["Rate (%)", "interest_rate"],
                   ["Multiplier", "amt_multiplier"],
                   ["Term (Min - Max)", "min_loan_term_months"],
-                  ["Proc. Fees", "process_fees"],
+                  [`Proc. Fees(${currencyPrefix})`, "process_fees"],
                   ["Effect Date", "effect_date"],
                   ["End Date", "end_date"],
                 ].map(([header, key]) => (
@@ -445,21 +440,21 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     onClick={() => handleSort(key)}
                     className="px-2 py-3 font-semibold text-xs md:text-[0.85rem] uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center border border-gray-700"
                   >
-                    <div className="flex justify-center items-center gap-1">
+                    <div className="flex justify-center items-center gap-1 group">
                       <span className="whitespace-nowrap">{header}</span>
                       {sortConfig.key === key ? (
                         sortConfig.direction === "asc" ? (
-                          <span>▲</span>
+                          <ArrowUp size={16} className="text-white" />
                         ) : (
-                          <span>▼</span>
+                          <ArrowDown size={16} className="text-white" />
                         )
                       ) : (
-                        <span className="opacity-50">⇅</span>
+                        <ArrowUpDown size={16} className="text-white/50 group-hover:text-white" />
                       )}
                     </div>
                   </th>
                 ))}
-                <th className="px-2 py-3 text-center border border-gray-700">
+                <th className="px-2 py-3 text-center border border-gray-700 font-semibold text-xs uppercase">
                     Income Slab
                 </th>
 
@@ -490,9 +485,6 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                       {loan.loan_desc}
                     </td>
                     <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.org_id}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
                       {loan.min_loan_amount}
                     </td>
                     <td className="px-2 py-2 text-center border border-gray-700">
@@ -502,7 +494,6 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                       {loan.interest_rate}
                     </td>
 
-                 
                     <td className="px-2 py-2 text-center border border-gray-700">
                       {loan.amt_multiplier}
                     </td>
@@ -547,10 +538,6 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     </div>
                   </td>
 
-
-
-
-
                     <td className="px-2 py-2 flex justify-center gap-2 border border-gray-700">
                       <button
                         onClick={() => handleEdit(loan)}
@@ -573,7 +560,6 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
             </tbody>
           </table>
         </div>
-
 
         {/* Pagination */}
         <div className="flex justify-between items-center gap-4 mt-4 max-w-7xl mx-auto">

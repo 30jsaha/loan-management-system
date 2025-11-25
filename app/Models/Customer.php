@@ -13,6 +13,7 @@ class Customer extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'company_id',
         'organisation_id',
         'first_name',
@@ -23,16 +24,30 @@ class Customer extends Model
         'no_of_dependents',
         'phone',
         'email',
+        'payroll_number',
+        'home_province',
+        'district_village',
+        'spouse_full_name',
+        'spouse_contact',
         'present_address',
         'permanent_address',
         'employee_no',
+        'employer_department',
+        'employer_address',
+        'work_district',
+        'work_province',
+        'immediate_supervisor',
+        'years_at_current_employer',
         'designation',
         'employment_type',
         'date_joined',
         'monthly_salary',
+        'net_salary',
         'work_location',
-        'status',
+        'video_consent_path',
+        'status'
     ];
+
 
     // Relationships
     public function organisation()
