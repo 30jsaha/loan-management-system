@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, usePage } from "@inertiajs/react";
+import { Head, usePage, Link } from "@inertiajs/react";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
 import { Row, Col, Spinner } from "react-bootstrap";
+import { ArrowLeft } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function EditCustomer() {
   const { props } = usePage();
@@ -32,7 +33,7 @@ export default function EditCustomer() {
         setAllCustMast(allCustRes.data);
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load dropdown data.");
+        Swal.fire("Error!", "Failed to load dropdown data.", "error");
       }
     };
     fetchDropdownData();
@@ -45,10 +46,9 @@ export default function EditCustomer() {
       try {
         const res = await axios.get(`/api/customers/${customerId}`);
         setFormData({ ...res.data, cus_id: res.data.id });
-        toast.success("Customer data loaded successfully!");
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load customer details.");
+        Swal.fire("Error!", "Failed to load customer details.", "error");
       } finally {
         setLoading(false);
       }
@@ -62,8 +62,7 @@ export default function EditCustomer() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Submit update
-    const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
     try {
@@ -71,28 +70,38 @@ export default function EditCustomer() {
         `/api/edit-new-customer-for-new-loan/${formData.cus_id}`,
         formData
         );
-        toast.success("Customer updated successfully!");
-        setMessage("✅ Customer updated successfully!");
-
-        // ✅ Redirect to list page after success
-        setTimeout(() => {
-        window.location.href = "/customers"; 
-        // Or: router.visit("/customers");
-        }, 1500);
+        Swal.fire({
+          title: "Success!",
+          text: "Customer updated successfully!",
+          icon: "success",
+          confirmButtonColor: "#16a34a",
+        }).then(() => {
+          window.location.href = "/customers";
+        });
     } catch (error) {
         console.error(error);
         if (error.response?.status === 422) {
         const validationErrors = error.response.data.errors;
-        let errorMessages = "Validation Failed:\n";
+        let errorMessages = "";
         for (const key in validationErrors) {
-            errorMessages += `- ${validationErrors[key].join(", ")}\n`;
+            errorMessages += `${validationErrors[key].join(", ")}\n`;
         }
-        toast.error(errorMessages);
+        Swal.fire({
+          title: "Validation Error!",
+          text: errorMessages,
+          icon: "error",
+          confirmButtonColor: "#d33",
+        });
         } else {
-        toast.error("Update failed. Please try again.");
+        Swal.fire({
+          title: "Error!",
+          text: "Update failed. Please try again.",
+          icon: "error",
+          confirmButtonColor: "#d33",
+        });
         }
     }
-    };
+  };
 
 
   if (loading) {
@@ -110,71 +119,35 @@ export default function EditCustomer() {
   return (
     <AuthenticatedLayout user={auth.user} header={<h2>Edit Customer</h2>}>
       <Head title="Edit Customer" />
-      <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white p-6 rounded-lg shadow-md">
-        {message && (
-          <div
-            className={`p-3 mb-4 rounded ${
-              message.startsWith("✅")
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
+        <div className="mb-4">
+          <Link
+            href={route("customers")}
+            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
           >
-            {message}
-          </div>
-        )}
+            <ArrowLeft size={16} className="me-2" /> Back to Customers
+          </Link>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <Row>
             {/* Identification */}
             <Col md={12}>
-              <fieldset className="fldset mt-4">
+              <fieldset className="fldset mt-1">
                 <legend className="legend">Identification</legend>
                 <div className="grid grid-cols-2 gap-4 mt-3">
                   <div>
                     <label className="block text-gray-700 font-medium">
                       EMP Code <ImportantField />
                     </label>
-                    <select
+                    <input
+                      type="text"
                       name="employee_no"
                       value={formData.employee_no || ""}
-                      onChange={(e) => {
-                        handleChange(e);
-                        const selectedEmp = allCustMast.find(
-                          (emp) => emp.emp_code === e.target.value
-                        );
-                        if (selectedEmp) {
-                          setFormData((prev) => ({
-                            ...prev,
-                            first_name:
-                              selectedEmp.cust_name.split(" ")[0] || "",
-                            last_name:
-                              selectedEmp.cust_name.split(" ").slice(1).join(" ") ||
-                              "",
-                            phone: selectedEmp.phone || "",
-                            email: selectedEmp.email || "",
-                            monthly_salary: selectedEmp.gross_pay || "",
-                            net_salary: selectedEmp.net_pay || "",
-                            organisation_id:
-                              selectedEmp.organization_id || 1,
-                            company_id: selectedEmp.company_id || 1,
-                          }));
-                        }
-                      }}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    >
-                      <option value="">-- Select EMP --</option>
-                      {allCustMast.map((emp, index) => (
-                        <option
-                          key={`${emp.emp_code}-${index}`}
-                          value={emp.emp_code}
-                        >
-                          {emp.emp_code} - {emp.cust_name}
-                        </option>
-                      ))}
-                    </select>
+                      disabled
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                    />
                   </div>
 
                   <div>
