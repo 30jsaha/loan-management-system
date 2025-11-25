@@ -1,8 +1,5 @@
-// UPDATED NAVBAR SNIPPET FOR PrivacyPolicy.jsx AND TermsOfUse.jsx
-// Paste this entire block inside both files, replacing their current <nav>...</nav>
-
 import { Link } from "@inertiajs/react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import logo from "../../img/logo_first.jpg";
 
 function BrochureModal({ open, onClose, brochureUrl }) {
@@ -17,7 +14,7 @@ function BrochureModal({ open, onClose, brochureUrl }) {
     const e = {};
     if (!name.trim()) e.name = "Please enter your name";
     if (!/^\d{8}$/.test(phone)) e.phone = "Enter an 8-digit phone number";
-    if (!/^\S+@\S+\.\S+$/.test(email)) e.email = "Enter a valid email";
+    if (!/\S+@\S+\.\S+/.test(email)) e.email = "Enter a valid email";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -26,10 +23,7 @@ function BrochureModal({ open, onClose, brochureUrl }) {
     ev.preventDefault();
     if (!validate()) return;
 
-    // Close modal
     onClose();
-
-    // Trigger file download - update `brochureUrl` to your actual brochure path.
     const url = brochureUrl || "/storage/brochure.pdf";
     const a = document.createElement("a");
     a.href = url;
@@ -38,16 +32,7 @@ function BrochureModal({ open, onClose, brochureUrl }) {
     a.click();
     a.remove();
   };
-  const submitForm = () => {
-    onClose();
 
-    // Trigger file download - update `brochureUrl` to your actual brochure path.
-    const url = brochureUrl || "/storage/brochure.pdf";
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "brochure.pdf";
-    document.body.appendChild(a);
-  }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
       <div className="bg-white rounded-lg w-full max-w-md shadow-xl overflow-hidden">
@@ -79,7 +64,7 @@ function BrochureModal({ open, onClose, brochureUrl }) {
               Cancel
             </button>
 
-            <button type="submit" onClick={submitForm} className="px-5 py-2 rounded text-white bg-[#287c3a] hover:bg-green-500">
+            <button type="submit" className="px-5 py-2 rounded text-white bg-[#287c3a] hover:bg-green-500">
               Submit & Download
             </button>
           </div>
@@ -92,80 +77,78 @@ function BrochureModal({ open, onClose, brochureUrl }) {
 export default function Navbar({ auth }) {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [showForm, setShowFormInternal] = useState(false);
+  const [activeSection, setActiveSection] = useState("");
 
-  const openForm = () => {
-    setShowFormInternal(true);
-    
-  };
+  const openForm = () => setShowFormInternal(true);
+  const closeForm = () => setShowFormInternal(false);
 
-  const closeForm = () => {
-    setShowFormInternal(false);
-    
-  };
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ["about", "our-loan", "why", "testimonials", "contact"];
+      let current = "";
+
+      sections.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          const top = el.getBoundingClientRect().top;
+          if (top <= 120 && top >= -200) current = id;
+        }
+      });
+
+      setActiveSection(current);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <>
       <nav className="bg-white border-bottom fixed-top w-100 shadow-sm py-2">
         <div className="container d-flex justify-content-between align-items-center">
-          {/* Brand */}
+
           <a href="/" className="d-flex flex-column align-items-center text-decoration-none">
             <img src={logo} alt="Logo" style={{ width: "65px" }} />
             <span className="brand-title" style={{ fontSize: "15px" }}>AGRO ADVANCE ABEN</span>
             <span className="brand-subtitle" style={{ fontSize: "12px", marginTop: "-4px" }}>Finance with Purpose</span>
           </a>
 
-          {/* Mobile Toggle */}
           <button className="d-lg-none btn" onClick={() => setIsNavOpen(!isNavOpen)}>
-            {isNavOpen ? (
-              <i className="bi bi-x-lg fs-4"></i>
-            ) : (
-              <i className="bi bi-list fs-2"></i>
-            )}
+            {isNavOpen ? <i className="bi bi-x-lg fs-4"></i> : <i className="bi bi-list fs-2"></i>}
           </button>
 
-          {/* Desktop Menu */}
           <div className="d-none d-lg-flex gap-4 align-items-center">
-            <Link className="nav-link" href={`${route("homes")}#about`}>About</Link>
-            <Link className="nav-link" href={`${route("homes")}#our-loan`}>Our Loan Solution</Link>
-            <Link className="nav-link" href={`${route("homes")}#why`}>Why Choose Us</Link>
-            <Link className="nav-link" href={`${route("homes")}#testimonials`}>Reviews</Link>
-            <Link className="nav-link" href={`${route("homes")}#contact`}>Contact</Link>
+            <Link className={`nav-link ${activeSection === "about" ? "activeNav" : ""}`} href={`${route("homes")}#about`}>About</Link>
+            <Link className={`nav-link ${activeSection === "our-loan" ? "activeNav" : ""}`} href={`${route("homes")}#our-loan`}>Our Loan Solution</Link>
+            <Link className={`nav-link ${activeSection === "why" ? "activeNav" : ""}`} href={`${route("homes")}#why`}>Why Choose Us</Link>
+            <Link className={`nav-link ${activeSection === "testimonials" ? "activeNav" : ""}`} href={`${route("homes")}#testimonials`}>Reviews</Link>
+            <Link className={`nav-link ${activeSection === "contact" ? "activeNav" : ""}`} href={`${route("homes")}#contact`}>Contact</Link>
 
             <button className="btn btn-success" onClick={openForm}>Download Brochure</button>
 
             {auth?.user ? (
-              <Link href={route("dashboard")}>
-                <button className="btn btn-danger">Dashboard</button>
-              </Link>
+              <Link href={route("dashboard")}><button className="btn btn-danger">Dashboard</button></Link>
             ) : (
-              <Link href={route("login")}>
-                <button className="btn btn-danger">Login</button>
-              </Link>
+              <Link href={route("login")}><button className="btn btn-danger">Login</button></Link>
             )}
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {isNavOpen && (
           <div className="bg-white border-top p-3 d-lg-none">
-            <Link className="d-block py-2" href={`${route("homes")}#about`}>About</Link>
-            <Link className="d-block py-2" href={`${route("homes")}#our-loan`}>Our Loan Solution</Link>
-            <Link className="d-block py-2" href={`${route("homes")}#why`}>Why Choose Us</Link>
-            <Link className="d-block py-2" href={`${route("homes")}#testimonials`}>Reviews</Link>
-            <Link className="d-block py-2" href={`${route("homes")}#contact`}>Contact</Link>
+            <Link className={`d-block py-2 ${activeSection === "about" ? "activeNav" : ""}`} href={`${route("homes")}#about`}>About</Link>
+            <Link className={`d-block py-2 ${activeSection === "our-loan" ? "activeNav" : ""}`} href={`${route("homes")}#our-loan`}>Our Loan Solutions</Link>
+            <Link className={`d-block py-2 ${activeSection === "why" ? "activeNav" : ""}`} href={`${route("homes")}#why`}>Why Choose Us</Link>
+            <Link className={`d-block py-2 ${activeSection === "testimonials" ? "activeNav" : ""}`} href={`${route("homes")}#testimonials`}>Reviews</Link>
+            <Link className={`d-block py-2 ${activeSection === "contact" ? "activeNav" : ""}`} href={`${route("homes")}#contact`}>Contact</Link>
 
-            <button className="btn btn-success w-100 mt-3" onClick={openForm}>
-              Download Brochure
-            </button>
+            <button className="btn btn-success w-100 mt-3" onClick={openForm}>Download Brochure</button>
 
             {auth?.user ? (
-              <Link href={route("dashboard")}>
-                <button className="btn btn-danger w-100 mt-2">Dashboard</button>
-              </Link>
+              <Link href={route("dashboard")}><button className="btn btn-danger w-100 mt-2">Dashboard</button></Link>
             ) : (
-              <Link href={route("login")}>
-                <button className="btn btn-danger w-100 mt-2">Login</button>
-              </Link>
+              <Link href={route("login")}><button className="btn btn-danger w-100 mt-2">Login</button></Link>
             )}
           </div>
         )}
@@ -175,3 +158,4 @@ export default function Navbar({ auth }) {
     </>
   );
 }
+1
