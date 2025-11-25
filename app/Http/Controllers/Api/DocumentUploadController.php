@@ -55,6 +55,50 @@ class DocumentUploadController extends Controller
     }
 
     /**
+     * Re-upload document after rejection
+     */
+    public function documentReUpload($docId, Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:pdf|max:5120', // max 5MB, only PDF
+        ]);
+
+        $document = DocumentUpload::findOrFail($docId);
+
+        try {
+            // Get original file name and store it
+            $file = $request->file('file');
+            $originalName = $file->getClientOriginalName();
+            $filePath = $file->store('uploads/documents', 'public');
+
+            // Update document record
+            $document->file_name = $originalName;
+            $document->file_path = $filePath;
+            $document->has_reuploaded_after_rejection = 1;
+            $document->reupload_date = now();
+            $document->reuploaded_by_id = auth()->user()->id;
+            // Reset verification status
+            $document->verification_status = 'Pending';
+            // $document->rejected_on = null;
+            // $document->rejected_by_user_id = null;
+            // $document->rejection_reason_id = null;
+
+            $document->save();
+
+            return response()->json([
+                'message' => '✅ Document re-uploaded successfully.',
+                'document' => $document
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => '❌ Failed to re-upload document.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * List all uploaded documents (for a loan or customer)
      */
     public function index(Request $request)

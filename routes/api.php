@@ -81,6 +81,7 @@ Route::middleware('auth:sanctum')->post('/check-eligibility', [CustomerControlle
 // Route::middleware('auth:sanctum')->post('/upload-loan-documents', [LoanController::class, 'store']);
 
 Route::post('/document-upload', [DocumentUploadController::class, 'store']);
+Route::post('/document-upload/replace/{docId}', [DocumentUploadController::class, 'documentReUpload']);
 Route::get('/document-upload', [DocumentUploadController::class, 'index']);
 Route::get('/document-upload/download/{id}', [DocumentUploadController::class, 'download'])
     ->name('document-upload.download');
