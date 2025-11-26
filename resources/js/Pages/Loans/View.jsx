@@ -50,11 +50,12 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectingDocId, setRejectingDocId] = useState(null);
     const [selectedRejectionReason, setSelectedRejectionReason] = useState("");
-    // 🔥 For Loan Rejection (Full loan reject)
-    const [showLoanRejectModal, setShowLoanRejectModal] = useState(false);
-    const [selectedLoanRejectionReason, setSelectedLoanRejectionReason] = useState("");
-
-
+    // --- Re-upload Modal State ---
+    const [showReuploadModal, setShowReuploadModal] = useState(false);
+    const [reuploadDocData, setReuploadDocData] = useState(null); // Stores the doc object being replaced
+    const [newReuploadFile, setNewReuploadFile] = useState(null);
+    const [newReuploadPreview, setNewReuploadPreview] = useState(null);
+    const [isReuploading, setIsReuploading] = useState(false);
 
 
     const [loanFormData, setLoanFormData] = useState({
@@ -191,57 +192,26 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         }
     };
 
-    // const handleReject = async () => {
-    //     try {
-    //         await axios.post(`/api/loans/${loanId}/reject`);
-    //         setMessage("❌ Loan rejected.");
-    //         Swal.fire({
-    //             title: "Info !",
-    //             text: "Loan rejected",
-    //             icon: "success"
-    //         });
-    //         router.visit(route("loans"));
-    //     } catch (error) {
-    //         console.error(error);
-    //         setMessage("❌ Failed to reject loan.");
-    //         Swal.fire({
-    //             title: "Error !",
-    //             text: "Failed to reject loan",
-    //             icon: "error"
-    //         });
-    //     }
-    // };
-    
-    const handleReject = () => {
-        setShowLoanRejectModal(true); // 🔥 Open modal instead of rejecting immediately
-    };
-
-    const submitLoanRejection = async () => {
-        if (!selectedLoanRejectionReason) {
-            Swal.fire("Warning", "Please select a rejection reason!", "warning");
-            return;
-        }
-
+    const handleReject = async () => {
         try {
-            const fd = new FormData();
-            fd.append("rejection_reason_id", selectedLoanRejectionReason);
-
-            await axios.post(`/api/loans/${loanId}/reject`, fd);
-
+            await axios.post(`/api/loans/${loanId}/reject`);
+            setMessage("❌ Loan rejected.");
             Swal.fire({
-                title: "Loan Rejected",
-                text: "The loan has been rejected successfully.",
+                title: "Info !",
+                text: "Loan rejected",
                 icon: "success"
             });
-
-            setShowLoanRejectModal(false);
             router.visit(route("loans"));
         } catch (error) {
             console.error(error);
-            Swal.fire("Error", "Failed to reject loan", "error");
+            setMessage("❌ Failed to reject loan.");
+            Swal.fire({
+                title: "Error !",
+                text: "Failed to reject loan",
+                icon: "error"
+            });
         }
     };
-
 
     const handleUpload = async (type) => {
         let file = type === "video" ? videoFile : type === "pdf1" ? pdfFile1 : pdfFile;
@@ -334,10 +304,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         axios.get(`/api/filtered-loan-types-from-loan/${loan?.customer.id}`)
             .then((res) => {
                 // if (res.data.length === 0) {
-                //     setIsEligible(false);
-                //     setMessage("❌ Customer is not eligible for any loan types based on their salary and organisation.");
+                //      setIsEligible(false);
+                //      setMessage("❌ Customer is not eligible for any loan types based on their salary and organisation.");
                 // } else {
-                //     setIsEligible(true);
+                //      setIsEligible(true);
                 // }
                 if (res.data.length != 0) {
                     setLoanTypes(res.data);
@@ -600,7 +570,66 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         }
     };
 
+    // Open the Re-upload Modal
+    const openReuploadModal = (doc) => {
+        setReuploadDocData(doc);
+        setNewReuploadFile(null);
+        setNewReuploadPreview(null);
+        setShowReuploadModal(true);
+    };
 
+    // Handle File Selection inside Re-upload Modal
+    const handleReuploadFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setNewReuploadFile(file);
+            setNewReuploadPreview(URL.createObjectURL(file));
+        }
+    };
+
+    // Submit the Re-uploaded File
+    const submitReupload = async () => {
+        if (!newReuploadFile || !reuploadDocData) return;
+
+        setIsReuploading(true);
+        try {
+            const fd = new FormData();
+            fd.append("loan_id", loan.id);
+            fd.append("file", newReuploadFile);
+
+            await axios.post(`/api/document-upload/replace/${reuploadDocData.id}`, fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            setMessage("✅ File re-uploaded successfully!");
+            Swal.fire({
+                title: "Success",
+                text: "File re-uploaded successfully!",
+                icon: "success",
+            });
+
+            // Refresh loan data
+            const res = await axios.get(`/api/loans/${loanId}`);
+            setLoan(res.data);
+
+            // Close modal
+            setShowReuploadModal(false);
+            setNewReuploadFile(null);
+            setNewReuploadPreview(null);
+            setReuploadDocData(null);
+
+        } catch (err) {
+            console.error(err);
+            setMessage("❌ Failed to re-upload file.");
+            Swal.fire({
+                title: "Error",
+                text: "Failed to re-upload file.",
+                icon: "error",
+            });
+        } finally {
+            setIsReuploading(false);
+        }
+    };
     if (loading) {
         return (
             <AuthenticatedLayout user={auth.user}>
@@ -918,10 +947,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                             }}
                                                             required
                                                         >
-                                                            (<option value="">Select Loan Type</option>
+                                                            <option value="">Select Loan Type</option>
                                                             {loanTypes.map((lt) => (
                                                                 <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
-                                                            ))})
+                                                            ))}
                                                         </select>
                                                     </div>
 
@@ -1143,42 +1172,50 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                 </a>
                                                             </td>
 
-                                                            {/* Verify / Reject */}
+                                                            {/* Verify / Reject / Status Column */}
                                                             {auth.user.is_admin == 1 ? (
                                                                 <td className="border p-2 text-center">
                                                                     {doc.verification_status === "Verified" ? (
                                                                         <span className="text-green-600 font-semibold">Verified ✅</span>
                                                                     ) : doc.verification_status === "Rejected" ? (
+                                                                        
                                                                         (() => {
                                                                             const r = rejectReasons.find(rr => rr.id === doc.rejection_reason_id);
                                                                             return (
-                                                                                <span className="text-red-600 font-semibold">
-                                                                                    Rejected ❌{r ? ` — ${r.reason_desc}` : ""}
-                                                                                </span>
+                                                                                <>
+                                                                                    <span className="text-red-600 font-semibold">
+                                                                                        Rejected ❌{r ? ` — ${r.reason_desc}` : ""}
+                                                                                    </span>
+
+                                                                                    <div className="mt-2" id="rejectedDocReUploadSection">
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md ml-2"
+                                                                                            onClick={() => openReuploadModal(doc)}
+                                                                                            disabled={loan.status === "Approved"}
+                                                                                        >
+                                                                                            Re-upload Document
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </>
                                                                             );
                                                                         })()
+
                                                                     ) : (
-                                                                        <>
-                                                                            <div className="flex gap-2 justify-center">
-                                                                                <button
-                                                                                    onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                                                >
-                                                                                    Verify
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                                                >
-                                                                                    Reject
-                                                                                </button>
-                                                                            </div>
-                                                                            {Number(doc.has_reuploaded_after_rejection) === 1 && doc.reupload_date && (
-                                                                                <div className="mt-2 text-sm text-gray-600">
-                                                                                    Re-uploaded: {new Date(doc.reupload_date).toLocaleString()}
-                                                                                </div>
-                                                                            )}
-                                                                        </>
+                                                                        <div className="flex gap-2 justify-center">
+                                                                            <button
+                                                                                onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                            >
+                                                                                Verify
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                            >
+                                                                                Reject
+                                                                            </button>
+                                                                        </div>
                                                                     )}
                                                                 </td>
                                                             ) : (
@@ -1195,59 +1232,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                     </span>
 
                                                                                     <div className="mt-2" id="rejectedDocReUploadSection">
-                                                                                        <input
-                                                                                            id={`replace-file-${doc.id}`}
-                                                                                            type="file"
-                                                                                            accept={
-                                                                                                doc.file_name?.toLowerCase().endsWith(".pdf")
-                                                                                                    ? "application/pdf"
-                                                                                                    : doc.file_name?.toLowerCase().endsWith(".mp4")
-                                                                                                    ? "video/mp4"
-                                                                                                    : "*/*"
-                                                                                            }
-                                                                                            style={{ display: "none" }}
-                                                                                            onChange={async (e) => {
-                                                                                                const file = e.target.files?.[0];
-                                                                                                if (!file) return;
-
-                                                                                                try {
-                                                                                                    const fd = new FormData();
-                                                                                                    fd.append("loan_id", loan.id);
-                                                                                                    fd.append("file", file);
-                                                                                                    // adjust endpoint if your backend expects a different route/name
-                                                                                                    await axios.post(`/api/document-upload/replace/${doc.id}`, fd, {
-                                                                                                        headers: { "Content-Type": "multipart/form-data" },
-                                                                                                    });
-
-                                                                                                    setMessage("✅ File re-uploaded successfully!");
-                                                                                                    Swal.fire({
-                                                                                                        title: "Success",
-                                                                                                        text: "File re-uploaded successfully!",
-                                                                                                        icon: "success",
-                                                                                                    });
-
-                                                                                                    // refresh loan data to reflect new file/status
-                                                                                                    const res = await axios.get(`/api/loans/${loanId}`);
-                                                                                                    setLoan(res.data);
-                                                                                                } catch (err) {
-                                                                                                    console.error(err);
-                                                                                                    setMessage("❌ Failed to re-upload file.");
-                                                                                                    Swal.fire({
-                                                                                                        title: "Error",
-                                                                                                        text: "Failed to re-upload file.",
-                                                                                                        icon: "error",
-                                                                                                    });
-                                                                                                } finally {
-                                                                                                    // reset input so same file can be selected again if needed
-                                                                                                    e.target.value = "";
-                                                                                                }
-                                                                                            }}
-                                                                                        />
-
                                                                                         <button
                                                                                             type="button"
                                                                                             className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md ml-2"
-                                                                                            onClick={() => document.getElementById(`replace-file-${doc.id}`).click()}
+                                                                                            onClick={() => openReuploadModal(doc)}
                                                                                             disabled={loan.status === "Approved"}
                                                                                         >
                                                                                             Re-upload Document
@@ -1342,9 +1330,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                         <button
                                                                             onClick={() =>
                                                                                 // openDocModal({
-                                                                                //     file_path: loan.isda_signed_upload_path,
-                                                                                //     file_name: loan.isda_signed_upload_path.split("/").pop(),
-                                                                                //     doc_type: "ISDA Signed Document",
+                                                                                //      file_path: loan.isda_signed_upload_path,
+                                                                                //      file_name: loan.isda_signed_upload_path.split("/").pop(),
+                                                                                //      doc_type: "ISDA Signed Document",
                                                                                 // })
                                                                                 openDocModal({
                                                                                     doc: loan.isda_signed_upload_path
@@ -1901,69 +1889,22 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                 {(auth.user.is_admin == 1) ? (
                                     <Col md={12}>
                                         {(loan.status === "Pending") && (
-                                            <>
-                                                <div className="mt-6 flex justify-center gap-4">
-                                                    <button
-                                                        onClick={handleApprove}
-                                                        disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
-                                                        className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    >
-                                                        Approve
-                                                    </button>
-                                                    <button
-                                                        onClick={handleReject}
-                                                        disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
-                                                        className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                </div>
-
-                                                {showLoanRejectModal && (
-                                                    <div className="fixed inset-0 bg-slate-600 bg-opacity-40 flex items-center justify-center z-50">
-                                                        <div className="bg-white p-5 rounded-lg shadow-lg w-96">
-                                                            <h2 className="text-lg font-semibold mb-3">Reject Loan</h2>
-
-                                                            <label className="block text-sm font-medium mb-1">
-                                                                Select Rejection Reason
-                                                            </label>
-
-                                                            <select
-                                                                className="border rounded w-full px-3 py-2 mb-4"
-                                                                value={selectedLoanRejectionReason}
-                                                                onChange={(e) => setSelectedLoanRejectionReason(e.target.value)}
-                                                            >
-                                                                <option value="">-- Select Reason --</option>
-
-                                                                {rejectReasons.map((reason) => (
-                                                                    <option key={reason.id} value={reason.id}>
-                                                                        {reason.reason_desc}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-
-                                                            <div className="flex justify-end gap-2">
-                                                                <button
-                                                                    className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
-                                                                    onClick={() => {
-                                                                        setShowLoanRejectModal(false);
-                                                                        setSelectedLoanRejectionReason("");
-                                                                    }}
-                                                                >
-                                                                    Cancel
-                                                                </button>
-
-                                                                <button
-                                                                    className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
-                                                                    onClick={submitLoanRejection}
-                                                                >
-                                                                    Reject Loan
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </>
+                                            <div className="mt-6 flex justify-center gap-4">
+                                                <button
+                                                    onClick={handleApprove}
+                                                    disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
+                                                    className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    Approve
+                                                </button>
+                                                <button
+                                                    onClick={handleReject}
+                                                    disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
+                                                    className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    Reject
+                                                </button>
+                                            </div>
                                         )}
                                     </Col>
                                 ) : (
@@ -2002,6 +1943,84 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                     </div>
                 </div>
             </div>
+            {/* --- Re-upload Modal --- */}
+            <Modal
+                show={showReuploadModal}
+                onHide={() => setShowReuploadModal(false)}
+                size="lg"
+                centered
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        🔄 Re-upload: {reuploadDocData?.doc_type}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-bold">Select New File</Form.Label>
+                        <Form.Control
+                            type="file"
+                            onChange={handleReuploadFileChange}
+                            accept={
+                                reuploadDocData?.file_name?.toLowerCase().endsWith(".pdf")
+                                    ? "application/pdf"
+                                    : reuploadDocData?.file_name?.toLowerCase().endsWith(".mp4")
+                                        ? "video/mp4"
+                                        : "*/*"
+                            }
+                        />
+                        <Form.Text className="text-muted">
+                            Please upload a valid file to replace the rejected document.
+                        </Form.Text>
+                    </Form.Group>
+
+                    {/* Preview Section */}
+                    {newReuploadPreview && (
+                        <div className="mt-4 p-3 border rounded bg-light">
+                            <h6 className="text-center mb-2 text-secondary">New File Preview</h6>
+                            {newReuploadFile?.type?.includes("pdf") || newReuploadFile?.name?.endsWith(".pdf") ? (
+                                <iframe
+                                    src={`${newReuploadPreview}#toolbar=0`}
+                                    width="100%"
+                                    height="400px"
+                                    className="border rounded"
+                                    title="New PDF Preview"
+                                />
+                            ) : newReuploadFile?.type?.includes("video") || newReuploadFile?.name?.endsWith(".mp4") ? (
+                                <video
+                                    src={newReuploadPreview}
+                                    controls
+                                    className="w-100 rounded"
+                                    style={{ maxHeight: "400px" }}
+                                />
+                            ) : (
+                                <div className="text-center text-muted py-4">
+                                    Preview not available for this file type.
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowReuploadModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="primary"
+                        onClick={submitReupload}
+                        disabled={!newReuploadFile || isReuploading}
+                    >
+                        {isReuploading ? (
+                            <>
+                                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                                Uploading...
+                            </>
+                        ) : (
+                            "Save & Re-upload"
+                        )}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </AuthenticatedLayout>
     );
 }
