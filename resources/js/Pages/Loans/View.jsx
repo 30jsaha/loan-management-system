@@ -56,6 +56,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [newReuploadFile, setNewReuploadFile] = useState(null);
     const [newReuploadPreview, setNewReuploadPreview] = useState(null);
     const [isReuploading, setIsReuploading] = useState(false);
+    // 🔥 For Loan Rejection (Full loan reject)
+    const [showLoanRejectModal, setShowLoanRejectModal] = useState(false);
+    const [selectedLoanRejectionReason, setSelectedLoanRejectionReason] = useState("");
 
 
     const [loanFormData, setLoanFormData] = useState({
@@ -192,26 +195,56 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         }
     };
 
-    const handleReject = async () => {
+    // const handleReject = async () => {
+    //     try {
+    //         await axios.post(`/api/loans/${loanId}/reject`);
+    //         setMessage("❌ Loan rejected.");
+    //         Swal.fire({
+    //             title: "Info !",
+    //             text: "Loan rejected",
+    //             icon: "success"
+    //         });
+    //         router.visit(route("loans"));
+    //     } catch (error) {
+    //         console.error(error);
+    //         setMessage("❌ Failed to reject loan.");
+    //         Swal.fire({
+    //             title: "Error !",
+    //             text: "Failed to reject loan",
+    //             icon: "error"
+    //         });
+    //     }
+    // };
+    const handleReject = () => {
+        setShowLoanRejectModal(true); // 🔥 Open modal instead of rejecting immediately
+    };
+
+    const submitLoanRejection = async () => {
+        if (!selectedLoanRejectionReason) {
+            Swal.fire("Warning", "Please select a rejection reason!", "warning");
+            return;
+        }
+
         try {
-            await axios.post(`/api/loans/${loanId}/reject`);
-            setMessage("❌ Loan rejected.");
+            const fd = new FormData();
+            fd.append("rejection_reason_id", selectedLoanRejectionReason);
+
+            await axios.post(`/api/loans/${loanId}/reject`, fd);
+
             Swal.fire({
-                title: "Info !",
-                text: "Loan rejected",
+                title: "Loan Rejected",
+                text: "The loan has been rejected successfully.",
                 icon: "success"
             });
+
+            setShowLoanRejectModal(false);
             router.visit(route("loans"));
         } catch (error) {
             console.error(error);
-            setMessage("❌ Failed to reject loan.");
-            Swal.fire({
-                title: "Error !",
-                text: "Failed to reject loan",
-                icon: "error"
-            });
+            Swal.fire("Error", "Failed to reject loan", "error");
         }
     };
+
 
     const handleUpload = async (type) => {
         let file = type === "video" ? videoFile : type === "pdf1" ? pdfFile1 : pdfFile;
@@ -768,6 +801,25 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                             </div>
                                         </Alert>
                                     )}
+                                    {(loan.status === "Rejected") && (
+                                        <Alert variant="danger" className="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <strong>Loan Rejected ❌</strong>
+                                                <div className="small">This loan has been rejected.</div>
+                                                {loan.loan_reject_reason_id && (
+                                                    (() => {
+                                                        const r = rejectReasons.find(rr => rr.id === loan.loan_reject_reason_id);
+                                                        return r ? <div className="small">Reason: {r.reason_desc}</div> : null;
+                                                    })()
+                                                )}
+                                            </div>
+                                            <div>
+                                                <Button variant="outline-secondary" size="sm" onClick={() => router.visit(route("loans"))}>
+                                                    Back to List
+                                                </Button>
+                                            </div>
+                                        </Alert>
+                                    )}
                                 </Col>
                                 <Col md={6}>
                                     <fieldset className="fldset mb-4">
@@ -885,10 +937,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         <Alert variant="info">
                                             <Alert.Heading style={{ fontSize: '18px' }}>ℹ Higher Approved</Alert.Heading>
                                             <p>
-                                                This customer was marked as <strong>Not Eligible</strong> for the applied loan amount based on their salary and organisation criteria. However, the loan has been <strong>Higher Approved</strong> by
+                                                This customer was marked as <strong>Not Eligible</strong> for the applied loan amount based on their salary and organisation criteria. However, the loan has been <strong>Higher Approved</strong> by&nbsp;
                                                 {
-                                                    (!auth.user.is_admin &&
-                                                        auth.user.name.trim().toLowerCase() === loan.higher_approved_by.trim().toLowerCase())
+                                                    (auth.user.is_admin == 1 &&
+                                                        auth.user.id === loan.higher_approved_by_id)
                                                         ? "You"
                                                         : loan.higher_approved_by
                                                 }.
@@ -1178,7 +1230,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                     {doc.verification_status === "Verified" ? (
                                                                         <span className="text-green-600 font-semibold">Verified ✅</span>
                                                                     ) : doc.verification_status === "Rejected" ? (
-                                                                        
+
                                                                         (() => {
                                                                             const r = rejectReasons.find(rr => rr.id === doc.rejection_reason_id);
                                                                             return (
@@ -1187,7 +1239,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                         Rejected ❌{r ? ` — ${r.reason_desc}` : ""}
                                                                                     </span>
 
-                                                                                    <div className="mt-2" id="rejectedDocReUploadSection">
+                                                                                    {/* <div className="mt-2" id="rejectedDocReUploadSection">
                                                                                         <button
                                                                                             type="button"
                                                                                             className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md ml-2"
@@ -1196,26 +1248,31 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                         >
                                                                                             Re-upload Document
                                                                                         </button>
-                                                                                    </div>
+                                                                                    </div> */}
                                                                                 </>
                                                                             );
                                                                         })()
 
                                                                     ) : (
-                                                                        <div className="flex gap-2 justify-center">
-                                                                            <button
-                                                                                onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                                            >
-                                                                                Verify
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                                            >
-                                                                                Reject
-                                                                            </button>
-                                                                        </div>
+                                                                        <>
+                                                                            {(doc.has_reuploaded_after_rejection == 1) && (
+                                                                                <span className="text-blue-600 font-semibold">Re-uploaded, Pending !</span>
+                                                                            )}
+                                                                            <div className="flex gap-2 justify-center">
+                                                                                <button
+                                                                                    onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                                >
+                                                                                    Verify
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                                >
+                                                                                    Reject
+                                                                                </button>
+                                                                            </div>
+                                                                        </>
                                                                     )}
                                                                 </td>
                                                             ) : (
@@ -1495,7 +1552,11 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                     >
                                                         <option value="">-- Select Reason --</option>
                                                         {rejectReasons.map((r) => (
-                                                            <option key={r.id} value={r.id}>{r.reason_desc}</option>
+                                                            (r.reason_type === 1) && (
+                                                                <option key={r.id} value={r.id}>
+                                                                    {r.reason_desc}
+                                                                </option>
+                                                            )
                                                         ))}
                                                     </select>
 
@@ -2021,6 +2082,53 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                     </Button>
                 </Modal.Footer>
             </Modal>
+            {showLoanRejectModal && (
+                <div className="fixed inset-0 bg-slate-600 bg-opacity-40 flex items-center justify-center z-50">
+                    <div className="bg-white p-5 rounded-lg shadow-lg w-96">
+                        <h2 className="text-lg font-semibold mb-3">Reject Loan</h2>
+
+                        <label className="block text-sm font-medium mb-1">
+                            Select Rejection Reason
+                        </label>
+
+                        <select
+                            className="border rounded w-full px-3 py-2 mb-4"
+                            value={selectedLoanRejectionReason}
+                            onChange={(e) => setSelectedLoanRejectionReason(e.target.value)}
+                        >
+                            <option value="">-- Select Reason --</option>
+
+                            {rejectReasons.map((reason) => (
+                                (reason.reason_type === 2) && (
+                                    <option key={reason.id} value={reason.id}>
+                                        {reason.reason_desc}
+                                    </option>
+                                )
+                            ))}
+                        </select>
+
+                        <div className="flex justify-end gap-2">
+                            <button
+                                className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
+                                onClick={() => {
+                                    setShowLoanRejectModal(false);
+                                    setSelectedLoanRejectionReason("");
+                                }}
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                                onClick={submitLoanRejection}
+                            >
+                                Reject Loan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </AuthenticatedLayout>
     );
 }

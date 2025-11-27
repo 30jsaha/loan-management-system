@@ -234,9 +234,23 @@ class LoanController extends Controller
     public function rejectLoan(Request $request, $loanId)
     {
         $loan = Loan::findOrFail($loanId);
+        // validate rejection input
+        $validated = $request->validate([
+            'rejection_reason_id' => 'nullable|integer|min:1',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
+        $loan->loan_reject_reason_id = $validated['rejection_reason_id'] ?? null;
+
+        $get_do_allow_reapply = DB::table('rejection_reasons')
+            ->where('id', $loan->loan_reject_reason_id)
+            ->value('do_allow_reapply');
 
         $loan->status = "Rejected";
-        $loan->loan_reject_reason_id = $request->rejection_reason_id ?? null;
+        if (isset($validated['remarks'])) {
+            $loan->remarks = $validated['remarks'];
+        }
+        $loan->is_temp_rejection = (int) ($get_do_allow_reapply ?? 0);
         $loan->loan_reject_by_id = auth()->user()->id;
         $loan->loan_reject_date = now();
 
