@@ -881,7 +881,6 @@ class LoanController extends Controller
                 ->where('active', 1)
                 ->pluck('loan_id')
                 ->toArray();
-
             if (empty($loanIds)) {
                 return response()->json([], 200);
             }
@@ -900,10 +899,9 @@ class LoanController extends Controller
                 ->unique()
                 ->values()
                 ->toArray();
-
             // 4️⃣ Return loan settings for only matched loan IDs
             $matchedLoanTypes = LoanSetting::whereIn('id', $eligibleLoanIds)->get();
-
+            // dd($matchedLoanTypes);
             return response()->json($matchedLoanTypes, 200);
 
         } catch (\Exception $e) {

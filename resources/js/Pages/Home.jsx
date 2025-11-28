@@ -722,7 +722,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               src={heroImage}
               alt="Agro hero footer"
               style={{
-                width: "180%",       // left-right stretch
+                width: "900%",       // left-right stretch
                 height: "280%",
                 objectFit: "cover",
                 objectPosition: "bottom",  // center crop

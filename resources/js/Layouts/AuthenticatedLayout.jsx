@@ -23,7 +23,7 @@ export default function Authenticated({ user, header, children }) {
                                         className="max-w-full object-contain"
                                         src={Logo}
                                         alt="Loan Management System"
-                                        style={{width: '4rem'}}
+                                        style={{ width: '4rem' }}
                                     />
                                 </Link>
                             </div>
@@ -36,13 +36,52 @@ export default function Authenticated({ user, header, children }) {
                                     Organizations
                                 </NavLink> */}
                                 <div
-                                    className={`ms-3 relative pt-3 ${
-                                        route().current('loan.settings') ||
+                                    className={`ms-3 relative pt-3 ${route().current('customers') ||
+                                        route().current('customer.create') ||
+                                        route().current('customer.view') ||
+                                        route().current('customer.dept')
+                                        ? 'dropdown-nav-active' // Active style
+                                        : 'text-gray-500'
+                                        }`}
+                                >
+                                    <Dropdown>
+                                        <Dropdown.Trigger>
+                                            <span className="inline-flex rounded-md">
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex items-center px-3 py-2 border-transparent text-sm leading-4 font-medium rounded-md bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
+                                                >
+                                                    Customers
+                                                    <svg
+                                                        className="ms-2 -me-0.5 h-4 w-4"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 20 20"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path
+                                                            fillRule="evenodd"
+                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                            clipRule="evenodd"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </span>
+                                        </Dropdown.Trigger>
+
+                                        <Dropdown.Content>
+                                            <Dropdown.Link className={`${route().current('customer.dept') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.dept')}>Dept. Database</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('customers') ? 'dropdown-nav-a-active' : ''}`} href={route('customers')}>All Customers</Dropdown.Link>
+                                            {/* <Dropdown.Link className={`${route().current('customer.create') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.create')}>+ New Customer</Dropdown.Link> */}
+                                        </Dropdown.Content>
+                                    </Dropdown>
+                                </div>
+                                <div
+                                    className={`ms-3 relative pt-3 ${route().current('loan.settings') ||
                                         route().current('loan.income.slabs') ||
                                         route().current('orgs')
-                                            ? 'dropdown-nav-active' // Active style
-                                            : 'text-gray-500'
-                                    }`}
+                                        ? 'dropdown-nav-active' // Active style
+                                        : 'text-gray-500'
+                                        }`}
                                 >
                                     <Dropdown>
                                         <Dropdown.Trigger>
@@ -76,14 +115,13 @@ export default function Authenticated({ user, header, children }) {
                                     </Dropdown>
                                 </div>
                                 <div
-                                    className={`ms-3 relative pt-3 ${
-                                        route().current('loans') ||
+                                    className={`ms-3 relative pt-3 ${route().current('loans') ||
                                         route().current('loan-create') ||
                                         route().current('loan.view') ||
                                         route().current('loan.emi')
-                                            ? 'dropdown-nav-active' // Active style
-                                            : 'text-gray-500'
-                                    }`}
+                                        ? 'dropdown-nav-active' // Active style
+                                        : 'text-gray-500'
+                                        }`}
                                 >
                                     <Dropdown>
                                         <Dropdown.Trigger>
@@ -113,47 +151,6 @@ export default function Authenticated({ user, header, children }) {
                                             <Dropdown.Link className={`${route().current('loans') ? 'dropdown-nav-a-active' : ''}`} href={route('loans')}>Loan Applications</Dropdown.Link>
                                             {/* <Dropdown.Link className={`${route().current('loan-create') ? 'dropdown-nav-a-active' : ''}`} href={route('loan-create')}>+ New Loan</Dropdown.Link> */}
                                             <Dropdown.Link className={`${route().current('loan.emi') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.emi')}>EMI Collection</Dropdown.Link>
-                                        </Dropdown.Content>
-                                    </Dropdown>
-                                </div>
-                                <div
-                                    className={`ms-3 relative pt-3 ${
-                                        route().current('customers') ||
-                                        route().current('customer.create') ||
-                                        route().current('customer.view') ||
-                                        route().current('customer.dept')
-                                            ? 'dropdown-nav-active' // Active style
-                                            : 'text-gray-500'
-                                    }`}
-                                >
-                                    <Dropdown>
-                                        <Dropdown.Trigger>
-                                            <span className="inline-flex rounded-md">
-                                                <button
-                                                    type="button"
-                                                    className="inline-flex items-center px-3 py-2 border-transparent text-sm leading-4 font-medium rounded-md bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150"
-                                                >
-                                                    Customers
-                                                    <svg
-                                                        className="ms-2 -me-0.5 h-4 w-4"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 20 20"
-                                                        fill="currentColor"
-                                                    >
-                                                        <path
-                                                            fillRule="evenodd"
-                                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                            clipRule="evenodd"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            </span>
-                                        </Dropdown.Trigger>
-
-                                        <Dropdown.Content>
-                                            <Dropdown.Link className={`${route().current('customers') ? 'dropdown-nav-a-active' : ''}`} href={route('customers')}>All Customers</Dropdown.Link>
-                                            {/* <Dropdown.Link className={`${route().current('customer.create') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.create')}>+ New Customer</Dropdown.Link> */}
-                                            <Dropdown.Link className={`${route().current('customer.dept') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.dept')}>Dept. Database</Dropdown.Link>
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>
@@ -264,23 +261,96 @@ export default function Authenticated({ user, header, children }) {
 
                 <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden'}>
                     <div className="pt-2 pb-3 space-y-1">
+                        {/* Dashboard */}
                         <ResponsiveNavLink href={route('dashboard')} active={route().current('dashboard')}>
                             Dashboard
                         </ResponsiveNavLink>
-                        <ResponsiveNavLink href={route('loans')} active={route().current('loans') || route().current('loan-create') || route().current('loan.view')}>
-                            Loans
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink href={route('customers')} active={route().current('customers') || route().current('customers') || route().current('customer.view')}>
-                            Customers
-                        </ResponsiveNavLink>
-                        {/* <ResponsiveNavLink href={route('loan-create')} active={route().current('loan-create')}>
-                            New Loan Application
-                        </ResponsiveNavLink> */}
+
+                        {/* Customers Dropdown */}
+                        <div className="border-t pt-3">
+                            <span className="block px-4 text-xs font-semibold text-gray-500">Customers</span>
+                            <ResponsiveNavLink
+                                href={route('customer.dept')}
+                                active={route().current('customer.dept')}
+                            >
+                                Dept. Database
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href={route('customers')}
+                                active={route().current('customers') || route().current('customer.view')}
+                            >
+                                All Customers
+                            </ResponsiveNavLink>
+                        </div>
+
+                        {/* Masters Dropdown */}
+                        <div className="border-t pt-3">
+                            <span className="block px-4 text-xs font-semibold text-gray-500">Masters</span>
+                            <ResponsiveNavLink
+                                href={route('loan.income.slabs')}
+                                active={route().current('loan.income.slabs')}
+                            >
+                                Income Slabs
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href={route('loan.settings')}
+                                active={route().current('loan.settings')}
+                            >
+                                Loan Types
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href={route('orgs')}
+                                active={route().current('orgs')}
+                            >
+                                Organizations
+                            </ResponsiveNavLink>
+                        </div>
+
+                        {/* Loans Dropdown */}
+                        <div className="border-t pt-3">
+                            <span className="block px-4 text-xs font-semibold text-gray-500">Loans</span>
+                            <ResponsiveNavLink
+                                href={route('loans')}
+                                active={route().current('loans') || route().current('loan.view')}
+                            >
+                                Loan Applications
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink
+                                href={route('loan.emi')}
+                                active={route().current('loan.emi')}
+                            >
+                                EMI Collection
+                            </ResponsiveNavLink>
+                        </div>
+
+                        {/* Forms Dropdown */}
+                        <div className="border-t pt-3">
+                            <span className="block px-4 text-xs font-semibold text-gray-500">Forms</span>
+                            <ResponsiveNavLink href={route('loan-application.form')}>
+                                Application Form
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink href={route('loan.health.form')}>
+                                Health Form
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink href={route('loan.edu.form')}>
+                                Education Form
+                            </ResponsiveNavLink>
+                        </div>
+
+                        {/* Loan Calculator */}
+                        <div className="border-t pt-3">
+                            <ResponsiveNavLink href={route('loan-calculator')}>
+                                Loan Calculator
+                            </ResponsiveNavLink>
+                        </div>
                     </div>
 
+                    {/* Profile + Logout */}
                     <div className="pt-4 pb-1 border-t border-gray-200">
                         <div className="px-4">
-                            <div className="font-medium text-base text-gray-800">{user.name}</div>
+                            <div className="font-medium text-base text-gray-800">
+                                {user.name} {user.is_admin == 1 ? '(Admin)' : ''}
+                            </div>
                             <div className="font-medium text-sm text-gray-500">{user.email}</div>
                         </div>
 
@@ -292,6 +362,7 @@ export default function Authenticated({ user, header, children }) {
                         </div>
                     </div>
                 </div>
+
             </nav>
 
             {header && (

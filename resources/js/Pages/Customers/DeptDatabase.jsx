@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head,Link } from "@inertiajs/react";
+import { Card, Container, Row, Col, Alert, Spinner } from "react-bootstrap";
+import { Head, Link } from "@inertiajs/react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -27,7 +28,8 @@ export default function DeptDatabase({ auth }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchEmpCode, setSearchEmpCode] = useState("");
   const [searchGrossPay, setSearchGrossPay] = useState("");
- const [searchDate, setSearchDate] = useState("");
+  const [searchDate, setSearchDate] = useState("");
+  const [loading, setLoading] = useState(true);
   const itemsPerPage = 8;
 
   useEffect(() => {
@@ -40,6 +42,8 @@ export default function DeptDatabase({ auth }) {
       setCustomers(res.data);
     } catch (error) {
       console.error("Error fetching customer list:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,7 +78,7 @@ export default function DeptDatabase({ auth }) {
     setFormData(c);
     setIsEditing(true);
     toast.dismiss();
-    toast("Editing mode enabled", {
+    toast.success("Editing mode enabled", {
       style: {
         background: "#16a34a",
         color: "white",
@@ -184,7 +188,7 @@ export default function DeptDatabase({ auth }) {
             <ArrowLeft size={16} className="mr-2" /> Back to List
           </Link>
         </div>
-        
+
         {/* FORM */}
         <div className="bg-white shadow-lg p-6 border border-gray-100">
           <h4 className="text-lg font-semibold text-gray-700 -mt-3">
@@ -203,8 +207,8 @@ export default function DeptDatabase({ auth }) {
                     field === "email"
                       ? "email"
                       : field === "gross_pay"
-                      ? "number"
-                      : "text"
+                        ? "number"
+                        : "text"
                   }
                   name={field}
                   value={formData[field]}
@@ -225,11 +229,10 @@ export default function DeptDatabase({ auth }) {
             <div className="flex items-end gap-2">
               <button
                 type="submit"
-                className={`${
-                  isEditing
+                className={`${isEditing
                     ? "bg-amber-500 hover:bg-amber-300"
                     : "bg-emerald-500 hover:bg-emerald-300"
-                } text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200`}
+                  } text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200`}
               >
                 {isEditing ? "Update" : "Add"}
               </button>
@@ -248,39 +251,39 @@ export default function DeptDatabase({ auth }) {
 
         {/* FILTER BAR */}
         {/* FILTER BAR */}
-<div className="bg-white shadow-md p-3 border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-start gap-3">
-  {/* Search by Name */}
-  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/2 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
-    <Search className="w-5 h-5 text-gray-500 mr-2" />
-    <input
-      type="text"
-      placeholder="Search by Name"
-      value={searchName}
-      onChange={(e) => {
-        setSearchName(e.target.value);
-        setCurrentPage(1);
-      }}
-      className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
-    />
-  </div>
+        <div className="bg-white shadow-md p-3 border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-start gap-3">
+          {/* Search by Name */}
+          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/2 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+            <Search className="w-5 h-5 text-gray-500 mr-2" />
+            <input
+              type="text"
+              placeholder="Search by Name"
+              value={searchName}
+              onChange={(e) => {
+                setSearchName(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
+            />
+          </div>
 
-  {/* Search by Employee Code */}
-  <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/3 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
-    <Search className="w-5 h-5 text-gray-500 mr-2" />
-    <input
-      type="text"
-      placeholder="Search by Employee Code"
-      value={searchEmpCode}
-      onChange={(e) => {
-        setSearchEmpCode(e.target.value);
-        setCurrentPage(1);
-      }}
-      className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
-    />
-  </div>
+          {/* Search by Employee Code */}
+          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/3 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+            <Search className="w-5 h-5 text-gray-500 mr-2" />
+            <input
+              type="text"
+              placeholder="Search by Employee Code"
+              value={searchEmpCode}
+              onChange={(e) => {
+                setSearchEmpCode(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
+            />
+          </div>
 
-  {/* Search by Gross Pay */}
-  {/* <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/4 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
+          {/* Search by Gross Pay */}
+          {/* <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/4 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
     <Search className="w-5 h-5 text-gray-500 mr-2" />
     <input
       type="text"
@@ -293,161 +296,166 @@ export default function DeptDatabase({ auth }) {
       className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
     />
   </div> */}
-</div>
-
-
-
-        {/* TABLE */}
-        <div className="bg-white shadow-lg border border-gray-700 overflow-hidden">
-        <table className="w-full text-sm text-left border border-gray-700 border-collapse">
-          <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
-            <tr>
-              {[
-                ["#", "id"],
-                ["Name", "cust_name"],
-                ["Emp Code", "emp_code"],
-                ["Phone", "phone"],
-                ["Email", "email"],
-                ["Gross Pay", "gross_pay"],
-                ["Date", "created_at"],
-              ].map(([label, key]) => (
-                <th
-                  key={key}
-                  onClick={() => handleSort(key)}
-                  className="px-3 py-3 font-semibold text-xs md:text-sm uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center border border-gray-700"
-                >
-                  <div className="flex justify-center items-center gap-1">
-                    {label}
-                    {sortConfig.key === key ? (
-                      sortConfig.direction === "asc" ? (
-                        <span>▲</span>
-                      ) : (
-                        <span>▼</span>
-                      )
-                    ) : (
-                      <span className="opacity-50">⇅</span>
-                    )}
-                  </div>
-                </th>
-              ))}
-              <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wide text-center border border-gray-700">
-                Actions
-              </th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-gray-200">
-            {paginatedData.length > 0 ? (
-              paginatedData.map((c, i) => {
-                const isEditingRow = formData.id === c.id;
-                return (
-                  <tr
-                    key={c.id}
-                    className={`transition-all duration-300 ${
-                      isEditingRow
-                        ? "bg-amber-100 ring-2 ring-amber-400"
-                        : "bg-white"
-                    } hover:bg-emerald-100/70`}
-                  >
-                    <td className="px-3 py-2 border border-gray-700">
-                      {(currentPage - 1) * itemsPerPage + i + 1}
-                    </td>
-                    <td className="px-3 py-2 text-center font-semibold text-gray-800 border border-gray-700">
-                      {c.cust_name}
-                    </td>
-                    <td className="px-3 py-2 text-center border border-gray-700">{c.emp_code}</td>
-                    <td className="px-3 py-2 text-center border border-gray-700">{c.phone}</td>
-                    <td className="px-3 py-2 text-center border border-gray-700">{c.email}</td>
-                    <td className="px-3 py-2 text-center text-emerald-700 font-semibold border border-gray-700">
-                      {parseFloat(c.gross_pay || 0).toFixed(2)}
-                    </td>
-                    <td className="px-3 py-2 text-center text-gray-700 border border-gray-700">
-                      {c.created_at
-                        ? new Date(c.created_at).toLocaleDateString()
-                        : "—"}
-                    </td>
-                    <td className="px-3 py-2 flex justify-center gap-2 border border-gray-700">
-                      <button
-                        onClick={() => handleEdit(c)}
-                        className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
-                        title="Edit"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(c.id)}
-                        className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td
-                  colSpan="8"
-                  className="text-center text-gray-500 py-4 font-medium border border-gray-700"
-                >
-                  No Records Found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-  </div>
-
-
-        {/* PAGINATION */}
-        <div className="flex justify-between items-center gap-4 mt-4 max-w-7xl mx-auto">
-          <div className="text-sm text-gray-600">
-            Showing{" "}
-            <span className="font-medium">
-              {filteredData.length === 0
-                ? 0
-                : (currentPage - 1) * itemsPerPage + 1}
-            </span>{" "}
-            to{" "}
-            <span className="font-medium">
-              {Math.min(currentPage * itemsPerPage, filteredData.length)}
-            </span>{" "}
-            of <span className="font-medium">{filteredData.length}</span> entries
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={prevPage}
-              disabled={currentPage === 1}
-              className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50"
-            >
-              ← Prev
-            </button>
-            <div className="hidden md:flex items-center gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setCurrentPage(p)}
-                  className={`px-3 py-1 rounded-md ${
-                    p === currentPage
-                      ? "bg-emerald-600 text-white"
-                      : "bg-white border border-gray-200"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={nextPage}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50"
-            >
-              Next →
-            </button>
-          </div>
         </div>
+
+      {loading ? (
+          <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="mt-2 text-gray-600">Loading data...</p>
+          </div>
+        ) : (
+          <>
+            {/* TABLE */}
+            <div className="bg-white shadow-lg border border-gray-700 overflow-hidden">
+              <table className="w-full text-sm text-left border border-gray-700 border-collapse">
+                <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
+                  <tr>
+                    {[
+                      ["#", "id"],
+                      ["Name", "cust_name"],
+                      ["Emp Code", "emp_code"],
+                      ["Phone", "phone"],
+                      ["Email", "email"],
+                      ["Gross Pay", "gross_pay"],
+                      ["Date", "created_at"],
+                    ].map(([label, key]) => (
+                      <th
+                        key={key}
+                        onClick={() => handleSort(key)}
+                        className="px-3 py-3 font-semibold text-xs md:text-sm uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center border border-gray-700"
+                      >
+                        <div className="flex justify-center items-center gap-1">
+                          {label}
+                          {sortConfig.key === key ? (
+                            sortConfig.direction === "asc" ? (
+                              <span>▲</span>
+                            ) : (
+                              <span>▼</span>
+                            )
+                          ) : (
+                            <span className="opacity-50">⇅</span>
+                          )}
+                        </div>
+                      </th>
+                    ))}
+                    <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wide text-center border border-gray-700">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-gray-200">
+                  {paginatedData.length > 0 ? (
+                    paginatedData.map((c, i) => {
+                      const isEditingRow = formData.id === c.id;
+                      return (
+                        <tr
+                          key={c.id}
+                          className={`transition-all duration-300 ${isEditingRow
+                              ? "bg-amber-100 ring-2 ring-amber-400"
+                              : "bg-white"
+                            } hover:bg-emerald-100/70`}
+                        >
+                          <td className="px-3 py-2 border border-gray-700">
+                            {(currentPage - 1) * itemsPerPage + i + 1}
+                          </td>
+                          <td className="px-3 py-2 text-center font-semibold text-gray-800 border border-gray-700">
+                            {c.cust_name}
+                          </td>
+                          <td className="px-3 py-2 text-center border border-gray-700">{c.emp_code}</td>
+                          <td className="px-3 py-2 text-center border border-gray-700">{c.phone}</td>
+                          <td className="px-3 py-2 text-center border border-gray-700">{c.email}</td>
+                          <td className="px-3 py-2 text-center text-emerald-700 font-semibold border border-gray-700">
+                            {parseFloat(c.gross_pay || 0).toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2 text-center text-gray-700 border border-gray-700">
+                            {c.created_at
+                              ? new Date(c.created_at).toLocaleDateString()
+                              : "—"}
+                          </td>
+                          <td className="px-3 py-2 flex justify-center gap-2 border border-gray-700">
+                            <button
+                              onClick={() => handleEdit(c)}
+                              className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
+                              title="Edit"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(c.id)}
+                              className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="8"
+                        className="text-center text-gray-500 py-4 font-medium border border-gray-700"
+                      >
+                        No Records Found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+
+            {/* PAGINATION */}
+            <div className="flex justify-between items-center gap-4 mt-4 max-w-7xl mx-auto">
+              <div className="text-sm text-gray-600">
+                Showing{" "}
+                <span className="font-medium">
+                  {filteredData.length === 0
+                    ? 0
+                    : (currentPage - 1) * itemsPerPage + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-medium">
+                  {Math.min(currentPage * itemsPerPage, filteredData.length)}
+                </span>{" "}
+                of <span className="font-medium">{filteredData.length}</span> entries
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50"
+                >
+                  ← Prev
+                </button>
+                <div className="hidden md:flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`px-3 py-1 rounded-md ${p === currentPage
+                          ? "bg-emerald-600 text-white"
+                          : "bg-white border border-gray-200"
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </AuthenticatedLayout>
   );

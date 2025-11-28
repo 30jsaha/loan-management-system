@@ -228,7 +228,6 @@ export default function Create({ auth, loan_settings }) {
 
         return errors;
     };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsFormDirty(true);
@@ -241,6 +240,7 @@ export default function Create({ auth, loan_settings }) {
                 text: "Please select a customer before submitting the loan application.",
                 icon: "warning"
             });
+            setIsChecking(false);
             return;
         }
         if (Number(loanFormData.loan_amount_applied) > Number(recProposedPvaAmt)) {
@@ -250,6 +250,7 @@ export default function Create({ auth, loan_settings }) {
                 text: `Loan Amount Applied exceeds the Recommended PVA Amount of PGK ${recProposedPvaAmt}. Please adjust accordingly.`,
                 icon: "warning"
             });
+            setIsChecking(false);
             return;
         }
         // else {
@@ -309,6 +310,7 @@ export default function Create({ auth, loan_settings }) {
                         text: "Invalid input. Please enter numeric values.",
                         icon: "warning"
                     });
+                    setIsChecking(false);
                     return;
                 }
 
@@ -322,6 +324,7 @@ export default function Create({ auth, loan_settings }) {
                         text: `Loan Amount Applied must be in multiples of PGK ${multiplier} for the selected Loan Type. Please adjust accordingly.`,
                         icon: "warning"
                     });
+                    setIsChecking(false);
                     return;
                 }
 
@@ -334,6 +337,7 @@ export default function Create({ auth, loan_settings }) {
                         text: `Loan Amount Applied must be at least PGK ${min_loan_amount} for the selected Loan Type. Please adjust accordingly.`,
                         icon: "warning"
                     });
+                    setIsChecking(false);
                     return;
                 }
 
@@ -346,18 +350,20 @@ export default function Create({ auth, loan_settings }) {
                         text: `Loan Amount Applied must not exceed PGK ${max_loan_amount} for the selected Loan Type. Please adjust accordingly.`,
                         icon: "warning"
                     });
+                    setIsChecking(false);
                     return;
                 }
 
                 if (tenureMonths < Number(min_loan_term_months)) {
                     setMessage(
-                        `❌ Loan Tenure must be at least ${min_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`
+                        `❌ Loan Tenure must be at least ${min_loan_term_months} FN for the selected Loan Type. Please adjust accordingly.`
                     );
                     Swal.fire({
                         title: "Warning !",
-                        text: `Loan Tenure must be at least ${min_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`,
+                        text: `Loan Tenure must be at least ${min_loan_term_months} FN for the selected Loan Type. Please adjust accordingly.`,
                         icon: "warning"
                     });
+                    setIsChecking(false);
                     return;
                 }
 
@@ -370,6 +376,7 @@ export default function Create({ auth, loan_settings }) {
                         text: `Loan Tenure must not exceed ${max_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`,
                         icon: "warning"
                     });
+                    setIsChecking(false);
                     return;
                 }
 
@@ -385,6 +392,7 @@ export default function Create({ auth, loan_settings }) {
                         text: `Interest Rate must not be greater or lesser than ${interest_rate}% for the selected Loan Type. Please adjust accordingly.`,
                         icon: "warning"
                     });
+                    setIsChecking(false);
                     return;
                 }
             }
@@ -705,7 +713,7 @@ export default function Create({ auth, loan_settings }) {
                                     setMessage={setMessage}
                                     setIsFormDirty={setIsFormDirty}
                                     onNext={(savedCustomer) => {
-                                        const infoMsg = '✅ customer data saved. You can continue editing.';
+                                        const infoMsg = '✅ customer data saved. You can continue filling the loan application.';
                                         setMessage(infoMsg);
                                         // show same message in SweetAlert
                                         Swal.fire({
@@ -1031,11 +1039,11 @@ export default function Create({ auth, loan_settings }) {
                                     setLoanFormData={setLoanFormData}
                                     onUploadComplete={() => {
                                         setMessage("✅ All steps completed successfully!");
-                                        Swal.fire({
-                                            title: "Success !",
-                                            text: "✅ All steps completed successfully!",
-                                            icon: "success"
-                                        });
+                                        // Swal.fire({
+                                        //     title: "Success !",
+                                        //     text: "✅ All steps completed successfully!",
+                                        //     icon: "success"
+                                        // });
                                         setTimeout(() => router.visit(route("loans")), 1000);
                                     }}
                                 />

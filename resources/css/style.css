@@ -3994,7 +3994,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 12px;
+	padding: 5px;
 	box-sizing: border-box;
 }
 
@@ -4004,8 +4004,8 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
 	max-width: 400%;
 	height: 117%;
 	object-fit: contain;
-	margin-left: -40px;
-	margin-right: 50px;
+	margin-left: -48px;
+    margin-right: 40px;
 }
 
 /* Mobile fitting */

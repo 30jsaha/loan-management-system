@@ -5,6 +5,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Pencil, Eye, Trash2, Search, ArrowLeft } from "lucide-react";
 import { currencyPrefix } from "@/config";
 import Swal from "sweetalert2";
+import { Card, Container, Row, Col, Alert, Spinner } from "react-bootstrap";
 
 export default function Index({ auth }) {
   const [customers, setCustomers] = useState([]);
@@ -199,7 +200,10 @@ export default function Index({ auth }) {
         {/* Table */}
         <div className="bg-white shadow-lg border border-gray-700 w-full overflow-hidden -mt-5">
             {loading ? (
-              <div className="text-center py-5 text-gray-600">Loading customers...</div>
+              <div className="text-center py-5">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-2 text-gray-600">Loading customers...</p>
+              </div>
             ) : paginatedCustomers.length > 0 ? (
               <div className="table-responsive">
                 <table className="w-full text-xs sm:text-sm border border-gray-700 border-collapse table-fixed">
