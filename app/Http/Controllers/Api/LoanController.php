@@ -296,6 +296,9 @@ class LoanController extends Controller
             $loan->video_consent_file_name = $file->getClientOriginalName();
             $loan->video_consent_upload_date = now()->toDateString();
             $loan->video_consent_uploaded_by_user_id = auth()->user()->id;
+            if ($loan->status === 'Rejected') {
+                $loan->has_fixed_temp_rejection = 1;
+            }
             $loan->save();
 
             return response()->json([
@@ -324,6 +327,9 @@ class LoanController extends Controller
         $loan->isda_signed_upload_path = '/storage/' . $path;
         $loan->isada_upload_date = now()->toDateString();
         $loan->isada_upload_by = auth()->user()->id;
+        if ($loan->status === 'Rejected') {
+            $loan->has_fixed_temp_rejection = 1;
+        }
         $loan->save();
 
         return response()->json([
@@ -345,6 +351,9 @@ class LoanController extends Controller
         $loan->org_signed_upload_path = '/storage/' . $path;
         $loan->org_signed_upload_date = now()->toDateString();
         $loan->org_signed_upload_by = auth()->user()->id;
+        if ($loan->status === 'Rejected') {
+            $loan->has_fixed_temp_rejection = 1;
+        }
         $loan->save();
 
         return response()->json([

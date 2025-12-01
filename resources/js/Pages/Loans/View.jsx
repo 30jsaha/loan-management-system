@@ -842,7 +842,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 <tr>
                                                     <td className="border p-2 font-semibold">Organisation Details</td>
                                                     <td className="border p-2">
-                                                        <strong>Name: </strong>{loan.organisation.organisation_name}<br />
+                                                        <strong>Name: </strong>{loan.organisation.organisation_name} [{loan.organisation.sector_type}]<br />
                                                         <strong>Contact: </strong>{loan.organisation.contact_no || "-"}<br />
                                                         <strong>Email: </strong>{loan.organisation.email || "-"}
                                                     </td>
@@ -1234,6 +1234,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                             </span>
                                                                             {loan.has_fixed_temp_rejection == 1 && (
                                                                                 <>  
+                                                                                    <br />
                                                                                     <span className="text-blue-600 font-semibold">
                                                                                         Docs are re-uploaded.
                                                                                     </span>

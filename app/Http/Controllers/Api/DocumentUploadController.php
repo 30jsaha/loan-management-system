@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\DocumentUpload;
+use App\Models\LoanApplication;
 
 class DocumentUploadController extends Controller
 {
@@ -84,6 +85,17 @@ class DocumentUploadController extends Controller
             // $document->rejection_reason_id = null;
 
             $document->save();
+
+            //update the loan_applications table column: has_fixed_temp_rejection to 1 where id=$document->loan_id
+            //first check if loan.status is 'Rejected'            
+            if ($document->loan_id) {
+                $loanApp = LoanApplication::find($document->loan_id);
+
+                if ($loanApp && $loanApp->status === 'Rejected') {
+                    $loanApp->has_fixed_temp_rejection = 1;
+                    $loanApp->save();
+                }
+            }
 
             return response()->json([
                 'message' => '✅ Document re-uploaded successfully.',
