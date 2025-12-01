@@ -149,7 +149,8 @@ export default function Create({ auth, loan_settings }) {
     }, []);
     const fetchLoanTypes = useCallback(async () => {
         try {
-            const res = await axios.get(`/api/loan-types/${loanFormData.customer_id}`);
+            // const res = await axios.get(`/api/loan-types/${loanFormData.customer_id}`);
+            const res = await axios.get(`/api/filtered-loan-types/${loanFormData.customer_id}`);
             setLoanTypes(res.data);
         } catch (error) {
             console.error('There was an error fetching the loan types!', error);
@@ -774,7 +775,7 @@ export default function Create({ auth, loan_settings }) {
 
                                                     // Extract selected value
                                                     const selectedValue = e.target.value;
-                                                    fetchLoanTypes();
+                                                    // fetchLoanTypes();
                                                     // Check if value is not null or 0
                                                     if (selectedValue && selectedValue !== "0") {
                                                         // Check your custom condition
