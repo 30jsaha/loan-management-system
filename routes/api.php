@@ -122,3 +122,4 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/organisation-list', [OrganisationController::class, 'organisation_list']); // GET
 });
+

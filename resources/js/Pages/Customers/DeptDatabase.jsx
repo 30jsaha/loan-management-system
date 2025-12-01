@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Card, Container, Row, Col, Alert, Spinner } from "react-bootstrap";
-import { Head, Link } from "@inertiajs/react";
+import { Head } from "@inertiajs/react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Swal from "sweetalert2";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
-import { Search } from "react-bootstrap-icons";
+import {
+  Pencil,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 export default function DeptDatabase({ auth }) {
   const [formData, setFormData] = useState({
@@ -16,32 +22,53 @@ export default function DeptDatabase({ auth }) {
     phone: "",
     email: "",
     gross_pay: "",
+    organization_id: "",
   });
 
   const [customers, setCustomers] = useState([]);
+  const [organisations, setOrganisations] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [recentlyUpdatedId, setRecentlyUpdatedId] = useState(null);
-
-  // Filters, Sorting, Pagination
-  const [searchName, setSearchName] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: "cust_name", direction: "asc" });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchEmpCode, setSearchEmpCode] = useState("");
-  const [searchGrossPay, setSearchGrossPay] = useState("");
-  const [searchDate, setSearchDate] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // --- FILTER STATE ---
+  const [searchName, setSearchName] = useState("");
+  const [searchEmpCode, setSearchEmpCode] = useState("");
+  const [filterOrganizationId, setFilterOrganizationId] = useState("");
+
+  const [sortConfig, setSortConfig] = useState({
+    key: "cust_name",
+    direction: "asc",
+  });
+
+  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
   useEffect(() => {
     fetchCustomers();
+    fetchOrganisations();
   }, []);
+
+  // --- 1. RESET PAGINATION WHEN FILTERS CHANGE ---
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchName, searchEmpCode, filterOrganizationId]);
+
+  const fetchOrganisations = async () => {
+    try {
+      const res = await axios.get("/api/organisation-list");
+      setOrganisations(res.data);
+    } catch (error) {
+      console.error("Error loading organisations:", error);
+    }
+  };
 
   const fetchCustomers = async () => {
     try {
+      setLoading(true);
       const res = await axios.get("/api/all-dept-cust-list");
       setCustomers(res.data);
     } catch (error) {
-      console.error("Error fetching customer list:", error);
+      console.error("Error fetching customers:", error);
     } finally {
       setLoading(false);
     }
@@ -56,11 +83,14 @@ export default function DeptDatabase({ auth }) {
     try {
       toast.dismiss();
 
+      if (!formData.organization_id) {
+        toast.error("Please select an organisation!");
+        return;
+      }
+
       if (isEditing && formData.id) {
         await axios.put(`/api/all-dept-cust-update/${formData.id}`, formData);
         toast.success("Customer updated successfully!");
-        setRecentlyUpdatedId(formData.id);
-        setTimeout(() => setRecentlyUpdatedId(null), 2000);
       } else {
         await axios.post("/api/all-dept-cust-store", formData);
         toast.success("Customer added successfully!");
@@ -69,22 +99,14 @@ export default function DeptDatabase({ auth }) {
       resetForm();
       fetchCustomers();
     } catch (error) {
-      console.error("Error saving:", error);
-      toast.error("❌ Failed to save customer data!");
+      toast.error("Failed to save customer!");
     }
   };
 
   const handleEdit = (c) => {
     setFormData(c);
     setIsEditing(true);
-    toast.dismiss();
-    toast.success("Editing mode enabled", {
-      style: {
-        background: "#16a34a",
-        color: "white",
-        fontWeight: 500,
-      },
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = (id) => {
@@ -93,8 +115,8 @@ export default function DeptDatabase({ auth }) {
       text: "This record will be permanently deleted!",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#22c55e",
-      cancelButtonColor: "#6b7280",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
       confirmButtonText: "Yes, delete it!",
     }).then(async (result) => {
       if (result.isConfirmed) {
@@ -117,55 +139,112 @@ export default function DeptDatabase({ auth }) {
       phone: "",
       email: "",
       gross_pay: "",
+      organization_id: "",
     });
     setIsEditing(false);
   };
 
-  // Sorting + Filtering
+  const getOrgName = (oid) => {
+    if (!oid || oid == 0) {
+      return <span className="text-gray-400 italic">Unassigned</span>;
+    }
+    const org = organisations.find((o) => o.id == oid);
+    return org ? (
+      org.organisation_name
+    ) : (
+      <span className="text-red-400">Invalid Org</span>
+    );
+  };
+
   const handleSort = (key) => {
     let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
     setSortConfig({ key, direction });
   };
 
+  // --- 2. UPDATED DATA PROCESSING (FILTER + SORT) ---
   const sortedData = useMemo(() => {
-    let sortable = [...customers];
-    sortable.sort((a, b) => {
-      const aVal = a[sortConfig.key] ?? "";
-      const bVal = b[sortConfig.key] ?? "";
-      if (!isNaN(aVal) && !isNaN(bVal))
-        return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
-      return sortConfig.direction === "asc"
-        ? String(aVal).localeCompare(String(bVal))
-        : String(bVal).localeCompare(String(aVal));
-    });
-    return sortable;
-  }, [customers, sortConfig]);
+    let data = [...customers];
 
-  const filteredData = sortedData.filter((c) => {
-    const matchName = c.cust_name?.toLowerCase().includes(searchName.toLowerCase());
-    const matchEmpCode = searchEmpCode
-      ? String(c.emp_code || "").toLowerCase().includes(searchEmpCode.toLowerCase())
-      : true;
-    const matchGrossPay = searchGrossPay
-      ? String(c.gross_pay || "").toLowerCase().includes(searchGrossPay.toLowerCase())
-      : true;
-    const matchDate = searchDate && c.created_at
-      ? new Date(c.created_at).toLocaleDateString() === new Date(searchDate).toLocaleDateString()
-      : !searchDate;
+    // A. FILTER BY NAME OR EMAIL
+    if (searchName.trim() !== "") {
+      const lowerSearch = searchName.toLowerCase();
+      data = data.filter(
+        (c) =>
+          c.cust_name?.toLowerCase().includes(lowerSearch) ||
+          c.email?.toLowerCase().includes(lowerSearch)
+      );
+    }
 
-    return matchName && matchDate && matchEmpCode && matchGrossPay;
-  });
+    // B. FILTER BY EMP CODE
+    if (searchEmpCode.trim() !== "") {
+      const lowerCode = searchEmpCode.toLowerCase();
+      data = data.filter((c) =>
+        c.emp_code?.toLowerCase().includes(lowerCode)
+      );
+    }
 
+    // C. FILTER BY ORGANIZATION
+    if (filterOrganizationId !== "") {
+      // Use loose equality (==) to handle string vs number mismatches
+      data = data.filter((c) => c.organization_id == filterOrganizationId);
+    }
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const paginatedData = filteredData.slice(
+    // D. SORT LOGIC
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        let aVal = a[sortConfig.key] ?? "";
+        let bVal = b[sortConfig.key] ?? "";
+
+        // Custom sort for Organization Name instead of ID
+        if (sortConfig.key === "organization_id") {
+          const aOrg = organisations.find((o) => o.id == a.organization_id);
+          const bOrg = organisations.find((o) => o.id == b.organization_id);
+          aVal = aOrg ? aOrg.organisation_name.toLowerCase() : "";
+          bVal = bOrg ? bOrg.organisation_name.toLowerCase() : "";
+        }
+
+        // Handle numeric sorting for gross_pay
+        if (sortConfig.key === "gross_pay") {
+            return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
+        }
+
+        const aStr = String(aVal).toLowerCase();
+        const bStr = String(bVal).toLowerCase();
+
+        if (aStr < bStr) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aStr > bStr) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return data;
+  }, [
+    customers, 
+    searchName, 
+    searchEmpCode, 
+    filterOrganizationId, // <--- CRITICAL: Added this
+    sortConfig, 
+    organisations
+  ]);
+
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+
+  const paginatedData = sortedData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  const nextPage = () => currentPage < totalPages && setCurrentPage((p) => p + 1);
-  const prevPage = () => currentPage > 1 && setCurrentPage((p) => p - 1);
+
+  const columns = [
+    { label: "Name", key: "cust_name" },
+    { label: "Emp Code", key: "emp_code" },
+    { label: "Phone", key: "phone" },
+    { label: "Email", key: "email" },
+    { label: "Gross Pay", key: "gross_pay" },
+    { label: "Organisation", key: "organization_id" },
+  ];
 
   return (
     <AuthenticatedLayout
@@ -179,60 +258,60 @@ export default function DeptDatabase({ auth }) {
       <Head title="Customer Department Database" />
       <Toaster position="top-center" />
 
-      <div className="py-8 max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="max-w-9xl mx-auto -mt-4 ">
-          <Link
-            href={route("customers")}
-            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
-          >
-            <ArrowLeft size={16} className="mr-2" /> Back to List
-          </Link>
-        </div>
-
+      <div className="py-6 max-w-7xl mx-auto px-4 space-y-6">
         {/* FORM */}
-        <div className="bg-white shadow-lg p-6 border border-gray-100">
-          <h4 className="text-lg font-semibold text-gray-700 -mt-3">
+        <div className="bg-white shadow-md rounded-lg p-6 border border-gray-200">
+          <h4 className="text-lg font-semibold text-gray-700 mb-4">
             {isEditing ? "Edit Customer" : "Add Customer"}
           </h4>
 
           <form
-            onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            onSubmit={handleSubmit}
           >
             {["cust_name", "emp_code", "phone", "email", "gross_pay"].map(
               (field) => (
-                <input
-                  key={field}
-                  type={
-                    field === "email"
-                      ? "email"
-                      : field === "gross_pay"
-                        ? "number"
-                        : "text"
-                  }
-                  name={field}
-                  value={formData[field]}
-                  onChange={handleChange}
-                  placeholder={
-                    {
-                      cust_name: "Customer Name",
-                      emp_code: "Employee Code",
-                      phone: "Phone",
-                      email: "Email",
-                      gross_pay: "Gross Pay (PGK)",
-                    }[field]
-                  }
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                />
+                <div key={field} className="flex flex-col">
+                  <label className="text-xs text-gray-600 mb-1 capitalize">
+                    {field.replace("_", " ")}
+                  </label>
+                  <input
+                    type={field === "email" ? "email" : "text"}
+                    name={field}
+                    value={formData[field]}
+                    onChange={handleChange}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    placeholder={`Enter ${field.replace("_", " ")}`}
+                  />
+                </div>
               )
             )}
+
+            <div className="flex flex-col">
+              <label className="text-xs text-gray-600 mb-1">Organisation</label>
+              <select
+                name="organization_id"
+                value={formData.organization_id}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="">Select Organisation</option>
+                {organisations.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.organisation_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="flex items-end gap-2">
               <button
                 type="submit"
-                className={`${isEditing
-                    ? "bg-amber-500 hover:bg-amber-300"
-                    : "bg-emerald-500 hover:bg-emerald-300"
-                  } text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200`}
+                className={`px-4 py-2 rounded-lg text-white text-sm ${
+                  isEditing
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }`}
               >
                 {isEditing ? "Update" : "Add"}
               </button>
@@ -240,7 +319,7 @@ export default function DeptDatabase({ auth }) {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg"
+                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm"
                 >
                   Cancel
                 </button>
@@ -249,213 +328,198 @@ export default function DeptDatabase({ auth }) {
           </form>
         </div>
 
-        {/* FILTER BAR */}
-        {/* FILTER BAR */}
-        <div className="bg-white shadow-md p-3 border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-start gap-3">
-          {/* Search by Name */}
-          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/2 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
-            <Search className="w-5 h-5 text-gray-500 mr-2" />
-            <input
-              type="text"
-              placeholder="Search by Name"
-              value={searchName}
-              onChange={(e) => {
-                setSearchName(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
-            />
-          </div>
+        {/* FILTERS BAR */}
+        <div className="bg-white p-4 rounded-lg shadow-sm border flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+          {/* Search by Name / Email */}
+          <input
+            type="text"
+            placeholder="Search Name / Email..."
+            className="border-gray-300 rounded-md px-3 py-2 w-full md:w-1/3 focus:ring-emerald-500 focus:border-emerald-500"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+          />
 
-          {/* Search by Employee Code */}
-          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/3 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
-            <Search className="w-5 h-5 text-gray-500 mr-2" />
-            <input
-              type="text"
-              placeholder="Search by Employee Code"
-              value={searchEmpCode}
-              onChange={(e) => {
-                setSearchEmpCode(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
-            />
-          </div>
+          {/* Search by Employee ID */}
+          <input
+            type="text"
+            placeholder="Search Employee ID..."
+            className="border-gray-300 rounded-md px-3 py-2 w-full md:w-1/4 focus:ring-emerald-500 focus:border-emerald-500"
+            value={searchEmpCode}
+            onChange={(e) => setSearchEmpCode(e.target.value)}
+          />
 
-          {/* Search by Gross Pay */}
-          {/* <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 w-full md:w-1/4 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-300">
-    <Search className="w-5 h-5 text-gray-500 mr-2" />
-    <input
-      type="text"
-      placeholder="Search by Gross Pay"
-      value={searchGrossPay}
-      onChange={(e) => {
-        setSearchGrossPay(e.target.value);
-        setCurrentPage(1);
-      }}
-      className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
-    />
-  </div> */}
+          {/* Filter by Organisation */}
+          <select
+            className="border-gray-300 rounded-md px-3 py-2 w-full md:w-1/4 focus:ring-emerald-500 focus:border-emerald-500"
+            value={filterOrganizationId}
+            onChange={(e) => setFilterOrganizationId(e.target.value)}
+          >
+            <option value="">All Organisations</option>
+            {organisations.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.organisation_name}
+              </option>
+            ))}
+          </select>
+
+          <span className="text-sm text-gray-500 whitespace-nowrap">
+            Total: {sortedData.length}
+          </span>
         </div>
 
-      {loading ? (
-          <div className="text-center py-5">
-            <Spinner animation="border" variant="primary" />
-            <p className="mt-2 text-gray-600">Loading data...</p>
-          </div>
-        ) : (
-          <>
-            {/* TABLE */}
-            <div className="bg-white shadow-lg border border-gray-700 overflow-hidden">
-              <table className="w-full text-sm text-left border border-gray-700 border-collapse">
-                <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
-                  <tr>
-                    {[
-                      ["#", "id"],
-                      ["Name", "cust_name"],
-                      ["Emp Code", "emp_code"],
-                      ["Phone", "phone"],
-                      ["Email", "email"],
-                      ["Gross Pay", "gross_pay"],
-                      ["Date", "created_at"],
-                    ].map(([label, key]) => (
-                      <th
-                        key={key}
-                        onClick={() => handleSort(key)}
-                        className="px-3 py-3 font-semibold text-xs md:text-sm uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center border border-gray-700"
-                      >
-                        <div className="flex justify-center items-center gap-1">
-                          {label}
-                          {sortConfig.key === key ? (
-                            sortConfig.direction === "asc" ? (
-                              <span>▲</span>
-                            ) : (
-                              <span>▼</span>
-                            )
-                          ) : (
-                            <span className="opacity-50">⇅</span>
-                          )}
-                        </div>
-                      </th>
-                    ))}
-                    <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wide text-center border border-gray-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
+        {/* TABLE */}
+        <div className="bg-white shadow-md rounded-lg border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-emerald-600 text-white">
+                <tr>
+                  <th className="px-4 py-3 w-12 text-center">#</th>
 
-                <tbody className="divide-y divide-gray-200">
-                  {paginatedData.length > 0 ? (
-                    paginatedData.map((c, i) => {
-                      const isEditingRow = formData.id === c.id;
-                      return (
-                        <tr
-                          key={c.id}
-                          className={`transition-all duration-300 ${isEditingRow
-                              ? "bg-amber-100 ring-2 ring-amber-400"
-                              : "bg-white"
-                            } hover:bg-emerald-100/70`}
-                        >
-                          <td className="px-3 py-2 border border-gray-700">
-                            {(currentPage - 1) * itemsPerPage + i + 1}
-                          </td>
-                          <td className="px-3 py-2 text-center font-semibold text-gray-800 border border-gray-700">
-                            {c.cust_name}
-                          </td>
-                          <td className="px-3 py-2 text-center border border-gray-700">{c.emp_code}</td>
-                          <td className="px-3 py-2 text-center border border-gray-700">{c.phone}</td>
-                          <td className="px-3 py-2 text-center border border-gray-700">{c.email}</td>
-                          <td className="px-3 py-2 text-center text-emerald-700 font-semibold border border-gray-700">
-                            {parseFloat(c.gross_pay || 0).toFixed(2)}
-                          </td>
-                          <td className="px-3 py-2 text-center text-gray-700 border border-gray-700">
-                            {c.created_at
-                              ? new Date(c.created_at).toLocaleDateString()
-                              : "—"}
-                          </td>
-                          <td className="px-3 py-2 flex justify-center gap-2 border border-gray-700">
-                            <button
-                              onClick={() => handleEdit(c)}
-                              className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
-                              title="Edit"
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(c.id)}
-                              className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan="8"
-                        className="text-center text-gray-500 py-4 font-medium border border-gray-700"
-                      >
-                        No Records Found
+                  {columns.map((col) => (
+                    <th
+                      key={col.key}
+                      onClick={() => handleSort(col.key)}
+                      className="px-4 py-3 cursor-pointer select-none hover:bg-emerald-700 transition"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{col.label}</span>
+                        {sortConfig.key === col.key ? (
+                          sortConfig.direction === "asc" ? (
+                            <ChevronUp size={14} />
+                          ) : (
+                            <ChevronDown size={14} />
+                          )
+                        ) : (
+                          <ChevronsUpDown size={14} className="opacity-50" />
+                        )}
+                      </div>
+                    </th>
+                  ))}
+
+                  <th className="px-4 py-3 text-center">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="text-center py-8">
+                      Loading...
+                    </td>
+                  </tr>
+                ) : paginatedData.length > 0 ? (
+                  paginatedData.map((c, i) => (
+                    <tr key={c.id} className="border-b hover:bg-gray-50">
+                      <td className="px-4 py-3 text-center text-gray-500">
+                        {(currentPage - 1) * itemsPerPage + i + 1}
+                      </td>
+
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {c.cust_name}
+                      </td>
+                      <td className="px-4 py-3 text-center">{c.emp_code}</td>
+                      <td className="px-4 py-3 text-center text-gray-500">
+                        {c.phone || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{c.email}</td>
+
+                      <td className="px-4 py-3 text-center font-mono">
+                        {parseFloat(c.gross_pay || 0).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                        })}
+                      </td>
+
+                      <td className="px-4 py-3 text-center text-blue-600 font-medium">
+                        {getOrgName(c.organization_id)}
+                      </td>
+
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleEdit(c)}
+                            className="p-1.5 bg-amber-100 text-amber-600 rounded hover:bg-amber-200"
+                            title="Edit"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(c.id)}
+                            className="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="text-center py-8 text-gray-500">
+                      No Records Found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-
-            {/* PAGINATION */}
-            <div className="flex justify-between items-center gap-4 mt-4 max-w-7xl mx-auto">
+          {/* PAGINATION */}
+          {sortedData.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-gray-50 border-t gap-4">
               <div className="text-sm text-gray-600">
-                Showing{" "}
-                <span className="font-medium">
-                  {filteredData.length === 0
-                    ? 0
-                    : (currentPage - 1) * itemsPerPage + 1}
-                </span>{" "}
-                to{" "}
-                <span className="font-medium">
-                  {Math.min(currentPage * itemsPerPage, filteredData.length)}
-                </span>{" "}
-                of <span className="font-medium">{filteredData.length}</span> entries
+                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                <span className="font-medium">{Math.min(currentPage * itemsPerPage, sortedData.length)}</span> of{" "}
+                <span className="font-medium">{sortedData.length}</span> entries
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
-                  onClick={prevPage}
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50"
+                  className="p-2 border rounded-md bg-white hover:bg-gray-100 disabled:opacity-50"
                 >
-                  ← Prev
+                  <ChevronLeft size={16} />
                 </button>
-                <div className="hidden md:flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setCurrentPage(p)}
-                      className={`px-3 py-1 rounded-md ${p === currentPage
-                          ? "bg-emerald-600 text-white"
-                          : "bg-white border border-gray-200"
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(
+                    (p) =>
+                      p === 1 ||
+                      p === totalPages ||
+                      Math.abs(currentPage - p) <= 1
+                  )
+                  .map((page, index, array) => (
+                    <React.Fragment key={page}>
+                      {index > 0 && array[index - 1] !== page - 1 && (
+                        <span className="px-2 text-gray-400">...</span>
+                      )}
+                      <button
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-1 border rounded-md text-sm ${
+                          currentPage === page
+                            ? "bg-emerald-600 text-white border-emerald-600"
+                            : "bg-white hover:bg-gray-100"
                         }`}
-                    >
-                      {p}
-                    </button>
+                      >
+                        {page}
+                      </button>
+                    </React.Fragment>
                   ))}
-                </div>
+
                 <button
-                  onClick={nextPage}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50"
+                  className="p-2 border rounded-md bg-white hover:bg-gray-100 disabled:opacity-50"
                 >
-                  Next →
+                  <ChevronRight size={16} />
                 </button>
               </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </AuthenticatedLayout>
   );

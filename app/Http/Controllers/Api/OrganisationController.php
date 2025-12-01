@@ -196,6 +196,25 @@ class OrganisationController extends Controller
             ], 500);
         }
     }
+     public function index()
+    {
+        return Organisation::select(
+            'id',
+            'company_id',
+            'organisation_name',
+            'sector_type',
+            'department_code',
+            'location_code',
+            'address',
+            'province',
+            'contact_person',
+            'contact_no',
+            'email',
+            'status',
+            'created_at',
+            'updated_at'
+        )->get();
+    }
 
 
 }

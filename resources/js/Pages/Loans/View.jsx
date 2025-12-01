@@ -10,6 +10,7 @@ import { ArrowLeft, Download, Eye } from "lucide-react";
 import Swal from "sweetalert2";
 import { MultiSelect } from 'primereact/multiselect';
 import { currencyPrefix } from "@/config";
+import AppF from "@/Components/AppF";
 
 export default function View({ auth, loans, loanId, rejectionReasons }) {
     console.log("Initial rejectionReasons prop: ", rejectionReasons);
@@ -62,7 +63,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
     // ... existing states
     const [showSectorModal, setShowSectorModal] = useState(false);
-
+    const handlePrint = () => {
+    window.print();
+  };
     const [loanFormData, setLoanFormData] = useState({
         id: loan ? loan.id : null,
         loan_type: 0,
@@ -689,6 +692,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             </AuthenticatedLayout>
         );
     }
+ console.log("LOAN DATA:", loan);
 
     const handleVerifyDoc = async (docId, status) => {
         if (status === "Rejected") {
@@ -1741,35 +1745,30 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
                                             {/* PDF Modal */}
                                             {/* Application Form Page Modal */}
-                                            <Modal
-                                                show={showModal1}
-                                                onHide={() => setShowModal1(false)}
-                                                size="xl"
-                                                centered
-                                                dialogClassName="max-w-[900px]"
+                                           {/* Application Form Modal (AppF) */}
+                                           
+                                            <Modal 
+                                                show={showModal1} 
+                                                onHide={() => setShowModal1(false)} 
+                                                size="xl" 
+                                                centered 
+                                                contentClassName="bg-white"
                                             >
-                                                <Modal.Header closeButton>
-                                                    <Modal.Title>📄 Application Form View</Modal.Title>
+                                                <Modal.Header closeButton className="no-print">
+                                                    
                                                 </Modal.Header>
 
                                                 <Modal.Body className="p-0">
-                                                    <iframe
-                                                        // ✅ CHANGED: Points to the application form route instead of the PDF file
-                                                        // If you need to show the specific filled form for this loan, you might need:
-                                                        // src={`/loan-application-form?loan_id=${loan.id}`} 
-                                                        src="/loan-application-form" 
-                                                        
-                                                        width="100%"
-                                                        height="800" // Increased height for better webpage visibility
-                                                        title="Loan Application Form Page"
-                                                        className="w-full"
-                                                        style={{ border: "none" }} 
-                                                    />
+                                                    {/* ✅ THIS IS WHERE DATA IS PASSED */}
+                                                    <AppF loan={loan} auth={auth} />
                                                 </Modal.Body>
 
-                                                <Modal.Footer>
+                                                <Modal.Footer className="no-print">
                                                     <Button variant="secondary" onClick={() => setShowModal1(false)}>
                                                         Close
+                                                    </Button>
+                                                    <Button variant="success" onClick={handlePrint}>
+                                                        🖨️ Print Form
                                                     </Button>
                                                 </Modal.Footer>
                                             </Modal>
@@ -1866,35 +1865,29 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
                                             {/* PDF Modal */}
                                             {/* Application Form Page Modal */}
-                                            <Modal
-                                                show={showModal1}
-                                                onHide={() => setShowModal1(false)}
-                                                size="xl"
-                                                centered
-                                                dialogClassName="max-w-[900px]"
+                                      {/* Application Form Modal (AppF) */}
+                                            <Modal 
+                                                show={showModal1} 
+                                                onHide={() => setShowModal1(false)} 
+                                                size="xl" 
+                                                centered 
+                                                contentClassName="bg-white"
                                             >
-                                                <Modal.Header closeButton>
+                                                <Modal.Header closeButton className="no-print">
                                                     <Modal.Title>📄 Application Form View</Modal.Title>
                                                 </Modal.Header>
 
                                                 <Modal.Body className="p-0">
-                                                    <iframe
-                                                        // ✅ CHANGED: Points to the application form route instead of the PDF file
-                                                        // If you need to show the specific filled form for this loan, you might need:
-                                                        // src={`/loan-application-form?loan_id=${loan.id}`} 
-                                                        src="/loan-application-form" 
-                                                        
-                                                        width="100%"
-                                                        height="800" // Increased height for better webpage visibility
-                                                        title="Loan Application Form Page"
-                                                        className="w-full"
-                                                        style={{ border: "none" }} 
-                                                    />
+                                                    {/* ✅ THIS IS WHERE DATA IS PASSED */}
+                                                    <AppF loan={loan} auth={auth} />
                                                 </Modal.Body>
 
-                                                <Modal.Footer>
+                                                <Modal.Footer className="no-print">
                                                     <Button variant="secondary" onClick={() => setShowModal1(false)}>
                                                         Close
+                                                    </Button>
+                                                    <Button variant="success" onClick={handlePrint}>
+                                                        🖨️ Print Form
                                                     </Button>
                                                 </Modal.Footer>
                                             </Modal>
@@ -1990,36 +1983,28 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
 
                                             {/* PDF Modal */}
-                                            {/* Application Form Page Modal */}
-                                            <Modal
-                                                show={showModal1}
-                                                onHide={() => setShowModal1(false)}
-                                                size="xl"
-                                                centered
-                                                dialogClassName="max-w-[900px]"
+                                            <Modal 
+                                                show={showModal1} 
+                                                onHide={() => setShowModal1(false)} 
+                                                size="xl" 
+                                                centered 
+                                                contentClassName="bg-white"
                                             >
-                                                <Modal.Header closeButton>
+                                                <Modal.Header closeButton className="no-print">
                                                     <Modal.Title>📄 Application Form View</Modal.Title>
                                                 </Modal.Header>
 
                                                 <Modal.Body className="p-0">
-                                                    <iframe
-                                                        // ✅ CHANGED: Points to the application form route instead of the PDF file
-                                                        // If you need to show the specific filled form for this loan, you might need:
-                                                        // src={`/loan-application-form?loan_id=${loan.id}`} 
-                                                        src="/loan-application-form" 
-                                                        
-                                                        width="100%"
-                                                        height="800" // Increased height for better webpage visibility
-                                                        title="Loan Application Form Page"
-                                                        className="w-full"
-                                                        style={{ border: "none" }} 
-                                                    />
+                                                    {/* ✅ THIS IS WHERE DATA IS PASSED */}
+                                                    <AppF loan={loan} auth={auth} />
                                                 </Modal.Body>
 
-                                                <Modal.Footer>
+                                                <Modal.Footer className="no-print">
                                                     <Button variant="secondary" onClick={() => setShowModal1(false)}>
                                                         Close
+                                                    </Button>
+                                                    <Button variant="success" onClick={handlePrint}>
+                                                        🖨️ Print Form
                                                     </Button>
                                                 </Modal.Footer>
                                             </Modal>
