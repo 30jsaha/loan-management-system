@@ -29,27 +29,10 @@ export default function DeductionVariationForm({ auth, data }) {
   };
 
   return (
-    <AuthenticatedLayout
-    user={auth.user}
-      header={
-        <h2 className="font-semibold text-xl text-gray-800 leading-tight no-print">
-          Loan Application Form
-        </h2>
-      }>  
-        <div className="min-h-screen bg-gray-100 p-4" id="main-container">
+     
+    <div className="min-h-screen bg-gray-100 p-4" id="main-container">
       {/* Print Buttons - Hidden on Print */}
-      <div className="max-w-4xl mx-auto mb-4 flex items-center gap-4 no-print">
-        <Link href={route("dashboard")} className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium">
-          <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
-        </Link>
-        <button
-          onClick={handlePrint}
-          className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium"
-        >
-          <Printer size={16} className="mr-2" /> Print Form
-        </button>
-      </div>
-
+     
       {/* Main Form */}
       <div id="printable-area" className="max-w-4xl mx-auto bg-white p-8 shadow-lg">
         {/* Logo and Header */}
@@ -298,7 +281,7 @@ export default function DeductionVariationForm({ auth, data }) {
           }
       `}</style>
     </div> 
-    </AuthenticatedLayout>
+    
     
   );
 }

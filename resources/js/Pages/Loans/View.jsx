@@ -60,6 +60,8 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [showLoanRejectModal, setShowLoanRejectModal] = useState(false);
     const [selectedLoanRejectionReason, setSelectedLoanRejectionReason] = useState("");
 
+    // ... existing states
+    const [showSectorModal, setShowSectorModal] = useState(false);
 
     const [loanFormData, setLoanFormData] = useState({
         id: loan ? loan.id : null,
@@ -77,12 +79,25 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         remarks: "",
     });
 
-    // Open modal with selected document
-    const openDocModal = (doc) => {
-        console.log("doc on openDocModal: ", doc);
-        setSelectedDoc(doc);
-        setShowModal(true);
-    };
+    // Helper logic to determine Sector details
+    const orgSector = loan?.organisation?.sector_type; // Assuming 'Health' or 'Education'
+    const isHealth = orgSector === "Health";
+    const isEducation = orgSector === "Education";
+
+    // Define the URL based on the sector (Adjust routes to match your Laravel routes)
+    const sectorFormUrl = isHealth 
+        ? "/health-form" 
+        : "/edu-form"; 
+
+    const sectorDocTitle = isHealth 
+        ? "Health Declaration Form" 
+        : "Education Grant Form";
+        // Open modal with selected document
+        const openDocModal = (doc) => {
+            console.log("doc on openDocModal: ", doc);
+            setSelectedDoc(doc);
+            setShowModal(true);
+        };
 
     // Close modal
     const closeDocModal = () => {
@@ -1722,6 +1737,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
 
                                             {/* PDF Modal */}
+                                            {/* Application Form Page Modal */}
                                             <Modal
                                                 show={showModal1}
                                                 onHide={() => setShowModal1(false)}
@@ -1730,16 +1746,21 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 dialogClassName="max-w-[900px]"
                                             >
                                                 <Modal.Header closeButton>
-                                                    <Modal.Title>📄 Application Form Preview</Modal.Title>
+                                                    <Modal.Title>📄 Application Form View</Modal.Title>
                                                 </Modal.Header>
 
-                                                <Modal.Body>
+                                                <Modal.Body className="p-0">
                                                     <iframe
-                                                        src={`${pdfPath}#toolbar=1`}
+                                                        // ✅ CHANGED: Points to the application form route instead of the PDF file
+                                                        // If you need to show the specific filled form for this loan, you might need:
+                                                        // src={`/loan-application-form?loan_id=${loan.id}`} 
+                                                        src="/loan-application-form" 
+                                                        
                                                         width="100%"
-                                                        height="600"
-                                                        title="Loan Application PDF"
-                                                        className="rounded border shadow-sm"
+                                                        height="800" // Increased height for better webpage visibility
+                                                        title="Loan Application Form Page"
+                                                        className="w-full"
+                                                        style={{ border: "none" }} 
                                                     />
                                                 </Modal.Body>
 
@@ -1841,6 +1862,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
 
                                             {/* PDF Modal */}
+                                            {/* Application Form Page Modal */}
                                             <Modal
                                                 show={showModal1}
                                                 onHide={() => setShowModal1(false)}
@@ -1849,16 +1871,21 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 dialogClassName="max-w-[900px]"
                                             >
                                                 <Modal.Header closeButton>
-                                                    <Modal.Title>📄 Application Form Preview</Modal.Title>
+                                                    <Modal.Title>📄 Application Form View</Modal.Title>
                                                 </Modal.Header>
 
-                                                <Modal.Body>
+                                                <Modal.Body className="p-0">
                                                     <iframe
-                                                        src={`${pdfPath}#toolbar=1`}
+                                                        // ✅ CHANGED: Points to the application form route instead of the PDF file
+                                                        // If you need to show the specific filled form for this loan, you might need:
+                                                        // src={`/loan-application-form?loan_id=${loan.id}`} 
+                                                        src="/loan-application-form" 
+                                                        
                                                         width="100%"
-                                                        height="600"
-                                                        title="Loan Application PDF"
-                                                        className="rounded border shadow-sm"
+                                                        height="800" // Increased height for better webpage visibility
+                                                        title="Loan Application Form Page"
+                                                        className="w-full"
+                                                        style={{ border: "none" }} 
                                                     />
                                                 </Modal.Body>
 
@@ -1960,6 +1987,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
 
                                             {/* PDF Modal */}
+                                            {/* Application Form Page Modal */}
                                             <Modal
                                                 show={showModal1}
                                                 onHide={() => setShowModal1(false)}
@@ -1968,16 +1996,21 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 dialogClassName="max-w-[900px]"
                                             >
                                                 <Modal.Header closeButton>
-                                                    <Modal.Title>📄 Application Form Preview</Modal.Title>
+                                                    <Modal.Title>📄 Application Form View</Modal.Title>
                                                 </Modal.Header>
 
-                                                <Modal.Body>
+                                                <Modal.Body className="p-0">
                                                     <iframe
-                                                        src={`${pdfPath}#toolbar=1`}
+                                                        // ✅ CHANGED: Points to the application form route instead of the PDF file
+                                                        // If you need to show the specific filled form for this loan, you might need:
+                                                        // src={`/loan-application-form?loan_id=${loan.id}`} 
+                                                        src="/loan-application-form" 
+                                                        
                                                         width="100%"
-                                                        height="600"
-                                                        title="Loan Application PDF"
-                                                        className="rounded border shadow-sm"
+                                                        height="800" // Increased height for better webpage visibility
+                                                        title="Loan Application Form Page"
+                                                        className="w-full"
+                                                        style={{ border: "none" }} 
                                                     />
                                                 </Modal.Body>
 
@@ -1990,7 +2023,214 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         </fieldset>
                                     </>
                                 )}
+                                {/* --- SECTOR SPECIFIC DOCUMENTS TABLE --- */}
+                                { (isHealth || isEducation)&&(loan?.status == "Rejected") && (auth.user.is_admin != 1) &&(loan?.is_temp_rejection == 1) &&  (
+                                    <>
+                                        <fieldset className="fldset mb-5">
+                                            <legend className="font-semibold mb-2">
+                                                {isHealth ? "🏥 Health Sector Documents" : "🎓 Education Sector Documents"}
+                                            </legend>
 
+                                            <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
+                                                <thead className={isHealth ? "bg-red-600 text-white" : "bg-green-600 text-white"}>
+                                                    <tr>
+                                                        <th className="border p-2 text-center">Document Type</th>
+                                                        <th className="border p-2 text-center">File Name</th>
+                                                        <th className="border p-2 text-center">View</th>
+                                                        <th className="border p-2 text-center">Download</th>
+                                                        <th className="border p-2 text-center">Print</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    <tr className="hover:bg-gray-50 transition">
+                                                        <td className="border p-2 text-center">{sectorDocTitle}</td>
+                                                        <td className="border p-2 text-center">{sectorDocTitle}</td>
+
+                                                        {/* View Button */}
+                                                        <td className="border p-2 text-center">
+                                                            <button
+                                                                onClick={() => setShowSectorModal(true)}
+                                                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                            >
+                                                                <Eye size={14} /> View
+                                                            </button>
+                                                        </td>
+
+                                                        {/* Download Button (Placeholder logic) */}
+                                                        <td className="border p-2 text-center">
+                                                            <button
+                                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                                onClick={() => {
+                                                                    // Add download logic here if specific PDF exists
+                                                                    Swal.fire("Info", "Download logic for sector form goes here", "info");
+                                                                }}
+                                                            >
+                                                                <Download size={14} /> Download
+                                                            </button>
+                                                        </td>
+
+                                                        {/* Print Button */}
+                                                        <td className="border p-2 text-center">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const printWindow = window.open(sectorFormUrl, "_blank");
+                                                                    if (printWindow) {
+                                                                        printWindow.onload = () => {
+                                                                            printWindow.print();
+                                                                        };
+                                                                    }
+                                                                }}
+                                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6" />
+                                                                </svg>
+                                                                Print
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+
+                                            {/* --- SECTOR FORM MODAL --- */}
+                                            <Modal
+                                                show={showSectorModal}
+                                                onHide={() => setShowSectorModal(false)}
+                                                size="xl"
+                                                centered
+                                                dialogClassName="max-w-[900px]"
+                                            >
+                                                <Modal.Header closeButton>
+                                                    <Modal.Title>
+                                                        {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
+                                                    </Modal.Title>
+                                                </Modal.Header>
+
+                                                <Modal.Body className="p-0">
+                                                    <iframe
+                                                        src={sectorFormUrl}
+                                                        width="100%"
+                                                        height="800"
+                                                        title="Sector Form View"
+                                                        className="w-full"
+                                                        style={{ border: "none" }}
+                                                    />
+                                                </Modal.Body>
+
+                                                <Modal.Footer>
+                                                    <Button variant="secondary" onClick={() => setShowSectorModal(false)}>
+                                                        Close
+                                                    </Button>
+                                                </Modal.Footer>
+                                            </Modal>
+                                        </fieldset>
+                                    </>
+                                )}
+                                 { (isHealth || isEducation)&&(loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) &&  (
+                                    <>
+                                        <fieldset className="fldset mb-5">
+                                            <legend className="font-semibold mb-2">
+                                                {isHealth ? "🏥 Health Sector Documents" : "🎓 Education Sector Documents"}
+                                            </legend>
+
+                                            <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
+                                                <thead className={isHealth ? "bg-red-600 text-white" : "bg-green-600 text-white"}>
+                                                    <tr>
+                                                        <th className="border p-2 text-center">Document Type</th>
+                                                        <th className="border p-2 text-center">File Name</th>
+                                                        <th className="border p-2 text-center">View</th>
+                                                        <th className="border p-2 text-center">Download</th>
+                                                        <th className="border p-2 text-center">Print</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    <tr className="hover:bg-gray-50 transition">
+                                                        <td className="border p-2 text-center">{sectorDocTitle}</td>
+                                                        <td className="border p-2 text-center">{sectorDocTitle}</td>
+
+                                                        {/* View Button */}
+                                                        <td className="border p-2 text-center">
+                                                            <button
+                                                                onClick={() => setShowSectorModal(true)}
+                                                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                            >
+                                                                <Eye size={14} /> View
+                                                            </button>
+                                                        </td>
+
+                                                        {/* Download Button (Placeholder logic) */}
+                                                        <td className="border p-2 text-center">
+                                                            <button
+                                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                                onClick={() => {
+                                                                    // Add download logic here if specific PDF exists
+                                                                    Swal.fire("Info", "Download logic for sector form goes here", "info");
+                                                                }}
+                                                            >
+                                                                <Download size={14} /> Download
+                                                            </button>
+                                                        </td>
+
+                                                        {/* Print Button */}
+                                                        <td className="border p-2 text-center">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const printWindow = window.open(sectorFormUrl, "_blank");
+                                                                    if (printWindow) {
+                                                                        printWindow.onload = () => {
+                                                                            printWindow.print();
+                                                                        };
+                                                                    }
+                                                                }}
+                                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6" />
+                                                                </svg>
+                                                                Print
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+
+                                            {/* --- SECTOR FORM MODAL --- */}
+                                            <Modal
+                                                show={showSectorModal}
+                                                onHide={() => setShowSectorModal(false)}
+                                                size="xl"
+                                                centered
+                                                dialogClassName="max-w-[900px]"
+                                            >
+                                                <Modal.Header closeButton>
+                                                    <Modal.Title>
+                                                        {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
+                                                    </Modal.Title>
+                                                </Modal.Header>
+
+                                                <Modal.Body className="p-0">
+                                                    <iframe
+                                                        src={sectorFormUrl}
+                                                        width="100%"
+                                                        height="800"
+                                                        title="Sector Form View"
+                                                        className="w-full"
+                                                        style={{ border: "none" }}
+                                                    />
+                                                </Modal.Body>
+
+                                                <Modal.Footer>
+                                                    <Button variant="secondary" onClick={() => setShowSectorModal(false)}>
+                                                        Close
+                                                    </Button>
+                                                </Modal.Footer>
+                                            </Modal>
+                                        </fieldset>
+                                    </>
+                                )}
+                                
                                 {/* --- Video Consent Upload / Preview --- */}
                                 {(loan?.status == "Rejected") && (auth.user.is_admin != 1) &&(loan?.is_temp_rejection == 1) ? (
                                     (loan?.is_ack_downloaded == 1) && (

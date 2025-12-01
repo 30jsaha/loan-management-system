@@ -40,33 +40,13 @@ export default function LoanApplicationForm({ auth, data }) {
 
 
   return (
-    <AuthenticatedLayout
-      user={auth.user}
-      header={
-        <h2 className="font-semibold text-xl text-gray-800 leading-tight no-print">
-          Loan Application Form
-        </h2>
-      }
+    <div
     >
       {/* Main container */}
       <div id="print-area">
  
         {/* --- MODIFICATION 1: Button container wrapped in 'no-print' --- */}
-        <div className="max-w-4xl mx-auto mb-4 flex items-center gap-4 no-print header-bar" >
-          <Link
-            href={route("dashboard")}
-            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
-          >
-            <ArrowLeft size={16} className="me-1" /> Back to Dashboard
-          </Link>
-
-          <button
-            onClick={handlePrint}
-            className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium"
-          >
-            <Printer size={16} className="me-1" /> Print Form
-          </button>
-        </div>
+     
         {/* --- End of MODIFICATION 1 --- */}
 
         {/* --- MODIFICATION 2: Form wrapped in '#printable-area' --- */}
@@ -448,6 +428,6 @@ export default function LoanApplicationForm({ auth, data }) {
         `}
     </style>
 
-    </AuthenticatedLayout>
+    </div>
   );
 }
