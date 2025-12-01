@@ -1244,16 +1244,14 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                 <td className="border p-2 text-center">
                                                                     {(loan.status === "Rejected") && (loan.is_temp_rejection == 1) ? (
                                                                         <>
-                                                                            <span className="text-red-600 font-semibold">
-                                                                                Loan Rejected ❌ -- docs are re-uploading.
-                                                                            </span>
-                                                                            {loan.has_fixed_temp_rejection == 1 && (
+                                                                            {loan.has_fixed_temp_rejection == 1 ? (
                                                                                 <>  
-                                                                                    <br />
+                                                                                    
                                                                                     <span className="text-blue-600 font-semibold">
                                                                                         Docs are re-uploaded.
                                                                                     </span>
-                                                                                    <div className="flex gap-2 justify-center">
+                                                                                    <br />
+                                                                                    <div className="flex gap-2 justify-center mt-2 mb-2">
                                                                                         <button
                                                                                             onClick={() => handleVerifyDoc(doc.id, "Verified")}
                                                                                             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
@@ -1268,6 +1266,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                         </button>
                                                                                     </div>
                                                                                 </>
+                                                                            ) : (
+                                                                                <span className="text-red-600 font-semibold">
+                                                                                    Loan Rejected ❌ -- docs are re-uploading.
+                                                                                </span>
                                                                             )}
                                                                         </>
                                                                     ) : doc.verification_status === "Verified" ? (
@@ -1349,17 +1351,18 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                                 <span className="text-red-600 font-semibold">
                                                                                                     Rejected ❌{r ? ` — ${r.reason_desc}` : ""}
                                                                                                 </span>
-
-                                                                                                <div className="mt-2" id="rejectedDocReUploadSection">
-                                                                                                    <button
-                                                                                                        type="button"
-                                                                                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md ml-2"
-                                                                                                        onClick={() => openReuploadModal(doc)}
-                                                                                                        disabled={loan.status === "Approved"}
-                                                                                                    >
-                                                                                                        Re-upload Document
-                                                                                                    </button>
-                                                                                                </div>
+                                                                                                {r.do_allow_reapply == 1 && (loan.is_temp_rejection != 1) && (
+                                                                                                    <div className="mt-2" id="rejectedDocReUploadSection">
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md ml-2"
+                                                                                                            onClick={() => openReuploadModal(doc)}
+                                                                                                            disabled={loan.status === "Approved"}
+                                                                                                        >
+                                                                                                            Re-upload Document
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                )}
                                                                                             </>
                                                                                         );
                                                                                     })()
@@ -2931,7 +2934,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
                                 {(auth.user.is_admin == 1) ? (
                                     <Col md={12}>
-                                        {(loan.status === "Pending") && (
+                                        {(loan.status === "Pending") ? (
                                             <div className="mt-6 flex justify-center gap-4">
                                                 <button
                                                     onClick={handleApprove}
@@ -2948,6 +2951,20 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                     Reject
                                                 </button>
                                             </div>
+                                        ) : (
+                                            <>
+                                                {(loan.status === "Rejected" && loan.has_fixed_temp_rejection == 1) && (
+                                                    <div className="mt-6 flex justify-center gap-4">
+                                                        <button
+                                                            onClick={handleApprove}
+                                                            disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null)}
+                                                            className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </Col>
                                 ) : (

@@ -21,6 +21,7 @@ class AllCustController extends Controller
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'gross_pay' => 'nullable|numeric|min:0',
+            'organization_id' => 'required|numeric|exists:organisation_master,id',
         ]);
 
         $cust = AllCustMaster::create($validated);
@@ -34,6 +35,7 @@ class AllCustController extends Controller
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'gross_pay' => 'nullable|numeric|min:0',
+            'organization_id' => 'required|numeric|exists:organisation_master,id',
         ]);
 
         $customer = AllCustMaster::findOrFail($id);
