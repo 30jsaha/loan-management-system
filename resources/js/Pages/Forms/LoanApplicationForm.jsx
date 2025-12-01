@@ -232,11 +232,40 @@ export default function LoanApplicationForm({ auth }) {
   };
 
   return (
-   
+    <AuthenticatedLayout
+      user={auth.user}
+      header={
+        <h2 className="font-semibold text-xl text-gray-800 leading-tight no-print"
+          style={{ fontFamily: '"Times New Roman", serif' }}>
+          Loan Application Form
+        </h2>
+      }
+    >
+      <Head title="Loan Application Form">
+        {/* --- Added Print styles --- */}
+        <style>{printStyles}</style>
+      </Head>
 
       <Container className="py-10 print-container">
         
-        
+        {/* --- This row is hidden on print --- */}
+        <Row className="mb-3 no-print">
+          <Col className="d-flex justify-content-between align-items-center">
+            <Link
+              href={route("dashboard")}
+              className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
+            >
+              <ArrowLeft size={16} className="me-1" /> Back to Dashboard
+            </Link>
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium"
+            >
+              Print
+            </button>
+          </Col>
+        </Row>
+
         {/* --- This is the only part that will print --- */}
         <Card className="shadow-sm" id="printable-area">
           <Card.Body>
@@ -1442,6 +1471,6 @@ export default function LoanApplicationForm({ auth }) {
           </Card.Body>
         </Card>
       </Container>
-   
+    </AuthenticatedLayout>
   );
 }
