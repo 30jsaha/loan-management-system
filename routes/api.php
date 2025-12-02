@@ -96,7 +96,8 @@ Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
 
 Route::middleware('auth:sanctum')->get('/all-cust-list', [CustomerController::class, 'all_cust_list']);
 
-Route::middleware('auth:sanctum')->get('/all-dept-cust-list', [AllCustController::class, 'index']);
+// Route::middleware('auth:sanctum')->get('/all-dept-cust-list', [AllCustController::class, 'index']);
+Route::middleware('auth:sanctum')->get('/all-dept-cust-list', [AllCustController::class, 'paginatedData']);
 Route::middleware('auth:sanctum')->post('/all-dept-cust-store', [AllCustController::class, 'store']);
 Route::middleware('auth:sanctum')->put('/all-dept-cust-update/{id}', [AllCustController::class, 'update']);
 Route::middleware('auth:sanctum')->delete('/all-dept-cust-delete/{id}', [AllCustController::class, 'destroy']);

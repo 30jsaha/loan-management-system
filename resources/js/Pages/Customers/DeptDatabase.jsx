@@ -13,6 +13,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { Spinner } from "react-bootstrap";
+import { currencyPrefix } from "@/config";
+import { formatCurrency } from "@/Utils/formatters";
 
 export default function DeptDatabase({ auth }) {
   const [formData, setFormData] = useState({
@@ -35,6 +38,10 @@ export default function DeptDatabase({ auth }) {
   const [searchEmpCode, setSearchEmpCode] = useState("");
   const [filterOrganizationId, setFilterOrganizationId] = useState("");
 
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+
   const [sortConfig, setSortConfig] = useState({
     key: "cust_name",
     direction: "asc",
@@ -44,7 +51,7 @@ export default function DeptDatabase({ auth }) {
   const itemsPerPage = 8;
 
   useEffect(() => {
-    fetchCustomers();
+    // fetchCustomers();
     fetchOrganisations();
   }, []);
 
@@ -61,18 +68,34 @@ export default function DeptDatabase({ auth }) {
       console.error("Error loading organisations:", error);
     }
   };
-
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("/api/all-dept-cust-list");
-      setCustomers(res.data);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
+
+      const res = await axios.get("/api/all-dept-cust-list", {
+        params: {
+          searchName,
+          searchEmpCode,
+          org: filterOrganizationId,
+          sortKey: sortConfig.key,
+          sortDir: sortConfig.direction,
+          perPage: itemsPerPage,
+          page: currentPage,
+        },
+      });
+
+      setCustomers(res.data.data);     // paginated records
+      setTotal(res.data.total);        // total records
+      setTotalPages(res.data.last_page);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [searchName, searchEmpCode, filterOrganizationId, sortConfig, currentPage]);
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -230,12 +253,7 @@ export default function DeptDatabase({ auth }) {
     organisations
   ]);
 
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
-
-  const paginatedData = sortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedData = sortedData;   // Already paginated by server
 
   const columns = [
     { label: "Name", key: "cust_name" },
@@ -251,18 +269,18 @@ export default function DeptDatabase({ auth }) {
       user={auth.user}
       header={
         <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-          Department Customer Database
+          Department Employee Database
         </h2>
       }
     >
-      <Head title="Customer Department Database" />
+      <Head title="Department Employee Database" />
       <Toaster position="top-center" />
 
       <div className="py-6 max-w-7xl mx-auto px-4 space-y-6">
         {/* FORM */}
         <div className="bg-white shadow-md rounded-lg p-6 border border-gray-200">
           <h4 className="text-lg font-semibold text-gray-700 mb-4">
-            {isEditing ? "Edit Customer" : "Add Customer"}
+            {isEditing ? "Edit Employees" : "Add Employees"}
           </h4>
 
           <form
@@ -404,7 +422,10 @@ export default function DeptDatabase({ auth }) {
                 {loading ? (
                   <tr>
                     <td colSpan={8} className="text-center py-8">
-                      Loading...
+                      <div className="text-center py-5">
+                          <Spinner animation="border" variant="primary" />
+                          <p className="mt-2 text-gray-600">Loading Emp. Data...</p>
+                      </div>
                     </td>
                   </tr>
                 ) : paginatedData.length > 0 ? (
@@ -424,9 +445,7 @@ export default function DeptDatabase({ auth }) {
                       <td className="px-4 py-3 text-gray-600">{c.email}</td>
 
                       <td className="px-4 py-3 text-center font-mono">
-                        {parseFloat(c.gross_pay || 0).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                        })}
+                        {currencyPrefix}&nbsp;{formatCurrency(c.gross_pay || 0)}
                       </td>
 
                       <td className="px-4 py-3 text-center text-blue-600 font-medium">
@@ -465,12 +484,19 @@ export default function DeptDatabase({ auth }) {
           </div>
 
           {/* PAGINATION */}
-          {sortedData.length > 0 && (
+          {total > 0 && (
             <div className="flex flex-col sm:flex-row justify-between items-center p-4 bg-gray-50 border-t gap-4">
               <div className="text-sm text-gray-600">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-                <span className="font-medium">{Math.min(currentPage * itemsPerPage, sortedData.length)}</span> of{" "}
-                <span className="font-medium">{sortedData.length}</span> entries
+                Showing{" "}
+                <span className="font-medium">
+                  {(currentPage - 1) * itemsPerPage + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-medium">
+                  {Math.min(currentPage * itemsPerPage, total)}
+                </span>{" "}
+                of{" "}
+                <span className="font-bold">{total}</span> entries
               </div>
 
               <div className="flex items-center gap-1">
@@ -508,9 +534,7 @@ export default function DeptDatabase({ auth }) {
                   ))}
 
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(p + 1, totalPages))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="p-2 border rounded-md bg-white hover:bg-gray-100 disabled:opacity-50"
                 >

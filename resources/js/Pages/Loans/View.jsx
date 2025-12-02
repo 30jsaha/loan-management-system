@@ -1355,7 +1355,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                                 <span className="text-red-600 font-semibold">
                                                                                                     Rejected ❌{r ? ` — ${r.reason_desc}` : ""}
                                                                                                 </span>
-                                                                                                {r.do_allow_reapply == 1 && (loan.is_temp_rejection != 1) && (
+                                                                                                {r.do_allow_reapply == 1 && (loan.is_temp_rejection == 1) && (
                                                                                                     <div className="mt-2" id="rejectedDocReUploadSection">
                                                                                                         <button
                                                                                                             type="button"

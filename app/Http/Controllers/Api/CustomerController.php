@@ -296,19 +296,54 @@ class CustomerController extends Controller
         }
     }
 
-    public function all_cust_list()
+    // public function all_cust_list()
+    // {
+    //     $customers = DB::table('all_cust_master')
+    //         ->whereNotIn('emp_code', function ($query) {
+    //             $query->select('employee_no')
+    //                 ->from('customers')
+    //                 ->whereNotNull('employee_no');
+    //         })
+    //         ->orderBy('emp_code', 'desc')
+    //         ->limit(30)
+    //         ->get([
+    //             'emp_code',
+    //             'cust_name',
+    //             'phone',
+    //             'email',
+    //             'gross_pay',
+    //             'net_pay',
+    //             'organization_id',
+    //             'company_id'
+    //         ]);
+
+    //     return response()->json(['data' => $customers]);
+    // }
+
+    public function all_cust_list(Request $request)
     {
-        // Fetch all customers from all_cust_master table
-        // $customers = DB::table('all_cust_master')->get();
-        // return only those customers whose emp_code is not in `customers` table's employee_no column
-        $customers = DB::table('all_cust_master')
-            ->whereNotIn('emp_code', function ($query) {
-            $query->select('employee_no')->from('customers')->whereNotNull('employee_no');
-            })
-            ->get();
-        // Return the customers as a JSON response
-        return response()->json($customers);
+        $search = $request->get('search', '');
+
+        $query = DB::table('all_cust_master')
+            ->whereNotIn('emp_code', function ($q) {
+                $q->select('employee_no')
+                ->from('customers')
+                ->whereNotNull('employee_no');
+            });
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('cust_name', 'LIKE', "%$search%")
+                ->orWhere('emp_code', 'LIKE', "%$search%");
+            });
+        }
+
+        return response()->json([
+            'data' => $query->orderBy('emp_code', 'desc')->limit(30)->get()
+        ]);
     }
+
+
 
     public function destroy($id)
     {

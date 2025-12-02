@@ -130,7 +130,8 @@ export default function Create({ auth, loan_settings }) {
         fetch('/api/all-cust-list')
             .then((res) => res.json())
             .then(data => {
-                setAllCustMast(data);
+                console.log("allCustMast data:", data.data);
+                setAllCustMast(data.data);
             })
             .catch(error => {
                 console.error('There was an error fetching the customers!', error);

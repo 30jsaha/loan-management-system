@@ -69,7 +69,7 @@ export default function Authenticated({ user, header, children }) {
                                         </Dropdown.Trigger>
 
                                         <Dropdown.Content>
-                                            <Dropdown.Link className={`${route().current('customer.dept') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.dept')}>Dept. Database</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('customer.dept') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.dept')}>Dept. Emp. Database</Dropdown.Link>
                                             <Dropdown.Link className={`${route().current('customers') ? 'dropdown-nav-a-active' : ''}`} href={route('customers')}>All Customers</Dropdown.Link>
                                             {/* <Dropdown.Link className={`${route().current('customer.create') ? 'dropdown-nav-a-active' : ''}`} href={route('customer.create')}>+ New Customer</Dropdown.Link> */}
                                         </Dropdown.Content>
@@ -273,7 +273,7 @@ export default function Authenticated({ user, header, children }) {
                                 href={route('customer.dept')}
                                 active={route().current('customer.dept')}
                             >
-                                Dept. Database
+                                Dept. Emp. Database
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 href={route('customers')}
