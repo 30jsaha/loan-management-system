@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Row, Col } from "react-bootstrap";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -13,9 +13,43 @@ export default function CustomerForm({
   setMessage,
   setIsFormDirty,
 }) {
-  
+
   const [isOrgSelectable, setOrgSelectable] = useState(true);
   const ImportantField = () => <span className="text-danger">*</span>;
+  const [empSearch, setEmpSearch] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [empOptions, setEmpOptions] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Fetch employees
+  const fetchEmployees = async (query = "") => {
+    try {
+      setIsSearching(true);
+      const res = await axios.get(`/api/all-dept-cust-list?search=${query}`);
+      setEmpOptions(res.data.data || []);
+    } catch (err) {
+      console.error("Employee fetch failed:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // 🔍 On focus: load first 10 results
+  const handleFocus = () => {
+    if (!empSearch.trim()) {
+      fetchEmployees(""); // load default results
+    }
+    setDropdownOpen(true);
+  };
+
+  // 🔍 Debounced search when typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchEmployees(empSearch);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [empSearch]);
 
   const handleChange = (e) => {
     setIsFormDirty(false);
@@ -135,6 +169,62 @@ export default function CustomerForm({
     }
   };
 
+  const custList = useMemo(() => {
+    return Array.isArray(allCustMast) ? allCustMast : [];
+  }, [allCustMast]);
+  // const cleanName = (name) => {
+  //   if (!name) return "";
+  //   return name.replace(/,$/, "").trim(); // remove ONLY trailing comma
+  // };
+  const cleanName = (name) => {
+    if (!name) return "";
+    return name.replace(/,/g, "").replace(/\s+/g, " ").trim();
+  };
+  const handleEmployeeChange = (e) => {
+    const val = e.target.value;
+    console.log("handleEmployeeChange called with:", val);
+
+    // First search inside API search results
+    let selectedEmp = empOptions.find(
+      (emp) => String(emp.emp_code) === String(val)
+    );
+
+    // Fallback → search inside initial list
+    if (!selectedEmp) {
+      selectedEmp = custList.find(
+        (emp) => String(emp.emp_code) === String(val)
+      );
+    }
+
+    console.log("Selected Employee:", selectedEmp);
+
+    if (selectedEmp) {
+      const cleanFullName = cleanName(selectedEmp.cust_name);
+      const parts = cleanFullName.split(" ");
+
+      setFormData((prev) => ({
+        ...prev,
+        employee_no: selectedEmp.emp_code,
+        first_name: parts[0] || "",
+        last_name: parts.slice(1).join(" ") || "",
+        phone: selectedEmp.phone || "",
+        email: selectedEmp.email || "",
+        monthly_salary: selectedEmp.gross_pay || "",
+        net_salary: selectedEmp.net_pay || "",
+        organisation_id: selectedEmp.organization_id || 1,
+        company_id: selectedEmp.company_id || 1,
+      }));
+
+      setOrgSelectable(false);
+    } else {
+      setFormData((prev) => ({ ...prev, employee_no: "" }));
+    }
+  };
+
+
+
+
+
   return (
     <>
       {/* Toast Container */}
@@ -167,47 +257,76 @@ export default function CustomerForm({
                   </select>
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-gray-700 font-medium">
                     EMP Code <ImportantField />
                   </label>
                   <select
                     name="employee_no"
                     value={formData.employee_no || ""}
-                    onChange={(e) => {
-                      handleChange(e);
-                      const selectedEmp = allCustMast.find(
-                        (emp) => emp.emp_code === e.target.value
-                      );
-
-                      if (selectedEmp) {
-                        setFormData((prev) => ({
-                          ...prev,
-                          first_name: selectedEmp.cust_name.split(" ")[0] || "",
-                          last_name:
-                            selectedEmp.cust_name.split(" ").slice(1).join(" ") ||
-                            "",
-                          phone: selectedEmp.phone || "",
-                          email: selectedEmp.email || "",
-                          monthly_salary: selectedEmp.gross_pay || "",
-                          net_salary: selectedEmp.net_pay || "",
-                          organisation_id: selectedEmp.organization_id || 1,
-                          company_id: selectedEmp.company_id || 1,
-                        }));
-                        setOrgSelectable(false);
-                      }
-                    }}
+                    onChange={handleEmployeeChange}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                     required
                   >
                     <option value="">-- Select EMP --</option>
-                    {allCustMast.map((emp, index) => (
-                      <option key={`${emp.emp_code}-${index}`} value={emp.emp_code}>
+                    {custList.map((emp, idx) => (
+                      <option key={`${emp.emp_code}-${idx}`} value={emp.emp_code}>
                         {emp.emp_code} - {emp.cust_name}
                       </option>
                     ))}
                   </select>
+                </div> */}
+                <div className="relative">
+                  <label className="block text-gray-700 font-medium">
+                    EMP Code <ImportantField />
+                  </label>
+
+                  {/* Search Input */}
+                  <input
+                    type="text"
+                    value={empSearch}
+                    onChange={(e) => setEmpSearch(e.target.value)}
+                    onFocus={handleFocus}
+                    placeholder="Search EMP Code / Name..."
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm px-3 py-2"
+                  />
+
+                  {/* Dropdown List */}
+                  {dropdownOpen && (
+                    <div 
+                      className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto"
+                      onMouseLeave={() => setDropdownOpen(false)}
+                    >
+                      {isSearching ? (
+                        <div className="p-2 text-sm text-gray-500">Searching...</div>
+                      ) : empOptions.length > 0 ? (
+                        empOptions.map((emp, idx) => (
+                          <div
+                            key={`${emp.emp_code}-${idx}`}
+                            onClick={(e) => {
+                              // ⭐ Call your existing handleEmployeeChange function
+                              console.log("Selected emp:", emp);
+                              handleEmployeeChange({ target: { value: emp.emp_code } });
+
+                              // Fill text box with code + name
+                              setEmpSearch(`${emp.emp_code} - ${emp.cust_name}`);
+
+                              // Close dropdown
+                              setDropdownOpen(false);
+                            }}
+                            className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                          >
+                            <b>{emp.emp_code}</b> — {emp.cust_name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-2 text-sm text-gray-500">No results found</div>
+                      )}
+                    </div>
+                  )}
                 </div>
+
+
 
                 <div>
                   <label className="block text-gray-700 font-medium">

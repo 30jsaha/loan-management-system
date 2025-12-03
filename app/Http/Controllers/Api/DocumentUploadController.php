@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\DocumentUpload;
+use App\Models\LoanApplication;
 
 class DocumentUploadController extends Controller
 {
@@ -49,6 +50,61 @@ class DocumentUploadController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => '❌ Failed to upload document.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Re-upload document after rejection
+     */
+    public function documentReUpload($docId, Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|mimes:pdf|max:5120', // max 5MB, only PDF
+        ]);
+
+        $document = DocumentUpload::findOrFail($docId);
+
+        try {
+            // Get original file name and store it
+            $file = $request->file('file');
+            $originalName = $file->getClientOriginalName();
+            $filePath = $file->store('uploads/documents', 'public');
+
+            // Update document record
+            $document->file_name = $originalName;
+            $document->file_path = $filePath;
+            $document->has_reuploaded_after_rejection = 1;
+            $document->reupload_date = now();
+            $document->reuploaded_by_id = auth()->user()->id;
+            // Reset verification status
+            $document->verification_status = 'Pending';
+            // $document->rejected_on = null;
+            // $document->rejected_by_user_id = null;
+            // $document->rejection_reason_id = null;
+
+            $document->save();
+
+            //update the loan_applications table column: has_fixed_temp_rejection to 1 where id=$document->loan_id
+            //first check if loan.status is 'Rejected'            
+            if ($document->loan_id) {
+                $loanApp = LoanApplication::find($document->loan_id);
+
+                if ($loanApp && $loanApp->status === 'Rejected') {
+                    $loanApp->has_fixed_temp_rejection = 1;
+                    $loanApp->save();
+                }
+            }
+
+            return response()->json([
+                'message' => '✅ Document re-uploaded successfully.',
+                'document' => $document
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => '❌ Failed to re-upload document.',
                 'error' => $e->getMessage(),
             ], 500);
         }

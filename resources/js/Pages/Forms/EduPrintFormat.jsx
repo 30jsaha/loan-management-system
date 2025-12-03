@@ -53,13 +53,7 @@ export default function LoanApplicationForm({ auth, data }) {
  
         {/* --- MODIFICATION 1: Button container wrapped in 'no-print' --- */}
         <div className="max-w-4xl mx-auto mb-4 flex items-center gap-4 no-print header-bar" >
-          <Link
-            href={route("dashboard")}
-            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
-          >
-            <ArrowLeft size={16} className="me-1" /> Back to Dashboard
-          </Link>
-
+        
           <button
             onClick={handlePrint}
             className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium"

@@ -41,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/upload-org-signed', [LoanController::class, 'uploadOrgSigned']);
     Route::get('/loans/{id}', [LoanController::class, 'show']);
     Route::post('/loans/{id}/approve', [LoanController::class, 'approve']);
-    Route::post('/loans/{id}/reject', [LoanController::class, 'reject']);
+    Route::post('/loans/{id}/reject', [LoanController::class, 'rejectLoan']);
     Route::delete('/loans/{id}', [LoanController::class, 'destroy']);
     Route::get('/loan-types/{cid}', [LoanController::class, 'loan_types']);
     Route::get('/loan-settings-data', [LoanController::class, 'get_all_loan_setting_data']);
@@ -81,6 +81,7 @@ Route::middleware('auth:sanctum')->post('/check-eligibility', [CustomerControlle
 // Route::middleware('auth:sanctum')->post('/upload-loan-documents', [LoanController::class, 'store']);
 
 Route::post('/document-upload', [DocumentUploadController::class, 'store']);
+Route::post('/document-upload/replace/{docId}', [DocumentUploadController::class, 'documentReUpload']);
 Route::get('/document-upload', [DocumentUploadController::class, 'index']);
 Route::get('/document-upload/download/{id}', [DocumentUploadController::class, 'download'])
     ->name('document-upload.download');
@@ -95,7 +96,8 @@ Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
 
 Route::middleware('auth:sanctum')->get('/all-cust-list', [CustomerController::class, 'all_cust_list']);
 
-Route::middleware('auth:sanctum')->get('/all-dept-cust-list', [AllCustController::class, 'index']);
+// Route::middleware('auth:sanctum')->get('/all-dept-cust-list', [AllCustController::class, 'index']);
+Route::middleware('auth:sanctum')->get('/all-dept-cust-list', [AllCustController::class, 'paginatedData']);
 Route::middleware('auth:sanctum')->post('/all-dept-cust-store', [AllCustController::class, 'store']);
 Route::middleware('auth:sanctum')->put('/all-dept-cust-update/{id}', [AllCustController::class, 'update']);
 Route::middleware('auth:sanctum')->delete('/all-dept-cust-delete/{id}', [AllCustController::class, 'destroy']);
@@ -121,3 +123,4 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/organisation-list', [OrganisationController::class, 'organisation_list']); // GET
 });
+

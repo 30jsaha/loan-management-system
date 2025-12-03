@@ -5,6 +5,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Pencil, Eye, Trash2, Search, ArrowLeft } from "lucide-react";
 import { currencyPrefix } from "@/config";
 import Swal from "sweetalert2";
+import { Card, Container, Row, Col, Alert, Spinner } from "react-bootstrap";
 
 export default function Index({ auth }) {
   const [customers, setCustomers] = useState([]);
@@ -199,10 +200,13 @@ export default function Index({ auth }) {
         {/* Table */}
         <div className="bg-white shadow-lg border border-gray-700 w-full overflow-hidden -mt-5">
             {loading ? (
-              <div className="text-center py-5 text-gray-600">Loading customers...</div>
+              <div className="text-center py-5">
+                <Spinner animation="border" variant="primary" />
+                <p className="mt-2 text-gray-600">Loading customers...</p>
+              </div>
             ) : paginatedCustomers.length > 0 ? (
-              <div className="table-responsive">
-                <table className="w-full text-xs sm:text-sm border border-gray-700 border-collapse table-fixed">
+              <div className="w-full overflow-x-auto">
+                <table className="min-w-max w-full text-xs sm:text-sm border border-gray-700 border-collapse">
                   <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
                     <tr>
                       {[
@@ -221,11 +225,11 @@ export default function Index({ auth }) {
                         ["Actions", "actions"],
                       ].map(([label, key]) => (
                         <th
-                          key={key}
-                          onClick={() => key !== "actions" && handleSort(key)}
-                          className={`px-2 py-3 font-semibold uppercase tracking-wide text-center border border-gray-700 ${
-                            key !== "actions" ? "cursor-pointer hover:bg-emerald-600/70" : ""
-                          } transition whitespace-nowrap`}
+                           key={key}
+                            onClick={() => key !== "actions" && handleSort(key)}
+                            className={`px-2 py-3 min-w-[120px] font-semibold uppercase tracking-wide text-center border border-gray-700 
+                              ${key !== "actions" ? "cursor-pointer hover:bg-emerald-600/70" : ""}
+                              transition whitespace-nowrap`}
                         >
                           <div className="flex justify-center items-center gap-1">
                             {label}

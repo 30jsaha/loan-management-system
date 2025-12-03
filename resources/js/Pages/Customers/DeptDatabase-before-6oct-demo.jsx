@@ -15,6 +15,7 @@ export default function DeptDatabase({ auth }) {
 
   const [customers, setCustomers] = useState([]);
   const [message, setMessage] = useState("");
+  console.log("Fetched customers:", customers);
   // Fetch existing customer data
   useEffect(() => {
     fetchCustomers();
@@ -23,11 +24,14 @@ export default function DeptDatabase({ auth }) {
   const fetchCustomers = async () => {
     try {
       const res = await axios.get("/api/all-dept-cust-list");
+    
       setCustomers(res.data);
+        
     } catch (error) {
       console.error("Error fetching customer list:", error);
     }
   };
+ 
 
   // Handle form changes
   const handleChange = (e) => {

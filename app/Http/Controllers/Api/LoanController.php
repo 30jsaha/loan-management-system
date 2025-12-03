@@ -222,15 +222,43 @@ class LoanController extends Controller
         return response()->json(['message' => 'Loan approved successfully.']);
     }
 
-    public function reject($id)
+    // public function reject($id)
+    // {
+    //     $loan = Loan::findOrFail($id);
+    //     $loan->status = 'Rejected';
+    //     $loan->remarks = 'Rejected by ' . auth()->user()->name;
+    //     $loan->save();
+
+    //     return response()->json(['message' => 'Loan rejected successfully.']);
+    // }
+    public function rejectLoan(Request $request, $loanId)
     {
-        $loan = Loan::findOrFail($id);
-        $loan->status = 'Rejected';
-        $loan->remarks = 'Rejected by ' . auth()->user()->name;
+        $loan = Loan::findOrFail($loanId);
+        // validate rejection input
+        $validated = $request->validate([
+            'rejection_reason_id' => 'nullable|integer|min:1',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
+        $loan->loan_reject_reason_id = $validated['rejection_reason_id'] ?? null;
+
+        $get_do_allow_reapply = DB::table('rejection_reasons')
+            ->where('id', $loan->loan_reject_reason_id)
+            ->value('do_allow_reapply');
+
+        $loan->status = "Rejected";
+        if (isset($validated['remarks'])) {
+            $loan->remarks = $validated['remarks'];
+        }
+        $loan->is_temp_rejection = (int) ($get_do_allow_reapply ?? 0);
+        $loan->loan_reject_by_id = auth()->user()->id;
+        $loan->loan_reject_date = now();
+
         $loan->save();
 
-        return response()->json(['message' => 'Loan rejected successfully.']);
+        return response()->json(['message' => 'Loan rejected successfully']);
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -268,6 +296,9 @@ class LoanController extends Controller
             $loan->video_consent_file_name = $file->getClientOriginalName();
             $loan->video_consent_upload_date = now()->toDateString();
             $loan->video_consent_uploaded_by_user_id = auth()->user()->id;
+            if ($loan->status === 'Rejected') {
+                $loan->has_fixed_temp_rejection = 1;
+            }
             $loan->save();
 
             return response()->json([
@@ -296,6 +327,9 @@ class LoanController extends Controller
         $loan->isda_signed_upload_path = '/storage/' . $path;
         $loan->isada_upload_date = now()->toDateString();
         $loan->isada_upload_by = auth()->user()->id;
+        if ($loan->status === 'Rejected') {
+            $loan->has_fixed_temp_rejection = 1;
+        }
         $loan->save();
 
         return response()->json([
@@ -317,6 +351,9 @@ class LoanController extends Controller
         $loan->org_signed_upload_path = '/storage/' . $path;
         $loan->org_signed_upload_date = now()->toDateString();
         $loan->org_signed_upload_by = auth()->user()->id;
+        if ($loan->status === 'Rejected') {
+            $loan->has_fixed_temp_rejection = 1;
+        }
         $loan->save();
 
         return response()->json([
@@ -853,7 +890,6 @@ class LoanController extends Controller
                 ->where('active', 1)
                 ->pluck('loan_id')
                 ->toArray();
-
             if (empty($loanIds)) {
                 return response()->json([], 200);
             }
@@ -872,10 +908,9 @@ class LoanController extends Controller
                 ->unique()
                 ->values()
                 ->toArray();
-
             // 4️⃣ Return loan settings for only matched loan IDs
             $matchedLoanTypes = LoanSetting::whereIn('id', $eligibleLoanIds)->get();
-
+            // dd($matchedLoanTypes);
             return response()->json($matchedLoanTypes, 200);
 
         } catch (\Exception $e) {
