@@ -37,7 +37,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   const [respMsg, setRespMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [showScroll, setShowScroll] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -291,7 +291,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <span className="goal-text">Achieve Your Financial Goal</span><br />
               </p>
 
-
               <a href="#contact" className="btn text-light" style={{ backgroundColor: 'lightred', color: 'white' }}>Apply for Loan</a>
             </div>
 
@@ -413,6 +412,10 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                         </div>
                       </>
                     )}
+
+
+
+
 
                     {/* If error */}
                     {respMsg && !calculatorFirstCheck && (
@@ -589,13 +592,9 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <div className="resp mt-2">{respMsg}</div>
               </form>
 
-
-
             </div>
           </div>
         </div>
-
-
 
         {/* Loan Slider Calculator (React + Validation + EMI Logic) */}
         {2 + 2 != 4 && (
@@ -708,35 +707,35 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           </section>
         )}
 
-
         {/* Quick Loan Bar */}
         <div className="quick-loan-section mt-4">
+<div
+  className="quick-image"
+  style={{
+    width: "100%",
+    height: "130px",
+    overflow: "hidden",
+    position: "relative",
+  }}
+>
+  <div className="slider-track">
 
-          <div className="quick-image"
-            style={{
-              width: "100%",
-              height: "130px",    // jis height me chaho image dikhe
-              overflow: "hidden"
-            }}>
-            <img
-              src={heroImage}
-              alt="Agro hero footer"
-              style={{
-                width: "900%",       // left-right stretch
-                height: "280%",
-                objectFit: "cover",
-                objectPosition: "bottom",  // center crop
-                display: "block"
-              }}
-            />
-          </div>
+    {/* Original 2 images */}
+    <img src={heroImage1} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+    <img src={heroImage}  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+
+    {/* Duplicate 2 images for perfect infinite loop */}
+    <img src={heroImage1} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+    <img src={heroImage}  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+
+  </div>
+</div>
+
 
 
 
           <div className="quick-items d-flex gap-3">
-            {/* <div className="quick-item"><i className="bi bi-stopwatch"></i><span>Quick Loans.<br/>Easy Approvals.</span></div>
-            <div className="quick-item"><i className="bi bi-hand-thumbs-up"></i><span>Fast Cash.<br/>Zero Hassle.</span></div>
-            <div className="quick-item"><i className="bi bi-cash-stack"></i><span>Apply Today.<br/>Approved Tomorrow.</span></div> */}
+
             <div className="quick-items d-flex gap-5">
 
               <div className="quick-item d-flex align-items-center gap-3">
@@ -769,9 +768,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 </svg>
                 <span>Apply Today.<br />Approved Tomorrow.</span>
               </div>
-
             </div>
-
           </div>
         </div>
       </section>
@@ -828,7 +825,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               <div className="loan__services__item__text">
                 <h4> Personal Loan</h4>
                 <p>Secure, quick financing for government employees covering immediate personal needs, emergencies, or family commitments.</p>
-                
+
               </div>
             </div>
 
@@ -836,7 +833,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               <div className="loan__services__item__text">
                 <h4> Business Loan</h4>
                 <p>Capital to support entrepreneurial ventures or side businesses, leveraging the stability of a government salary for reliable repayment.</p>
-               
+
               </div>
             </div>
 
@@ -845,7 +842,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <h4>Education Loan</h4>
 
                 <p>Dedicated funding to ensure dependents of government employees access high-quality education without financial strain.</p>
-               
+
               </div>
             </div>
 
@@ -854,8 +851,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <h4> Commercial Loan</h4>
 
                 <p>
-                High-value lending secured by the employee's stable income, typically used for significant asset purchases or investment projects.</p>
-             
+                  High-value lending secured by the employee's stable income, typically used for significant asset purchases or investment projects.</p>
+
               </div>
             </div>
 
@@ -864,10 +861,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <h4> Health Loan</h4>
 
                 <p>Essential financial support for unexpected or planned medical expenses and treatments for the employee or their family.</p>
-            
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -990,7 +985,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           </div>
         </div>
       </section>
-
       {/* Contact Section */}
       <section id="contact" className="py-5" style={{ backgroundColor: '#002b10', backgroundSize: 'cover', color: '#fff' }}>
         <div className="container">
@@ -1051,7 +1045,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <option value="4">Health Loan</option>
                   </select>
                 </div>
-
                 <div className="col-12 text-start">
                   <button
                     className="btn"
@@ -1246,4 +1239,3 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
     </div>
   );
 }
-        

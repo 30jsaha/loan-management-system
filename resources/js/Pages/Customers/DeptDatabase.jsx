@@ -74,7 +74,7 @@ export default function DeptDatabase({ auth }) {
 
       const res = await axios.get("/api/all-dept-cust-list", {
         params: {
-          searchName,
+          search: searchName,
           searchEmpCode,
           org: filterOrganizationId,
           sortKey: sortConfig.key,
@@ -192,28 +192,28 @@ export default function DeptDatabase({ auth }) {
     let data = [...customers];
 
     // A. FILTER BY NAME OR EMAIL
-    if (searchName.trim() !== "") {
-      const lowerSearch = searchName.toLowerCase();
-      data = data.filter(
-        (c) =>
-          c.cust_name?.toLowerCase().includes(lowerSearch) ||
-          c.email?.toLowerCase().includes(lowerSearch)
-      );
-    }
+    // if (searchName.trim() !== "") {
+    //   const lowerSearch = searchName.toLowerCase();
+    //   data = data.filter(
+    //     (c) =>
+    //       c.cust_name?.toLowerCase().includes(lowerSearch) ||
+    //       c.email?.toLowerCase().includes(lowerSearch)
+    //   );
+    // }
 
     // B. FILTER BY EMP CODE
-    if (searchEmpCode.trim() !== "") {
-      const lowerCode = searchEmpCode.toLowerCase();
-      data = data.filter((c) =>
-        c.emp_code?.toLowerCase().includes(lowerCode)
-      );
-    }
+    // if (searchEmpCode.trim() !== "") {
+    //   const lowerCode = searchEmpCode.toLowerCase();
+    //   data = data.filter((c) =>
+    //     c.emp_code?.toLowerCase().includes(lowerCode)
+    //   );
+    // }
 
     // C. FILTER BY ORGANIZATION
-    if (filterOrganizationId !== "") {
-      // Use loose equality (==) to handle string vs number mismatches
-      data = data.filter((c) => c.organization_id == filterOrganizationId);
-    }
+    // if (filterOrganizationId && filterOrganizationId !== "all") {
+    //   // Use loose equality (==) to handle string vs number mismatches
+    //   data = data.filter((c) => c.organization_id == filterOrganizationId);
+    // }
 
     // D. SORT LOGIC
     if (sortConfig.key) {
@@ -372,7 +372,7 @@ export default function DeptDatabase({ auth }) {
             value={filterOrganizationId}
             onChange={(e) => setFilterOrganizationId(e.target.value)}
           >
-            <option value="">All Organisations</option>
+            <option value="all">All Organisations</option>
             {organisations.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.organisation_name}
@@ -397,7 +397,13 @@ export default function DeptDatabase({ auth }) {
                     <th
                       key={col.key}
                       onClick={() => handleSort(col.key)}
-                      className="px-4 py-3 cursor-pointer select-none hover:bg-emerald-700 transition"
+                      className={`px-4 py-3 cursor-pointer select-none whitespace-nowrap transition
+                        ${
+                          sortConfig.key === col.key
+                            ? "bg-emerald-800 text-white"   // ACTIVE COLUMN (highlight)
+                            : "bg-emerald-600 text-white"   // NORMAL HEADER
+                        }
+                      `}
                     >
                       <div className="flex items-center gap-2">
                         <span>{col.label}</span>

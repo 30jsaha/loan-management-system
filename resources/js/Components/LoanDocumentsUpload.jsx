@@ -4,7 +4,7 @@ import { X, Upload, Eye } from "lucide-react";
 import { Button, ProgressBar, Modal } from "react-bootstrap";
 import toast, { Toaster } from "react-hot-toast";
 
-const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
+const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
   const allowedDocs = [
     "ID",
     "Payslip",
@@ -22,6 +22,10 @@ const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState({});
+
+  // Safely access IDs
+  const loanId = loanFormData?.id || "";
+  const customerId = loanFormData?.customer_id || "";
 
   const handleViewDocument = (doc) => {
     setSelectedDoc(doc);
@@ -68,8 +72,8 @@ const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("doc_type", docType);
-      formData.append("loan_id", loanFormData?.id || "");
-      formData.append("customer_id", loanFormData?.customer_id || "");
+      formData.append("loan_id", loanId);
+      formData.append("customer_id", customerId);
 
       await axios.post("/api/document-upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -79,8 +83,7 @@ const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
           setProgress((prev) => ({ ...prev, [docType]: percent }));
         },
       });
-      // ✅ Notify parent page that upload completed
-      if (onUploadComplete) onUploadComplete();
+
       setUploadedFiles((prev) => ({ ...prev, [docType]: true }));
       setMessage((prev) => ({
         ...prev,
@@ -112,7 +115,7 @@ const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
     setFiles({});
     setProgress({});
     setUploadedFiles({});
-    // ✅ Call parent refresh after all uploads complete
+    // ✅ Call parent refresh ONLY after "Upload All" is clicked
     if (onUploadComplete) onUploadComplete();
   };
 
@@ -124,12 +127,12 @@ const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
       <Toaster position="top-center" />
 
       <form onSubmit={handleUploadAll}>
-        {/* Responsive Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 justify-items-center mb-3">
+        {/* Responsive Grid: Stacks on mobile, 1 col, then 2, then 3 on huge screens */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 justify-items-center mb-3">
           {allowedDocs.map((doc) => (
             <div
               key={doc}
-              className="bg-white rounded-4 shadow-sm border border-gray-200 p-3 w-full sm:w-[500px] md:w-[520px] lg:w-[530px] transition-all duration-300 transform hover:shadow-lg hover:-translate-y-1"
+              className="bg-white rounded-4 shadow-sm border border-gray-200 p-3 w-full max-w-[530px] transition-all duration-300 transform hover:shadow-lg hover:-translate-y-1"
             >
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <h6 className="fw-semibold mb-0 text-gray-700">
@@ -163,7 +166,7 @@ const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
                   <p className="fw-semibold text-dark mb-1 text-center text-sm sm:text-base">
                     Click to upload or drag and drop
                   </p>
-                  <p className="text-muted small mb-0 text-center">
+                  <p className="text-muted small mb-0 text-center px-2">
                     Upload .txt, .docx, or .pdf (MAX 20MB)
                   </p>
                   <input
@@ -276,27 +279,26 @@ const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
                 </div>
               )}
 
+              {/* Stack buttons on very small screens, row on sm+ */}
               <div className="flex flex-col sm:flex-row justify-between gap-2 mt-3">
                 <Button
-                    variant="outline-secondary"
-                    className="px-4 rounded-pill fw-medium w-full sm:w-1/2"
-                    onClick={() => {
-                      // make it work exactly like the ❌ cross icon
-                      const updated = { ...files };
-                      delete updated[doc];
-                      setFiles(updated);
-                      setProgress((prev) => ({ ...prev, [doc]: 0 }));
-                      setUploadedFiles((prev) => {
-                        const newState = { ...prev };
-                        delete newState[doc];
-                        return newState;
-                      });
-                    }}
-                    disabled={uploading}
-                  >
+                  variant="outline-secondary"
+                  className="px-4 rounded-pill fw-medium w-full sm:w-1/2"
+                  onClick={() => {
+                    const updated = { ...files };
+                    delete updated[doc];
+                    setFiles(updated);
+                    setProgress((prev) => ({ ...prev, [doc]: 0 }));
+                    setUploadedFiles((prev) => {
+                      const newState = { ...prev };
+                      delete newState[doc];
+                      return newState;
+                    });
+                  }}
+                  disabled={uploading}
+                >
                   Remove
                 </Button>
-
 
                 <Button
                   className="px-3 sm:px-4 rounded-pill fw-medium w-full sm:w-1/2 text-white"
@@ -327,7 +329,7 @@ const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
             type="submit"
             variant="success"
             className="px-5 py-2 fw-semibold rounded-pill shadow-sm w-full sm:w-auto"
-            disabled={uploading || !loanFormData.id}
+            disabled={uploading || !loanId}
             style={{
               backgroundColor: uploading ? "#22c55ecc" : "#22c55e",
               border: "none",
@@ -346,7 +348,7 @@ const LoanDocumentsUpload = ({ loanFormData, onUploadComplete }) => {
       >
         <Modal.Header closeButton>
           <Modal.Title className="text-dark">
-            {selectedDoc?.name}
+            {selectedDoc?.name || "Document Preview"}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="p-0">
