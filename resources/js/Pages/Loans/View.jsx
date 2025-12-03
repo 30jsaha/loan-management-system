@@ -1,4 +1,4 @@
-import React from "react";
+import React, {forwardRef } from "react";
 import { useEffect, useState, useCallback } from "react";
 import { useRef } from "react";
 import { useReactToPrint } from "react-to-print";
@@ -18,7 +18,7 @@ import EduF from "@/Components/EduF";
 
 
 export default function View({ auth, loans, loanId, rejectionReasons }) {
-    console.log("Initial rejectionReasons prop: ", rejectionReasons);
+    // console.log("Initial rejectionReasons prop: ", rejectionReasons);
     const [loan, setLoan] = useState(loans && loans.length > 0 ? loans[0] : null);
     const [rejectReasons, setRejectReasons] = useState(
         Array.isArray(rejectionReasons) ? rejectionReasons : []
@@ -68,18 +68,35 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
     // ... existing states
     
-    const printComponentRef = useRef();
+    const printComponentRef = useRef(null);
 
     // Change this part:
+    // const handlePrintSectorForm = useReactToPrint({
+    //     contentRef: printComponentRef, // use content: () => printComponentRef.current if this fails
+    //     documentTitle: `Sector_Form_${loan?.id || 'Doc'}`,
+    // });
+    // const handlePrintSectorForm = useReactToPrint({
+    //     content: () => {
+    //         console.log("PRINT REF:", printComponentRef.current);
+    //         return printComponentRef.current;
+    //     },
+    //     contentRef: printComponentRef,
+    //     documentTitle: `Sector_Form_${loan?.id || 'Doc'}`,
+    // });
     const handlePrintSectorForm = useReactToPrint({
-        contentRef: printComponentRef, // use content: () => printComponentRef.current if this fails
-        documentTitle: `Sector_Form_${loan?.id || 'Doc'}`,
+        content: () => {
+            console.log("PRINT REF:", printComponentRef.current);
+            return printComponentRef.current;
+        },
+        contentRef: printComponentRef,
+        documentTitle: `Sector_Form_${loan?.id}`,
+        removeAfterPrint: false,
     });
     
     const [showSectorModal, setShowSectorModal] = useState(false);
     const handlePrint = () => {
-    window.print();
-  };
+        window.print();
+    };
     const [loanFormData, setLoanFormData] = useState({
         id: loan ? loan.id : null,
         loan_type: 0,
@@ -101,12 +118,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const isHealth = orgSector === "Health";
     const isEducation = orgSector === "Education";
 
-    const SectorFormComponent = isHealth ? HealthF : EduF;
+    const SectorFormComponent = isHealth ? HealthF : EduF;    
 
-    
-
-    // Define the URL based on the sector (Adjust routes to match your Laravel routes)
-   
+    // Define the URL based on the sector (Adjust routes to match your Laravel routes)  
 
     const sectorDocTitle = isHealth 
     ? "Health Declaration Form" 
@@ -114,9 +128,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
     // Open modal with selected document
     const openDocModal = (doc) => {
-            console.log("doc on openDocModal: ", doc);
-            setSelectedDoc(doc);
-            setShowModal(true);
+        console.log("doc on openDocModal: ", doc);
+        setSelectedDoc(doc);
+        setShowModal(true);
     };
 
     // Close modal
@@ -709,7 +723,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             </AuthenticatedLayout>
         );
     }
- console.log("LOAN DATA:", loan);
+//  console.log("LOAN DATA:", loan);
 
     const handleVerifyDoc = async (docId, status) => {
         if (status === "Rejected") {
@@ -1260,25 +1274,37 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                 </a>
                                                             </td>
 
-                                                            {/* Verify / Reject / Status Column */}
-                                                            {auth.user.is_admin == 1 ? (
-                                                                <td className="border p-2 text-center">
-                                                                    {(loan.status === "Rejected") && (loan.is_temp_rejection == 1) ? (
-                                                                        <>
-                                                                            {loan.has_fixed_temp_rejection == 1 ? (
-                                                                                <>  
-                                                                                    
-                                                                                    <span className="text-blue-600 font-semibold">
-                                                                                        Docs are re-uploaded.
-                                                                                    </span>
-                                                                                    <br />
-                                                                                    <div className="flex gap-2 justify-center mt-2 mb-2">
+                                                            {/* Verify / Reject Column */}
+                                                            <td className="border p-2 text-center">
+                                                                {/* Get the rejection reason object */}
+                                                                {(() => {
+                                                                    const r = rejectReasons.find(rr => rr.id === doc.rejection_reason_id);
+
+                                                                    /* =============================
+                                                                    1. STATUS: VERIFIED
+                                                                    ============================== */
+                                                                    if (doc.verification_status === "Verified") {
+                                                                        return <span className="text-green-600 font-semibold">Verified ✅</span>;
+                                                                    }
+
+                                                                    /* =============================
+                                                                    2. STATUS: PENDING
+                                                                    ============================== */
+                                                                    if (doc.verification_status === "Pending") {
+                                                                        return (
+                                                                            <>
+                                                                                <span className="text-yellow-600 font-semibold">Pending ⏳</span>
+
+                                                                                {/* Admin Action Buttons */}
+                                                                                {auth.user.is_admin == 1 && (
+                                                                                    <div className="flex gap-2 justify-center mt-2">
                                                                                         <button
                                                                                             onClick={() => handleVerifyDoc(doc.id, "Verified")}
                                                                                             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
                                                                                         >
                                                                                             Verify
                                                                                         </button>
+
                                                                                         <button
                                                                                             onClick={() => handleVerifyDoc(doc.id, "Rejected")}
                                                                                             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
@@ -1286,113 +1312,64 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                             Reject
                                                                                         </button>
                                                                                     </div>
-                                                                                </>
-                                                                            ) : (
+                                                                                )}
+                                                                            </>
+                                                                        );
+                                                                    }
+
+
+                                                                    /* =============================
+                                                                    3. STATUS: REJECTED (Always show reason)
+                                                                    ============================== */
+                                                                    if (doc.verification_status === "Rejected") {
+                                                                        const reasonText = r ? `— ${r.reason_desc}` : "";
+
+                                                                        return (
+                                                                            <>
                                                                                 <span className="text-red-600 font-semibold">
-                                                                                    Loan Rejected ❌ -- docs are re-uploading.
+                                                                                    Rejected ❌ {reasonText}
                                                                                 </span>
-                                                                            )}
-                                                                        </>
-                                                                    ) : doc.verification_status === "Verified" ? (
-                                                                        <span className="text-green-600 font-semibold">Verified ✅</span>
-                                                                    ) : doc.verification_status === "Rejected" ? (
 
-                                                                        (() => {
-                                                                            const r = rejectReasons.find(rr => rr.id === doc.rejection_reason_id);
-                                                                            return (
-                                                                                <>
-                                                                                    <span className="text-red-600 font-semibold">
-                                                                                        Rejected ❌{r ? ` — ${r.reason_desc}` : ""}
-                                                                                    </span>
+                                                                                {/* === ADMIN ACTIONS === */}
+                                                                                {auth.user.is_admin == 1 && r?.do_allow_reapply == 1 && (
+                                                                                    <div className="flex gap-2 justify-center mt-2">
+                                                                                        <button
+                                                                                            onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                                        >
+                                                                                            Verify
+                                                                                        </button>
 
-                                                                                    {/* <div className="mt-2" id="rejectedDocReUploadSection">
+                                                                                        <button
+                                                                                            onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                                        >
+                                                                                            Reject
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* === USER RE-UPLOAD OPTION === */}
+                                                                                {auth.user.is_admin != 1 && r?.do_allow_reapply == 1 && (
+                                                                                    <div className="mt-2">
                                                                                         <button
                                                                                             type="button"
-                                                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md ml-2"
+                                                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md"
                                                                                             onClick={() => openReuploadModal(doc)}
-                                                                                            disabled={loan.status === "Approved"}
                                                                                         >
                                                                                             Re-upload Document
                                                                                         </button>
-                                                                                    </div> */}
-                                                                                </>
-                                                                            );
-                                                                        })()
+                                                                                    </div>
+                                                                                )}
+                                                                            </>
+                                                                        );
+                                                                    }
 
-                                                                    ) : (
-                                                                        <>
-                                                                            {(doc.has_reuploaded_after_rejection == 1) && (
-                                                                                <span className="text-blue-600 font-semibold">Re-uploaded, Pending !</span>
-                                                                            )}
-                                                                            <div className="flex gap-2 justify-center">
-                                                                                <button
-                                                                                    onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                                                >
-                                                                                    Verify
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                                                >
-                                                                                    Reject
-                                                                                </button>
-                                                                            </div>
-                                                                        </>
-                                                                    )}
-                                                                </td>
-                                                            ) : (
-                                                                <td className="border p-2 text-center">
-                                                                    {(loan.status === "Rejected") && (loan.is_temp_rejection == 1) && (auth.user.is_admin != 1) ? (
-                                                                        <>
-                                                                            <span className="text-red-600 font-semibold">
-                                                                                Loan Rejected ❌ -- You can re-upload documents.
-                                                                            </span>
+                                                                    /* Fallback – should never happen */
+                                                                    return null;
+                                                                })()}
+                                                            </td>
 
-                                                                            <div className="mt-2" id="rejectedDocReUploadSection">
-                                                                                <button
-                                                                                    type="button"
-                                                                                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md ml-2"
-                                                                                    onClick={() => openReuploadModal(doc)}
-                                                                                    disabled={loan.status === "Approved"}
-                                                                                >
-                                                                                    Re-upload Document
-                                                                                </button>
-                                                                            </div>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            {doc.verification_status === "Verified" ? (
-                                                                                <span className="text-green-600 font-semibold">Verified ✅</span>
-                                                                                ) : doc.verification_status === "Rejected" ? (
-                                                                                    (() => {
-                                                                                        const r = rejectReasons.find(rr => rr.id === doc.rejection_reason_id);
-                                                                                        return (
-                                                                                            <>
-                                                                                                <span className="text-red-600 font-semibold">
-                                                                                                    Rejected ❌{r ? ` — ${r.reason_desc}` : ""}
-                                                                                                </span>
-                                                                                                {r.do_allow_reapply == 1 && (loan.is_temp_rejection == 1) && (
-                                                                                                    <div className="mt-2" id="rejectedDocReUploadSection">
-                                                                                                        <button
-                                                                                                            type="button"
-                                                                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md ml-2"
-                                                                                                            onClick={() => openReuploadModal(doc)}
-                                                                                                            disabled={loan.status === "Approved"}
-                                                                                                        >
-                                                                                                            Re-upload Document
-                                                                                                        </button>
-                                                                                                    </div>
-                                                                                                )}
-                                                                                            </>
-                                                                                        );
-                                                                                    })()
-                                                                                ) : <span className="text-yellow-600 font-semibold">Pending !</span>
-                                                                            }
-                                                                        </>
-                                                                    )}
-                                                                </td>
-                                                            )}
                                                         </tr>
 
                                                     ))}
@@ -2094,7 +2071,6 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                             </table>
 
                                             {/* --- SECTOR FORM MODAL --- */}
-                                            {/* --- SECTOR FORM MODAL --- */}
                                             <Modal
                                                 show={showSectorModal}
                                                 onHide={() => setShowSectorModal(false)}
@@ -2195,7 +2171,6 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 </tbody>
                                             </table>
 
-                                            {/* --- SECTOR FORM MODAL --- */}
                                             {/* --- SECTOR FORM MODAL --- */}
                                             <Modal
                                                 show={showSectorModal}
@@ -3131,15 +3106,14 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             )}
             {/* Use height: 0 and overflow: hidden instead of display: none */}
             <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
-                {/* Ensure we have a valid component and loan data before rendering */}
-                {SectorFormComponent && loan && (
-                    <SectorFormComponent 
-                        ref={printComponentRef}
-                        loan={loan} 
-                        auth={auth} 
-                    />
-                )}
+                {SectorFormComponent && loan &&
+                    React.cloneElement(
+                        <SectorFormComponent loan={loan} auth={auth} />,
+                        { ref: printComponentRef }
+                    )
+                }
             </div>
+
 
         </AuthenticatedLayout>
     );
