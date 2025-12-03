@@ -2220,7 +2220,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                 )}
                                 
                                 {/* --- Video Consent Upload / Preview --- */}
-                                {(loan?.status == "Rejected") && (auth.user.is_admin != 1) &&(loan?.is_temp_rejection == 1) ? (
+                                {(loan?.status == "Rejected") && (auth.user.is_admin != 1) && (loan?.is_temp_rejection == 1) ? (
                                     (loan?.is_ack_downloaded == 1) && (
                                         <>
                                             <React.Fragment>
@@ -2447,7 +2447,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         </>
                                     )
                                 ) :
-                                (loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) ? (
+                                (loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) && (loan?.higher_approved_by == null) ? (
                                     
                                     (loan?.is_ack_downloaded == 1) && (
                                         <>
@@ -2675,7 +2675,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         </>
                                     )
                                 ):
-                                (loan?.is_elegible == 1) && (loan?.is_loan_re_updated_after_higher_approval == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
+                                (loan?.is_elegible == 1) && (loan?.is_loan_re_updated_after_higher_approval == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && loan?.status != "Rejected" && (
                                     (loan?.is_ack_downloaded == 1) && (
                                         <>
                                             <React.Fragment>
@@ -2685,10 +2685,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                             <legend className="font-semibold mb-3 flex items-center justify-between">
                                                                 <span>🎥 Video Consent</span>
                                                                 {loan.video_consent_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
+                                                                    <span className="text-xs text-gray-500 italic">&nbsp;(Existing video will be replaced if a new one is uploaded)</span>
                                                                 )}
                                                             </legend>
-
                                                             <Form.Group>
                                                                 <Form.Label className="font-medium">
                                                                     Upload Consent Video (MP4 only)
