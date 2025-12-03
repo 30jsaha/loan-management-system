@@ -17,7 +17,6 @@ class AllCustController extends Controller
         $query = AllCustMaster::query();
 
         // SEARCH by name or email
-        // dd($request->all());
         if ($request->search) {
             $q = $request->search;
             $query->where(function ($sub) use ($q) {
@@ -32,15 +31,14 @@ class AllCustController extends Controller
             $query->where('emp_code', 'like', "%{$request->searchEmpCode}%");
         }
 
-        // FILTER by organisation
-        if ($request->org) {
+        // FILTER by organisation — FIXED
+        if ($request->org && $request->org !== "all") {
             $query->where('organization_id', $request->org);
         }
 
         // SORTING
         $sortKey = $request->sortKey ?? 'cust_name';
         $sortDir = $request->sortDir ?? 'asc';
-
         $query->orderBy($sortKey, $sortDir);
 
         // PAGINATION
@@ -50,6 +48,7 @@ class AllCustController extends Controller
             $query->paginate($perPage)
         );
     }
+
 
 
     public function store(Request $request)
