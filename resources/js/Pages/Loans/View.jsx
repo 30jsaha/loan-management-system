@@ -1,5 +1,7 @@
 import React from "react";
 import { useEffect, useState, useCallback } from "react";
+import { useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 import { router, Head, Link } from "@inertiajs/react";
 import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs, ProgressBar, Modal, Spinner } from "react-bootstrap";
 import axios from "axios";
@@ -11,6 +13,9 @@ import Swal from "sweetalert2";
 import { MultiSelect } from 'primereact/multiselect';
 import { currencyPrefix } from "@/config";
 import AppF from "@/Components/AppF";
+import HealthF from "@/Components/HealthF";
+import EduF from "@/Components/EduF";
+
 
 export default function View({ auth, loans, loanId, rejectionReasons }) {
     console.log("Initial rejectionReasons prop: ", rejectionReasons);
@@ -62,6 +67,15 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [selectedLoanRejectionReason, setSelectedLoanRejectionReason] = useState("");
 
     // ... existing states
+    
+    const printComponentRef = useRef();
+
+    // Change this part:
+    const handlePrintSectorForm = useReactToPrint({
+        contentRef: printComponentRef, // use content: () => printComponentRef.current if this fails
+        documentTitle: `Sector_Form_${loan?.id || 'Doc'}`,
+    });
+    
     const [showSectorModal, setShowSectorModal] = useState(false);
     const handlePrint = () => {
     window.print();
@@ -87,20 +101,23 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const isHealth = orgSector === "Health";
     const isEducation = orgSector === "Education";
 
+    const SectorFormComponent = isHealth ? HealthF : EduF;
+
+    
+
     // Define the URL based on the sector (Adjust routes to match your Laravel routes)
-    const sectorFormUrl = isHealth 
-        ? "/health-form" 
-        : "/edu-form"; 
+   
 
     const sectorDocTitle = isHealth 
-        ? "Health Declaration Form" 
-        : "Education Grant Form";
-        // Open modal with selected document
-        const openDocModal = (doc) => {
+    ? "Health Declaration Form" 
+    : "Education Grant Form";
+
+    // Open modal with selected document
+    const openDocModal = (doc) => {
             console.log("doc on openDocModal: ", doc);
             setSelectedDoc(doc);
             setShowModal(true);
-        };
+    };
 
     // Close modal
     const closeDocModal = () => {
@@ -2011,6 +2028,8 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         </fieldset>
                                     </>
                                 )}
+
+
                                 {/* --- SECTOR SPECIFIC DOCUMENTS TABLE --- */}
                                 { (isHealth || isEducation)&&(loan?.status == "Rejected") && (auth.user.is_admin != 1) &&(loan?.is_temp_rejection == 1) &&  (
                                     <>
@@ -2061,14 +2080,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                         {/* Print Button */}
                                                         <td className="border p-2 text-center">
                                                             <button
-                                                                onClick={() => {
-                                                                    const printWindow = window.open(sectorFormUrl, "_blank");
-                                                                    if (printWindow) {
-                                                                        printWindow.onload = () => {
-                                                                            printWindow.print();
-                                                                        };
-                                                                    }
-                                                                }}
+                                                                onClick={handlePrintSectorForm} // <--- UPDATED THIS LINE
                                                                 className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
                                                             >
                                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
@@ -2081,6 +2093,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 </tbody>
                                             </table>
 
+                                            {/* --- SECTOR FORM MODAL --- */}
                                             {/* --- SECTOR FORM MODAL --- */}
                                             <Modal
                                                 show={showSectorModal}
@@ -2096,22 +2109,27 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 </Modal.Header>
 
                                                 <Modal.Body className="p-0">
-                                                    <iframe
-                                                        src={sectorFormUrl}
-                                                        width="100%"
-                                                        height="800"
-                                                        title="Sector Form View"
-                                                        className="w-full"
-                                                        style={{ border: "none" }}
+
+                                                    {/* Render Dynamic Component Instead of Iframe */}
+                                                    <SectorFormComponent 
+                                                        
+                                                        loan={loan} 
+                                                        auth={auth} 
+                                                        onClose={() => setShowSectorModal(false)}
                                                     />
+
                                                 </Modal.Body>
 
                                                 <Modal.Footer>
-                                                    <Button variant="secondary" onClick={() => setShowSectorModal(false)}>
+                                                    <Button 
+                                                        variant="secondary" 
+                                                        onClick={() => setShowSectorModal(false)}
+                                                    >
                                                         Close
                                                     </Button>
                                                 </Modal.Footer>
                                             </Modal>
+
                                         </fieldset>
                                     </>
                                 )}
@@ -2164,14 +2182,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                         {/* Print Button */}
                                                         <td className="border p-2 text-center">
                                                             <button
-                                                                onClick={() => {
-                                                                    const printWindow = window.open(sectorFormUrl, "_blank");
-                                                                    if (printWindow) {
-                                                                        printWindow.onload = () => {
-                                                                            printWindow.print();
-                                                                        };
-                                                                    }
-                                                                }}
+                                                                onClick={handlePrintSectorForm} // <--- UPDATED THIS LINE
                                                                 className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
                                                             >
                                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
@@ -2184,6 +2195,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 </tbody>
                                             </table>
 
+                                            {/* --- SECTOR FORM MODAL --- */}
                                             {/* --- SECTOR FORM MODAL --- */}
                                             <Modal
                                                 show={showSectorModal}
@@ -2199,26 +2211,32 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 </Modal.Header>
 
                                                 <Modal.Body className="p-0">
-                                                    <iframe
-                                                        src={sectorFormUrl}
-                                                        width="100%"
-                                                        height="800"
-                                                        title="Sector Form View"
-                                                        className="w-full"
-                                                        style={{ border: "none" }}
+
+                                                    {/* Render Dynamic Component Instead of Iframe */}
+                                                    <SectorFormComponent
+                                                        loan={loan} 
+                                                        auth={auth} 
+                                                        onClose={() => setShowSectorModal(false)}
                                                     />
+
                                                 </Modal.Body>
 
                                                 <Modal.Footer>
-                                                    <Button variant="secondary" onClick={() => setShowSectorModal(false)}>
+                                                    <Button 
+                                                        variant="secondary" 
+                                                        onClick={() => setShowSectorModal(false)}
+                                                    >
                                                         Close
                                                     </Button>
                                                 </Modal.Footer>
                                             </Modal>
+
                                         </fieldset>
                                     </>
                                 )}
                                 
+
+
                                 {/* --- Video Consent Upload / Preview --- */}
                                 {(loan?.status == "Rejected") && (auth.user.is_admin != 1) && (loan?.is_temp_rejection == 1) ? (
                                     (loan?.is_ack_downloaded == 1) && (
@@ -3111,6 +3129,17 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                     </div>
                 </div>
             )}
+            {/* Use height: 0 and overflow: hidden instead of display: none */}
+            <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
+                {/* Ensure we have a valid component and loan data before rendering */}
+                {SectorFormComponent && loan && (
+                    <SectorFormComponent 
+                        ref={printComponentRef}
+                        loan={loan} 
+                        auth={auth} 
+                    />
+                )}
+            </div>
 
         </AuthenticatedLayout>
     );
