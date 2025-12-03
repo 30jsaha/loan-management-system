@@ -70,6 +70,66 @@ body {
   }
 }
 
+/* ===== DESKTOP (slider ON) ===== */
+/* ===== DESKTOP - Full Round Rotation Slider ===== */
+/* ===== DESKTOP SLIDER (normal left-to-right slide) ===== */
+@media (min-width: 1024px) {
+
+  .slider-track {
+    display: flex;
+    width: calc(100% * 4);  /* 4 images */
+    height: 100%;
+    animation: smoothScroll 20s linear infinite;
+  }
+
+  .slider-track img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  @keyframes smoothScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-200%); }
+  }
+}
+
+/* MOBILE — only first image */
+@media (max-width: 1023px) {
+  .slider-track {
+    animation: none !important;
+    transform: translateX(0) !important;
+    width: 100% !important;
+  }
+
+  .slider-track img:nth-child(n+2) {
+    display: none !important;
+  }
+}
+
+/* ===== MOBILE (ONLY LOAN IMAGE) ===== */
+@media (max-width: 1023px) {
+
+  /* stop slider */
+  .slider-track {
+    animation: none !important;
+    transform: translateX(0%) !important;
+    width: 100% !important;
+  }
+
+  /* SHOW ONLY FIRST IMAGE (LOAN) */
+  .slider-track img:first-child {
+    display: block !important;
+  }
+
+  /* HIDE SECOND IMAGE (hero1.jpg) */
+  .slider-track img:nth-child(2) {
+    display: none !important;
+  }
+}
+
+
 
 .goal-text {
   font-weight: 700 !important; /* Sirf yeh bold rahega */
@@ -340,6 +400,48 @@ body {
   height: 60px;
 }
 
+.quick-items {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.quick-item {
+  position: relative;
+  padding-right: 45px;
+  margin-right: 45px;
+}
+
+/* ⭐ Desktop/tablet vertical line */
+.quick-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  right: -15px;   /* line ko left-right move yaha se */
+  width: 2px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ⭐ Mobile me line completely hide */
+@media (max-width: 768px) {
+  .quick-items {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .quick-item {
+    padding-right: 0;
+    margin-right: 0;
+  }
+
+  .quick-item::after {
+    display: none !important;   /* mobile me line remove */
+  }
+}
+
+
+
 /* 🔹 Buttons Ko Thoda Center Aur Stylish Dikhane Ke Liye */
 .btn-call, .btn-login {
   margin-left: 10px;
@@ -380,9 +482,9 @@ body {
 
   /* 3rd banner height */
   .quick-image img {
-	width: 80%;
+	width: 100%;
 	height: 100%;
-	transform: translateX(48px); /* thoda right shift karega */
+	transform: translateX(68px); /* thoda right shift karega */
   }
 h1,
 h2,
@@ -1304,21 +1406,6 @@ ol {
 html {
   scroll-behavior: smooth;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /*---------------------
   Choose
@@ -4002,10 +4089,10 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
 .quick-image img,
 .quick-image .img-placeholder {
 	max-width: 400%;
-	height: 117%;
+	height: 125%;
 	object-fit: contain;
-	margin-left: -40px;
-	margin-right: 50px;
+	margin-left: -58px;
+	margin-right: 60px;
 }
 
 /* Mobile fitting */
@@ -4050,7 +4137,6 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
 .quick-items {
   padding: 10px;     /* old 20px */
 }
-
 
 @media(max-width: 768px){
   .home-wrapper { flex-direction: column; }
@@ -4126,7 +4212,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
     #emiWrapper:hover {
       transform: scale(1.05);
     }
-  
+
   /* <!-- ================= CSS About (for responsiveness & styling) ================= --> */
   
     #about h2 {
@@ -4704,7 +4790,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
     width: 500% !important;      /* image ko bada kar diya */
     height: auto !important;     
     object-fit: cover !important; 
-    margin-left: -95px !important;  /* image ko left side shift */
+    margin-left: -65px !important;  /* image ko left side shift */
   }
 
   .quick-image {
