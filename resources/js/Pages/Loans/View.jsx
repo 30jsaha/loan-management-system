@@ -83,14 +83,12 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     //     contentRef: printComponentRef,
     //     documentTitle: `Sector_Form_${loan?.id || 'Doc'}`,
     // });
+    // In View.jsx
+
     const handlePrintSectorForm = useReactToPrint({
-        content: () => {
-            console.log("PRINT REF:", printComponentRef.current);
-            return printComponentRef.current;
-        },
-        contentRef: printComponentRef,
+        content: () => printComponentRef.current, // Keep this simple
         documentTitle: `Sector_Form_${loan?.id}`,
-        removeAfterPrint: false,
+        removeAfterPrint: true, // Best to reset after printing
     });
     
     const [showSectorModal, setShowSectorModal] = useState(false);
@@ -3105,14 +3103,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                 </div>
             )}
             {/* Use height: 0 and overflow: hidden instead of display: none */}
-            <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
-                {SectorFormComponent && loan &&
-                    React.cloneElement(
-                        <SectorFormComponent loan={loan} auth={auth} />,
-                        { ref: printComponentRef }
-                    )
-                }
-            </div>
+         
 
 
         </AuthenticatedLayout>

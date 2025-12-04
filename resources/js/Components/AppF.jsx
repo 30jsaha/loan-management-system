@@ -6,19 +6,39 @@ import { Row, Col } from "react-bootstrap";
 const printStyles = `
   .no-print { display:none !important; }
   @media print {
-    body * { visibility: hidden; }
-    #printable-area, #printable-area * { visibility: visible; }
-    #printable-area { position:absolute; left:0; top:0; width: 100%; }
-    .print-only { display:block !important; }
-    
-    /* Ensure modal contents are not scrollable/clipped when printing */
-    .modal { position: absolute; left: 0; top: 0; margin: 0; padding: 0; overflow: visible!important; }
-    .modal-dialog { margin: 0; padding: 0; overflow: visible!important; }
-    .modal-body { overflow: visible!important; }
-    
-    /* Force page break */
-    .page-break-before { page-break-before: always; }
+
+  /* Force only 2 pages */
+  #printable-area {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    padding: 0;
   }
+
+  /* This forces Page 2 to ALWAYS start on a new A4 page */
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* Prevent unwanted extra blank pages */
+  * {
+    box-sizing: border-box !important;
+    max-height: 297mm !important;
+  }
+
+  /* Remove padding/margins that push content down */
+  body, html {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide UI on print */
+  .no-print {
+    display: none !important;
+  }
+}
+
 `;
 
 export default function AppF({ loan = {}, auth = {} }) {
@@ -58,6 +78,24 @@ export default function AppF({ loan = {}, auth = {} }) {
     <>
       {/* Inject print styles */}
       <style>{printStyles}</style>
+       {/* PRINT BUTTON */}
+      <div className="no-print" style={{ textAlign: "right", marginBottom: "10px" }}>
+        <button
+          onClick={() => window.print()}
+          style={{
+            background: "#2563eb",
+            color: "white",
+            padding: "6px 14px",
+            fontSize: "14px",
+            borderRadius: "4px",
+            cursor: "pointer",
+            border: "none"
+          }}
+        >
+          Print Form
+        </button>
+      </div>
+
 
       {/* The ID "printable-area" is crucial for your CSS to work. */}
       <div id="printable-area" className="p-4 bg-white text-black">

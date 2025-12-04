@@ -508,3 +508,8 @@ table thead
 {
   background: #dfdfdf !important;
 }
+
+.modal-dialog nav
+{
+  display: none !important;
+}
