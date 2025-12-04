@@ -276,7 +276,7 @@ export default function DeptDatabase({ auth }) {
       <Head title="Department Employee Database" />
       <Toaster position="top-center" />
 
-      <div className="py-6 max-w-7xl mx-auto px-4 space-y-6">
+      <div className="py-8 w-full max-w-[95vw] mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
         {/* FORM */}
         <div className="bg-white shadow-md rounded-lg p-6 border border-gray-200">
           <h4 className="text-lg font-semibold text-gray-700 mb-4">

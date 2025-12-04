@@ -104,6 +104,9 @@ Route::middleware('auth')->get('/customers/dept-database', fn() => Inertia::rend
 Route::get('/loans/{id}', [LoansController::class, 'loanDetailsView'])
 ->middleware(['auth', 'verified'])->name('loan.view');
 
+Route::get('/loans-print/{id}', [LoansController::class, 'loanPrintDetailsView'])
+->middleware(['auth', 'verified'])->name('loan.print.view');
+
 Route::middleware('auth')->get('/loans/{id}/edit', fn($id) => Inertia::render('Loans/Edit', ['loanId' => $id]))->name('loan.edit');
 
 //customers routes

@@ -38,6 +38,20 @@ class LoansController extends Controller
             'rejectionReasons' => $rejectionReasons
         ]);
     }
+    public function loanPrintDetailsView($id)
+    {
+        $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        ->where('id',$id)
+        ->orderBy('created_at','desc')->get();
+
+        $rejectionReasons = RejectionReson::all();
+
+        return inertia('Loans/PrintFunc', [
+            'loans' => $loans,
+            'loanId' => $id,
+            'rejectionReasons' => $rejectionReasons
+        ]);
+    }
     public function create()
     {
         // return Loan::all();

@@ -1330,34 +1330,78 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
                                                                                 {/* === ADMIN ACTIONS === */}
                                                                                 {auth.user.is_admin == 1 && r?.do_allow_reapply == 1 && (
-                                                                                    <div className="flex gap-2 justify-center mt-2">
-                                                                                        <button
-                                                                                            onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                                                        >
-                                                                                            Verify
-                                                                                        </button>
+                                                                                    <>
+                                                                                        {(() => {
+                                                                                            if (doc.has_reuploaded_after_rejection == 1) {
+                                                                                                return (
+                                                                                                    <>
+                                                                                                        <div className="mt-2">
+                                                                                                            <span className="text-blue-600 font-semibold">
+                                                                                                                Awaiting Re-Verification ⏳
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <div className="mt-2">
+                                                                                                            <span className="text-black-600 font-semibold">
+                                                                                                                Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                    </>
+                                                                                                );
+                                                                                            }
+                                                                                            return null;
+                                                                                        })()}
 
-                                                                                        <button
-                                                                                            onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                                                        >
-                                                                                            Reject
-                                                                                        </button>
-                                                                                    </div>
+                                                                                        <div className="flex gap-2 justify-center mt-2">
+                                                                                            <button
+                                                                                                onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                                            >
+                                                                                                Verify
+                                                                                            </button>
+
+                                                                                            <button
+                                                                                                onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                                            >
+                                                                                                Reject
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    </>
                                                                                 )}
+
 
                                                                                 {/* === USER RE-UPLOAD OPTION === */}
                                                                                 {auth.user.is_admin != 1 && r?.do_allow_reapply == 1 && (
-                                                                                    <div className="mt-2">
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md"
-                                                                                            onClick={() => openReuploadModal(doc)}
-                                                                                        >
-                                                                                            Re-upload Document
-                                                                                        </button>
-                                                                                    </div>
+                                                                                    <>
+                                                                                        {(() => {
+                                                                                            if (doc.has_reuploaded_after_rejection == 1) {
+                                                                                                return (
+                                                                                                    <>
+                                                                                                        <div className="mt-2">
+                                                                                                            <span className="text-blue-600 font-semibold">
+                                                                                                                Please wait for Re-Verification ⏳
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                        <div className="mt-2">
+                                                                                                            <span className="text-black-600 font-semibold">
+                                                                                                                Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                    </>
+                                                                                                );
+                                                                                            }
+                                                                                            return null;
+                                                                                        })()}
+                                                                                        <div className="mt-2">
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md"
+                                                                                                onClick={() => openReuploadModal(doc)}
+                                                                                            >
+                                                                                                Re-upload Document
+                                                                                            </button>
+                                                                                        </div>
+                                                                                        </>
                                                                                 )}
                                                                             </>
                                                                         );
@@ -1371,7 +1415,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                         </tr>
 
                                                     ))}
-                                                    {auth.user.is_admin==1 && (
+                                                    {auth.user.is_admin==1 || (auth.user.is_admin!=1 && (loan?.status == 'Approved' || loan?.status == 'Rejected')) && (
                                                         <>
                                                             {loan.video_consent_path && (
                                                                 <tr key="video-consent" className="hover:bg-gray-50 transition">
@@ -1515,7 +1559,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         ) : (
                                             <>
                                                 <div className="p-3 border rounded bg-gray-50">
-                                                    <p className="text-gray-600 mb-3">No documents uploaded yet.</p>                                                        
+                                                    <p className="text-gray-600 mb-3">No documents uploaded yet.</p>
                                                     {(loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) && (
                                                         <LoanDocumentsUpload
                                                             loanFormData={loan}
