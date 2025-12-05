@@ -19,7 +19,7 @@ const DataLine = ({ className = "", width = "100%" }) => (
   />
 );
 
-export default function DeductionVariationForm({ auth, data }) {
+export default function HealthPrintFormat({ auth, loan }) {
   const handlePrint = () => {
     window.print();
   };
