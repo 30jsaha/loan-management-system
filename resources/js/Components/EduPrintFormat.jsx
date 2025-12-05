@@ -73,42 +73,50 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
 
   return (
     <div ref={ref} className="bg-white text-black" style={{ fontFamily: "Arial, sans-serif" }}>
-      <style>{`
-        @media print {
-            @page {
-                size: A4 portrait;
-                margin: 10mm;
-            }
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
-            body, html {
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 210mm !important;
-                background: white !important;
-            }
-            .no-print {
-                display: none !important;
-            }
+    <style>
+    {`
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 0mm;  /* reduced margin so full content fits */
         }
-        @media screen {
-            .print-container {
-                width: 210mm;
-                min-height: 297mm;
-                margin: 0 auto;
-                background: white;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            }
-        }
-      `}</style>
 
-      <div className="print-container p-6" style={{ maxWidth: "210mm" }}>
+        html, body {
+            width: 100%;
+            height: 100%;
+            padding: 0 !important;
+            margin: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .print-container {
+            width: 190mm !important;         /* reduced width */
+            min-height: 277mm !important;    /* usable A4 height */
+            padding: 0 !important;           /* remove padding */
+            margin: 0 auto !important;
+            overflow: visible !important;    /* no cutting */
+            box-shadow: none !important;
+        }
+    }
+
+    @media screen {
+        .print-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+    }
+    `}
+    </style>
+
+
+      <div className="print-container p-3" style={{ maxWidth: "210mm" }}>
         <div className="bg-white" style={{ fontFamily: "Arial, sans-serif" }}>
           {/* Logo */}
-          <div style={{ maxWidth: "150px", margin: "0 auto 16px" }}>
+          <div style={{ maxWidth: "100px", margin: "0 auto 16px" }}>
             <MainLogo width="120px" />
           </div>
 
@@ -228,7 +236,7 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
           </p>
 
           {/* Signature / Date */}
-          <div className="flex justify-between items-center my-8 text-sm px-5">
+          <div className="flex justify-between items-center my-2 text-sm px-5">
             <div className="items-center w-2/5">
               <DataLine className="w-full" />
               <div className="font-semibold mt-1">Signature</div>
@@ -240,8 +248,8 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
           </div>
 
           {/* Education Department Use Only */}
-          <div className="mt-6">
-            <div style={{ borderBottom: "8px solid #c70c0cff", marginBottom: "8px" }} />
+          <div className="mt-0">
+            <div style={{ borderBottom: "8px solid #c70c0cff", marginBottom: "2px" }} />
             <div className="mb-1" style={{ fontWeight: 440 }}>
               Education Department Use Only
             </div>
