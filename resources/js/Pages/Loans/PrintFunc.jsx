@@ -352,7 +352,7 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                                             // Wait for modal to open and component to render
                                                                             setTimeout(() => {
                                                                                 handlePrintSectorForm();
-                                                                            }, 0);
+                                                                            }, 30);
                                                                         } else {
                                                                             // Modal is already open, trigger print directly
                                                                             
