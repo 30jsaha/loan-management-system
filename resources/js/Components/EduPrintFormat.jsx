@@ -30,7 +30,7 @@ const DataLine = ({ className = "", children = null }) => (
  * A reusable print component for the Education Loan Form.
  * Wrapped in forwardRef to work with react-to-print.
  */
-const EduPrintFormat = forwardRef(({ auth, loan = {} }, ref) => {
+const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
   // helpers
   const safe = (v) => (v === null || typeof v === "undefined" ? "" : v);
 
@@ -337,5 +337,7 @@ const EduPrintFormat = forwardRef(({ auth, loan = {} }, ref) => {
     </div>
   );
 });
+
+EduPrintFormat.displayName = 'EduPrintFormat';
 
 export default EduPrintFormat;
