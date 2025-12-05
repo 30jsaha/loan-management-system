@@ -253,6 +253,44 @@ export default function PrintFunc({ auth, loans, loanId }) {
                     </div>
                 </div>
             </div>
+         variant="secondary" 
+                                                    onClick={() => setShowSectorModal(false)}
+                                                >
+                                                    Close
+                                                </Button>
+                                            </Modal.Footer>
+                                        </Modal>
+
+                                    </fieldset>
+                                </>
+                            )}
+                            </Row>
+                            ) : (
+                            <p>No loan found.</p>
+                        )}
+                    </div>
+                </div>
+        </div>
+
+         variant="secondary" 
+                                                    onClick={() => setShowSectorModal(false)}
+                                                >
+                                                    Close
+                                                </Button>
+                                            </Modal.Footer>
+                                        </Modal>
+
+                                    </fieldset>
+                                </>
+                            )}
+                            </Row>
+                            ) : (
+                            <p>No loan found.</p>
+                        )}
+                    </div>
+                </div>
+        </div>
+
         </AuthenticatedLayout>
     );
 }
