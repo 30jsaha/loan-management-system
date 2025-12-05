@@ -12,8 +12,8 @@ import HealthF from "@/Components/HealthF";
 import EduF from "@/Components/EduF";
 
 // ✅ IMPORT YOUR COMPONENT
-import EduPrintFormat from "@/Components/EduPrintFormat"; 
-
+import EduPrintFormat from "@/Components/EduPrintFormat";
+  
 export default function PrintFunc({ auth, loans, loanId }) {
     const [loan, setLoan] = useState(loans && loans.length > 0 ? loans[0] : null);
     const [loading, setLoading] = useState(true);
