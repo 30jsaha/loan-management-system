@@ -1,19 +1,17 @@
 import React, { useRef, useState, useEffect } from "react";
-import { useReactToPrint } from "react-to-print";
+import { useReactToPrint } from "react-to-print"; // Ensure you are on v3.0+
 import { Head, Link } from "@inertiajs/react";
 import { Row, Col, Modal, Button } from "react-bootstrap";
 import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+// Icons
 import { ArrowLeft, Download, Eye, Printer } from "lucide-react";
 import Swal from "sweetalert2";
 import AppF from "@/Components/AppF";
 import HealthF from "@/Components/HealthF";
 import EduF from "@/Components/EduF";
-<<<<<<< Updated upstream
  
 // ✅ IMPORT YOUR COMPONENT
-=======
->>>>>>> Stashed changes
 import EduPrintFormat from "@/Components/EduPrintFormat";
  
 export default function PrintFunc({ auth, loans, loanId }) {
@@ -27,7 +25,6 @@ export default function PrintFunc({ auth, loans, loanId }) {
     const [selectedDoc, setSelectedDoc] = useState(null);
  
     const pdfPath = "/storage/uploads/documents/Loan Application Form - loanms.pdf";
-<<<<<<< Updated upstream
  
     // ✅ 1. CREATE REF
     const printRef = useRef(null);
@@ -112,61 +109,13 @@ export default function PrintFunc({ auth, loans, loanId }) {
         window.print();
     };
  
-=======
-
-    // ✅ CREATE REF
-    const printRef = useRef(null);
-
->>>>>>> Stashed changes
     // Helper logic
     const orgSector = loan?.organisation?.sector_type;
     const isHealth = orgSector === "Health";
     const isEducation = orgSector === "Education";
-    const canPrintSector = isHealth || isEducation;
+    const canPrintSector = isHealth || isEducation; // Render for both
     const sectorDocTitle = isHealth ? "Health Declaration Form" : "Education Grant Form";
-<<<<<<< Updated upstream
  
-=======
-
-    // ✅ SIMPLIFIED PRINT HANDLER
-    const triggerPrint = useReactToPrint({
-        contentRef: printRef,
-        documentTitle: `Loan_Application_${loan?.id || "Form"}`,
-        pageStyle: `
-            @page {
-                size: A4 portrait;
-                margin: 10mm;
-            }
-            @media print {
-                body {
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-            }
-        `,
-        onBeforePrint: () => {
-            console.log("Starting print...");
-            console.log("Ref current:", printRef.current);
-            return Promise.resolve();
-        },
-        onAfterPrint: () => {
-            console.log("Print completed!");
-        },
-        onPrintError: (errorLocation, error) => {
-            console.error("Print error at:", errorLocation, error);
-            Swal.fire({
-                icon: "error",
-                title: "Print Error",
-                text: "Unable to print. Please try again.",
-            });
-        }
-    });
-
-    const handlePrint = () => {
-        window.print();
-    };
-
->>>>>>> Stashed changes
     // Fetch latest data
     useEffect(() => {
         if(!loanId) return;
@@ -183,26 +132,7 @@ export default function PrintFunc({ auth, loans, loanId }) {
                 setLoading(false);
             });
     }, [loanId]);
-<<<<<<< Updated upstream
  
-=======
-
-    // ✅ DEBUG: Check ref after loan loads
-    useEffect(() => {
-        if (loan) {
-            setTimeout(() => {
-                console.log("=== PRINT DEBUG ===");
-                console.log("Ref exists:", !!printRef.current);
-                console.log("Ref element:", printRef.current);
-                console.log("Ref innerHTML length:", printRef.current?.innerHTML?.length);
-                console.log("Can print sector:", canPrintSector);
-                console.log("Loan exists:", !!loan);
-                console.log("Sector:", orgSector);
-            }, 500);
-        }
-    }, [loan, canPrintSector, orgSector]);
-
->>>>>>> Stashed changes
     const markAckDownloaded = async () => {
         try {
             await axios.post(`/api/loans/${loanId}/mark-ack-downloaded`);
@@ -219,7 +149,6 @@ export default function PrintFunc({ auth, loans, loanId }) {
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan Print View</h2>}
         >
             <Head title="Print View" />
-<<<<<<< Updated upstream
  
             {/* ✅ 3. OFF-SCREEN RENDER
                 We place it way off screen (-10000px).
@@ -243,39 +172,6 @@ export default function PrintFunc({ auth, loans, loanId }) {
                 )}
             </div>
  
-=======
-
-            {/* ✅ RENDER PRINTABLE CONTENT - Hidden on screen, visible on print */}
-            <div 
-                className="print-only" 
-                style={{ 
-                    display: 'none'
-                }}
-            >
-                {loan && <EduPrintFormat ref={printRef} auth={auth} loan={loan} />}
-            </div>
-
-            {/* ✅ Add print-specific CSS */}
-            <style>{`
-                @media print {
-                    body * {
-                        visibility: hidden;
-                    }
-                    .print-only,
-                    .print-only * {
-                        visibility: visible;
-                        display: block !important;
-                    }
-                    .print-only {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                    }
-                }
-            `}</style>
-
->>>>>>> Stashed changes
             <div className="py-12">
                 <div className="max-w-9xl mx-auto sm:px-6 lg:px-8 custPadding">
                     <div className="bg-white shadow-sm sm:rounded-lg p-6">
@@ -384,7 +280,6 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                             <td className="border p-2 text-center">
                                                                 <button
                                                                     onClick={() => {
-<<<<<<< Updated upstream
                                                                         if (!printRef.current) {
                                                                             Swal.fire({
                                                                                 title: 'Not Ready',
@@ -394,15 +289,6 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                                             return;
                                                                         }
                                                                         handlePrintSectorForm();
-=======
-                                                                        console.log("Print button clicked");
-                                                                        console.log("Ref before print:", printRef.current);
-                                                                        if (!printRef.current) {
-                                                                            Swal.fire("Error", "Print component not ready", "error");
-                                                                            return;
-                                                                        }
-                                                                        triggerPrint();
->>>>>>> Stashed changes
                                                                     }}
                                                                     className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
                                                                 >
@@ -429,19 +315,12 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                             {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
                                                         </Modal.Title>
                                                     </Modal.Header>
-<<<<<<< Updated upstream
  
                                                     <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: '80vh', display: "block" }}>
                                                         {/* ✅ 5. Render Component in Modal for Viewing */}
                                                         {/* This instance is for display only. The print button uses the hidden one. */}
                                                         <div className="p-4 bg-gray-100 print-area text-black" ref={printRef}>
                                                             {loan && <EduPrintFormat auth={auth} loan={loan} />}
-=======
-
-                                                    <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: '80vh' }}>
-                                                        <div className="p-4 bg-gray-100">
-                                                            <EduPrintFormat auth={auth} loan={loan} />
->>>>>>> Stashed changes
                                                         </div>
                                                     </Modal.Body>
  
@@ -449,7 +328,6 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                         <Button variant="secondary" onClick={() => setShowSectorModal(false)}>
                                                             Close
                                                         </Button>
-<<<<<<< Updated upstream
                                                         {/* <button
                                                             onClick={handlePrintSectorForm}
                                                             className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
@@ -474,19 +352,6 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                         >
                                                             <Printer size={14} /> Print
                                                         </button>
-=======
-                                                        <Button variant="success" onClick={() => {
-                                                            console.log("Modal print clicked");
-                                                            console.log("Ref:", printRef.current);
-                                                            if (!printRef.current) {
-                                                                Swal.fire("Error", "Print component not ready", "error");
-                                                                return;
-                                                            }
-                                                            triggerPrint();
-                                                        }}>
-                                                            <Printer size={16} className="me-1" /> Print
-                                                        </Button>
->>>>>>> Stashed changes
                                                     </Modal.Footer>
                                                 </Modal>
                                             </fieldset>
