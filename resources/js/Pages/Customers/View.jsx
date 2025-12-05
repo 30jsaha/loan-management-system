@@ -30,7 +30,7 @@ export default function View({ auth, customerId }) {
             try {
                 setLoading(true);
                 const res = await axios.get("/api/customers-history/" + customerId);
-                setCustomerHistory(res.data.collections || {});
+                setCustomerHistory(res.data || {});
                 console.log("Customer History Data:", res.data);
                 setLoading(false);
             } catch (err) {
@@ -217,9 +217,9 @@ export default function View({ auth, customerId }) {
                                     ) : (
                                         <p>No customer found.</p>
                                     )}
-                                </div>
+                            </div>
                             {/* </div> */}
-                            <fieldset className="fldset">
+                            <fieldset className="fldset ">
                                 <legend className="font-semibold">Actions</legend>
                                 <div className="mt-6 flex justify-center gap-4">
                                     <Link
@@ -238,6 +238,113 @@ export default function View({ auth, customerId }) {
                                     </button>
                                 </div>
                             </fieldset>
+                            {/* ========== Loan History Section ========== */}
+                            <div className="mt-4">
+                            <h3 className="text-lg font-semibold mb-1">Loan History</h3>
+                            {/* ================== LOAN HISTORY SECTION ================== */}
+
+                            {(() => {
+                                // Extract loan_ids that have collections
+                                const loanIdsWithCollections = Object.values(customerHistory.collections || {})
+                                    .flat()
+                                    .map(c => c.loan_id);
+
+                                return (
+                                    <div className="mt-10">
+                                        <h3 className="text-lg font-semibold mb-3">Loan History</h3>
+
+                                        <div className="space-y-4 max-h-[550px] overflow-y-auto pr-2">
+
+                                            {customerHistory?.loans?.map((loan) => {
+                                                const hasCollections = loanIdsWithCollections.includes(loan.id);
+
+                                                // Get collection array for this loan id
+                                                const collectionsForLoan = Object.values(customerHistory.collections || {})
+                                                    .flat()
+                                                    .filter(c => c.loan_id === loan.id);
+
+                                                return (
+                                                    <details
+                                                        key={loan.id}
+                                                        open={hasCollections} // auto-open if collection exists
+                                                        className={`border rounded-lg bg-white shadow p-3 cursor-pointer transition 
+                                                            ${hasCollections ? "bg-green-50 border-green-400" : ""}`}
+                                                    >
+                                                        {/* HEADER */}
+                                                        <summary 
+                                                            className={`flex justify-between items-center text-md font-semibold px-1 py-2 rounded
+                                                                ${hasCollections ? "bg-green-200 text-green-900" : "bg-gray-100 text-gray-800"}`}
+                                                        >
+                                                            <span>Loan ID {loan.id} — {loan.company_name || "National Bank PNG"}</span>
+                                                            <span>▼</span>
+                                                        </summary>
+
+                                                        {/* DETAILS CARDS (same as earlier) */}
+                                                        <div className="mt-4 bg-white shadow-sm border rounded-lg p-4">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                
+                                                                <div>
+                                                                    <h4 className="font-semibold mb-2">Customer</h4>
+                                                                    <p><strong>{customer.first_name} {customer.last_name}</strong> — {customer.email}</p>
+                                                                    <p><strong>Phone:</strong> {customer.phone}</p>
+                                                                    <p><strong>Employee No:</strong> {customer.employee_no}</p>
+
+                                                                    <h4 className="font-semibold mt-4 mb-2">Organisation</h4>
+                                                                    <p>{loan.organisation_name || "National Bank PNG"} — {loan.sector || "Health"}</p>
+                                                                </div>
+
+                                                                <div>
+                                                                    <h4 className="font-semibold mb-2">Loan Details</h4>
+                                                                    <p><strong>Amount:</strong> PGK {parseFloat(loan.amount).toLocaleString()}</p>
+                                                                    <p><strong>Tenure:</strong> {loan.tenure}</p>
+                                                                    <p><strong>Interest:</strong> {loan.interest}</p>
+                                                                    <p><strong>Last EMI Paid:</strong> {loan.last_emi_paid}</p>
+                                                                    <p><strong>Next Due:</strong> {loan.next_due}</p>
+                                                                    <p><strong>Total Repay:</strong> PGK {loan.total_repay}</p>
+                                                                </div>
+
+                                                            </div>
+                                                        </div>
+
+                                                        {/* EMI TABLE */}
+                                                        <div className="mt-4">
+                                                            <div className="overflow-x-auto">
+                                                                <table className="min-w-full border">
+                                                                    <thead className="bg-green-600 text-white text-sm">
+                                                                        <tr>
+                                                                            <th className="border px-3 py-2">EMI No.</th>
+                                                                            <th className="border px-3 py-2">Due Date</th>
+                                                                            <th className="border px-3 py-2">Payment Date</th>
+                                                                            <th className="border px-3 py-2">Status</th>
+                                                                            <th className="border px-3 py-2">Amount</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="text-sm">
+                                                                        {collectionsForLoan.map((emi, idx) => (
+                                                                            <tr key={idx} className="text-center">
+                                                                                <td className="border px-3 py-2">{emi.installment_no}</td>
+                                                                                <td className="border px-3 py-2">{emi.due_date}</td>
+                                                                                <td className="border px-3 py-2">{emi.payment_date || "-"}</td>
+                                                                                <td className="border px-3 py-2 text-green-600 font-semibold">{emi.status}</td>
+                                                                                <td className="border px-3 py-2">PGK {emi.amount}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+
+                                                    </details>
+                                                );
+                                            })}
+
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            </div>
+
                         </Col>
                     </Row>
                 </div>
