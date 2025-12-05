@@ -23,12 +23,7 @@ export default function HealthF({ loan, auth, onBack }) {
 
   const amountPerPay = loan?.emi_amount || "0.00";
   const totalAmount = loan?.total_repay_amt || loan?.total_repayment || "0.00";
-
-  const loanCode =
-    loan?.loan_reference ||
-    loan?.loan_settings?.loan_desc ||
-    "LOAN";
-
+  const loanCode = loan?.loan_reference || loan?.loan_settings?.loan_desc || "LOAN";
   const purposeText = loan?.purpose || "";
 
   const renderBoxedField = (length, text = "") => {
@@ -38,42 +33,30 @@ export default function HealthF({ loan, auth, onBack }) {
     ));
   };
 
-  const handlePrint = () => window.print();
+  
 
   return (
-    <div className="w-full bg-gray-100 p-4 overflow-auto">
+    <div className="bg-white mx-auto"
+      style={{
+        width: "210mm",
+        padding: "8mm",     // ✅ outer padding
+      }}>
 
-      {/* HEADER BUTTONS (hidden on print) */}
-      <div className="max-w-[210mm] mx-auto mb-4 flex items-center justify-between no-print">
-        {onBack ? (
-          <button
-            onClick={onBack}
-            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
-          >
-            <ArrowLeft size={16} className="mr-2" /> Back
-          </button>
-        ) : (
-          <div />
-        )}
-
-        <button
-          onClick={handlePrint}
-          className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium shadow-sm"
-        >
-          <Printer size={16} className="mr-2" /> Print Form
-        </button>
-      </div>
-
-      {/* PRINTABLE AREA */}
+    
+      {/* PRINTABLE AREA (same size behavior as EduPrintFormat) */}
       <div
         id="content-area"
-        className="bg-white text-black mx-auto"
-        style={{ width: "210mm", minHeight: "297mm", padding: "12mm" }}
+        className="print-container bg-white text-black mx-auto p-3"
+        style={{
+          width: "190mm",
+          minHeight: "277mm",
+          padding: "8mm",
+        }}
       >
         {/* Logo */}
         <div className="flex flex-col items-center mb-2">
-          <div style={{ maxWidth: "100px", margin: "0 auto" }}>
-            <MainLogo width="100px" />
+          <div style={{ maxWidth: "150px", margin: "0 auto" }}>
+            <MainLogo width="120px" />
           </div>
           <div className="text-center font-bold text-sm mt-2">
             AGRO ADVANCE ABEN LTD
@@ -114,6 +97,7 @@ export default function HealthF({ loan, auth, onBack }) {
 
         {/* EMPLOYEE DETAILS */}
         <div className="grid grid-cols-2 gap-4 mb-4 text-xs">
+
           {/* LEFT */}
           <div className="space-y-3">
             <div className="flex items-center">
@@ -260,10 +244,23 @@ export default function HealthF({ loan, auth, onBack }) {
         </div>
       </div>
 
-      {/* PRINT CSS */}
-    
+      {/* PRINT CSS — SAME BEHAVIOR AS EduPrintFormat */}
       <style>{`
         @media print {
+
+          @page {
+            size: A4 portrait;
+            margin: 0 !important;
+          }
+
+          html, body {
+            height: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
           body * {
             visibility: hidden !important;
           }
@@ -272,13 +269,29 @@ export default function HealthF({ loan, auth, onBack }) {
             visibility: visible !important;
           }
 
-          @page {
-            size: A4 portrait;
-            margin: 0 !important;
-          }
-
           .no-print {
             display: none !important;
+          }
+
+          .print-container {
+            width: 190mm !important;
+            min-height: 277mm !important;
+            max-height: 277mm !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+        }
+
+        @media screen {
+          .print-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: none !important;
+            padding: 0 !important;
           }
         }
       `}</style>

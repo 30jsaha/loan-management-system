@@ -41,7 +41,7 @@ const printStyles = `
 
 `;
 
-export default function AppF({ loan = {}, auth = {} }) {
+const AppF = React.forwardRef(function AppF({ loan = {}, auth = {} }, ref) {
   // safe shortcuts / fallbacks
   const customer = loan.customer || {};
   const company = loan.company || {};
@@ -77,28 +77,11 @@ export default function AppF({ loan = {}, auth = {} }) {
   return (
     <>
       {/* Inject print styles */}
-      <style>{printStyles}</style>
-       {/* PRINT BUTTON */}
-      <div className="no-print" style={{ textAlign: "right", marginBottom: "10px" }}>
-        <button
-          onClick={() => window.print()}
-          style={{
-            background: "#2563eb",
-            color: "white",
-            padding: "6px 14px",
-            fontSize: "14px",
-            borderRadius: "4px",
-            cursor: "pointer",
-            border: "none"
-          }}
-        >
-          Print Form
-        </button>
-      </div>
+     
 
 
       {/* The ID "printable-area" is crucial for your CSS to work. */}
-      <div id="printable-area" className="p-4 bg-white text-black">
+      <div id="printable-area" ref={ref} className="p-4 bg-white text-black">
 
         {/* LOGO */}
         <div className="logo-container" style={{ maxWidth: "100px", margin: "0 auto" }}>
@@ -1345,4 +1328,8 @@ export default function AppF({ loan = {}, auth = {} }) {
       </div>
     </>
   );
-}
+});
+ 
+ export default AppF;
+
+// --- IGNORE ---

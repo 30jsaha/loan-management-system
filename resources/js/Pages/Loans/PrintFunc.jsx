@@ -28,6 +28,8 @@ export default function PrintFunc({ auth, loans, loanId }) {
  
     // ✅ 1. CREATE REF
     const printRef = useRef(null);
+    const ackPrintRef = useRef(null);
+
 
     useEffect(() => {
         console.log("Print ref updated:", printRef.current);
@@ -103,7 +105,45 @@ export default function PrintFunc({ auth, loans, loanId }) {
         removeAfterPrint: false,
         copyStyles: true,
     });
- 
+    const handlePrintAck = useReactToPrint({
+        content: () => {
+            console.log("ACK PRINT CONTENT:", ackPrintRef.current);
+
+            if (!ackPrintRef.current || !ackPrintRef.current.innerHTML.trim()) {
+                console.error("No ACKNOWLEDGEMENT content to print!");
+
+                // Try again after rendering
+                setTimeout(() => {
+                    handlePrintAck();
+                }, 500);
+
+                return null;
+            }
+
+            return ackPrintRef.current;
+        },
+        contentRef: ackPrintRef,
+        documentTitle: `Acknowledgement_${loan?.id || ""}`,
+        onBeforeGetContent: async () => {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    console.log("ACK PRINT READY");
+                    resolve();
+                }, 1000);
+            });
+        },
+        onAfterPrint: () => {
+            Swal.fire("Success", "Acknowledgement printed successfully.", "success");
+        },
+        onPrintError: (err) => {
+            console.error("Acknowledgement Print Error:", err);
+            Swal.fire("Error", "Unable to print acknowledgement.", "error");
+        },
+        removeAfterPrint: false,
+        copyStyles: true,
+    });
+
+
  
     const handlePrint = () => {
         window.print();
@@ -142,7 +182,15 @@ export default function PrintFunc({ auth, loans, loanId }) {
             console.error("Failed to update ack status", err);
         }
     };
- 
+    
+    const renderSectorForm = () => {
+        if (!loan) return null;
+
+        return loan.organisation?.sector_type === "Health"
+            ? <HealthF auth={auth} loan={loan} />
+            : <EduPrintFormat auth={auth} loan={loan} />;
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -159,19 +207,34 @@ export default function PrintFunc({ auth, loans, loanId }) {
                 {showSectorModal && (
                     <div 
                         ref={printRef}
-                        style={{ 
-                            position: 'absolute', 
-                            left: '-9999px', 
+                        style={{
+                            position: "absolute",
+                            left: "-9999px",
                             top: 0,
-                            width: '210mm', // A4 width
-                            padding: '20mm'
+                            width: "210mm",
+                            padding: "20mm"
                         }}
                     >
-                        <EduPrintFormat auth={auth} loan={loan} />
+                        {renderSectorForm()}
                     </div>
+
                 )}
             </div>
- 
+            <div
+                ref={ackPrintRef}
+                style={{
+                    position: "absolute",
+                    left: "-9999px",
+                    top: 0,
+                    width: "210mm",
+                    padding: "20mm",
+                    background: "white"
+                }}
+            >
+                {loan && <AppF loan={loan} auth={auth} />}
+            </div>
+
+
             <div className="py-12">
                 <div className="max-w-9xl mx-auto sm:px-6 lg:px-8 custPadding">
                     <div className="bg-white shadow-sm sm:rounded-lg p-6">
@@ -232,7 +295,10 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                 <Modal.Body className="p-0"><AppF loan={loan} auth={auth} /></Modal.Body>
                                                 <Modal.Footer className="no-print">
                                                     <Button variant="secondary" onClick={() => setShowModal1(false)}>Close</Button>
-                                                    <Button variant="success" onClick={handlePrint}>🖨️ Print Form</Button>
+                                                    <Button variant="success" onClick={handlePrintAck}>
+                                                        🖨️ Print Acknowledgement
+                                                    </Button>
+
                                                 </Modal.Footer>
                                             </Modal>
                                         </fieldset>
@@ -259,7 +325,7 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                             <td className="border p-2 text-center">{sectorDocTitle}</td>
                                                             <td className="border p-2 text-center">{sectorDocTitle}</td>
  
-                                                            <td className="border p-2 text-center">
+                                                            <td className=" p-2 text-center">
                                                                 <button
                                                                     onClick={() => setShowSectorModal(true)}
                                                                     className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
@@ -280,15 +346,17 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                             <td className="border p-2 text-center">
                                                                 <button
                                                                     onClick={() => {
-                                                                        if (!printRef.current) {
-                                                                            Swal.fire({
-                                                                                title: 'Not Ready',
-                                                                                text: 'Document is still loading. Please try again.',
-                                                                                icon: 'warning'
-                                                                            });
-                                                                            return;
+                                                                // First open the modal to ensure component is rendered
+                                                                        if (!showSectorModal) {
+                                                                            setShowSectorModal(true);
+                                                                            // Wait for modal to open and component to render
+                                                                            setTimeout(() => {
+                                                                                handlePrintSectorForm();
+                                                                            }, 0);
+                                                                        } else {
+                                                                            // Modal is already open, trigger print directly
+                                                                            
                                                                         }
-                                                                        handlePrintSectorForm();
                                                                     }}
                                                                     className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
                                                                 >
@@ -319,9 +387,10 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                     <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: '80vh', display: "block" }}>
                                                         {/* ✅ 5. Render Component in Modal for Viewing */}
                                                         {/* This instance is for display only. The print button uses the hidden one. */}
-                                                        <div className="p-4 bg-gray-100 print-area text-black" ref={printRef}>
-                                                            {loan && <EduPrintFormat auth={auth} loan={loan} />}
+                                                        <div className="p-1 bg-gray-100 print-area text-black" ref={printRef}>
+                                                            {loan && renderSectorForm()}
                                                         </div>
+
                                                     </Modal.Body>
  
                                                     <Modal.Footer>
