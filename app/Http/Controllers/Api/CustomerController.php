@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Customer;
 use App\Models\CustomerEligibilityHistory;
+use App\Models\LoanApplication as Loan;
+use App\Models\InstallmentDetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -361,4 +363,48 @@ class CustomerController extends Controller
             'message' => 'Customer deleted successfully.',
         ], 200);
     }
+
+    public function customerLoanHistory($customerId)
+    {
+        // Get all loans for this customer
+        $loans = Loan::with([
+                'organisation',
+                'loan_settings',
+                'company',
+                'documents',
+                'installments'
+            ])
+            ->where('customer_id', $customerId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        if ($loans->isEmpty()) {
+            return response()->json([
+                'message' => 'No loan records found for this customer.',
+                'loans' => [],
+                'collections' => []
+            ], 200);
+        }
+
+        // Collect all loan IDs for this customer
+        $loanIds = $loans->pluck('id');
+
+        // Fetch all EMI collections for those loans
+        $collections = InstallmentDetail::with([
+                'loan',
+                'loan.customer',
+                'loan.organisation'
+            ])
+            ->whereIn('loan_id', $loanIds)
+            ->orderBy('collection_uid', 'desc')
+            ->get()
+            ->groupBy('collection_uid');
+
+        return response()->json([
+            'customer_id' => $customerId,
+            'loans' => $loans,
+            'collections' => $collections
+        ]);
+    }
+
 }

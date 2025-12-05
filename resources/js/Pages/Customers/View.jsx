@@ -10,6 +10,7 @@ export default function View({ auth, customerId }) {
     const [customer, setCustomer] = useState(null);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
+    const [customerHistory, setCustomerHistory] = useState({});
 
     axios.defaults.withCredentials = true;
 
@@ -25,6 +26,19 @@ export default function View({ auth, customerId }) {
                 setMessage("❌ Failed to load customer details.");
                 setLoading(false);
             });
+        const fetchCustomerHistory = async () => {
+            try {
+                setLoading(true);
+                const res = await axios.get("/api/customers-history/" + customerId);
+                setCustomerHistory(res.data.collections || {});
+                console.log("Customer History Data:", res.data);
+                setLoading(false);
+            } catch (err) {
+                console.error(err);
+                setLoading(false);
+            }
+        };
+        fetchCustomerHistory();
     }, [customerId]);
 
     const handleDelete = async (id) => {

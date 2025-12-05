@@ -1068,7 +1068,7 @@ class LoanController extends Controller
         return response()->json([
             'collections' => $collections
         ]);
-    }  
+    }
 
     public function markAckDownloaded($loanId)
     {
