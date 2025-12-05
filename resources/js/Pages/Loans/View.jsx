@@ -15,8 +15,6 @@ import { currencyPrefix } from "@/config";
 import AppF from "@/Components/AppF";
 import HealthF from "@/Components/HealthF";
 import EduF from "@/Components/EduF";
-import HealthPrintFormat from "@/Pages/Forms/HealthPrintFormat";
-import EduPrintFormat from "@/Pages/Forms/EduPrintFormat";
 
 
 export default function View({ auth, loans, loanId, rejectionReasons }) {
@@ -125,12 +123,6 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const sectorDocTitle = isHealth 
     ? "Health Declaration Form" 
     : "Education Grant Form";
-    
-    const SectorPageComponent = isHealth ? HealthPrintFormat : EduPrintFormat;
-
-    const pageUrl = isHealth
-    ? route("loan.health.form") + `?loan_id=${loan.id}`
-    : route("loan.edu.form") + `?loan_id=${loan.id}`;
 
     // Open modal with selected document
     const openDocModal = (doc) => {
@@ -2084,22 +2076,11 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                         {/* View Button */}
                                                         <td className="border p-2 text-center">
                                                             <button
-                                                                onClick={() => {
-                                                                    if (isHealth) {
-                                                                        router.visit(route("loan.health.form"), {
-                                                                            data: { loan_id: loan.id }
-                                                                        });
-                                                                    } else {
-                                                                        router.visit(route("loan.edu.form"), {
-                                                                            data: { loan_id: loan.id }
-                                                                        });
-                                                                    }
-                                                                }}
+                                                                onClick={() => setShowSectorModal(true)}
                                                                 className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
                                                             >
                                                                 <Eye size={14} /> View
                                                             </button>
-
                                                         </td>
 
                                                         {/* Download Button (Placeholder logic) */}
@@ -2146,21 +2127,26 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 </Modal.Header>
 
                                                 <Modal.Body className="p-0">
-                                                    <SectorPageComponent
-                                                        loan={loan}
-                                                        auth={auth}
-                                                        previewMode={true} // optional
+
+                                                    {/* Render Dynamic Component Instead of Iframe */}
+                                                    <SectorFormComponent 
+                                                        
+                                                        loan={loan} 
+                                                        auth={auth} 
+                                                        onClose={() => setShowSectorModal(false)}
                                                     />
+
                                                 </Modal.Body>
 
-
                                                 <Modal.Footer>
-                                                    <Button variant="secondary" onClick={() => setShowSectorModal(false)}>
+                                                    <Button 
+                                                        variant="secondary" 
+                                                        onClick={() => setShowSectorModal(false)}
+                                                    >
                                                         Close
                                                     </Button>
                                                 </Modal.Footer>
                                             </Modal>
-
 
                                         </fieldset>
                                     </>

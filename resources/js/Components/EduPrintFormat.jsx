@@ -72,40 +72,43 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
   const dateStr = formatDate(loan.created_at ?? loan.updated_at ?? loan.ack_downloaded_date ?? "");
 
   return (
-    <div ref={ref} className="bg-white text-black font-arial">
+    <div ref={ref} className="bg-white text-black" style={{ fontFamily: "Arial, sans-serif" }}>
       <style>{`
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 10mm 12mm;
+                margin: 10mm;
             }
-            html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-            }
-            body {
+            * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                color-adjust: exact !important;
             }
-            #printable-area {
-                width: 100%;
-                margin: 0;
-                padding: 0;
+            body, html {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 210mm !important;
+                background: white !important;
             }
             .no-print {
                 display: none !important;
             }
         }
+        @media screen {
+            .print-container {
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto;
+                background: white;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }
+        }
       `}</style>
 
-      <div id="printable-area" className="p-4 max-w-4xl mx-auto">
-        <div
-          className="bg-white p-4 font-arial text-black"
-          style={{ fontFamily: "Arial, sans-serif" }}
-        >
+      <div className="print-container p-6" style={{ maxWidth: "210mm" }}>
+        <div className="bg-white" style={{ fontFamily: "Arial, sans-serif" }}>
           {/* Logo */}
-          <div style={{ maxWidth: "150px", margin: "0 auto" }}>
+          <div style={{ maxWidth: "150px", margin: "0 auto 16px" }}>
             <MainLogo width="120px" />
           </div>
 
@@ -126,7 +129,7 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
               </div>
             </div>
 
-            <div className="w-2/4 border border-black p-2 flex flex-col ">
+            <div className="w-2/4 border border-black p-2 flex flex-col">
               <div>Issued By:</div>
               <div className="mt-4 flex flex-col">
                 <DataLine className="w-3/4" />
@@ -197,21 +200,21 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
 
             <div className="col-span-3 flex flex-col items-center">
               <div className="text-xs px-4">% or Amount Per Pay</div>
-              <div className="flex mt-1 ">
+              <div className="flex mt-1">
                 {renderAmountBoxes(perPay, 9)}
               </div>
             </div>
 
             <div className="col-span-3 flex flex-col items-center">
               <div className="text-xs">Total Amount Required</div>
-              <div className="flex mt-1 ">
+              <div className="flex mt-1">
                 {renderAmountBoxes(totalRequired, 9)}
               </div>
             </div>
           </div>
 
           {/* Authorization Text */}
-          <p className="text-sm leading-relaxed">
+          <p className="text-sm leading-relaxed mb-4">
             I hereby authorize you to deduct total sum of PGK{" "}
             <DataLine className="w-40">{totalRequired}</DataLine> from my
             fortnightly salary at a rate of PGK{" "}
@@ -243,16 +246,14 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
               Education Department Use Only
             </div>
 
-            <div style={{ border: "1px solid #000" }}>
-              <div style={{ height: "8px" }} />
-
-              <div className="d-flex p-2" style={{ fontSize: "11px" }}>
+            <div style={{ border: "1px solid #000", padding: "8px" }}>
+              <div className="flex" style={{ fontSize: "11px" }}>
                 <div style={{ flex: 1, borderRight: "1px solid #000", paddingRight: "12px" }}>
                   <div style={{ fontWeight: "bold" }} className="mb-2">
                     PAY SECTION
                   </div>
 
-                  <div className="d-flex align-items-center mb-2">
+                  <div className="flex items-center mb-2">
                     <div style={{ minWidth: "100px" }}>Received by</div>
                     <div style={{ borderBottom: "1px dotted #000", flex: 1, height: "16px" }} />
                     <div style={{ minWidth: "40px", marginLeft: "12px" }}>Date</div>
@@ -265,14 +266,14 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
 
                   <div className="mb-2">Commencement Date</div>
 
-                  <div className="d-flex align-items-center mb-2">
+                  <div className="flex items-center mb-2">
                     <div style={{ minWidth: "100px" }}>Checked by</div>
                     <div style={{ borderBottom: "1px dotted #000", flex: 1, height: "16px" }} />
                     <div style={{ minWidth: "40px", marginLeft: "12px" }}>Date</div>
                     <div style={{ borderBottom: "1px dotted #000", width: "120px", height: "16px", marginLeft: "8px" }} />
                   </div>
 
-                  <div className="d-flex align-items-center">
+                  <div className="flex items-center">
                     <div style={{ minWidth: "100px" }}>Approved by</div>
                     <div style={{ borderBottom: "1px dotted #000", flex: 1, height: "16px" }} />
                     <div style={{ minWidth: "40px", marginLeft: "12px" }}>Date</div>
@@ -281,20 +282,20 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
                 </div>
 
                 <div style={{ flex: 1, paddingLeft: "12px" }}>
-                  <div className="d-flex justify-content-between align-items-start mb-2">
+                  <div className="flex justify-between items-start mb-2">
                     <div style={{ fontWeight: "bold" }}>DATA ENTRY USE ONLY</div>
-                    <div className="d-flex align-items-center">
-                      <div className="me-2">PAY No.</div>
+                    <div className="flex items-center">
+                      <div className="mr-2">PAY No.</div>
                       <div style={{ borderBottom: "1px dotted #000", width: "160px", height: "16px" }} />
                     </div>
                   </div>
 
-                  <div className="d-flex align-items-center mb-2">
+                  <div className="flex items-center mb-2">
                     <div style={{ minWidth: "10px" }}>Date Entered:</div>
                     <div style={{ borderBottom: "1px dotted #000", flex: 1, height: "16px" }} />
                   </div>
 
-                  <div className="d-flex align-items-center">
+                  <div className="flex items-center">
                     <div style={{ minWidth: "120px" }}>Entered By:</div>
                     <div style={{ borderBottom: "1px dotted #000", flex: 1, height: "16px" }} />
                   </div>
@@ -322,7 +323,7 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
               <div style={{ flex: 1, paddingLeft: "20px" }}>
                 <div style={{ fontWeight: "bold", marginBottom: "2px" }}>PORT MORESBY ADDRESS</div>
                 <div>
-                  P.O. Box 2113, Vision City, Waigani, National Capital District, Papua New GuineaUnit 3F, Level 3
+                  P.O. Box 2113, Vision City, Waigani, National Capital District, Papua New Guinea Unit 3F, Level 3
                   Times Square Building, Wards Strip Road, Gordons, NCD, Papua New Guinea
                 </div>
                 <div style={{ marginTop: "4px" }}>

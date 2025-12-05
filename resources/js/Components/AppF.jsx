@@ -139,7 +139,7 @@ export default function AppF({ loan = {}, auth = {} }) {
                 >
                   LOAN REQUEST AMOUNT:
                 </label>
-                <span style={{ marginRight: "4px" }}>{company.currency_symbol ?? "K"}</span>
+                <span style={{ marginRight: "4px" }}>{company.currency_symbol ?? "PGK"}</span>
                 <input
                   type="text"
                   className="underline-field"

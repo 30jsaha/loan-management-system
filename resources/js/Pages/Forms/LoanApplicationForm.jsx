@@ -305,7 +305,7 @@ export default function LoanApplicationForm({ auth }) {
                     >
                       LOAN REQUEST AMOUNT:
                     </label>
-                    <span style={{ marginRight: "4px" }}>K</span>
+                    <span style={{ marginRight: "4px" }}>PGK</span>
                     <input type="text" className="underline-field" style={{ width: "100px" }} />
                   </div>
 

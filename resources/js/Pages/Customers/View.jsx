@@ -253,7 +253,7 @@ export default function View({ auth, customerId }) {
                                     <div className="mt-10">
                                         <h3 className="text-lg font-semibold mb-3">Loan History</h3>
 
-                                        <div className="space-y-4 max-h-[550px] overflow-y-auto pr-2">
+                                        <div className="max-h-[550px] overflow-y-auto pr-2">
 
                                             {customerHistory?.loans?.map((loan) => {
                                                 const hasCollections = loanIdsWithCollections.includes(loan.id);
@@ -267,7 +267,7 @@ export default function View({ auth, customerId }) {
                                                     <details
                                                         key={loan.id}
                                                         open={hasCollections} // auto-open if collection exists
-                                                        className={`border rounded-lg bg-white shadow p-3 cursor-pointer transition 
+                                                        className={`border  bg-white shadow p-3 cursor-pointer transition 
                                                             ${hasCollections ? "bg-green-50 border-green-400" : ""}`}
                                                     >
                                                         {/* HEADER */}
@@ -280,59 +280,98 @@ export default function View({ auth, customerId }) {
                                                         </summary>
 
                                                         {/* DETAILS CARDS (same as earlier) */}
-                                                        <div className="mt-4 bg-white shadow-sm border rounded-lg p-4">
+                                                        <div className="mt-2 bg-white shadow-sm border p-2 rounded">
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                                 
+                                                                {/* LEFT SIDE — CUSTOMER + ORGANISATION */}
                                                                 <div>
                                                                     <h4 className="font-semibold mb-2">Customer</h4>
-                                                                    <p><strong>{customer.first_name} {customer.last_name}</strong> — {customer.email}</p>
+                                                                    <p>
+                                                                        <strong>{customer.first_name} {customer.last_name}</strong> — {customer.email}
+                                                                    </p>
                                                                     <p><strong>Phone:</strong> {customer.phone}</p>
                                                                     <p><strong>Employee No:</strong> {customer.employee_no}</p>
 
                                                                     <h4 className="font-semibold mt-4 mb-2">Organisation</h4>
-                                                                    <p>{loan.organisation_name || "National Bank PNG"} — {loan.sector || "Health"}</p>
+                                                                    <p>
+                                                                        {loan.organisation?.organisation_name} — {loan.organisation?.sector_type}
+                                                                    </p>
+                                                                    <p><strong>Company:</strong> {loan.company?.company_name}</p>
                                                                 </div>
 
+                                                                {/* RIGHT SIDE — CORRECT LOAN DETAILS */}
                                                                 <div>
                                                                     <h4 className="font-semibold mb-2">Loan Details</h4>
-                                                                    <p><strong>Amount:</strong> PGK {parseFloat(loan.amount).toLocaleString()}</p>
-                                                                    <p><strong>Tenure:</strong> {loan.tenure}</p>
-                                                                    <p><strong>Interest:</strong> {loan.interest}</p>
-                                                                    <p><strong>Last EMI Paid:</strong> {loan.last_emi_paid}</p>
-                                                                    <p><strong>Next Due:</strong> {loan.next_due}</p>
-                                                                    <p><strong>Total Repay:</strong> PGK {loan.total_repay}</p>
+
+                                                                    <p>
+                                                                        <strong>Amount Approved:</strong> PGK{" "}
+                                                                        {parseFloat(loan.loan_amount_approved).toLocaleString()}
+                                                                    </p>
+
+                                                                    <p><strong>Tenure:</strong> {loan.tenure_fortnight} FN</p>
+
+                                                                    <p><strong>Interest Rate:</strong> {loan.interest_rate}%</p>
+
+                                                                    <p>
+                                                                        <strong>EMI Amount:</strong> PGK{" "}
+                                                                        {parseFloat(loan.emi_amount).toLocaleString()}
+                                                                    </p>
+
+                                                                    <p>
+                                                                        <strong>Next Due Date:</strong> {loan.next_due_date || "N/A"}
+                                                                    </p>
+
+                                                                    <p>
+                                                                        <strong>Total Repay:</strong> PGK{" "}
+                                                                        {parseFloat(loan.total_repay_amt).toLocaleString()}
+                                                                    </p>
+
+                                                                    <p>
+                                                                        <strong>Status:</strong> {loan.status}
+                                                                    </p>
+
+                                                                    <p>
+                                                                        <strong>Disbursement Date:</strong>{" "}
+                                                                        {loan.disbursement_date || "N/A"}
+                                                                    </p>
                                                                 </div>
 
                                                             </div>
                                                         </div>
 
+
                                                         {/* EMI TABLE */}
-                                                        <div className="mt-4">
-                                                            <div className="overflow-x-auto">
-                                                                <table className="min-w-full border">
-                                                                    <thead className="bg-green-600 text-white text-sm">
-                                                                        <tr>
-                                                                            <th className="border px-3 py-2">EMI No.</th>
-                                                                            <th className="border px-3 py-2">Due Date</th>
-                                                                            <th className="border px-3 py-2">Payment Date</th>
-                                                                            <th className="border px-3 py-2">Status</th>
-                                                                            <th className="border px-3 py-2">Amount</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody className="text-sm">
-                                                                        {collectionsForLoan.map((emi, idx) => (
-                                                                            <tr key={idx} className="text-center">
-                                                                                <td className="border px-3 py-2">{emi.installment_no}</td>
-                                                                                <td className="border px-3 py-2">{emi.due_date}</td>
-                                                                                <td className="border px-3 py-2">{emi.payment_date || "-"}</td>
-                                                                                <td className="border px-3 py-2 text-green-600 font-semibold">{emi.status}</td>
-                                                                                <td className="border px-3 py-2">PGK {emi.amount}</td>
+                                                        {/* SHOW EMI TABLE ONLY IF THIS LOAN HAS COLLECTION */}
+                                                        {hasCollections && (
+                                                            <div className="mt-2 overflow-y-auto ">
+                                                                <div className="overflow-x-auto">
+                                                                    <table className="min-w-full border">
+                                                                        <thead className="bg-green-600 text-white text-sm">
+                                                                            <tr>
+                                                                                <th className="border px-3 py-2">EMI No.</th>
+                                                                                <th className="border px-3 py-2">Due Date</th>
+                                                                                <th className="border px-3 py-2">Payment Date</th>
+                                                                                <th className="border px-3 py-2">Status</th>
+                                                                                <th className="border px-3 py-2">Amount</th>
                                                                             </tr>
-                                                                        ))}
-                                                                    </tbody>
-                                                                </table>
+                                                                        </thead>
+
+                                                                        <tbody className="text-sm">
+                                                                            {collectionsForLoan.map((emi, idx) => (
+                                                                                <tr key={idx} className="text-center">
+                                                                                    <td className="border px-3 py-2">{emi.installment_no}</td>
+                                                                                    <td className="border px-3 py-2">{emi.due_date}</td>
+                                                                                    <td className="border px-3 py-2">{emi.payment_date || "-"}</td>
+                                                                                    <td className="border px-3 py-2 text-green-600 font-semibold">{emi.status}</td>
+                                                                                    <td className="border px-3 py-2">PGK {emi.amount}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
                                                             </div>
-                                                        </div>
+                                                        )}
+
 
                                                     </details>
                                                 );
