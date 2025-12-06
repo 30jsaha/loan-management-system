@@ -41,7 +41,7 @@ const printStyles = `
 
 `;
 
-const AppF = React.forwardRef(function AppF({ loan = {}, auth = {} }, ref) {
+const AppF = React.forwardRef(function AppF({ loan, auth }, ref) {
   // safe shortcuts / fallbacks
   const customer = loan.customer || {};
   const company = loan.company || {};
@@ -1329,7 +1329,7 @@ const AppF = React.forwardRef(function AppF({ loan = {}, auth = {} }, ref) {
     </>
   );
 });
- 
+ AppF.displayName = 'AppF';
  export default AppF;
 
 // --- IGNORE ---
