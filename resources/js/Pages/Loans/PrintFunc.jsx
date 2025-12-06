@@ -313,9 +313,6 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                 </Modal.Body>
                                                 <Modal.Footer className="no-print">
                                                     <Button variant="secondary" onClick={() => setShowModal1(false)}>Close</Button>
-                                                    {/* <Button variant="success" onClick={handlePrintAck}>
-                                                        🖨️ Print Acknowledgement
-                                                    </Button> */}
                                                     <button
                                                         onClick={() => {
                                                             // First open the modal to ensure component is rendered
