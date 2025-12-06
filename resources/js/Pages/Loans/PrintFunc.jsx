@@ -292,7 +292,7 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                            
                                             <Modal show={showModal1} onHide={() => setShowModal1(false)} size="xl" centered>
                                                 <Modal.Header closeButton className="no-print"><Modal.Title>📄 Application Form View</Modal.Title></Modal.Header>
-                                                <Modal.Body className="p-0"><AppF loan={loan} auth={auth} /></Modal.Body>
+                                                <Modal.Body className="p-0">{loan && <AppF loan={loan} auth={auth} />}</Modal.Body>
                                                 <Modal.Footer className="no-print">
                                                     <Button variant="secondary" onClick={() => setShowModal1(false)}>Close</Button>
                                                     <Button variant="success" onClick={handlePrintAck}>
