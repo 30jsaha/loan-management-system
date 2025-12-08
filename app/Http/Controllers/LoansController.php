@@ -172,4 +172,22 @@ class LoansController extends Controller
             'approved_loans' => $approvedLoans
         ]);
     } 
+    public function CompletedLoansWithEmiCollection()
+    {
+        $approvedLoans = Loan::with([
+            'customer',
+            'organisation',
+            'documents',
+            'installments',
+            'loan_settings',
+            'company'
+        ])
+        ->where('status', 'Approved')
+        ->orderBy('approved_date', 'desc')
+        ->get();
+
+        return inertia('Loans/CompletedLoansWithEmiCollection', [
+            'approved_loans' => $approvedLoans
+        ]);
+    } 
 }

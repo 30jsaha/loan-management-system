@@ -118,7 +118,8 @@ export default function Authenticated({ user, header, children }) {
                                     className={`ms-3 relative pt-3 ${route().current('loans') ||
                                         route().current('loan-create') ||
                                         route().current('loan.view') ||
-                                        route().current('loan.emi')
+                                        route().current('loan.emi') ||
+                                        route().current('loan.completed') 
                                         ? 'dropdown-nav-active' // Active style
                                         : 'text-gray-500'
                                         }`}
@@ -151,6 +152,7 @@ export default function Authenticated({ user, header, children }) {
                                             <Dropdown.Link className={`${route().current('loans') ? 'dropdown-nav-a-active' : ''}`} href={route('loans')}>Loan Applications</Dropdown.Link>
                                             {/* <Dropdown.Link className={`${route().current('loan-create') ? 'dropdown-nav-a-active' : ''}`} href={route('loan-create')}>+ New Loan</Dropdown.Link> */}
                                             <Dropdown.Link className={`${route().current('loan.emi') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.emi')}>EMI Collection</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('loan.completed') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.completed')}>Completed Loans</Dropdown.Link>
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>
