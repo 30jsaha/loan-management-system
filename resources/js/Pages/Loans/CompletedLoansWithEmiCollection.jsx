@@ -16,7 +16,7 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
     const [searchQuery, setSearchQuery] = useState("");
     const [orgs, setOrgs] = useState([]);
     const [selectedOrgs, setSelectedOrgs] = useState([]);
-
+    console.log("Approved Loans:", loans);
     // Fetch organisations
     useEffect(() => {
         axios.get("/api/organisation-list").then(res => {
