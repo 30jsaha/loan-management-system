@@ -868,13 +868,11 @@ const AppF = React.forwardRef(function AppF({ loan, auth }, ref) {
           
           {/* --- FIXED: Re-added page break and Page 2 Header --- */}
           <div className="page-break-before" style={{ marginTop: "10px" }}>
-            
-            {/* Page 2 Header (matches page 1) - ONLY SHOWS ON PRINT */}
-            <div className="page-2-header print-only">
-                <div className="logo-container" style={{ maxWidth: "100px", margin: "0 auto" }}>
-                  <MainLogo width="100px" />
-                </div>
-            </div>
+              <div className="page-2-header print-only">
+                  <div className="logo-container" style={{ maxWidth: "100px", margin: "0 auto" }}>
+                      <MainLogo width="100px" />
+                  </div>
+              </div>
 
             {/* TERMS & CONDITIONS SECTION */}
             <table
