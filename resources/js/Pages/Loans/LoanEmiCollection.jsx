@@ -70,10 +70,9 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
   const increaseCounter = (loan) => {
     setEmiCounter((prev) => {
       const baseRemaining = loan.tenure_fortnight - (loan.installments.length || 0);
-
       const current = prev[loan.id] ?? 1;
 
-      if (current >= baseRemaining) return prev;
+      if (current + 1 > baseRemaining) return prev;
 
       return { ...prev, [loan.id]: current + 1 };
     });
@@ -567,9 +566,10 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                             loan.tenure_fortnight - (loan.installments.length || 0);
 
                           const counter = emiCounter[loan.id] ?? 1;
+                          const collectEmi= parseFloat(loan.emi_amount) * counter;
 
                           // 🔥 Updated Remaining F/N Calculation
-                          const finalRemaining = Math.max(baseRemaining - counter+1, 0);
+                          const finalRemaining = Math.max(baseRemaining - counter, 0);
 
                           return (
                             <tr key={loan.id} className="hover:bg-green-100 transition-all">
@@ -582,7 +582,7 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                               <td className="p-2">{loan.next_due_date || "N/A"}</td>
 
                               <td className="p-2 font-semibold text-green-700">
-                                {currencyPrefix} {parseFloat(loan.emi_amount).toFixed(2)}
+                                {currencyPrefix} {collectEmi.toFixed(2)}
                               </td>
 
                               <td className="p-2">
