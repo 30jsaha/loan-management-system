@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link as HrefLink } from "@inertiajs/react";
@@ -10,6 +11,7 @@ import { Eye, FileText, User, Building, Calendar } from "lucide-react";
 import { Modal, Button, Row, Col, Badge } from "react-bootstrap";
 
 export default function CompletedLoansWithEmiCollection({ auth, approved_loans }) {
+
     const [loans, setLoans] = useState(Array.isArray(approved_loans) ? approved_loans : []);
     const [searchQuery, setSearchQuery] = useState("");
     const [orgs, setOrgs] = useState([]);
@@ -17,56 +19,116 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
     console.log("Approved Loans:", loans);
     // Fetch organisations
 
-    // --- MODAL STATE ---
+    // pagination state
+    const [page, setPage] = useState(1);
+    const [rowsPerPage] = useState(10);
+
+    // sorting state
+    const [sortConfig, setSortConfig] = useState({ key: "id", direction: "asc" });
+
+    // modal state
     const [showModal, setShowModal] = useState(false);
     const [selectedLoan, setSelectedLoan] = useState(null);
 
+
     useEffect(() => {
-        axios.get("/api/organisation-list").then(res => {
+        axios.get("/api/organisation-list").then((res) => {
             setOrgs(Array.isArray(res.data) ? res.data : []);
         });
     }, []);
 
-    // --- OPEN MODAL HANDLER ---
+    const organisationOptions = useMemo(() => {
+        return orgs.map((o) => ({
+            label: o.organisation_name,
+            value: o.id,
+        }));
+    }, [orgs]);
+
+
+    const formatCurrency = (amt) => `${currencyPrefix} ${parseFloat(amt || 0).toFixed(2)}`;
+
+    // --- SORT HANDLER ---
+    const handleSort = (key) => {
+        setSortConfig((prev) => ({
+            key,
+            direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+        }));
+    };
+
+    const sortedLoans = useMemo(() => {
+        const sorted = [...loans].sort((a, b) => {
+            let valA = a[sortConfig.key];
+            let valB = b[sortConfig.key];
+
+            if (sortConfig.key === "customer") {
+                valA = `${a.customer?.first_name} ${a.customer?.last_name}`.toLowerCase();
+                valB = `${b.customer?.first_name} ${b.customer?.last_name}`.toLowerCase();
+            }
+
+            if (sortConfig.key === "organisation") {
+                valA = a.organisation?.organisation_name || "";
+                valB = b.organisation?.organisation_name || "";
+            }
+
+            if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+            return 0;
+        });
+
+        return sorted;
+    }, [loans, sortConfig]);
+
+    const filteredLoans = useMemo(() => {
+        return sortedLoans.filter((loan) => {
+            const customerName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
+            const matchesName = customerName.includes(searchQuery.toLowerCase());
+            const matchesOrg = selectedOrgs.length === 0 || selectedOrgs.includes(loan.organisation?.id);
+            return matchesName && matchesOrg;
+        });
+    }, [sortedLoans, searchQuery, selectedOrgs]);
+       // --- TOTAL PAID SUM OF FILTERED LOANS ---
+    const totalPaidFiltered = useMemo(() => {
+        return filteredLoans.reduce((sum, loan) => {
+            const paid = loan.installments
+                ?.filter(i => i.status === "Paid")
+                .reduce((a, b) => a + parseFloat(b.emi_amount || 0), 0) || 0;
+
+            return sum + paid;
+        }, 0);
+    }, [filteredLoans]);
+
+    // --- PAGINATION LOGIC ---
+    const totalPages = Math.ceil(filteredLoans.length / rowsPerPage);
+    const paginatedLoans = filteredLoans.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+
+
+    const SortIcon = ({ column }) => {
+        if (sortConfig.key !== column) return <span className="opacity-30">⇅</span>;
+        return sortConfig.direction === "asc" ? <span>↑</span> : <span>↓</span>;
+    };
+
+
     const handleViewDetails = (loan) => {
         setSelectedLoan(loan);
         setShowModal(true);
     };
-
     const handleCloseModal = () => {
         setShowModal(false);
         setSelectedLoan(null);
     };
 
-    const organisationOptions = useMemo(() => {
-        return orgs.map(o => ({
-            label: o.organisation_name,
-            value: o.id
-        }));
-    }, [orgs]);
-
-    const filteredLoans = useMemo(() => {
-        return loans.filter((loan) => {
-            const customerName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
-            const matchesName = customerName.includes(searchQuery.toLowerCase());
-            const orgId = loan.organisation?.id;
-            const matchesOrg = selectedOrgs.length === 0 || selectedOrgs.includes(orgId);
-            return matchesName && matchesOrg;
-        });
-    }, [loans, searchQuery, selectedOrgs]);
-
-    const formatCurrency = (amt) => `${currencyPrefix} ${parseFloat(amt || 0).toFixed(2)}`;
-
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Completed Loans</h2>}
+            header={<h2 className="font-semibold text-xl text-gray-800">Completed Loans</h2>}
         >
             <Head title="Completed Loans" />
+
 
             <div className="p-5 bg-gray-100 min-h-screen">
                 {/* Filters */}
                 <div className="bg-white p-4 rounded shadow mb-4 flex gap-4 items-center">
+
                     <input
                         type="text"
                         placeholder="Search customer..."
@@ -74,6 +136,7 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="border rounded px-3 py-2 w-1/3"
                     />
+
                     <div className="w-1/3">
                         <MultiSelect
                             value={selectedOrgs}
@@ -84,81 +147,133 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                             className="w-full border rounded py-2"
                         />
                     </div>
+
                     <button
                         className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded"
-                        onClick={() => { setSelectedOrgs([]); setSearchQuery(""); }}
+                        onClick={() => {
+                            setSelectedOrgs([]);
+                            setSearchQuery("");
+                        }}
                     >
                         Clear Filters
                     </button>
+
+                    {/* ✅ TOTAL PAID SUMMARY */}
+                    <div className="ml-auto font-semibold text-gray-700 text-sm bg-green-100 px-4 py-2 rounded border border-green-300">
+                        Total Paid: <span className="text-green-700">{formatCurrency(totalPaidFiltered)}</span>
+                    </div>
+
                 </div>
+
 
                 {/* Table */}
                 <div className="bg-white p-4 rounded shadow">
                     <h3 className="text-lg font-semibold mb-3">Fully Paid Loans</h3>
+
                     {filteredLoans.length === 0 ? (
                         <p className="text-gray-500 text-center py-10">No fully paid loans found.</p>
                     ) : (
-                        <table className="min-w-full border-collapse border text-sm">
-                            <thead className="bg-green-700 text-white">
-                                <tr>
-                                    <th className="p-2 border">Customer</th>
-                                    <th className="p-2 border">Loan ID</th>
-                                    <th className="p-2 border">Organisation</th>
-                                    <th className="p-2 border">Loan Amount</th>
-                                    <th className="p-2 border">Total Repayable</th>
-                                    <th className="p-2 border">Total Paid</th>
-                                    <th className="p-2 border">Completed On</th>
-                                    <th className="p-2 border">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredLoans.map((loan) => {
-                                    const cust = loan.customer || {};
-                                    const paidAmount = loan.installments
-                                            ?.filter(i => i.status === "Paid")
-                                            .reduce((sum, i) => sum + parseFloat(i.emi_amount || 0), 0) || 0;
-                                    
-                                    const lastPayment = loan.installments
-                                        ?.filter(i => i.status === "Paid")
-                                        .sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date))[0];
+                        <>
+                            <table className="min-w-full border-collapse border text-sm">
+                                <thead className="bg-green-700 text-white">
+                                    <tr>
+                                        <th className="p-2 border cursor-pointer" onClick={() => handleSort("customer")}>
+                                            Customer <SortIcon column="customer" />
+                                        </th>
+                                        <th className="p-2 border cursor-pointer" onClick={() => handleSort("id")}>
+                                            Loan ID <SortIcon column="id" />
+                                        </th>
+                                        <th className="p-2 border cursor-pointer" onClick={() => handleSort("organisation")}>
+                                            Organisation <SortIcon column="organisation" />
+                                        </th>
+                                        <th className="p-2 border cursor-pointer" onClick={() => handleSort("loan_amount_applied")}>
+                                            Loan Amount <SortIcon column="loan_amount_applied" />
+                                        </th>
+                                        <th className="p-2 border cursor-pointer" onClick={() => handleSort("total_repay_amt")}>
+                                            Total Repayable <SortIcon column="total_repay_amt" />
+                                        </th>
+                                        <th className="p-2 border">Total Paid</th>
+                                        <th className="p-2 border cursor-pointer" onClick={() => handleSort("disbursement_date")}>
+                                            Completed On <SortIcon column="disbursement_date" />
+                                        </th>
+                                        <th className="p-2 border">Action</th>
+                                    </tr>
+                                </thead>
 
-                                    return (
-                                        <tr key={loan.id} className="border hover:bg-gray-50">
-                                            <td className="p-2 border">
-                                                <HrefLink
-                                                    href={route("customer.view", { id: cust?.id })}
-                                                    className="text-blue-600 hover:underline font-medium"
-                                                    target="_blank"
-                                                >
-                                                    {cust.first_name} {cust.last_name}
-                                                </HrefLink>
-                                            </td>
-                                            <td className="p-2 border">#{loan.id}</td>
-                                            <td className="p-2 border">{loan.organisation?.organisation_name}</td>
-                                            <td className="p-2 border">{formatCurrency(loan.loan_amount_applied)}</td>
-                                            <td className="p-2 border">{formatCurrency(loan.total_repay_amt)}</td>
-                                            <td className="p-2 border text-green-700 font-bold">{formatCurrency(paidAmount)}</td>
-                                            <td className="p-2 border">{lastPayment?.payment_date || "N/A"}</td>
-                                            
-                                            {/* ✅ BUTTON OPENS MODAL WITH DATA */}
-                                            <td className="p-2 border text-center">
-                                                <button
-                                                    onClick={() => handleViewDetails(loan)} 
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded inline-flex items-center gap-1 text-xs transition"
-                                                >
-                                                    <Eye size={14} /> View
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                <tbody>
+                                    {paginatedLoans.map((loan) => {
+                                        const cust = loan.customer || {};
+                                        const paidAmount =
+                                            loan.installments
+                                                ?.filter((i) => i.status === "Paid")
+                                                .reduce((sum, i) => sum + parseFloat(i.emi_amount || 0), 0) || 0;
+
+                                        const lastPayment = loan.installments
+                                            ?.filter((i) => i.status === "Paid")
+                                            .sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date))[0];
+
+                                        return (
+                                            <tr key={loan.id} className="border hover:bg-gray-50">
+                                                <td className="p-2 border">
+                                                    <HrefLink
+                                                        href={route("customer.view", { id: cust?.id })}
+                                                        className="text-blue-600 hover:underline font-medium"
+                                                        target="_blank"
+                                                    >
+                                                        {cust.first_name} {cust.last_name}
+                                                    </HrefLink>
+                                                </td>
+                                                <td className="p-2 border">#{loan.id}</td>
+                                                <td className="p-2 border">{loan.organisation?.organisation_name}</td>
+                                                <td className="p-2 border">{formatCurrency(loan.loan_amount_applied)}</td>
+                                                <td className="p-2 border">{formatCurrency(loan.total_repay_amt)}</td>
+                                                <td className="p-2 border text-green-700 font-bold">
+                                                    {formatCurrency(paidAmount)}
+                                                </td>
+                                                <td className="p-2 border">{lastPayment?.payment_date || "N/A"}</td>
+
+                                                <td className="p-2 border text-center">
+                                                    <button
+                                                        onClick={() => handleViewDetails(loan)}
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded inline-flex items-center gap-1 text-xs transition"
+                                                    >
+                                                        <Eye size={14} /> View
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+
+                            {/* Pagination */}
+                            <div className="flex justify-between items-center mt-4">
+                                <button
+                                    disabled={page === 1}
+                                    onClick={() => setPage(page - 1)}
+                                    className="px-3 py-1 bg-gray-200 rounded disabled:opacity-40"
+                                >
+                                    Prev
+                                </button>
+
+                                <span className="text-sm">
+                                    Page {page} of {totalPages}
+                                </span>
+
+                                <button
+                                    disabled={page === totalPages}
+                                    onClick={() => setPage(page + 1)}
+                                    className="px-3 py-1 bg-gray-200 rounded disabled:opacity-40"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
 
-            {/* ✅ DETAILED VIEW MODAL */}
+            {/* Modal remains unchanged */}
             {selectedLoan && (
                 <Modal show={showModal} onHide={handleCloseModal} size="xl" centered>
                     <Modal.Header closeButton className="bg-gray-50 border-b">
