@@ -129,6 +129,13 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
         setShowModal(false);
         setSelectedLoan(null);
     };
+    const getTotalPaid = () => {
+        if (!selectedLoan?.installments) return 0;
+
+        return selectedLoan.installments
+            .filter(inst => inst.status?.toLowerCase() === "paid")
+            .reduce((sum, inst) => sum + Number(inst.emi_amount || 0), 0);
+    };
 
     return (
         <AuthenticatedLayout
@@ -407,10 +414,12 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                                                 <span className="text-gray-500">Tenure:</span>
                                                 <span className="font-bold">{selectedLoan.tenure_fortnight} Fortnights</span>
                                             </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-500">Next Due Date:</span>
-                                                <span className="font-bold text-red-500">{selectedLoan.next_due_date}</span>
-                                            </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-500">Total Paid:</span>
+                                                    <span className="font-bold text-green-700">
+                                                        {formatCurrency(getTotalPaid())}
+                                                    </span>
+                                                </div>
                                         </div>
                                     </div>
                                 </Col>
