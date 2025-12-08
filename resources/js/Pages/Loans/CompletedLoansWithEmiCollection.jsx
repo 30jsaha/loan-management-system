@@ -78,14 +78,27 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
         return sorted;
     }, [loans, sortConfig]);
 
+     // ✅ FILTER ONLY FULLY PAID LOANS
     const filteredLoans = useMemo(() => {
-        return sortedLoans.filter((loan) => {
-            const customerName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
-            const matchesName = customerName.includes(searchQuery.toLowerCase());
-            const matchesOrg = selectedOrgs.length === 0 || selectedOrgs.includes(loan.organisation?.id);
-            return matchesName && matchesOrg;
-        });
-    }, [sortedLoans, searchQuery, selectedOrgs]);
+        return loans
+            .filter(loan => {
+                const customerName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`
+                    .toLowerCase();
+
+                const matchesName =
+                    customerName.includes(searchQuery.toLowerCase());
+
+                const orgId = loan.organisation?.id;
+                const matchesOrg =
+                    selectedOrgs.length === 0 || selectedOrgs.includes(orgId);
+
+                // Only fully paid loans
+                const remainingFn =
+                    loan.tenure_fortnight - (loan.installments?.length || 0);
+
+                return matchesName && matchesOrg && remainingFn === 0;
+            });
+    }, [loans, searchQuery, selectedOrgs]);
        // --- TOTAL PAID SUM OF FILTERED LOANS ---
     const totalPaidFiltered = useMemo(() => {
         return filteredLoans.reduce((sum, loan) => {

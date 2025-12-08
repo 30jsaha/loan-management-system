@@ -569,7 +569,7 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                           const counter = emiCounter[loan.id] ?? 1;
 
                           // 🔥 Updated Remaining F/N Calculation
-                          const finalRemaining = Math.max(baseRemaining - counter-0, 0);
+                          const finalRemaining = Math.max(baseRemaining - counter+1, 0);
 
                           return (
                             <tr key={loan.id} className="hover:bg-green-100 transition-all">
