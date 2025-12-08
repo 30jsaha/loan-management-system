@@ -670,95 +670,111 @@ class LoanController extends Controller
             'approved_loans' => $approvedLoans
         ], 200);
     }
-    //old code without collectionId
+    //new code with collectionId
     // public function collectEMI(Request $request)
     // {
     //     $validated = $request->validate([
     //         'loan_ids' => 'required|array',
     //         'loan_ids.*' => 'exists:loan_applications,id',
+    //         'emi_counter' => 'nullable|integer|min:1',
     //     ]);
 
+    //     // Generate 6-7 character collection ID (timestamp + random)
+    //     $collectionUid = strtoupper(substr(md5(time() . rand()), 0, 7));
+
     //     foreach ($validated['loan_ids'] as $loanId) {
-    //         $l = Loan::findOrFail($loanId);
-    //         $emi_freq = LoanSetting::where('id', $l->loan_type)
+
+    //         $loan = Loan::findOrFail($loanId);
+
+    //         // EMI Frequency
+    //         $emiFreq = LoanSetting::where('id', $loan->loan_type)
     //             ->value('installment_frequency_in_days');
-    //         $emi_freq_val = (filter_var($emi_freq, FILTER_VALIDATE_INT) !== false && (int)$emi_freq !== 0) ? $emi_freq : 14;
+
+    //         $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? $emiFreq : 14;
+
+    //         // Calculate next installment_no
+    //         $installmentNo = InstallmentDetail::where('loan_id', $loanId)->count() + 1;
+
+    //         // Insert EMI record
     //         InstallmentDetail::create([
     //             'loan_id' => $loanId,
-    //             'installment_no' => (function () use ($loanId, $l) {
-    //                 // Sum any previously recorded installment amounts for this loan
-    //                 $totalCollected = InstallmentDetail::where('loan_id', $loanId)->sum('emi_amount');
-
-    //                 // If loan EMI amount is available, derive the next installment number from total collected
-    //                 if (!empty($l->emi_amount) && $l->emi_amount > 0) {
-    //                     return (int) floor($totalCollected / $l->emi_amount) + 1;
-    //                 }
-
-    //                 // Fallback: use count of existing installments + 1
-    //                 return InstallmentDetail::where('loan_id', $loanId)->count() + 1;
-    //             })(),
+    //             'collection_uid' => $collectionUid,
+    //             'installment_no' => $installmentNo,
     //             'due_date' => now(),
-    //             'emi_amount' => $l->emi_amount,
+    //             'emi_amount' => $loan->emi_amount,
     //             'payment_date' => now(),
     //             'status' => 'Paid',
     //             'emi_collected_by_id' => auth()->user()->id,
-    //             'emi_collected_date' => now()
+    //             'emi_collected_date' => now(),
     //         ]);
 
-    //         $nextDue = now()->addDays($emi_freq_val)->toDateString();
-    //         $l->next_due_date = $nextDue;
-    //         $l->save();
+    //         // Update loan next due date
+    //         $loan->next_due_date = now()->addDays($emiFreq)->toDateString();
+    //         $loan->save();
     //     }
 
-    //     return response()->json(['message' => 'EMI collection recorded successfully!']);
+    //     return response()->json([
+    //         'message' => 'EMI collection recorded successfully!',
+    //         'collection_uid' => $collectionUid
+    //     ]);
     // }
-    //new code with collectionId
+
     public function collectEMI(Request $request)
     {
         $validated = $request->validate([
-            'loan_ids' => 'required|array',
+            'loan_ids'   => 'required|array',
             'loan_ids.*' => 'exists:loan_applications,id',
+            'emi_counter' => 'nullable|integer|min:1',
         ]);
 
-        // Generate 6-7 character collection ID (timestamp + random)
+        $emiCount = $validated['emi_counter'] ?? 1; // Default = 1 EMI
+        $emiCount = max(1, (int)$emiCount);         // Safety check
+
+        // Generate UNIQUE Collection ID for this batch
         $collectionUid = strtoupper(substr(md5(time() . rand()), 0, 7));
 
         foreach ($validated['loan_ids'] as $loanId) {
 
             $loan = Loan::findOrFail($loanId);
 
-            // EMI Frequency
+            // Determine EMI frequency
             $emiFreq = LoanSetting::where('id', $loan->loan_type)
                 ->value('installment_frequency_in_days');
 
-            $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? $emiFreq : 14;
+            $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? (int)$emiFreq : 14;
 
-            // Calculate next installment_no
-            $installmentNo = InstallmentDetail::where('loan_id', $loanId)->count() + 1;
+            // Get current installment count
+            $currentInstallmentNo = InstallmentDetail::where('loan_id', $loanId)->count();
 
-            // Insert EMI record
-            InstallmentDetail::create([
-                'loan_id' => $loanId,
-                'collection_uid' => $collectionUid,
-                'installment_no' => $installmentNo,
-                'due_date' => now(),
-                'emi_amount' => $loan->emi_amount,
-                'payment_date' => now(),
-                'status' => 'Paid',
-                'emi_collected_by_id' => auth()->user()->id,
-                'emi_collected_date' => now(),
-            ]);
+            // 🔄 Loop for number of EMI to insert
+            for ($i = 1; $i <= $emiCount; $i++) {
 
-            // Update loan next due date
-            $loan->next_due_date = now()->addDays($emiFreq)->toDateString();
+                $installmentNo = $currentInstallmentNo + $i;
+
+                InstallmentDetail::create([
+                    'loan_id'             => $loanId,
+                    'collection_uid'      => $collectionUid,
+                    'installment_no'      => $installmentNo,
+                    'due_date'            => now()->addDays(($i - 1) * $emiFreq),
+                    'emi_amount'          => $loan->emi_amount,
+                    'payment_date'        => now(),
+                    'status'              => 'Paid',
+                    'emi_collected_by_id' => auth()->user()->id,
+                    'emi_collected_date'  => now(),
+                ]);
+            }
+
+            // Update loan next_due_date
+            $loan->next_due_date = now()->addDays($emiFreq * $emiCount)->toDateString();
             $loan->save();
         }
 
         return response()->json([
-            'message' => 'EMI collection recorded successfully!',
+            'message'        => 'EMI collection recorded successfully!',
             'collection_uid' => $collectionUid
         ]);
     }
+
 
 
     //new update function
