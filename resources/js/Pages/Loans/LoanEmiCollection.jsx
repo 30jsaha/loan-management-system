@@ -384,6 +384,9 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                   const cust = loan.customer || {};
                   const fullName = `${cust.first_name || ""} ${cust.last_name || ""}`.trim();
                   const collectible = isCollectible(loan);
+                  const remainingFn = loan.tenure_fortnight - (loan.installments.length || 0);
+
+                  if(remainingFn <=0 ) return null; // skip fully paid loans
 
                   return (
                     <motion.div
@@ -442,7 +445,7 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                         <p>
                           <b>EMI:</b>{" "}
                           <span className="text-green-700 font-medium">
-                            {currencyPrefix} {loan.emi_amount || 0}
+                            {currencyPrefix} {parseFloat(loan.emi_amount).toFixed(2) || 0}
                           </span>
                         </p>
                         <p><b>Total Repay:</b> {currencyPrefix} {loan.total_repay_amt || 0}</p>
@@ -496,8 +499,8 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                         <th className="p-2 text-left">Loan ID</th>
                         <th className="p-2 text-left">Next Due</th>
                         <th className="p-2 text-left">EMI Amount</th>
-                        <th className="p-2 text-left">Total Repay</th>
-                        <th className="p-2 text-left">Paid Amount</th>
+                        <th className="p-2 text-left">Total Repayable</th>
+                        <th className="p-2 text-left">Total Paid</th>
                         <th className="p-2 text-left">Remaining F/N</th>
                         <th className="p-2 text-left">Status</th>
                       </tr>
@@ -525,19 +528,19 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                               </td>
 
                               <td className="p-2 font-semibold text-green-700">
-                                {currencyPrefix} {loan.emi_amount}
+                                {currencyPrefix} {parseFloat(loan.emi_amount).toFixed(2)}
                               </td>
 
                               <td className="p-2">
-                                {currencyPrefix} {loan.total_repay_amt}
+                                {currencyPrefix} {parseFloat(loan.total_repay_amt).toFixed(2)}
                               </td>
 
                               <td className="p-2">
-                                {currencyPrefix} {loan.total_emi_paid_amount}
+                                {currencyPrefix} {parseFloat(getTotalPaidAmount(loan)).toFixed(2)}
                               </td>
 
                               <td className="p-2">
-                                {loan.tenure_fortnight - (loan.total_emi_paid_count || 0)}
+                                {loan.tenure_fortnight - (loan.installments.length || 0)}
                               </td>
 
                               <td className="p-2">

@@ -154,6 +154,9 @@ Route::middleware('auth')->get('/customers/{id}/edit', fn($id) =>
 Route::middleware(['auth', 'verified'])
     ->get('/loan-emi-collection', [LoansController::class, 'loanEmiCollectionPage'])
     ->name('loan.emi.collection');
+Route::middleware(['auth', 'verified'])
+    ->get('/completed-loans', [LoansController::class, 'CompletedLoansWithEmiCollection'])
+    ->name('loan.completed');
 
 
 //     Route::get('/organizations', function () {
