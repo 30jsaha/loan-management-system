@@ -8,14 +8,14 @@ import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import LoanDocumentsUpload from '@/Components/LoanDocumentsUpload';
 //icon pack
-import { ArrowLeft, Download, Eye } from "lucide-react";
+import { ArrowLeft, Download, Eye,Printer } from "lucide-react";
 import Swal from "sweetalert2";
 import { MultiSelect } from 'primereact/multiselect';
 import { currencyPrefix } from "@/config";
 import AppF from "@/Components/AppF";
 import HealthF from "@/Components/HealthF";
 import EduF from "@/Components/EduF";
-
+import EduPrintFormat from "@/Components/EduPrintFormat";
 
 export default function View({ auth, loans, loanId, rejectionReasons }) {
     // console.log("Initial rejectionReasons prop: ", rejectionReasons);
@@ -65,36 +65,125 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     // 🔥 For Loan Rejection (Full loan reject)
     const [showLoanRejectModal, setShowLoanRejectModal] = useState(false);
     const [selectedLoanRejectionReason, setSelectedLoanRejectionReason] = useState("");
-
+    const [ackReady, setAckReady] = useState(false);
+    const [showSectorModal, setShowSectorModal] = useState(false);
     // ... existing states
     
-    const printComponentRef = useRef(null);
-
-    // Change this part:
-    // const handlePrintSectorForm = useReactToPrint({
-    //     contentRef: printComponentRef, // use content: () => printComponentRef.current if this fails
-    //     documentTitle: `Sector_Form_${loan?.id || 'Doc'}`,
-    // });
-    // const handlePrintSectorForm = useReactToPrint({
-    //     content: () => {
-    //         console.log("PRINT REF:", printComponentRef.current);
-    //         return printComponentRef.current;
-    //     },
-    //     contentRef: printComponentRef,
-    //     documentTitle: `Sector_Form_${loan?.id || 'Doc'}`,
-    // });
-    // In View.jsx
-
-    const handlePrintSectorForm = useReactToPrint({
-        content: () => printComponentRef.current, // Keep this simple
-        documentTitle: `Sector_Form_${loan?.id}`,
-        removeAfterPrint: true, // Best to reset after printing
-    });
+    // ✅ 1. CREATE REF
+    const printRef = useRef(null);
+    const ackPrintRef = useRef(null);
     
-    const [showSectorModal, setShowSectorModal] = useState(false);
+    useEffect(() => {
+                console.log("Print ref updated:", printRef.current);
+                
+                if (printRef.current) {
+                    console.log("Print ref HTML:", printRef.current.innerHTML);
+                    console.log("Print ref children:", printRef.current.children.length);
+                }
+    }, [printRef, showSectorModal, loan]);
+        
+          
+    const handlePrintSectorForm = useReactToPrint({
+                content: () => {
+                    // Debug: Check what we're trying to print
+                    console.log("Print content ref:", printRef.current);
+                    
+                    // Make sure we have content
+                    if (!printRef.current || !printRef.current.innerHTML.trim()) {
+                        console.error("No content to print!");
+                        
+                        // Try to force a re-render
+                        setTimeout(() => {
+                            handlePrintSectorForm();
+                        }, 500);
+                        
+                        return null;
+                    }
+                    
+                    return printRef.current;
+                },
+                contentRef: printRef,         // <-- NEW in v3.0+
+                documentTitle: `Education_Form_${loan?.id || "Form"}`,
+                onBeforeGetContent: async () => {
+                    console.log("Starting print process...");
+                    
+                    return new Promise((resolve) => {
+                        // Ensure component is fully rendered
+                        setTimeout(() => {
+                            console.log("Content ready for printing:", printRef.current);
+                            resolve();
+                        }, 1000); // Increased timeout to ensure DOM is ready
+                    });
+                },
+                onAfterPrint: () => {
+                    console.log("Printed successfully!");
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Document printed successfully.',
+                        icon: 'success',
+                        timer: 2000
+                    });
+                },
+                onPrintError: (err) => {
+                    console.error("Print error:", err);
+                    Swal.fire({
+                        title: 'Print Failed',
+                        text: 'Unable to print the document. Please try again.',
+                        icon: 'error'
+                    });
+                },
+                removeAfterPrint: false,
+                copyStyles: true,
+    });
+    const handlePrintAck = useReactToPrint({
+                content: () => {
+                    console.log("ACK PRINT CONTENT:", ackPrintRef.current);
+        
+                    if (!ackPrintRef.current || !ackPrintRef.current.innerHTML.trim()) {
+                        console.error("No ACKNOWLEDGEMENT content to print!");
+        
+                        // Try again after rendering
+                        setTimeout(() => {
+                            handlePrintAck();
+                        }, 500);
+        
+                        return null;
+                    }
+        
+                    return ackPrintRef.current;
+                },
+                contentRef: ackPrintRef,
+                documentTitle: `Acknowledgement_${loan?.id || ""}`,
+                onBeforeGetContent: async () => {
+                    return new Promise((resolve) => {
+                        setAckReady(true);
+                        setTimeout(() => {
+                            console.log("ACK PRINT READY");
+                            resolve();
+                        }, 1000);
+                    });
+                },
+                onAfterPrint: () => {
+                    setAckReady(false);
+                },
+                onPrintError: (err) => {
+                    console.error("Acknowledgement Print Error:", err);
+                    Swal.fire("Error", "Unable to print acknowledgement.", "error");
+                },
+                removeAfterPrint: false,
+                copyStyles: true,
+    });
+        
     const handlePrint = () => {
         window.print();
     };
+    // Helper logic
+    const orgSector = loan?.organisation?.sector_type;
+    const isHealth = orgSector === "Health";
+    const isEducation = orgSector === "Education";
+    const canPrintSector = isHealth || isEducation; // Render for both
+    const sectorDocTitle = isHealth ? "Health Declaration Form" : "Education Grant Form";
+   
     const [loanFormData, setLoanFormData] = useState({
         id: loan ? loan.id : null,
         loan_type: 0,
@@ -110,20 +199,14 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         bank_account_no: "",
         remarks: "",
     });
-
-    // Helper logic to determine Sector details
-    const orgSector = loan?.organisation?.sector_type; // Assuming 'Health' or 'Education'
-    const isHealth = orgSector === "Health";
-    const isEducation = orgSector === "Education";
-
-    const SectorFormComponent = isHealth ? HealthF : EduF;    
-
-    // Define the URL based on the sector (Adjust routes to match your Laravel routes)  
-
-    const sectorDocTitle = isHealth 
-    ? "Health Declaration Form" 
-    : "Education Grant Form";
-
+    const renderSectorForm = () => {
+            if (!loan) return null;
+    
+            return loan.organisation?.sector_type === "Health"
+                ? <HealthF auth={auth} loan={loan} />
+                : <EduPrintFormat auth={auth} loan={loan} />;
+        };
+ 
     // Open modal with selected document
     const openDocModal = (doc) => {
         console.log("doc on openDocModal: ", doc);
@@ -262,8 +345,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     //         });
     //     }
     // };
+
     const handleReject = () => {
-        setShowLoanRejectModal(true); // 🔥 Open modal instead of rejecting immediately
+        setShowLoanRejectModal(true); // Open modal instead of rejecting immediately
     };
 
     const submitLoanRejection = async () => {
@@ -808,6 +892,37 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan Details</h2>}
         >
             <Head title="Loan Details" />
+             {/* Always mounted print target */}
+            <div className="p-4 bg-gray-100 print-area text-black">
+                            {showSectorModal && (
+                                <div 
+                                    ref={printRef}
+                                    style={{
+                                        position: "absolute",
+                                        left: "-9999px",
+                                        top: 0,
+                                        width: "210mm",
+                                        padding: "20mm"
+                                    }}
+                                >
+                                    {renderSectorForm()}
+                                </div>
+            
+                            )}
+            </div>
+            <div
+                            ref={ackPrintRef}
+                            style={{
+                                position: "absolute",
+                                left: "-9999px",
+                                top: 0,
+                                width: "210mm",
+                                padding: "20mm",
+                                background: "white"
+                            }}
+                        >
+                            {ackReady && loan && <AppF loan={loan} auth={auth} />}
+            </div>
             <div className="py-12">
                 <div className="max-w-9xl mx-auto sm:px-6 lg:px-8 custPadding">
                     <div className="bg-white shadow-sm sm:rounded-lg p-6">
@@ -1691,569 +1806,172 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         )}
                                     </fieldset>
                                 </Col>
-                                {(loan?.status == "Rejected") && (auth.user.is_admin != 1) &&(loan?.is_temp_rejection == 1) ? (
-                                    <>
-                                        <fieldset className="fldset mb-5">
-                                            <legend className="font-semibold mb-2">📑 Acknowledgement</legend>
-
-                                            <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
-                                                <thead className="bg-indigo-600 text-white">
-                                                    <tr>
-                                                        <th className="border p-2 text-center">Document Type</th>
-                                                        <th className="border p-2 text-center">File Name</th>
-                                                        <th className="border p-2 text-center">View</th>
-                                                        <th className="border p-2 text-center">Download</th>
-                                                        <th className="border p-2 text-center">Print</th>
-                                                    </tr>
-                                                </thead>
-
-                                                <tbody>
-                                                    <tr className="hover:bg-gray-50 transition">
-                                                        <td className="border p-2 text-center">Application Form</td>
-                                                        <td className="border p-2 text-center">Application Form</td>
-
-                                                        {/* View Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={() => setShowModal1(true)}
-                                                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <Eye size={14} /> View
-                                                            </button>
-                                                        </td>
-
-                                                        {/* Download Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <a
-                                                                href={pdfPath}
-                                                                download
-                                                                onClick={async (e) => {
-                                                                    e.preventDefault(); // stop automatic navigation
-                                                                    await markAckDownloaded(); // update DB + refresh
-
-                                                                    // Now continue download normally
-                                                                    window.location.href = pdfPath;
-                                                                }}
-                                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <Download size={14} /> Download
-                                                            </a>
-
-                                                        </td>
-
-                                                        {/* 🖨️ Print Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={async () => {
-                                                                    await markAckDownloaded(); // update DB + refresh
-
-                                                                    const printWindow = window.open(pdfPath, "_blank");
-                                                                    if (printWindow) {
-                                                                        printWindow.onload = () => {
-                                                                            printWindow.focus();
-                                                                            printWindow.print();
-                                                                        };
-                                                                    }
-                                                                }}
-                                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    fill="none"
-                                                                    viewBox="0 0 24 24"
-                                                                    strokeWidth="1.5"
-                                                                    stroke="currentColor"
-                                                                    className="w-4 h-4"
-                                                                >
-                                                                    <path
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                        d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6"
-                                                                    />
-                                                                </svg>
-                                                                Print
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-
-
-                                            {/* PDF Modal */}
-                                            {/* Application Form Page Modal */}
-                                           {/* Application Form Modal (AppF) */}
-                                           
-                                            <Modal 
-                                                show={showModal1} 
-                                                onHide={() => setShowModal1(false)} 
-                                                size="xl" 
-                                                centered 
-                                                contentClassName="bg-white"
-                                            >
-                                                <Modal.Header closeButton className="no-print">
-                                                    
-                                                </Modal.Header>
-
-                                                <Modal.Body className="p-0">
-                                                    {/* ✅ THIS IS WHERE DATA IS PASSED */}
-                                                    <AppF loan={loan} auth={auth} />
-                                                </Modal.Body>
-
-                                                <Modal.Footer className="no-print">
-                                                    <Button variant="secondary" onClick={() => setShowModal1(false)}>
-                                                        Close
-                                                    </Button>
-                                                    <Button variant="success" onClick={handlePrint}>
-                                                        🖨️ Print Form
-                                                    </Button>
-                                                </Modal.Footer>
-                                            </Modal>
-                                        </fieldset>
-                                    </>
-                                ) :
-                                (loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) ? (
-                                    <>
-                                        <fieldset className="fldset mb-5">
-                                            <legend className="font-semibold mb-2">📑 Acknowledgement</legend>
-
-                                            <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
-                                                <thead className="bg-indigo-600 text-white">
-                                                    <tr>
-                                                        <th className="border p-2 text-center">Document Type</th>
-                                                        <th className="border p-2 text-center">File Name</th>
-                                                        <th className="border p-2 text-center">View</th>
-                                                        <th className="border p-2 text-center">Download</th>
-                                                        <th className="border p-2 text-center">Print</th>
-                                                    </tr>
-                                                </thead>
-
-                                                <tbody>
-                                                    <tr className="hover:bg-gray-50 transition">
-                                                        <td className="border p-2 text-center">Application Form</td>
-                                                        <td className="border p-2 text-center">Application Form</td>
-
-                                                        {/* View Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={() => setShowModal1(true)}
-                                                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <Eye size={14} /> View
-                                                            </button>
-                                                        </td>
-
-                                                        {/* Download Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <a
-                                                                href={pdfPath}
-                                                                download
-                                                                onClick={async (e) => {
-                                                                    e.preventDefault(); // stop automatic navigation
-                                                                    await markAckDownloaded(); // update DB + refresh
-
-                                                                    // Now continue download normally
-                                                                    window.location.href = pdfPath;
-                                                                }}
-                                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <Download size={14} /> Download
-                                                            </a>
-
-                                                        </td>
-
-                                                        {/* 🖨️ Print Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={async () => {
-                                                                    await markAckDownloaded(); // update DB + refresh
-
-                                                                    const printWindow = window.open(pdfPath, "_blank");
-                                                                    if (printWindow) {
-                                                                        printWindow.onload = () => {
-                                                                            printWindow.focus();
-                                                                            printWindow.print();
-                                                                        };
-                                                                    }
-                                                                }}
-                                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    fill="none"
-                                                                    viewBox="0 0 24 24"
-                                                                    strokeWidth="1.5"
-                                                                    stroke="currentColor"
-                                                                    className="w-4 h-4"
-                                                                >
-                                                                    <path
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                        d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6"
-                                                                    />
-                                                                </svg>
-                                                                Print
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-
-
-                                            {/* PDF Modal */}
-                                            {/* Application Form Page Modal */}
-                                      {/* Application Form Modal (AppF) */}
-                                            <Modal 
-                                                show={showModal1} 
-                                                onHide={() => setShowModal1(false)} 
-                                                size="xl" 
-                                                centered 
-                                                contentClassName="bg-white"
-                                            >
-                                                <Modal.Header closeButton className="no-print">
-                                                    <Modal.Title>📄 Application Form View</Modal.Title>
-                                                </Modal.Header>
-
-                                                <Modal.Body className="p-0">
-                                                    {/* ✅ THIS IS WHERE DATA IS PASSED */}
-                                                    <AppF loan={loan} auth={auth} />
-                                                </Modal.Body>
-
-                                                <Modal.Footer className="no-print">
-                                                    <Button variant="secondary" onClick={() => setShowModal1(false)}>
-                                                        Close
-                                                    </Button>
-                                                    <Button variant="success" onClick={handlePrint}>
-                                                        🖨️ Print Form
-                                                    </Button>
-                                                </Modal.Footer>
-                                            </Modal>
-                                        </fieldset>
-                                    </>
-                                ) :
-                                (loan?.is_elegible == 1) && (loan?.is_loan_re_updated_after_higher_approval == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
-                                    <>
-                                        <fieldset className="fldset mb-5">
-                                            <legend className="font-semibold mb-2">📑 Acknowledgement</legend>
-
-                                            <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
-                                                <thead className="bg-indigo-600 text-white">
-                                                    <tr>
-                                                        <th className="border p-2 text-center">Document Type</th>
-                                                        <th className="border p-2 text-center">File Name</th>
-                                                        <th className="border p-2 text-center">View</th>
-                                                        <th className="border p-2 text-center">Download</th>
-                                                        <th className="border p-2 text-center">Print</th>
-                                                    </tr>
-                                                </thead>
-
-                                                <tbody>
-                                                    <tr className="hover:bg-gray-50 transition">
-                                                        <td className="border p-2 text-center">Application Form</td>
-                                                        <td className="border p-2 text-center">Application Form</td>
-
-                                                        {/* View Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={() => setShowModal1(true)}
-                                                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <Eye size={14} /> View
-                                                            </button>
-                                                        </td>
-
-                                                        {/* Download Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <a
-                                                                href={pdfPath}
-                                                                download
-                                                                onClick={async (e) => {
-                                                                    e.preventDefault(); // stop automatic navigation
-                                                                    await markAckDownloaded(); // update DB + refresh
-
-                                                                    // Now continue download normally
-                                                                    window.location.href = pdfPath;
-                                                                }}
-                                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <Download size={14} /> Download
-                                                            </a>
-
-                                                        </td>
-
-                                                        {/* 🖨️ Print Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={async () => {
-                                                                    await markAckDownloaded(); // update DB + refresh
-
-                                                                    const printWindow = window.open(pdfPath, "_blank");
-                                                                    if (printWindow) {
-                                                                        printWindow.onload = () => {
-                                                                            printWindow.focus();
-                                                                            printWindow.print();
-                                                                        };
-                                                                    }
-                                                                }}
-                                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    fill="none"
-                                                                    viewBox="0 0 24 24"
-                                                                    strokeWidth="1.5"
-                                                                    stroke="currentColor"
-                                                                    className="w-4 h-4"
-                                                                >
-                                                                    <path
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                        d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6"
-                                                                    />
-                                                                </svg>
-                                                                Print
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-
-
-                                            {/* PDF Modal */}
-                                            <Modal 
-                                                show={showModal1} 
-                                                onHide={() => setShowModal1(false)} 
-                                                size="xl" 
-                                                centered 
-                                                contentClassName="bg-white"
-                                            >
-                                                <Modal.Header closeButton className="no-print">
-                                                    <Modal.Title>📄 Application Form View</Modal.Title>
-                                                </Modal.Header>
-
-                                                <Modal.Body className="p-0">
-                                                    {/* ✅ THIS IS WHERE DATA IS PASSED */}
-                                                    <AppF loan={loan} auth={auth} />
-                                                </Modal.Body>
-
-                                                <Modal.Footer className="no-print">
-                                                    <Button variant="secondary" onClick={() => setShowModal1(false)}>
-                                                        Close
-                                                    </Button>
-                                                    <Button variant="success" onClick={handlePrint}>
-                                                        🖨️ Print Form
-                                                    </Button>
-                                                </Modal.Footer>
-                                            </Modal>
-                                        </fieldset>
-                                    </>
-                                )}
-
-
-                                {/* --- SECTOR SPECIFIC DOCUMENTS TABLE --- */}
-                                { (isHealth || isEducation)&&(loan?.status == "Rejected") && (auth.user.is_admin != 1) &&(loan?.is_temp_rejection == 1) &&  (
-                                    <>
-                                        <fieldset className="fldset mb-5">
-                                            <legend className="font-semibold mb-2">
-                                                {isHealth ? "🏥 Health Sector Documents" : "🎓 Education Sector Documents"}
-                                            </legend>
-
-                                            <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
-                                                <thead className={isHealth ? "bg-red-600 text-white" : "bg-green-600 text-white"}>
-                                                    <tr>
-                                                        <th className="border p-2 text-center">Document Type</th>
-                                                        <th className="border p-2 text-center">File Name</th>
-                                                        <th className="border p-2 text-center">View</th>
-                                                        <th className="border p-2 text-center">Download</th>
-                                                        <th className="border p-2 text-center">Print</th>
-                                                    </tr>
-                                                </thead>
-
-                                                <tbody>
-                                                    <tr className="hover:bg-gray-50 transition">
-                                                        <td className="border p-2 text-center">{sectorDocTitle}</td>
-                                                        <td className="border p-2 text-center">{sectorDocTitle}</td>
-
-                                                        {/* View Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={() => setShowSectorModal(true)}
-                                                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <Eye size={14} /> View
-                                                            </button>
-                                                        </td>
-
-                                                        {/* Download Button (Placeholder logic) */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                                onClick={() => {
-                                                                    // Add download logic here if specific PDF exists
-                                                                    Swal.fire("Info", "Download logic for sector form goes here", "info");
-                                                                }}
-                                                            >
-                                                                <Download size={14} /> Download
-                                                            </button>
-                                                        </td>
-
-                                                        {/* Print Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={handlePrintSectorForm} // <--- UPDATED THIS LINE
-                                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6" />
-                                                                </svg>
-                                                                Print
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-
-                                            {/* --- SECTOR FORM MODAL --- */}
-                                            <Modal
-                                                show={showSectorModal}
-                                                onHide={() => setShowSectorModal(false)}
-                                                size="xl"
-                                                centered
-                                                dialogClassName="max-w-[900px]"
-                                            >
-                                                <Modal.Header closeButton>
-                                                    <Modal.Title>
-                                                        {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
-                                                    </Modal.Title>
-                                                </Modal.Header>
-
-                                                <Modal.Body className="p-0">
-
-                                                    {/* Render Dynamic Component Instead of Iframe */}
-                                                    <SectorFormComponent 
-                                                        
-                                                        loan={loan} 
-                                                        auth={auth} 
-                                                        onClose={() => setShowSectorModal(false)}
-                                                    />
-
-                                                </Modal.Body>
-
-                                                <Modal.Footer>
-                                                    <Button 
-                                                        variant="secondary" 
-                                                        onClick={() => setShowSectorModal(false)}
-                                                    >
-                                                        Close
-                                                    </Button>
-                                                </Modal.Footer>
-                                            </Modal>
-
-                                        </fieldset>
-                                    </>
-                                )}
-                                 { (isHealth || isEducation)&&(loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) &&  (
-                                    <>
-                                        <fieldset className="fldset mb-5">
-                                            <legend className="font-semibold mb-2">
-                                                {isHealth ? "🏥 Health Sector Documents" : "🎓 Education Sector Documents"}
-                                            </legend>
-
-                                            <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
-                                                <thead className={isHealth ? "bg-red-600 text-white" : "bg-green-600 text-white"}>
-                                                    <tr>
-                                                        <th className="border p-2 text-center">Document Type</th>
-                                                        <th className="border p-2 text-center">File Name</th>
-                                                        <th className="border p-2 text-center">View</th>
-                                                        <th className="border p-2 text-center">Download</th>
-                                                        <th className="border p-2 text-center">Print</th>
-                                                    </tr>
-                                                </thead>
-
-                                                <tbody>
-                                                    <tr className="hover:bg-gray-50 transition">
-                                                        <td className="border p-2 text-center">{sectorDocTitle}</td>
-                                                        <td className="border p-2 text-center">{sectorDocTitle}</td>
-
-                                                        {/* View Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={() => setShowSectorModal(true)}
-                                                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <Eye size={14} /> View
-                                                            </button>
-                                                        </td>
-
-                                                        {/* Download Button (Placeholder logic) */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                                onClick={() => {
-                                                                    // Add download logic here if specific PDF exists
-                                                                    Swal.fire("Info", "Download logic for sector form goes here", "info");
-                                                                }}
-                                                            >
-                                                                <Download size={14} /> Download
-                                                            </button>
-                                                        </td>
-
-                                                        {/* Print Button */}
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={handlePrintSectorForm} // <--- UPDATED THIS LINE
-                                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-4 h-4">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7m0 0h3v11H3V9h3zm3 4h6" />
-                                                                </svg>
-                                                                Print
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-
-                                            {/* --- SECTOR FORM MODAL --- */}
-                                            <Modal
-                                                show={showSectorModal}
-                                                onHide={() => setShowSectorModal(false)}
-                                                size="xl"
-                                                centered
-                                                dialogClassName="max-w-[900px]"
-                                            >
-                                                <Modal.Header closeButton>
-                                                    <Modal.Title>
-                                                        {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
-                                                    </Modal.Title>
-                                                </Modal.Header>
-
-                                                <Modal.Body className="p-0">
-
-                                                    {/* Render Dynamic Component Instead of Iframe */}
-                                                    <SectorFormComponent
-                                                        loan={loan} 
-                                                        auth={auth} 
-                                                        onClose={() => setShowSectorModal(false)}
-                                                    />
-
-                                                </Modal.Body>
-
-                                                <Modal.Footer>
-                                                    <Button 
-                                                        variant="secondary" 
-                                                        onClick={() => setShowSectorModal(false)}
-                                                    >
-                                                        Close
-                                                    </Button>
-                                                </Modal.Footer>
-                                            </Modal>
-
-                                        </fieldset>
-                                    </>
-                                )}
                                 
+                                <fieldset className="fldset mb-5">
+                                    <legend className="font-semibold mb-2">📑 Documents</legend>
 
+                                    <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
+                                        <thead className="bg-indigo-600 text-white">
+                                            <tr>
+                                                <th className="border p-2 text-center">Document Type</th>
+                                                <th className="border p-2 text-center">File Name</th>
+                                                <th className="border p-2 text-center">View</th>
+                                                <th className="border p-2 text-center">Print</th>
+                                            </tr>
+                                        </thead>
 
+                                        <tbody>
+
+                                            {/* --------------- APPLICATION FORM ROW ---------------- */}
+                                            {(loan?.status === "Rejected" && auth.user.is_admin !== 1 && loan?.is_temp_rejection === 1)
+                                            || (loan?.is_elegible === 1 && loan?.status === "Pending" && auth.user.is_admin !== 1)
+                                            || (loan?.is_elegible === 1 && loan?.is_loan_re_updated_after_higher_approval === 1 && loan?.higher_approved_by != null)
+                                            ? (
+                                                <tr className="hover:bg-gray-50 transition">
+                                                    <td className="border p-2 text-center">Application Form</td>
+                                                    <td className="border p-2 text-center">Application Form</td>
+
+                                                    <td className="border p-2 text-center">
+                                                        <button 
+                                                            onClick={() => setShowModal1(true)}
+                                                            className="bg-blue-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
+                                                        >
+                                                            <Eye size={14} /> View
+                                                        </button>
+                                                    </td>
+
+                                                    <td className="border p-2 text-center">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (!showModal1) {
+                                                                    setShowModal1(true);
+                                                                    setTimeout(() => handlePrintAck(), 1000);
+                                                                } else {
+                                                                    handlePrintAck();
+                                                                }
+                                                            }}
+                                                            className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
+                                                        >
+                                                            <Printer size={14} /> Print
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ) : null}
+
+                                            {/* --------------- SECTOR DOCUMENT ROW ---------------- */}
+                                            {canPrintSector && (
+                                                <tr className="hover:bg-gray-50 transition">
+                                                    <td className="border p-2 text-center">{sectorDocTitle}</td>
+                                                    <td className="border p-2 text-center">{sectorDocTitle}</td>
+
+                                                    <td className="border p-2 text-center">
+                                                        <button 
+                                                            onClick={() => setShowSectorModal(true)}
+                                                            className="bg-blue-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
+                                                        >
+                                                            <Eye size={14} /> View
+                                                        </button>
+                                                    </td>
+
+                                                    <td className="border p-2 text-center">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (!showSectorModal) {
+                                                                    setShowSectorModal(true);
+                                                                    setTimeout(() => handlePrintSectorForm(), 1000);
+                                                                } else {
+                                                                    handlePrintSectorForm();
+                                                                }
+                                                            }}
+                                                            className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
+                                                        >
+                                                            <Printer size={14} /> Print
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            )}
+
+                                        </tbody>
+                                    </table>
+                                </fieldset>
+                                <Modal 
+                                    show={showModal1} 
+                                    onHide={() => setShowModal1(false)} 
+                                    size="xl" 
+                                    centered
+                                    contentClassName="bg-white"
+                                    enforceFocus={false}
+                                    restoreFocus={false}
+                                >
+                                    <Modal.Header closeButton className="no-print">
+                                        <Modal.Title>📄 Application Form View</Modal.Title>
+                                    </Modal.Header>
+                                    
+                                    <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
+                                        <div className="p-1 bg-gray-100 print-area text-black" ref={ackPrintRef}>
+                                            {loan && <AppF loan={loan} auth={auth} />}
+                                        </div>
+                                    </Modal.Body>
+
+                                    <Modal.Footer className="no-print">
+                                        <Button variant="secondary" onClick={() => setShowModal1(false)}>Close</Button>
+
+                                        <button
+                                            onClick={() => {
+                                                if (!showModal1) {
+                                                    setShowModal1(true);
+                                                    setTimeout(() => handlePrintAck(), 1000);
+                                                } else {
+                                                    handlePrintAck();
+                                                }
+                                            }}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
+                                        >
+                                            <Printer size={14} /> Print Acknowledgement
+                                        </button>
+                                    </Modal.Footer>
+                                </Modal>
+                                <Modal
+                                    show={showSectorModal}
+                                    onHide={() => setShowSectorModal(false)}
+                                    size="xl"
+                                    centered
+                                    contentClassName="bg-white"
+                                    enforceFocus={false}
+                                    restoreFocus={false}
+                                >
+                                    <Modal.Header closeButton>
+                                        <Modal.Title>
+                                            {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
+                                        </Modal.Title>
+                                    </Modal.Header>
+
+                                    <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
+                                        <div className="p-1 bg-gray-100 print-area text-black" ref={printRef}>
+                                            {loan && renderSectorForm()}
+                                        </div>
+                                    </Modal.Body>
+
+                                    <Modal.Footer>
+                                        <Button variant="secondary" onClick={() => setShowSectorModal(false)}>Close</Button>
+
+                                        <button
+                                            onClick={() => {
+                                                if (!showSectorModal) {
+                                                    setShowSectorModal(true);
+                                                    setTimeout(() => handlePrintSectorForm(), 1000);
+                                                } else {
+                                                    handlePrintSectorForm();
+                                                }
+                                            }}
+                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
+                                        >
+                                            <Printer size={14} /> Print
+                                        </button>
+                                    </Modal.Footer>
+                                </Modal>
+
+   
                                 {/* --- Video Consent Upload / Preview --- */}
                                 {(loan?.status == "Rejected") && (auth.user.is_admin != 1) && (loan?.is_temp_rejection == 1) ? (
                                     (loan?.is_ack_downloaded == 1) && (

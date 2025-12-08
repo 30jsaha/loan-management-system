@@ -41,19 +41,7 @@ export default function PrintFunc({ auth, loans, loanId }) {
         }
     }, [printRef, showSectorModal, loan]);
 
-    // const handlePrintSectorForm = useReactToPrint({
-    //     content: () => printRef.current,   // <-- MUST return a DOM node
-    //     contentRef: printRef,         // <-- NEW in v3.0+
-    //     documentTitle: "Sector Form",
-    //     onBeforeGetContent: async () => {
-    //         return new Promise(resolve => {
-    //             console.log("BEFORE PRINT",printRef);
-    //             setTimeout(resolve, 300);  // delay to allow modal/DOM render
-    //         });
-    //     },
-    //     onAfterPrint: () => console.log("PRINT COMPLETE",printRef),
-    //     onPrintError: (err) => console.error("PRINT ERROR:", err)
-    // });
+  
     const handlePrintSectorForm = useReactToPrint({
         content: () => {
             // Debug: Check what we're trying to print
@@ -272,7 +260,7 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                         <th className="border p-2 text-center">Document Type</th>
                                                         <th className="border p-2 text-center">File Name</th>
                                                         <th className="border p-2 text-center">View</th>
-                                                        <th className="border p-2 text-center">Download</th>
+                        
                                                         <th className="border p-2 text-center">Print</th>
                                                     </tr>
                                                 </thead>
@@ -283,11 +271,23 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                         <td className="border p-2 text-center">
                                                             <button onClick={() => setShowModal1(true)} className="bg-blue-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"><Eye size={14} /> View</button>
                                                         </td>
-                                                        <td className="border p-2 text-center">
+                                                        {/* <td className="border p-2 text-center">
                                                             <a href={pdfPath} download onClick={(e) => { e.preventDefault(); markAckDownloaded(); window.location.href = pdfPath; }} className="bg-gray-200 text-gray-800 px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"><Download size={14} /> Download</a>
-                                                        </td>
+                                                        </td> */}
                                                         <td className="border p-2 text-center">
-                                                            <button onClick={() => { markAckDownloaded(); window.open(pdfPath, "_blank")?.print(); }} className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"><Printer size={14} /> Print</button>
+                                                            <button onClick={() => {
+                                                            // First open the modal to ensure component is rendered
+                                                            if (!showModal1) {
+                                                                setShowModal1(true);
+                                                                // Wait for modal to open and component to render
+                                                                setTimeout(() => {
+                                                                    handlePrintAck();
+                                                                }, 1000);
+                                                            } else {
+                                                                // Modal is already open, trigger print directly
+                                                                handlePrintAck();
+                                                            }
+                                                        }} className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"><Printer size={14} /> Print</button>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -349,7 +349,6 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                             <th className="border p-2 text-center">Document Type</th>
                                                             <th className="border p-2 text-center">File Name</th>
                                                             <th className="border p-2 text-center">View</th>
-                                                            <th className="border p-2 text-center">Download</th>
                                                             <th className="border p-2 text-center">Print</th>
                                                         </tr>
                                                     </thead>
@@ -367,14 +366,7 @@ export default function PrintFunc({ auth, loans, loanId }) {
                                                                 </button>
                                                             </td>
  
-                                                            <td className="border p-2 text-center">
-                                                                <button
-                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto text-xs"
-                                                                    onClick={() => Swal.fire("Info", "Download logic...", "info")}
-                                                                >
-                                                                    <Download size={14} /> Download
-                                                                </button>
-                                                            </td>
+            
  
                                                             <td className="border p-2 text-center">
                                                                 <button
