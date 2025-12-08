@@ -1806,8 +1806,8 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         )}
                                     </fieldset>
                                 </Col>
-                                
-                                <fieldset className="fldset mb-5">
+                                 {/* documents section */}
+                                <fieldset className="fldset mb-2">
                                     <legend className="font-semibold mb-2">📑 Documents</legend>
 
                                     <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
@@ -1977,7 +1977,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                     (loan?.is_ack_downloaded == 1) && (
                                         <>
                                             <React.Fragment>
-                                                <Row className="g-4 align-items-start mb-5">
+                                                <Row className="g-4 align-items-start mb-1">
                                                     <Col md={6}>
                                                         <fieldset className="fldset mb-4">
                                                             <legend className="font-semibold mb-3 flex items-center justify-between">
