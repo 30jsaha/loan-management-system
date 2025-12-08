@@ -16,6 +16,8 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
     const [searchQuery, setSearchQuery] = useState("");
     const [orgs, setOrgs] = useState([]);
     const [selectedOrgs, setSelectedOrgs] = useState([]);
+    console.log("Approved Loans:", loans);
+    // Fetch organisations
 
     // pagination state
     const [page, setPage] = useState(1);
