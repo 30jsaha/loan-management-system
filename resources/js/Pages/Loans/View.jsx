@@ -951,7 +951,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                     </h3>
                                 </Col>
                                 <Col md={12}>
-                                    {(loan.status === "Approved") && (
+                                    {(loan.status === "Approved") ? (
                                         <Alert variant="success" className="d-flex align-items-center justify-content-between">
                                             <div>
                                                 <strong>Loan Approved ✅</strong>
@@ -963,6 +963,20 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 </Button>
                                             </div>
                                         </Alert>
+                                    ) : (
+                                        loan?.status === "Closed" && (
+                                            <Alert variant="info" className="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <strong>Loan Closed ℹ️</strong>
+                                                    <div className="small">This loan has been closed.</div>
+                                                </div>
+                                                <div>
+                                                    <Button variant="outline-secondary" size="sm" onClick={() => router.visit(route("loans"))}>
+                                                        Back to List
+                                                    </Button>
+                                                </div>
+                                            </Alert>
+                                        )
                                     )}
                                     {(loan.status === "Rejected") && (
                                         <Alert variant="danger" className="d-flex align-items-center justify-content-between">
@@ -1823,8 +1837,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         <tbody>
 
                                             {/* --------------- APPLICATION FORM ROW ---------------- */}
-                                            {(loan?.status === "Rejected" && auth.user.is_admin !== 1 && loan?.is_temp_rejection === 1)
-                                            || (loan?.is_elegible === 1 && loan?.status === "Pending" && auth.user.is_admin !== 1)
+                                            {(loan?.status === "Rejected" && loan?.is_temp_rejection === 1)
+                                            || (loan?.is_elegible === 1 && loan?.status === "Pending")
+                                            || (loan?.is_elegible === 1 && (loan?.status === "Approved" || loan?.status === "Closed"))
                                             || (loan?.is_elegible === 1 && loan?.is_loan_re_updated_after_higher_approval === 1 && loan?.higher_approved_by != null)
                                             ? (
                                                 <tr className="hover:bg-gray-50 transition">
