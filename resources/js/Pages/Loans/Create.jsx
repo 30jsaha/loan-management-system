@@ -9,7 +9,7 @@ import LoanDocumentsUpload from '@/Components/LoanDocumentsUpload';
 import CustomerEligibilityForm from '@/Components/CustomerEligibilityForm';
 import CustomerForm from '@/Components/CustomerForm';
 //icon pack
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LucideNavigation } from "lucide-react";
 import Swal from 'sweetalert2';
 
 export default function Create({ auth, loan_settings }) {
@@ -909,13 +909,10 @@ export default function Create({ auth, loan_settings }) {
                                                 <label className="form-label">Purpose</label>
                                                 <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
                                                     <option value="">Select Purpose</option>
-                                                    <option>Tuition</option>
-                                                    <option>Living</option>
-                                                    <option>Medical</option>
-                                                    <option>Appliance</option>
-                                                    <option>Car</option>
-                                                    <option>Travel</option>
-                                                    <option>HomeImprovement</option>
+                                                    <option>School Fee</option>
+                                                    <option>Personal Expenses</option>
+                                                    <option>Funeral Expenses</option>
+                                                    <option>Refinancing</option>
                                                     <option>Other</option>
                                                 </select>
                                             </div>
@@ -1057,3 +1054,7 @@ export default function Create({ auth, loan_settings }) {
         </AuthenticatedLayout>
     );
 }
+
+
+
+

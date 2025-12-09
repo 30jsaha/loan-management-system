@@ -7,7 +7,8 @@ import { currencyPrefix } from "@/config";
 import { MultiSelect } from "primereact/multiselect";
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
-import { Eye, FileText, User, Building, Calendar } from "lucide-react";
+import { Eye, FileText, User, Building, Calendar, Building2 } from "lucide-react";
+import { Pencil, Trash2, Search, ArrowUpDown, ArrowLeft } from "lucide-react";
 import { Modal, Button, Row, Col, Badge } from "react-bootstrap";
 
 export default function CompletedLoansWithEmiCollection({ auth, approved_loans }) {
@@ -56,49 +57,63 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
     };
 
     const sortedLoans = useMemo(() => {
-        const sorted = [...loans].sort((a, b) => {
-            let valA = a[sortConfig.key];
-            let valB = b[sortConfig.key];
+        return [...loans].sort((a, b) => {
+            let valA, valB;
 
+            // --- CUSTOMER NAME ---
             if (sortConfig.key === "customer") {
                 valA = `${a.customer?.first_name} ${a.customer?.last_name}`.toLowerCase();
                 valB = `${b.customer?.first_name} ${b.customer?.last_name}`.toLowerCase();
             }
 
-            if (sortConfig.key === "organisation") {
+            // --- ORGANISATION ---
+            else if (sortConfig.key === "organisation") {
                 valA = a.organisation?.organisation_name || "";
                 valB = b.organisation?.organisation_name || "";
+            }
+
+            // --- TOTAL PAID SORT (NEW) ---
+            else if (sortConfig.key === "total_paid") {
+                valA =
+                    a.installments
+                        ?.filter(i => i.status === "Paid")
+                        .reduce((s, i) => s + Number(i.emi_amount || 0), 0) || 0;
+
+                valB =
+                    b.installments
+                        ?.filter(i => i.status === "Paid")
+                        .reduce((s, i) => s + Number(i.emi_amount || 0), 0) || 0;
+            }
+
+            // --- NORMAL FIELD SORT ---
+            else {
+                valA = a[sortConfig.key];
+                valB = b[sortConfig.key];
             }
 
             if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
             if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
             return 0;
         });
-
-        return sorted;
     }, [loans, sortConfig]);
 
      // ✅ FILTER ONLY FULLY PAID LOANS
     const filteredLoans = useMemo(() => {
-        return loans
-            .filter(loan => {
-                const customerName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`
-                    .toLowerCase();
+        return sortedLoans.filter(loan => {
+            const name = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
+            const matchesName = name.includes(searchQuery.toLowerCase());
 
-                const matchesName =
-                    customerName.includes(searchQuery.toLowerCase());
+            const orgId = loan.organisation?.id;
+            const matchesOrg = selectedOrgs.length === 0 || selectedOrgs.includes(orgId);
 
-                const orgId = loan.organisation?.id;
-                const matchesOrg =
-                    selectedOrgs.length === 0 || selectedOrgs.includes(orgId);
+            // Fully paid check
+            const remainingFn = loan.tenure_fortnight - (loan.installments?.length || 0);
 
-                // Only fully paid loans
-                const remainingFn =
-                    loan.tenure_fortnight - (loan.installments?.length || 0);
+            return matchesName && matchesOrg && remainingFn === 0;
+        });
+    }, [sortedLoans, searchQuery, selectedOrgs]);
 
-                return matchesName && matchesOrg && remainingFn === 0;
-            });
-    }, [loans, searchQuery, selectedOrgs]);
+
        // --- TOTAL PAID SUM OF FILTERED LOANS ---
     const totalPaidFiltered = useMemo(() => {
         return filteredLoans.reduce((sum, loan) => {
@@ -112,7 +127,11 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
 
     // --- PAGINATION LOGIC ---
     const totalPages = Math.ceil(filteredLoans.length / rowsPerPage);
-    const paginatedLoans = filteredLoans.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+    const paginatedLoans = filteredLoans.slice(
+        (page - 1) * rowsPerPage,
+        page * rowsPerPage
+    );
+
 
 
     const SortIcon = ({ column }) => {
@@ -153,27 +172,47 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                 <div className="flex flex-wrap items-center gap-4 mb-3 bg-gray-50 p-3 rounded-xl border border-gray-200 shadow-sm">
 
                     {/* Search */}
-                    <input
-                        type="text"
-                        placeholder="🔍 Search customer..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className=" h-[50px]
-                            border border-gray-300 rounded-lg px-3 py-2 w-full md:w-1/3 text-sm transition focus:ring-2 focus:ring-indigo-400 shadow-sm"
-                    />
+                    <div className="relative w-full md:w-1/3">
+                        <Search
+                            size={18}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        />
+
+                        <input
+                            type="text"
+                            placeholder="Search customer..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="border border-gray-300 rounded-lg pl-10 pr-3 py-3 w-full text-sm 
+                                    transition focus:ring-2 focus:ring-indigo-400 shadow-sm h-[46px]"
+                        />
+                    </div>
+
 
                     {/* Organisation Filter (reduced height) */}
-                    <div className="w-full md:w-1/3 border border-gray-300 rounded-lg shadow-sm">
+                    <div className="relative w-full md:w-1/3">
+                        <Building2
+                            size={18}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                        />
+
                         <MultiSelect
                             value={selectedOrgs}
                             options={organisationOptions}
                             onChange={(e) => setSelectedOrgs(e.value)}
-                            placeholder="🏢 Organisation"
+                            placeholder="Filter by organisation"
                             display="chip"
-                            className="w-full text-sm"
-                            style={{ minHeight: "36px", padding: "2px 6px" }}
+                            className="w-full border rounded-lg pl-10 text-sm h-[40px] flex items-center"
+                            style={{
+                                minHeight: "40px",
+                                height: "45px",
+                                paddingTop: "2px",
+                                paddingBottom: "2px",
+                            }}
                         />
                     </div>
+
+
 
                     {/* Clear */}
                     <button
@@ -184,7 +223,8 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                     </button>
 
                     {/* Total Paid */}
-                    <div className="ml-auto px-4 py-2 bg-green-50 border border-green-200 text-green-700 rounded-lg shadow-sm text-sm font-semibold">
+                    <div 
+                    className="ml-auto px-4 py-2 bg-green-50 border border-green-200 text-green-700 rounded-lg shadow-sm text-sm font-semibold">
                         Total Paid: {formatCurrency(totalPaidFiltered)}
                     </div>
 
@@ -214,7 +254,11 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                                         <th className="p-2 border cursor-pointer" onClick={() => handleSort("total_repay_amt")}>
                                             Total Repayable <SortIcon column="total_repay_amt" />
                                         </th>
-                                        <th className="p-2 border">Total Paid</th>
+                                        <th className="p-2 border"
+                                        onClick={() => handleSort("total_paid")}
+                                        >Total Paid
+                                         <SortIcon column="total_repay_amt" />
+                                        </th>
                                         <th className="p-2 border cursor-pointer" onClick={() => handleSort("disbursement_date")}>
                                             Completed On <SortIcon column="disbursement_date" />
                                         </th>
