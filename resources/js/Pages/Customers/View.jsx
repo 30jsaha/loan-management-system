@@ -392,16 +392,27 @@ function ModernLoanCard({ loan, collections, totalCollected, initiallyOpen }) {
 
           {/* Summary Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+
             <InfoCard
               label="Loan Amount"
               value={`PGK ${Number(loan.loan_amount_applied || 0).toFixed(2)}`}
+              color="from-blue-50 to-blue-100 text-blue-700 border-blue-200"
             />
-            <InfoCard label="Interest Rate" value={`${loan.interest_rate}%`} />
+
             <InfoCard
-              label="Processing Fee"
-              value={`PGK ${Number(loan.processing_fee || 0).toFixed(2)}`}
+              label="Interest Rate"
+              value={`${loan.interest_rate}%`}
+              color="from-green-50 to-green-100 text-green-700 border-green-200"
             />
+
+            <InfoCard
+              label="Total Repay Amount"
+              value={`PGK ${Number(loan.total_repay_amt || 0).toFixed(2)}`}
+              color="from-purple-50 to-purple-100 text-purple-700 border-purple-200"
+            />
+
           </div>
+
 
           {/* Collections Table */}
           {collections.length > 0 ? (
@@ -454,9 +465,11 @@ function ModernLoanCard({ loan, collections, totalCollected, initiallyOpen }) {
   );
 }
 
-const InfoCard = ({ label, value }) => (
-  <div className="p-3 border rounded bg-white shadow-sm">
-    <div className="text-xs text-gray-500">{label}</div>
-    <div className="font-bold">{value}</div>
+const InfoCard = ({ label, value, color }) => (
+  <div
+    className={`p-3 rounded-xl shadow-sm border bg-gradient-to-br ${color} hover:shadow-md transition`}
+  >
+    <div className="text-xs font-medium opacity-70">{label}</div>
+    <div className="text-lg font-bold mt-1">{value}</div>
   </div>
 );
