@@ -7,48 +7,6 @@ import { Eye, Trash2, Search, X, ArrowLeft } from "lucide-react";
 import Swal from "sweetalert2";
 import { currencyPrefix } from "@/config";
 
-
-/**
- * SideDrawer - simple right-side drawer
- */
-function SideDrawer({ open, onClose, children }) {
-  return (
-    <>
-      {/* Overlay */}
-      <div
-        className={`fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 ${
-          open ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div
-        className={`fixed top-0 right-0 h-full w-1/2 bg-white shadow-xl z-50 
-        transform transition-transform duration-300
-        ${open ? "translate-x-0" : "translate-x-full"}`}
-        role="dialog"
-        aria-modal="true"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-lg font-semibold">Loan / Collection Details</h3>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-md hover:bg-gray-200"
-            aria-label="Close drawer"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="overflow-y-auto h-[calc(100%-60px)] p-4">{children}</div>
-      </div>
-    </>
-  );
-}
-
 /**
  * DocumentViewerModal
  * - documentUrl must be a full/public URL to the PDF/MP4 (eg: /storage/... or external URL)
@@ -211,8 +169,9 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     const matchesTo = !toDate || (loanDate && loanDate <= toDateEnd);
 
     // 🔍 EMPLOYEE ID FILTER
-    const empId = loan.customer?.employee_no?.toString() || "";
-    const matchesEmpId = searchEmpId.trim() === "" || empId.includes(searchEmpId.trim());
+      const empId = loan.customer?.employee_no?.toString() || "";
+      const matchesEmpId = searchEmpId.trim() === "" || empId.includes(searchEmpId.trim());
+
 
     // 🏢 ORG TYPE FILTER (Health, Education)
     const orgType = loan.organisation?.sector_type || "";
@@ -515,22 +474,12 @@ export default function EmiCollection({ auth, approved_loans = null }) {
       <Head title="Loan EMI Collection" />
 
       <div className="py-6 max-w-9xl mx-auto sm:px-6 lg:px-8">
-        {/* Top Bar */}
-        <div className="bg-white shadow-sm p-3 py-2 mb-1 border border-gray-200 flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700">EMI List</h3>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link href={route("loan.emi.collection")} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-              Collect EMI
-            </Link>
-          </div>
-        </div>
 
         {/* Filters */}
-        <div className="bg-white border border-gray-200 shadow-sm p-2 flex flex-col lg:flex-row gap-4 items-center">
-          <div className="flex flex-wrap gap-3">
+        <div className="bg-white border border-gray-200 shadow-sm p-4 rounded-lg">
+
+          {/* Auto-fitting grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-4">
 
             {/* Search Collection ID */}
             <input
@@ -538,21 +487,21 @@ export default function EmiCollection({ auth, approved_loans = null }) {
               placeholder="Search Collection ID"
               value={filterCollectionId}
               onChange={(e) => setFilterCollectionId(e.target.value)}
-              className="border p-2 rounded w-48"
+              className="border p-2 rounded w-full text-sm"
             />
 
-            {/* 🔍 Search by Employee ID */}
+            {/* Search Employee ID */}
             <input
               type="text"
               placeholder="Search Employee ID"
               value={searchEmpId}
               onChange={(e) => setSearchEmpId(e.target.value)}
-              className="border p-2 rounded w-48"
+              className="border p-2 rounded w-full text-sm"
             />
 
             {/* Select Organisation */}
             <select
-              className="border w-auto p-2 rounded"
+              className="border p-2 rounded w-full text-sm"
               value={orgFilter}
               onChange={(e) => setOrgFilter(e.target.value)}
             >
@@ -564,9 +513,9 @@ export default function EmiCollection({ auth, approved_loans = null }) {
               ))}
             </select>
 
-            {/* 🏢 Organisation Type (Health / Education) */}
+            {/* Organisation Type */}
             <select
-              className=" w-40 border p-2 rounded"
+              className="border p-2 rounded w-full text-sm"
               value={orgTypeFilter}
               onChange={(e) => setOrgTypeFilter(e.target.value)}
             >
@@ -575,6 +524,16 @@ export default function EmiCollection({ auth, approved_loans = null }) {
               <option value="Education">Education</option>
             </select>
 
+            {/* Small Collect EMI button */}
+            <div className="flex items-center justify-start">
+              <Link
+                href={route("loan.emi.collection")}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-md text-sm font-medium text-center whitespace-nowrap"
+              >
+                Collect EMI
+              </Link>
+            </div>
+
           </div>
         </div>
 
@@ -582,29 +541,53 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         {/* Table area */}
 
         {/* Summary bar */}
-        <div className="mt-2 -mb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-white p-3 border shadow-sm flex flex-col">
-            <span className="text-xs text-gray-500">Customers</span>
-            <span className="text-xl font-semibold text-gray-800">{summary.totalCustomers}</span>
+        <div className="mt-2 mb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          {/* Customers */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm rounded-xl p-3 hover:shadow-md transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-blue-600">Customers</span>
+            </div>
+            <span className="text-2xl font-bold text-blue-800 mt-1 block">
+              {summary.totalCustomers}
+            </span>
           </div>
 
-          <div className="bg-white p-3 border shadow-sm flex flex-col">
-            <span className="text-xs text-gray-500">Total Amount</span>
-            <span className="text-xl font-semibold text-gray-800">{currencyPrefix} {Number(summary.totalAmount || 0).toLocaleString()}</span>
+          {/* Total Amount */}
+          <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 shadow-sm rounded-xl p-3 hover:shadow-md transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-green-600">Total Amount</span>
+            </div>
+            <span className="text-2xl font-bold text-green-800 mt-1 block">
+              {currencyPrefix} {Number(summary.totalAmount || 0).toLocaleString()}
+            </span>
           </div>
 
-          <div className="bg-white p-3 border shadow-sm flex flex-col">
-            <span className="text-xs text-gray-500">Total Repayment</span>
-            <span className="text-xl font-semibold text-gray-800">{currencyPrefix} {Number(summary.totalRepayment || 0).toLocaleString()}</span>
+          {/* Total Repayment */}
+          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200 shadow-sm rounded-xl p-3 hover:shadow-md transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-indigo-600">Total Repayment</span>
+            </div>
+            <span className="text-2xl font-bold text-indigo-800 mt-1 block">
+              {currencyPrefix} {Number(summary.totalRepayment || 0).toLocaleString()}
+            </span>
           </div>
 
-          <div className="bg-white p-3 border shadow-sm flex flex-col">
-            <span className="text-xs text-gray-500">Total Outstanding</span>
-            <span className="text-xl font-semibold text-gray-800">{currencyPrefix} {Number(summary.totalOutstanding || 0).toLocaleString()}</span>
+          {/* Total Outstanding */}
+          <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 shadow-sm rounded-xl p-3 hover:shadow-md transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-red-600">Total Outstanding</span>
+
+            </div>
+            <span className="text-2xl font-bold text-red-800 mt-1 block">
+              {currencyPrefix} {Number(summary.totalOutstanding || 0).toLocaleString()}
+            </span>
           </div>
+
         </div>
 
-        <div className="bg-white shadow-lg border border-gray-700 overflow-hidden mt-3">
+
+        <div className="bg-white shadow-lg border border-gray-700 overflow-hidden mt-2">
           {/* Compact / hidden large table kept for specific layout - you can re-enable if needed */}
           <table className="w-full text-sm border border-gray-700 border-collapse table-auto d-none">
             <thead className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-blue-600 text-white">
@@ -771,14 +754,15 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                       <td className="p-2 border">{row.date}</td>
                       <td className="p-2 border">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openCollectionDetails(row.collection_id);
-                          }}
-                          className="bg-gray-300 text-black px-3 py-1 rounded"
-                        >
-                          View Details
-                        </button>
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleExpand(row.collection_id);  // ✅ OPEN SUB TABLE ONLY
+                        }}
+                        className="bg-gray-300 text-black px-3 py-1 rounded"
+                      >
+                        View Details
+                      </button>
+
                       </td>
                     </tr>
 
@@ -823,7 +807,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
 
                             <tbody>
-                              {collections[row.collection_id]?.map((it) => (
+                              {row.items?.map((it) => (
                                 <tr key={it.id} className="hover:bg-green-300">
                                   <td className="p-2 border">{it.loan_id}</td>
                                   <td className="p-2 border">
@@ -901,184 +885,11 @@ export default function EmiCollection({ auth, approved_loans = null }) {
           </div>
         </div>
 
-        {/* Side Drawer */}
-        <SideDrawer open={sideOpen} onClose={() => { setSideOpen(false); setAccordionOpen({}); }}>
-          {selectedLoan ? (
-              (() => {
-                // Group EMIs by loan_id
-                const loanGroups = selectedLoan.reduce((acc, item) => {
-                  const key = item.loan_id;
-                  if (!acc[key]) acc[key] = [];
-                  acc[key].push(item);
-                  return acc;
-                }, {});
+      
 
-                const uid = selectedLoan[0]?.collection_uid || "—";
+        {/* Document Viewer Modal
+        <DocumentViewerModal open={docModalOpen} onClose={() => setDocModalOpen(false)} documentUrl={docUrl} title={docTitle} /> */}
 
-                return (
-                  <div className="space-y-6">
-
-                    {/* Header */}
-                    <div className="bg-blue-600 text-white p-2 rounded shadow-sm">
-                      <h2 className="text-xl font-bold">{uid}</h2>
-                      
-                    </div>
-
-                    {/* Accordion list */}
-                    <div className="space-y-3">
-                      {Object.keys(loanGroups).map((loanId) => {
-                        const items = loanGroups[loanId];
-                        const loan = items[0]?.loan || {};
-                        const customer = loan.customer || {};
-                        const org = loan.organisation || {};
-
-                        return (
-                          <div key={loanId} className="border rounded-md shadow-sm bg-white overflow-hidden">
-
-                            {/* Accordion Header */}
-                            <button
-                              onClick={() => toggleAccordion(loanId)}
-                              className="w-full flex justify-between items-center p-3 bg-gray-100 hover:bg-gray-200"
-                            >
-                              <span className="font-medium">
-                                Loan ID {loanId} — {org.organisation_name || "Organisation"}
-                              </span>
-                              <span>{accordionOpen[loanId] ? "▲" : "▼"}</span>
-                            </button>
-
-                            {/* Accordion Body */}
-                            {accordionOpen[loanId] && (
-                              <div className="p-3">
-
-                                {/* CARD */}
-                                <div className="bg-white shadow border rounded-md p-4">
-
-                                  {/* GRID: 2 columns */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-
-                                    {/* LEFT COLUMN ================================================= */}
-                                    <div className="space-y-3">
-
-                                      {/* Customer */}
-                                      <div>
-                                        <h4 className="font-semibold text-gray-700 text-sm mb-1">Customer</h4>
-                                        <p className="text-sm leading-5">
-                                          <b>{customer.first_name} {customer.last_name}</b> — {customer.email || "-"}
-                                        </p>
-                                        <p className="text-sm">
-                                          <b>Phone:</b> {customer.phone || "-"}
-                                        </p>
-                                        <p className="text-sm">
-                                          <b>Employee No:</b> {customer.employee_no || "-"}
-                                        </p>
-                                      </div>
-
-                                      {/* Organisation */}
-                                      <div>
-                                        <h4 className="font-semibold text-gray-700 text-sm mb-1">Organisation</h4>
-                                        <p className="text-sm leading-5">
-                                          <b>{org.organisation_name || "-"}</b>
-                                          {org.sector_type ? ` — ${org.sector_type}` : ""}
-                                        </p>
-                                      </div>
-
-                                    </div>
-
-                                    {/* RIGHT COLUMN ================================================= */}
-                                    <div className="flex flex-col justify-start h-full">
-                                      <h4 className="font-semibold text-gray-700 text-sm mb-2">Loan Details</h4>
-
-                                      {/* 2-column compact grid */}
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 -gap-x-4 text-sm leading-5 text-left">
-
-                                  
-                                        {/* LARGE LOAN AMOUNT */}
-                                        <p className="md:col-span-2 text-lg text-left">
-                                          <b>Amount: </b>{currencyPrefix}{Number(loan.loan_amount_applied).toLocaleString()}
-                                        </p>
-
-                                        <p><b>Tenure:</b> {loan.tenure_fortnight} FN</p>
-
-                                        <p><b>Interest:</b> {loan.interest_rate || "-"}</p>
-
-                                        {/* REMOVE Purpose + Processing Fee */}
-
-                                        <p>
-                                          <b>Last EMI Paid:</b> {getLastEmiPaid({
-                                            ...loan,
-                                            installments: items.map(it => ({
-                                              status: it.status,
-                                              payment_date: it.payment_date
-                                            }))
-                                          })}
-                                        </p>
-
-                                        <p>
-                                          <b>Next Due:</b> 
-                                          {loan.next_due_date ? new Date(loan.next_due_date).toLocaleDateString("en-GB") : "—"}
-                                        </p>
-
-                                        <p><b>Total Repay:</b> {currencyPrefix}{loan.total_repay_amt || "-"}</p>
-
-                                      </div>
-                                    </div>
-
-                                  </div>
-                                </div>
-
-                                {/* EMI TABLE =============================================================== */}
-                                  <div className="border rounded-md overflow-hidden mt-2">
-                                    <div className="max-h-[150px] overflow-y-auto">
-                                      <table className="w-full table-fixed border border-gray-500">
-                                        <thead>
-                                          <tr>
-                                            <th className="w-[80px] p-2 text-left border-r border-gray-500 bg-emerald-500 text-white sticky top-0 z-10">EMI No.</th>
-                                            <th className="w-[130px] p-2 text-left border-r border-gray-500 bg-emerald-500 text-white sticky top-0 z-10">Due Date</th>
-                                            <th className="w-[150px] p-2 text-left border-r border-gray-500 bg-emerald-500 text-white sticky top-0 z-10">Payment Date</th>
-                                            <th className="w-[120px] p-2 text-left border-r border-gray-500 bg-emerald-500 text-white sticky top-0 z-10">Status</th>
-                                            <th className="w-[120px] p-2 text-left bg-emerald-500 text-white sticky top-0 z-10">Amount</th>
-                                          </tr>
-                                        </thead>
-
-                                        <tbody>
-                                          {items.map((it, i) => (
-                                            <tr key={i} className="border-b border-gray-500 hover:bg-gray-50 text-sm">
-                                              <td className="w-[80px] p-2 border-r border-gray-500">{it.installment_no}</td>
-                                              <td className="w-[130px] p-2 border-r border-gray-500">{it.due_date}</td>
-                                              <td className="w-[150px] p-2 border-r border-gray-500">{it.payment_date ? new Date(it.payment_date).toLocaleDateString("en-GB") : "—"}</td>
-                                              <td className="w-[120px] p-2 border-r border-gray-500"><span className={it.status === "Paid" ? "text-green-600" : "text-red-500"}>{it.status}</span></td>
-                                              <td className="w-[120px] p-2">{currencyPrefix} {Number(it.emi_amount).toFixed(2)}</td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </div>
-
-                              </div>
-                            )}   
-
-                          </div>
-                        );
-                      })}
-                    </div>
-
-
-                    <button onClick={() => { setSideOpen(false); setAccordionOpen({}); }} className="w-full bg-gray-800 text-white py-2 rounded">
-                      Close
-                    </button>
-
-                  </div>
-                );
-              })()
-            ) : (
-              <p>No data found.</p>
-            )}
-
-        </SideDrawer>
-
-        {/* Document Viewer Modal */}
-        <DocumentViewerModal open={docModalOpen} onClose={() => setDocModalOpen(false)} documentUrl={docUrl} title={docTitle} />
       </div>
     </AuthenticatedLayout>
   );

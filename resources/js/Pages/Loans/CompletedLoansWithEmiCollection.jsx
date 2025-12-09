@@ -144,58 +144,60 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
         >
             <Head title="Completed Loans" />
 
+            <div className="p-6 bg-gray-100 min-h-screen">
 
-            <div className="p-5 bg-gray-100 min-h-screen">
-                {/* Filters */}
-                <div className="bg-white p-4 rounded shadow mb-4 flex gap-4 items-center">
+                {/* --- Background Card Wrapper --- */}
+                <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
 
+                {/* Filter Bar */}
+                <div className="flex flex-wrap items-center gap-4 mb-3 bg-gray-50 p-3 rounded-xl border border-gray-200 shadow-sm">
+
+                    {/* Search */}
                     <input
                         type="text"
-                        placeholder="Search customer..."
+                        placeholder="🔍 Search customer..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="border rounded px-3 py-2 w-1/3"
+                        className=" h-[50px]
+                            border border-gray-300 rounded-lg px-3 py-2 w-full md:w-1/3 text-sm transition focus:ring-2 focus:ring-indigo-400 shadow-sm"
                     />
 
-                    <div className="w-1/3">
+                    {/* Organisation Filter (reduced height) */}
+                    <div className="w-full md:w-1/3 border border-gray-300 rounded-lg shadow-sm">
                         <MultiSelect
                             value={selectedOrgs}
                             options={organisationOptions}
                             onChange={(e) => setSelectedOrgs(e.value)}
-                            placeholder="Filter by organisation"
+                            placeholder="🏢 Organisation"
                             display="chip"
-                            className="w-full border rounded py-2"
+                            className="w-full text-sm"
+                            style={{ minHeight: "36px", padding: "2px 6px" }}
                         />
                     </div>
 
+                    {/* Clear */}
                     <button
-                        className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded"
-                        onClick={() => {
-                            setSelectedOrgs([]);
-                            setSearchQuery("");
-                        }}
+                        className="px-4 py-2 rounded-lg text-sm bg-gray-200 hover:bg-gray-300 border shadow-sm transition"
+                        onClick={() => { setSelectedOrgs([]); setSearchQuery(""); }}
                     >
-                        Clear Filters
+                        Reset
                     </button>
 
-                    {/* ✅ TOTAL PAID SUMMARY */}
-                    <div className="ml-auto font-semibold text-gray-700 text-sm bg-green-100 px-4 py-2 rounded border border-green-300">
-                        Total Paid: <span className="text-green-700">{formatCurrency(totalPaidFiltered)}</span>
+                    {/* Total Paid */}
+                    <div className="ml-auto px-4 py-2 bg-green-50 border border-green-200 text-green-700 rounded-lg shadow-sm text-sm font-semibold">
+                        Total Paid: {formatCurrency(totalPaidFiltered)}
                     </div>
 
                 </div>
 
 
-                {/* Table */}
-                <div className="bg-white p-4 rounded shadow">
-                    <h3 className="text-lg font-semibold mb-3">Fully Paid Loans</h3>
-
+                    {/* --- Table (No Title Needed) --- */}
                     {filteredLoans.length === 0 ? (
                         <p className="text-gray-500 text-center py-10">No fully paid loans found.</p>
                     ) : (
                         <>
-                            <table className="min-w-full border-collapse border text-sm">
-                                <thead className="bg-green-700 text-white">
+                            <table className="min-w-full border-collapse border text-sm rounded-lg overflow-hidden shadow-sm">
+                                <thead className="bg-green-700 text-white text-xs">
                                     <tr>
                                         <th className="p-2 border cursor-pointer" onClick={() => handleSort("customer")}>
                                             Customer <SortIcon column="customer" />
@@ -233,7 +235,7 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                                             .sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date))[0];
 
                                         return (
-                                            <tr key={loan.id} className="border hover:bg-gray-50">
+                                            <tr key={loan.id} className="border hover:bg-gray-50 transition">
                                                 <td className="p-2 border">
                                                     <HrefLink
                                                         href={route("customer.view", { id: cust?.id })}
@@ -251,11 +253,10 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                                                     {formatCurrency(paidAmount)}
                                                 </td>
                                                 <td className="p-2 border">{lastPayment?.payment_date || "N/A"}</td>
-
                                                 <td className="p-2 border text-center">
                                                     <button
                                                         onClick={() => handleViewDetails(loan)}
-                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded inline-flex items-center gap-1 text-xs transition"
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs shadow-sm"
                                                     >
                                                         <Eye size={14} /> View
                                                     </button>
@@ -271,25 +272,26 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                                 <button
                                     disabled={page === 1}
                                     onClick={() => setPage(page - 1)}
-                                    className="px-3 py-1 bg-gray-200 rounded disabled:opacity-40"
+                                    className="px-3 py-1 bg-gray-200 rounded disabled:opacity-40 text-sm"
                                 >
                                     Prev
                                 </button>
 
-                                <span className="text-sm">
+                                <span className="text-sm text-gray-600">
                                     Page {page} of {totalPages}
                                 </span>
 
                                 <button
                                     disabled={page === totalPages}
                                     onClick={() => setPage(page + 1)}
-                                    className="px-3 py-1 bg-gray-200 rounded disabled:opacity-40"
+                                    className="px-3 py-1 bg-gray-200 rounded disabled:opacity-40 text-sm"
                                 >
                                     Next
                                 </button>
                             </div>
                         </>
                     )}
+
                 </div>
             </div>
 

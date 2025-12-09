@@ -301,7 +301,7 @@ export default function Create({ auth, loan_settings }) {
                     max_interest_rate
                 } = selectedLoanSetting;
 
-                const tenureMonths = loanFormData.tenure_fortnight * 0.5;
+                const tenureMonths = parseFloat(loanFormData.tenure_fortnight);
                 const appliedAmount = parseFloat(loanFormData.loan_amount_applied);
                 const multiplier = Number(amt_multiplier);
                 // --- Validations ---

@@ -532,3 +532,20 @@ table thead
     width: 100% !important;
   }
 }
+.clip-half {
+  clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
+}
+.progress-arc {
+  clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%);
+  transform: rotate(var(--rotation));
+  transform-origin: center;
+}
+/* Right half of circle */
+.clip-right {
+  clip-path: polygon(50% 50%, 100% 0%, 100% 100%);
+}
+
+/* Left half of circle */
+.clip-left {
+  clip-path: polygon(50% 50%, 0% 0%, 0% 100%);
+}
