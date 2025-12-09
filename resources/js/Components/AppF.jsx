@@ -254,7 +254,7 @@ const AppF = React.forwardRef(function AppF({ loan, auth }, ref) {
                 >
                   LOAN REQUEST AMOUNT:
                 </label>
-                <span style={{ marginRight: "4px" }}>{company.currency_symbol ?? "PGK"}</span>
+                <span style={{ marginRight: "4px" }}>{ "PGK"}</span>
                 <input
                   type="text"
                   className="underline-field"
@@ -329,6 +329,9 @@ const AppF = React.forwardRef(function AppF({ loan, auth }, ref) {
                 })}
               </div>
             </div>
+
+
+            
           </div>
 
           <hr style={{ margin: "5px 0" }} />

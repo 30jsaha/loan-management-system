@@ -72,15 +72,36 @@ export default function EduF({ auth, loan }) {
               {/* TO */}
               <div className="w-2/4 border border-black p-2 leading-6">
                 <span className="font-bold">TO:</span>
-                <div className="pl-4 text-sm mt-1">
-                  {org.organisation_name} <br />
-                  {org.address} <br />
-                  {org.province} <br />
-                  {org.email} <br />
-                  {org.contact_no}
+
+                <div className="pl-4 text-sm mt-1 space-y-1">
+
+                  {/* Organisation Name */}
+                  {org.organisation_name && (
+                    <div>{org.organisation_name}</div>
+                  )}
+
+                  {/* Address */}
+                  {org.address && (
+                    <div>{org.address}</div>
+                  )}
+
+                  {/* Province */}
+                  {org.province && (
+                    <div>{org.province}</div>
+                  )}
+
+                  {/* Email */}
+                  {org.email && (
+                    <div>{org.email}</div>
+                  )}
+
+                  {/* Contact No */}
+                  {org.contact_no && (
+                    <div>{org.contact_no}</div>
+                  )}
+
                 </div>
               </div>
-
               {/* ISSUED BY */}
               <div className="w-2/4 border border-black p-2 flex flex-col">
                 <div>Issued By:</div>
