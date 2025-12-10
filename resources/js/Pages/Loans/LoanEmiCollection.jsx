@@ -97,23 +97,38 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
     if (!Array.isArray(loans)) return [];
 
     return loans.filter((loan) => {
-      const fullName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""
-        }`
+      const fullName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`
         .toLowerCase()
         .trim();
 
-      const matchesName = fullName.includes(searchQuery.toLowerCase());
+      const searchLower = searchQuery.toLowerCase();
+
+      // Search name
+      const matchesName = fullName.includes(searchLower);
+
+      // Search loan ID
+      const matchesLoanId = loan.id.toString().includes(searchLower);
+
+      // Search employee ID
+      const empNo = loan.customer?.employee_no
+        ? loan.customer.employee_no.toString().toLowerCase()
+        : "";
+      const matchesEmployeeNo = empNo.includes(searchLower);
+
+      // Combine all 3
+      const matchesSearch =
+        matchesName || matchesLoanId || matchesEmployeeNo;
+
       const matchesDate =
         dateFilter && loan.created_at
           ? loan.created_at.startsWith(dateFilter)
           : true;
 
-      // Organisation filter
       const orgId = loan.organisation?.id;
       const matchesOrg =
         selectedOrgs.length === 0 || selectedOrgs.includes(orgId);
 
-      return matchesName && matchesDate && matchesOrg;
+      return matchesSearch && matchesDate && matchesOrg;
     });
   }, [loans, searchQuery, dateFilter, selectedOrgs]);
 
@@ -571,6 +586,7 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
                           const collectEmi= parseFloat(loan.emi_amount) * counter;
                           // const totalRepay = parseFloat(loan.total_repay_amt) || 0;
                           const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+
                           const totalPaid = parseFloat(getTotalPaidAmount(loan)) || 0;
 
                           // 🔥 Updated Remaining F/N Calculation
