@@ -168,41 +168,54 @@ class LoansController extends Controller
             ->orderBy('approved_date', 'desc')
             ->get();
 
-        $approvedLoans = $approvedLoans->map(function ($loan) {
+        // ----------------------------
+        // GLOBAL TOTALS (ALL LOANS)
+        // ----------------------------
+        $globalTotalPaid = 0;
+        $globalTotalOutstanding = 0;
 
-            // All installments for this loan
+        $approvedLoans = $approvedLoans->map(function ($loan) use (&$globalTotalPaid, &$globalTotalOutstanding) {
+
+            // Fetch all EMI installments
             $installments = InstallmentDetail::where('loan_id', $loan->id)->get();
 
-            // Paid EMIs
+            // Per-loan paid summary
             $totalPaid = $installments->where('status', 'Paid')->sum('emi_amount');
             $totalPaidCount = $installments->where('status', 'Paid')->count();
 
-            // Pending + Overdue
+            // Per-loan pending summary
             $totalPending = $installments->where('status', 'Pending')->sum('emi_amount');
             $totalOverdue = $installments->where('status', 'Overdue')->sum('emi_amount');
             $totalOutstanding = $totalPending + $totalOverdue;
 
-            // Total repayable amount
+            // Total repayable
             $totalRepayAmt = $loan->total_repay_amt ?? 0;
 
-            // Attach calculated fields (corrected)
+            // PER-LOAN FIELDS
             $loan->total_emi_paid_count = $totalPaidCount;
             $loan->total_emi_paid_amount = round($totalPaid, 2);
             $loan->total_outstanding_amount = round($totalOutstanding, 2);
-
             $loan->total_repayment_amount = round($totalRepayAmt, 2);
-
-            // Corrected summary per loan
-            $loan->total_paid_amount_all_loan = round($totalPaid, 2);
-            $loan->total_outstanding_amount_all_loan = round(($totalRepayAmt - $totalPaid), 2);
-
             $loan->remaining_balance = round(($totalRepayAmt - $totalPaid), 2);
+
+            // ----------------------------
+            // ADD TO GLOBAL SUMS
+            // ----------------------------
+            $globalTotalPaid += $totalPaid;
+            $globalTotalOutstanding += ($totalRepayAmt - $totalPaid);
 
             return $loan;
         });
 
         return inertia('Loans/LoanEmiCollection', [
-            'approved_loans' => $approvedLoans
+            'approved_loans' => $approvedLoans,
+            // ----------------------------
+            // SEND GLOBAL SUMMARY TO FRONTEND
+            // ----------------------------
+            'summary' => [
+                'total_paid_all_loans' => round($globalTotalPaid, 2),
+                'total_outstanding_all_loans' => round($globalTotalOutstanding, 2),
+            ]
         ]);
     } 
     public function CompletedLoansWithEmiCollection()

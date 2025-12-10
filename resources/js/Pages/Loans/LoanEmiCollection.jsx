@@ -44,9 +44,10 @@ function DocumentViewerModal({ isOpen, onClose, documentUrl }) {
   );
 }
 
-export default function LoanEmiCollection({ auth, approved_loans }) {
+export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   const [selectAll, setSelectAll] = useState(false);
   console.log("approved_loans: ", approved_loans);
+  console.log("summary: ", summary);
 
   // FIX: ensure loans is always an array
   const [loans, setLoans] = useState(Array.isArray(approved_loans) ? approved_loans : []);
