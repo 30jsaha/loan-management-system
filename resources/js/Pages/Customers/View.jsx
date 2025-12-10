@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { router, Head, Link } from "@inertiajs/react";
 import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { Spinner } from "react-bootstrap";
 import { Wallet } from "lucide-react";
 import {
   Pencil,
@@ -65,7 +66,10 @@ export default function View({ auth, customerId }) {
   if (loading) {
     return (
       <AuthenticatedLayout user={auth.user}>
-        <div className="p-10 text-gray-600 text-center">Loading customer dashboard...</div>
+        <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="mt-2 text-gray-600">Loading customer dashboard...</p>
+        </div>
       </AuthenticatedLayout>
     );
   }
@@ -83,7 +87,7 @@ export default function View({ auth, customerId }) {
 
       {/* Background */}
       <div className="py-10 px-4 bg-gray-100 min-h-screen">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-9xl mx-auto custPadding">
 
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
