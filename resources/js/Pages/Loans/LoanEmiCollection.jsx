@@ -469,7 +469,7 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
 
                           <div>
                             <h4 className="font-semibold text-gray-800 text-sm leading-tight">
-                              {fullName || "Unknown"}
+                              {fullName || "Unknown"}{loan.customer?.employee_no ? ` (${loan.customer.employee_no})` : ""}
                             </h4>
                             <p className="text-xs text-gray-500">Loan ID: #{loan.id}</p>
                           </div>
@@ -544,13 +544,14 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                   <table className="min-w-full text-sm">
                     <thead className="bg-green-700 text-white sticky top-0 z-20">
                       <tr>
-                        <th className="p-2 text-left">Customer</th>
                         <th className="p-2 text-left">Loan ID</th>
+                        <th className="p-2 text-left">Customer</th>
                         <th className="p-2 text-left">Next Due</th>
                         <th className="p-2 text-left">EMI Amount</th>
                         <th className="p-2 text-left">Total Repayable</th>
                         <th className="p-2 text-left">Total Paid</th>
                         <th className="p-2 text-left">Remaining F/N</th>
+                        <th className="p-2 text-left">Remaining Balance</th>
                         <th className="p-2 text-left">Counter</th> {/* NEW */}
                         <th className="p-2 text-left">Status</th>
                       </tr>
@@ -567,26 +568,29 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
 
                           const counter = emiCounter[loan.id] ?? 1;
                           const collectEmi= parseFloat(loan.emi_amount) * counter;
+                          // const totalRepay = parseFloat(loan.total_repay_amt) || 0;
+                          const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+                          const totalPaid = parseFloat(getTotalPaidAmount(loan)) || 0;
 
                           // 🔥 Updated Remaining F/N Calculation
                           const finalRemaining = Math.max(baseRemaining - counter, 0);
+                           // 🔥 New Remaining Balance (After Applying Counter)
+                          let remainingBalance = totalRepay - (totalPaid + collectEmi);
 
                           return (
                             <tr key={loan.id} className="hover:bg-green-100 transition-all">
-                              <td className="p-2 font-medium text-gray-800">
-                                {cust.first_name} {cust.last_name}
-                              </td>
-
                               <td className="p-2">#{loan.id}</td>
-
+                              <td className="p-2 font-medium text-gray-800">
+                                {cust.first_name} {cust.last_name} ({cust.employee_no || "N/A"})
+                              </td>
                               <td className="p-2">{loan.next_due_date || "N/A"}</td>
-
                               <td className="p-2 font-semibold text-green-700">
                                 {currencyPrefix} {collectEmi.toFixed(2)}
                               </td>
-
                               <td className="p-2">
-                                {currencyPrefix} {parseFloat(loan.total_repay_amt).toFixed(2)}
+                                {/* {currencyPrefix} {parseFloat(loan.total_repay_amt).toFixed(2)} */}
+                                {currencyPrefix} {(parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0).toFixed(2)}
+
                               </td>
 
                               <td className="p-2">
@@ -595,6 +599,7 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
 
                               {/* 🔥 Updated Remaining F/N (Never Below 0) */}
                               <td className="p-2">{finalRemaining}</td>
+                              <td className="p-2">{remainingBalance.toFixed(2)  || "0"}</td>
 
                               {/* 🔥 NEW Counter Column */}
                               <td className="p-2">

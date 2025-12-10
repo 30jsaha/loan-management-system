@@ -64,6 +64,32 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
 
   const [totalPendingAmount, setTotalPendingAmount] = useState(0);
   const [totalCollectedAmount, setTotalCollectedAmount] = useState(0);
+  
+  // counter
+  const [emiCounter, setEmiCounter] = useState({});
+  const increaseCounter = (loan) => {
+    setEmiCounter((prev) => {
+      const baseRemaining = loan.tenure_fortnight - (loan.installments.length || 0);
+      const current = prev[loan.id] ?? 1;
+
+      if (current + 1 > baseRemaining) return prev;
+
+      return { ...prev, [loan.id]: current + 1 };
+    });
+  };
+
+  const decreaseCounter = (loan) => {
+    setEmiCounter((prev) => {
+      const current = prev[loan.id] ?? 1;
+
+      // never go below 1
+      if (current <= 1) return prev;
+
+      return { ...prev, [loan.id]: current - 1 };
+    });
+  };
+
+
 
   // 🔍 Filtered loans (guard loans with Array.isArray)
   const filteredLoans = useMemo(() => {
@@ -192,6 +218,7 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
 
       const response = await axios.post("/api/loans/collect-emi", {
         loan_ids: selectedLoanIds,
+        emi_counter: emiCounter, // pass the emiCounter object
       });
 
       Swal.fire("✅ Success", response.data.message || "EMI collected successfully!", "success");
@@ -442,7 +469,7 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
 
                           <div>
                             <h4 className="font-semibold text-gray-800 text-sm leading-tight">
-                              {fullName || "Unknown"}
+                              {fullName || "Unknown"}{loan.customer?.employee_no ? ` (${loan.customer.employee_no})` : ""}
                             </h4>
                             <p className="text-xs text-gray-500">Loan ID: #{loan.id}</p>
                           </div>
@@ -517,13 +544,15 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                   <table className="min-w-full text-sm">
                     <thead className="bg-green-700 text-white sticky top-0 z-20">
                       <tr>
-                        <th className="p-2 text-left">Customer</th>
                         <th className="p-2 text-left">Loan ID</th>
+                        <th className="p-2 text-left">Customer</th>
                         <th className="p-2 text-left">Next Due</th>
                         <th className="p-2 text-left">EMI Amount</th>
                         <th className="p-2 text-left">Total Repayable</th>
                         <th className="p-2 text-left">Total Paid</th>
                         <th className="p-2 text-left">Remaining F/N</th>
+                        <th className="p-2 text-left">Remaining Balance</th>
+                        <th className="p-2 text-left">Counter</th> {/* NEW */}
                         <th className="p-2 text-left">Status</th>
                       </tr>
                     </thead>
@@ -534,25 +563,29 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                         .map((loan) => {
                           const cust = loan.customer || {};
 
+                          const baseRemaining =
+                            loan.tenure_fortnight - (loan.installments.length || 0);
+
+                          const counter = emiCounter[loan.id] ?? 1;
+                          const collectEmi= parseFloat(loan.emi_amount) * counter;
+                          const totalRepay = parseFloat(loan.total_repay_amt) || 0;
+                          const totalPaid = parseFloat(getTotalPaidAmount(loan)) || 0;
+
+                          // 🔥 Updated Remaining F/N Calculation
+                          const finalRemaining = Math.max(baseRemaining - counter, 0);
+                           // 🔥 New Remaining Balance (After Applying Counter)
+                          let remainingBalance = totalRepay - (totalPaid + collectEmi);
+
                           return (
-                            <tr
-                              key={loan.id}
-                              className="hover:bg-green-100 transition-all"
-                            >
-                              <td className="p-2 font-medium text-gray-800">
-                                {cust.first_name} {cust.last_name}
-                              </td>
-
+                            <tr key={loan.id} className="hover:bg-green-100 transition-all">
                               <td className="p-2">#{loan.id}</td>
-
-                              <td className="p-2">
-                                {loan.next_due_date || "N/A"}
+                              <td className="p-2 font-medium text-gray-800">
+                                {cust.first_name} {cust.last_name} ({cust.employee_no || "N/A"})
                               </td>
-
+                              <td className="p-2">{loan.next_due_date || "N/A"}</td>
                               <td className="p-2 font-semibold text-green-700">
-                                {currencyPrefix} {parseFloat(loan.emi_amount).toFixed(2)}
+                                {currencyPrefix} {collectEmi.toFixed(2)}
                               </td>
-
                               <td className="p-2">
                                 {currencyPrefix} {parseFloat(loan.total_repay_amt).toFixed(2)}
                               </td>
@@ -561,8 +594,30 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                                 {currencyPrefix} {parseFloat(getTotalPaidAmount(loan)).toFixed(2)}
                               </td>
 
+                              {/* 🔥 Updated Remaining F/N (Never Below 0) */}
+                              <td className="p-2">{finalRemaining}</td>
+                              <td className="p-2">{remainingBalance.toFixed(2)  || "0"}</td>
+
+                              {/* 🔥 NEW Counter Column */}
                               <td className="p-2">
-                                {loan.tenure_fortnight - (loan.installments.length || 0)}
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => decreaseCounter(loan)}
+                                    className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                                  >
+                                    -
+                                  </button>
+
+                                  <span className="font-semibold">{counter}</span>
+
+                                  <button
+                                    onClick={() => increaseCounter(loan)}
+                                    className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                    disabled={counter >= baseRemaining}
+                                  >
+                                    +
+                                  </button>
+                                </div>
                               </td>
 
                               <td className="p-2">
@@ -572,6 +627,7 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                           );
                         })}
                     </tbody>
+
                   </table>
                 </div>
 
