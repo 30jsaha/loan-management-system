@@ -164,9 +164,42 @@ class LoansController extends Controller
             'loan_settings',
             'company'
         ])
-        ->where('status', 'Approved')
-        ->orderBy('approved_date', 'desc')
-        ->get();
+            ->where('status', 'Approved')
+            ->orderBy('approved_date', 'desc')
+            ->get();
+
+        $approvedLoans = $approvedLoans->map(function ($loan) {
+
+            // All installments for this loan
+            $installments = InstallmentDetail::where('loan_id', $loan->id)->get();
+
+            // Paid EMIs
+            $totalPaid = $installments->where('status', 'Paid')->sum('emi_amount');
+            $totalPaidCount = $installments->where('status', 'Paid')->count();
+
+            // Pending + Overdue
+            $totalPending = $installments->where('status', 'Pending')->sum('emi_amount');
+            $totalOverdue = $installments->where('status', 'Overdue')->sum('emi_amount');
+            $totalOutstanding = $totalPending + $totalOverdue;
+
+            // Total repayable amount
+            $totalRepayAmt = $loan->total_repay_amt ?? 0;
+
+            // Attach calculated fields (corrected)
+            $loan->total_emi_paid_count = $totalPaidCount;
+            $loan->total_emi_paid_amount = round($totalPaid, 2);
+            $loan->total_outstanding_amount = round($totalOutstanding, 2);
+
+            $loan->total_repayment_amount = round($totalRepayAmt, 2);
+
+            // Corrected summary per loan
+            $loan->total_paid_amount_all_loan = round($totalPaid, 2);
+            $loan->total_outstanding_amount_all_loan = round(($totalRepayAmt - $totalPaid), 2);
+
+            $loan->remaining_balance = round(($totalRepayAmt - $totalPaid), 2);
+
+            return $loan;
+        });
 
         return inertia('Loans/LoanEmiCollection', [
             'approved_loans' => $approvedLoans
