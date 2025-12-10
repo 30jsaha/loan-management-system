@@ -885,7 +885,6 @@ export default function EmiCollection({ auth, approved_loans = null }) {
           </div>
         </div>
 
-      
 
         {/* Document Viewer Modal
         <DocumentViewerModal open={docModalOpen} onClose={() => setDocModalOpen(false)} documentUrl={docUrl} title={docTitle} /> */}
