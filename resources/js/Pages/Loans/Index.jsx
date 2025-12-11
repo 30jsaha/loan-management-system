@@ -159,7 +159,7 @@ export default function Index({ auth }) {
        
       <div className="py-10">
 
-        <div className="max-w-9xl mx-auto sm:px-6 lg:px-8 space-y-3 custPadding">
+        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-3">
           
           
         <div className="max-w-9xl mx-auto -mt-4 ">

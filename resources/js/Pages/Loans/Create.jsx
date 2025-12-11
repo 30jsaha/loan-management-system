@@ -909,11 +909,11 @@ export default function Create({ auth, loan_settings }) {
                                                 <label className="form-label">Purpose</label>
                                                 <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
                                                     <option value="">Select Purpose</option>
-                                                    <option>School Fee</option>
-                                                    <option>Personal Expenses</option>
-                                                    <option>Funeral Expenses</option>
-                                                    <option>Refinancing</option>
-                                                    <option>Other</option>
+                                                    <option value="School Fee">School Fee</option>
+                                                    <option value="Personal Expenses">Personal Expenses</option>
+                                                    <option value="Funeral Expenses">Funeral Expenses</option>
+                                                    <option value="Refinancing">Refinancing</option>
+                                                    <option value="Other">Other</option>
                                                 </select>
                                             </div>
 

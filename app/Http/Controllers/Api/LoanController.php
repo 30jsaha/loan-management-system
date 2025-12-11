@@ -49,7 +49,7 @@ class LoanController extends Controller
 
             // 'loan_type' => 'required|in:New,Consolidation,Rollover,Top-Up',
             'loan_type' => 'required|integer|min:0',
-            'purpose' => 'nullable|in:Tuition,Living,Medical,Appliance,Car,Travel,HomeImprovement,Other',
+            'purpose' => 'nullable|in:School Fee,Personal Expenses,Funeral Expenses,Refinancing,Other',
             'other_purpose_text' => 'nullable|string|max:255',
 
             'loan_amount_applied' => 'required|numeric|min:0',
