@@ -222,11 +222,11 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
           </div>
 
           {/* Authorization Text */}
-          <p className="text-sm leading-relaxed mb-4">
+          <p className="text-sm leading-relaxed mb-2">
             I hereby authorize you to deduct total sum of PGK{" "}
-            <DataLine className="w-40">{totalRequired}</DataLine> from my
+            <DataLine className="w-38">{totalRequired}</DataLine> from my
             fortnightly salary at a rate of PGK{" "}
-            <DataLine className="w-40">{perPay}</DataLine> per fortnight and
+            <DataLine className="w-38">{perPay}</DataLine> per fortnight and
             remit cheque in favour of <b>Agro Advance Aben Ltd.</b> If I take
             paid leave of any kind I further authorize and direct you to remit
             in lump sum deduction from the duration of the leave and remit

@@ -9,7 +9,7 @@ use App\Models\DocumentUpload;
 use App\Models\LoanApplication;
 
 class DocumentUploadController extends Controller
-{
+{ 
     /**
      * Store uploaded document
      */

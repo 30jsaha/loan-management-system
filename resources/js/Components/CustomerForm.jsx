@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect ,useRef} from "react";
 import { Row, Col } from "react-bootstrap";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
@@ -13,6 +13,8 @@ export default function CustomerForm({
   setMessage,
   setIsFormDirty,
 }) {
+  const dropdownRef = useRef(null);
+  const empAreaRef = useRef(null);
 
   const [isOrgSelectable, setOrgSelectable] = useState(true);
   const ImportantField = () => <span className="text-danger">*</span>;
@@ -20,36 +22,74 @@ export default function CustomerForm({
   const [isSearching, setIsSearching] = useState(false);
   const [empOptions, setEmpOptions] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
 
   // Fetch employees
-  const fetchEmployees = async (query = "") => {
+  const fetchEmployees = async (query = "", pageNum = 1) => {
     try {
       setIsSearching(true);
-      const res = await axios.get(`/api/all-dept-cust-list?search=${query}`);
-      setEmpOptions(res.data.data || []);
+
+      const res = await axios.get(`/api/all-dept-cust-list`, {
+        params: {
+          search: query,
+          page: pageNum,
+          perPage: 20
+        }
+      });
+
+      // Laravel pagination returns: res.data.data = array
+      const newData = res.data.data;  
+
+      if (pageNum === 1) {
+        setEmpOptions(newData);
+      } else {
+        setEmpOptions((prev) => [...prev, ...newData]);
+      }
+
+      // Set hasMore using pagination fields
+      setHasMore(res.data.next_page_url !== null);
     } catch (err) {
       console.error("Employee fetch failed:", err);
     } finally {
       setIsSearching(false);
+      setIsLoadingMore(false);
     }
   };
 
   // 🔍 On focus: load first 10 results
   const handleFocus = () => {
-    if (!empSearch.trim()) {
-      fetchEmployees(""); // load default results
-    }
+    setPage(1);
+    fetchEmployees("", 1);
     setDropdownOpen(true);
   };
-
-  // 🔍 Debounced search when typing
+ // Click outside to close dropdown
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchEmployees(empSearch);
-    }, 400);
+    function handleClickOutside(event) {
+      if (empAreaRef.current && !empAreaRef.current.contains(event.target)) {
+        setDropdownOpen(false);  
+      }
+    }
 
-    return () => clearTimeout(timer);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
+  // 🔍 Debounced search effect
+  useEffect(() => {
+    if (isSelecting) return;  // 🚫 Do not trigger search when selecting employee
+    const delay = setTimeout(() => {
+      setPage(1);
+      fetchEmployees(empSearch, 1);
+    }, 300);
+
+    return () => clearTimeout(delay);
   }, [empSearch]);
+
 
   const handleChange = (e) => {
     setIsFormDirty(false);
@@ -221,10 +261,6 @@ export default function CustomerForm({
     }
   };
 
-
-
-
-
   return (
     <>
       {/* Toast Container */}
@@ -276,58 +312,75 @@ export default function CustomerForm({
                     ))}
                   </select>
                 </div> */}
-                <div className="relative">
-                  <label className="block text-gray-700 font-medium">
-                    EMP Code <ImportantField />
-                  </label>
+                <div className="relative" ref={empAreaRef}>
+                    <label className="block text-gray-700 font-medium">
+                      EMP Code <ImportantField />
+                    </label>
 
-                  {/* Search Input */}
-                  <input
-                    type="text"
-                    value={empSearch}
-                    onChange={(e) => setEmpSearch(e.target.value)}
-                    onFocus={handleFocus}
-                    placeholder="Search EMP Code / Name..."
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm px-3 py-2"
-                  />
+                    {/* Search Input */}
+                    <input
+                      type="text"
+                      value={empSearch}
+                      onChange={(e) => setEmpSearch(e.target.value)}
+                      onFocus={handleFocus}
+                      placeholder="Search EMP Code / Name..."
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm px-3 py-2"
+                    />
 
-                  {/* Dropdown List */}
-                  {dropdownOpen && (
-                    <div 
-                      className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto"
-                      onMouseLeave={() => setDropdownOpen(false)}
-                    >
-                      {isSearching ? (
-                        <div className="p-2 text-sm text-gray-500">Searching...</div>
-                      ) : empOptions.length > 0 ? (
-                        empOptions.map((emp, idx) => (
-                          <div
-                            key={`${emp.emp_code}-${idx}`}
-                            onClick={(e) => {
-                              // ⭐ Call your existing handleEmployeeChange function
-                              console.log("Selected emp:", emp);
-                              handleEmployeeChange({ target: { value: emp.emp_code } });
+                    {/* Dropdown List */}
+                    {dropdownOpen && (
+                      <div 
+                      ref={dropdownRef}
+                        className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto"
+                        // onMouseLeave={() => setDropdownOpen(false)}
+                        onBlur={() => {
+                          setTimeout(() => setDropdownOpen(false), 150); 
+                        }}
 
-                              // Fill text box with code + name
-                              setEmpSearch(`${emp.emp_code} - ${emp.cust_name}`);
+                          onScroll={(e) => {
+                            const bottom =
+                              e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
 
-                              // Close dropdown
-                              setDropdownOpen(false);
-                            }}
-                            className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
-                          >
-                            <b>{emp.emp_code}</b> — {emp.cust_name}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-2 text-sm text-gray-500">No results found</div>
-                      )}
-                    </div>
-                  )}
+                            if (bottom && hasMore && !isLoadingMore) {
+                              setIsLoadingMore(true);
+                              setPage((p) => p + 1);
+                              fetchEmployees(empSearch, page + 1);
+                            }
+                          }}
+                      >
+                        {isSearching ? (
+                          <div className="p-2 text-sm text-gray-500">Searching...</div>
+                        ) : empOptions.length > 0 ? (
+                          empOptions.map((emp, idx) => (
+                            <div
+                              key={`${emp.emp_code}-${idx}`}
+                              onClick={(e) => {
+                                // ⭐ Call your existing handleEmployeeChange function
+                                setIsSelecting(true);
+                                handleEmployeeChange({ target: { value: emp.emp_code } });
+
+                                // Fill text box with code + name
+                                setEmpSearch(`${emp.emp_code} - ${emp.cust_name}`);
+
+                                // Close dropdown
+                                setDropdownOpen(false);
+                                // Restore after update
+                                setTimeout(() => setIsSelecting(false), 300); 
+                              }}
+                              className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                            >
+                              <b>{emp.emp_code}</b> — {emp.cust_name}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-2 text-sm text-gray-500">No results found</div>
+                        )}
+                      </div>
+                    )}
                 </div>
 
 
-
+ 
                 <div>
                   <label className="block text-gray-700 font-medium">
                     Organisation <ImportantField />

@@ -374,7 +374,7 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
             {/* Select Organisation */}
             <div className="relative">
               <div className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm focus:ring-1 focus:ring-green-400 focus:border-green-400">
-                <label className="text-sm font-semibold text-gray-600">Organisation</label>
+                {/* <label className="text-sm font-semibold text-gray-600">Organisation</label> */}
                 <MultiSelect
                   value={selectedOrgs}
                   options={organisationOptions}

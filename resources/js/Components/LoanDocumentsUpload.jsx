@@ -103,19 +103,28 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
 
   const handleUploadAll = async (e) => {
     e.preventDefault();
+
     if (Object.keys(files).length === 0) {
       toast.error("Please select files first!");
       return;
     }
+
     setUploading(true);
+
     for (const docType of Object.keys(files)) {
+      // Skip files already uploaded
+      if (uploadedFiles[docType]) continue;
+
       await handleUpload(docType);
     }
+
     setUploading(false);
+
+    // Clear only NEWLY uploaded files, not all
     setFiles({});
     setProgress({});
     setUploadedFiles({});
-    // ✅ Call parent refresh ONLY after "Upload All" is clicked
+
     if (onUploadComplete) onUploadComplete();
   };
 

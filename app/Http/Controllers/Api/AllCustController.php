@@ -49,7 +49,7 @@ class AllCustController extends Controller
         );
     }
 
-
+ 
 
     public function store(Request $request)
     {
