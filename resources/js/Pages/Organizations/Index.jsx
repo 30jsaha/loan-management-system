@@ -225,7 +225,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
       <Head title="Organizations" />
       <Toaster position="top-center" />
 
-      <div className="p-6">
+      <div className="p-6 max-w-7xl mx-auto">
 
         {/* === BACK BUTTON === */}
         <Link

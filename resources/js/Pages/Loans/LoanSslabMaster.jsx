@@ -13,6 +13,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 
 import {currencyPrefix} from "@/config";
+import { formatCurrency } from "@/Utils/formatters"
 
 export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
     const [orgList, setOrgList] = useState([]);
@@ -131,7 +132,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                 const res = await axios.post("/api/salary-slab-create", submitData);
                 // If API returns created object under res.data.data
                 const created = res.data?.data ?? res.data;
-                setSalarySlabs((prev) => [...prev, created]);
+                setSalarySlabs((prev) => [created,...prev]);
                 toast.success("Income slab added successfully!");
             }
             resetForm();
@@ -452,10 +453,10 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                                             {orgList.find((o) => Number(o.id) === Number(slab.org_id))?.organisation_name ?? slab.org_id ?? "—"}
                                         </td> */}
                                         <td className="px-2 py-2 text-center border border-gray-700">
-                                            {slab.starting_salary}
+                                            {currencyPrefix} {formatCurrency(slab.starting_salary)}
                                         </td>
                                         <td className="px-2 py-2 text-center border border-gray-700">
-                                            {slab.ending_salary}
+                                            {currencyPrefix} {formatCurrency(slab.ending_salary)}
                                         </td>
                                         <td className="px-2 py-2 flex justify-center gap-2 border border-gray-700">
                                             <button

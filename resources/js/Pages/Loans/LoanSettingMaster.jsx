@@ -11,6 +11,7 @@ import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { currencyPrefix } from "@/config";
+import { formatCurrency } from "@/Utils/formatters"
 
 export default function LoanSettingMaster({ auth, salary_slabs }) {
   const [orgList, setOrgList] = useState([]);
@@ -105,7 +106,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       } else {
         const res = await axios.post("/api/loan-settings-create", payload);
         const created = res.data?.data ?? res.data;
-        setLoanSettings((prev) => [...prev, created]);
+        setLoanSettings((prev) => [created,...prev]);
         toast.success("Loan Type added successfully!");
       }
       resetForm();
@@ -425,8 +426,8 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         </div>
 
         {/* Table - compact, no horizontal scroll */}
-        <div className="w-full bg-white shadow-lg border border-gray-700 overflow-hidden">
-          <table className="w-full text-sm text-left border border-gray-700 border-collapse">
+        <div className="max-w-7xl mx-auto overflow-x-auto bg-white shadow-lg border border-gray-700 overflow-hidden">
+          <table className="max-w-7xl mx-auto overflow-x-auto text-sm text-left border border-gray-700 border-collapse">
             <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
               <tr>
                 {[
@@ -491,10 +492,10 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                       {loan.loan_desc}
                     </td>
                     <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.min_loan_amount}
+                      {formatCurrency(loan.min_loan_amount)}
                     </td>
                     <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.max_loan_amount}
+                      {formatCurrency(loan.max_loan_amount)}
                     </td>
                     <td className="px-2 py-2 text-center border border-gray-700">
                       {loan.interest_rate}
