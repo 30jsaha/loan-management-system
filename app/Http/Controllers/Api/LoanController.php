@@ -742,7 +742,7 @@ class LoanController extends Controller
             'loan_ids'   => 'required|array',
             'loan_ids.*' => 'exists:loan_applications,id',
             'emi_counter' => 'required|array', // array of loan_id => count
-            'emi_counter.*' => 'integer|min:1',
+            // 'emi_counter.*' => 'integer|min:1',
             'payment_date' => 'nullable|date',
             'collection_uid' => 'nullable|string|max:20',
         ]);
