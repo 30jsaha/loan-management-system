@@ -68,6 +68,13 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   
   // counter
   const [emiCounter, setEmiCounter] = useState({});
+  const [selectedSummary, setSelectedSummary] = useState({
+    total: 0,
+    pending: 0,
+    collected: 0,
+  });
+
+  
   const increaseCounter = (loan) => {
     setEmiCounter((prev) => {
       const baseRemaining = loan.tenure_fortnight - (loan.installments.length || 0);
@@ -132,6 +139,42 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
     });
   }, [loans, searchQuery, dateFilter, selectedOrgs]);
 
+  // --- Selected loans summary (must be after filteredLoans) ---
+const updateSelectedSummary = () => {
+  const selectedLoans = filteredLoans.filter((loan) =>
+    selectedLoanIds.includes(loan.id)
+  );
+
+  let pending = 0;
+  let collected = 0;
+
+  selectedLoans.forEach((loan) => {
+    const paid = parseFloat(getTotalPaidAmount(loan)) || 0;
+    const repay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+    collected += paid;
+    pending += Math.max(repay - paid, 0);
+  });
+
+  setSelectedSummary({
+    total: selectedLoans.length,
+    pending: pending.toFixed(2),
+    collected: collected.toFixed(2),
+  });
+};
+
+useEffect(() => {
+  if (selectedLoanIds.length === 0) {
+    setSelectedSummary({
+      total: 0,
+      pending: 0,
+      collected: 0,
+    });
+    return;
+  }
+  updateSelectedSummary();
+}, [selectedLoanIds, filteredLoans]);
+  // --- Total collected and pending amounts (for all filtered loans) ---
+
   useEffect(() => {
       if (!Array.isArray(filteredLoans)) return;
 
@@ -190,7 +233,7 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   const getTotalPaidAmount = (loan) => {
     if (!loan) return 0;
 
-    const basePaid = loan.total_emi_paid_amount || 0;
+    const basePaid = loan.total_emi_amount || 0;
 
     if (!Array.isArray(loan.installments)) return basePaid;
 
@@ -311,7 +354,14 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
       <div className="min-h-screen bg-gray-100 py-6 px-4 flex gap-4 transition-all duration-300">
 
         {/* LEFT PANEL */}
-        <div className="w-1/3 bg-white rounded-lg shadow-md p-4 overflow-y-auto h-[85vh] font-[Times_New_Roman]">
+        <div className="
+          w-full 
+          md:w-1/2 
+          lg:w-1/3 
+          bg-white rounded-lg shadow-md p-4 
+          overflow-y-auto h-[85vh] 
+          font-[Times_New_Roman]
+        ">
           {/* Header */}
           <div className="flex items-center mb-3">
             <Link href={route("loan.emi")}><ArrowLeft size={16} className="mr-2 text-gray-600" /></Link>
@@ -319,23 +369,35 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
           </div>
           {/* Summary */}
           <div className="grid grid-cols-3 text-center border border-gray-200 rounded-lg overflow-hidden mb-3">
+            
+            {/* TOTAL */}
             <div className="py-3">
               <div className="text-sm text-gray-500">Total</div>
-              <div className="text-xl font-bold">{filteredLoans.length}</div>
+              <div className="text-xl font-bold">
+                {selectedLoanIds.length > 0 ? selectedSummary.total : filteredLoans.length}
+              </div>
             </div>
+
+            {/* PENDING */}
             <div className="py-3 border-x border-gray-200">
               <div className="text-sm text-gray-500">Pending</div>
               <div className="text-xl font-bold">
-                {currencyPrefix}&nbsp;{totalPendingAmount ?? 0}
+                {currencyPrefix}&nbsp;
+                {selectedLoanIds.length > 0 ? selectedSummary.pending : totalPendingAmount}
               </div>
             </div>
+
+            {/* COLLECTED */}
             <div className="py-3">
               <div className="text-sm text-gray-500">Collected</div>
               <div className="text-xl font-bold">
-                {currencyPrefix}&nbsp;{totalCollectedAmount ?? 0}
+                {currencyPrefix}&nbsp;
+                {selectedLoanIds.length > 0 ? selectedSummary.collected : totalCollectedAmount}
               </div>
             </div>
+
           </div>
+
           {/* Top Action Buttons */}
           <div className="flex gap-2 mb-4 d-none">
             <button
@@ -560,6 +622,7 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
                   <table className="min-w-full text-sm">
                     <thead className="bg-green-700 text-white sticky top-0 z-20">
                       <tr>
+                        <th className="p-2 text-left">Remove</th>
                         <th className="p-2 text-left">Loan ID</th>
                         <th className="p-2 text-left">Customer</th>
                         <th className="p-2 text-left">Next Due</th>
@@ -596,6 +659,15 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
 
                           return (
                             <tr key={loan.id} className="hover:bg-green-100 transition-all">
+                              <td className="p-2 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedLoanIds.includes(loan.id)}
+                                  onChange={() => toggleLoanSelection(loan.id)}
+                                  className="h-4 w-4 cursor-pointer"
+                                  title="Remove this loan from selection"
+                                />
+                              </td>
                               <td className="p-2">#{loan.id}</td>
                               <td className="p-2 font-medium text-gray-800">
                                 {cust.first_name} {cust.last_name} ({cust.employee_no || "N/A"})
