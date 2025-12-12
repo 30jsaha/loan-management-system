@@ -384,7 +384,7 @@ class LoanController extends Controller
                 'message' => '❌ No matching loan tier found for this amount.',
             ], 200);
         }
-
+ 
         // Validate term range
         if ($request->term < $tier->min_term_fortnight || $request->term > $tier->max_term_fortnight) {
             return response()->json([

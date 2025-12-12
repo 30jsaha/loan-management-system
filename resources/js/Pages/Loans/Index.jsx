@@ -109,6 +109,11 @@ export default function Index({ auth }) {
           valA = new Date(a.created_at);
           valB = new Date(b.created_at);
           break;
+        case "eligibility":
+          valA = a.is_elegible === 1 ? 1 : 0;
+          valB = b.is_elegible === 1 ? 1 : 0;
+          break;
+
         default:
           return 0;
       }
@@ -245,179 +250,222 @@ export default function Index({ auth }) {
                 <table className="w-full text-sm border border-gray-700 border-collapse table-auto">
                   <thead className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-blue-600 text-white">
                     <tr>
-                      <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">
+
+                      {/* # */}
+                      <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700 w-12">
                         #
                       </th>
+
+                      {/* Details */}
                       <th
                         className="px-4 py-3 text-center font-semibold uppercase tracking-wide cursor-pointer border border-gray-700"
                         onClick={() => handleSort("loan_type")}
                       >
-                        Details <ArrowUpDown size={14} className="inline ml-1" />
+                        <div className="flex items-center justify-center gap-1">
+                          Details
+                          <ArrowUpDown size={14} />
+                        </div>
                       </th>
+
+                      {/* Organisation */}
                       <th
                         className="px-4 py-3 text-center font-semibold uppercase tracking-wide cursor-pointer border border-gray-700"
                         onClick={() => handleSort("organisation")}
                       >
-                        Organisation <ArrowUpDown size={14} className="inline ml-1" />
+                        <div className="flex items-center justify-center gap-1">
+                          Organisation
+                          <ArrowUpDown size={14} />
+                        </div>
                       </th>
+
+                      {/* Customers */}
                       <th
                         className="px-4 py-3 text-center font-semibold uppercase tracking-wide cursor-pointer border border-gray-700"
                         onClick={() => handleSort("customers")}
                       >
-                        Customers <ArrowUpDown size={14} className="inline ml-1" />
+                        <div className="flex items-center justify-center gap-1">
+                          Customers
+                          <ArrowUpDown size={14} />
+                        </div>
                       </th>
+
+                      {/* Amount Details */}
                       <th
                         className="px-4 py-3 text-center font-semibold uppercase tracking-wide cursor-pointer border border-gray-700"
                         onClick={() => handleSort("amount")}
                       >
-                        Amount Details <ArrowUpDown size={14} className="inline ml-1" />
+                        <div className="flex items-center justify-center gap-1">
+                          Amount Details
+                          <ArrowUpDown size={14} />
+                        </div>
                       </th>
-                      <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">
-                        Eligibility
+
+                      {/* Eligibility */}
+                      <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700"
+                      onClick={() => handleSort("eligibility")}>
+                        
+                        <div className="flex items-center justify-center gap-1">
+                         Eligibility
+                        <ArrowUpDown size={12} />
+                        </div>
                       </th>
+
+                      {/* Status */}
                       <th
                         className="px-4 py-3 text-center font-semibold uppercase tracking-wide cursor-pointer border border-gray-700"
                         onClick={() => handleSort("status")}
                       >
-                        Status <ArrowUpDown size={14} className="inline ml-1" />
+                        <div className="flex items-center justify-center gap-1">
+                          Status
+                          <ArrowUpDown size={14} />
+                        </div>
                       </th>
+
+                      {/* Created At */}
                       <th
                         className="px-4 py-3 text-center font-semibold uppercase tracking-wide cursor-pointer border border-gray-700"
                         onClick={() => handleSort("date")}
                       >
-                        Created At <ArrowUpDown size={14} className="inline ml-1" />
+                        <div className="flex items-center justify-center gap-1">
+                          Created At
+                          <ArrowUpDown size={14} />
+                        </div>
                       </th>
-                      <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700">
+
+                      {/* Actions */}
+                      <th className="px-4 py-3 text-center font-semibold uppercase tracking-wide border border-gray-700 w-24">
                         Actions
                       </th>
+
                     </tr>
                   </thead>
 
+
                   <tbody>
-  {paginatedLoans.map((loan, index) => (
-    <tr
-      key={loan.id}
-      className="hover:bg-indigo-50 transition-all duration-200 bg-white"
-    >
-      {/* # */}
-      <td className="px-4 py-3 text-center text-gray-700 border border-gray-700">
-        {(currentPage - 1) * itemsPerPage + index + 1}
-      </td>
+                  {paginatedLoans.map((loan, index) => (
+                    <tr
+                      key={loan.id}
+                      className="hover:bg-indigo-50 transition-all duration-200 bg-white"
+                    >
+                      {/* # */}
+                      <td className="px-4 py-3 text-center text-gray-700 border border-gray-700">
+                        {(currentPage - 1) * itemsPerPage + index + 1}
+                      </td>
 
-      {/* Details - CENTERED */}
-      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
-        <div className="flex flex-col items-center justify-center">
-          <span>
-            <strong>Type:</strong> {loan.loan_settings?.loan_desc || "-"}
-          </span>
-          <span>
-            <strong>Purpose:</strong> {loan.purpose || "-"}
-          </span>
-        </div>
-      </td>
+                      {/* Details - CENTERED */}
+                      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
+                        <div className="flex flex-col items-center justify-center">
+                          <span>
+                            <strong>Type:</strong> {loan.loan_settings?.loan_desc || "-"}
+                          </span>
+                          <span>
+                            <strong>Purpose:</strong> {loan.purpose || "-"}
+                          </span>
+                        </div>
+                      </td>
 
-      {/* Organisation - CENTERED */}
-      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
-        <div className="flex flex-col items-center justify-center">
-          <strong>{loan.organisation?.organisation_name || "-"}</strong>
-          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
-            {loan.organisation?.email || "-"}
-          </span>
-        </div>
-      </td>
-      {/* Customers - CENTERED */}
-      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
-        <div className="flex flex-col items-center justify-center">
-          <strong>{loan.customer? loan.customer.first_name+" "+loan.customer.last_name : "-"}</strong>
-          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
-            {loan.customer?.employee_no || "-"}
-          </span>
-          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
-            {loan.customer?.designation || "-"}
-          </span>
-        </div>
-      </td>
+                      {/* Organisation - CENTERED */}
+                      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
+                        <div className="flex flex-col items-center justify-center">
+                          <strong>{loan.organisation?.organisation_name || "-"}</strong>
+                          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
+                            {loan.organisation?.email || "-"}
+                          </span>
+                        </div>
+                      </td>
+                      {/* Customers - CENTERED */}
+                      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
+                        <div className="flex flex-col items-center justify-center">
+                          <strong>{loan.customer? loan.customer.first_name+" "+loan.customer.last_name : "-"}</strong>
+                          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
+                            {loan.customer?.employee_no || "-"}
+                          </span>
+                          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
+                            {loan.customer?.designation || "-"}
+                          </span>
+                        </div>
+                      </td>
 
-      {/* Amount Details - CENTERED */}
-      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
-        <div className="flex flex-col items-center justify-center">
-          <span>
-            {currencyPrefix}&nbsp;
-            {parseFloat(loan.loan_amount_applied || 0).toLocaleString()}
-          </span>
-          <span>
-            <strong>Tenure:</strong> {loan.tenure_fortnight}
-          </span>
-        </div>
-      </td>
+                      {/* Amount Details - CENTERED */}
+                      <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
+                        <div className="flex flex-col items-center justify-center">
+                          <span>
+                            {currencyPrefix}&nbsp;
+                            {parseFloat(loan.loan_amount_applied || 0).toLocaleString()}
+                          </span>
+                          <span>
+                            <strong>Tenure:</strong> {loan.tenure_fortnight}
+                          </span>
+                        </div>
+                      </td>
 
-      {/* Eligibility */}
-      <td className="px-4 py-3 text-center border border-gray-700">
-        <span
-          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-            loan.is_elegible === 1
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {loan.is_elegible === 1 ? "Eligible" : "Not Eligible"}
-        </span>
-        <div className="text-xs text-gray-700 mt-1">
-          <strong>Eligible Amt:</strong> {currencyPrefix}
-          {parseFloat(loan.elegible_amount || 0).toLocaleString()}
-        </div>
-      </td>
+                      {/* Eligibility */}
+                      <td className="px-4 py-3 text-center border border-gray-700">
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            loan.is_elegible === 1
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {loan.is_elegible === 1 ? "Eligible" : "Not Eligible"}
+                        </span>
+                        <div className="text-xs text-gray-700 mt-1">
+                          <strong>Eligible Amt:</strong> {currencyPrefix}
+                          {parseFloat(loan.elegible_amount || 0).toLocaleString()}
+                        </div>
+                      </td>
 
-      {/* Status */}
-      <td className="px-4 py-3 text-center border border-gray-700">
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-            loan.status === "Approved"
-              ? "bg-green-100 text-green-700"
-              : loan.status === "Rejected"
-              ? "bg-red-100 text-red-700"
-              : (loan.status === "HigherApproval" && loan.is_elegible==1)
-              ? "bg-green-100 text-green-700"
-              : "bg-yellow-100 text-yellow-700"
-          }`}
-        >
-          {loan.status}
-        </span>
-      </td>
+                      {/* Status */}
+                      <td className="px-4 py-3 text-center border border-gray-700">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            loan.status === "Approved"
+                              ? "bg-green-100 text-green-700"
+                              : loan.status === "Rejected"
+                              ? "bg-red-100 text-red-700"
+                              : (loan.status === "HigherApproval" && loan.is_elegible==1)
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {loan.status}
+                        </span>
+                      </td>
 
-      {/* Created */}
-      <td className="px-4 py-3 text-center text-gray-600 whitespace-nowrap border border-gray-700">
-        {new Date(loan.created_at).toLocaleDateString()}
-      </td>
+                      {/* Created */}
+                      <td className="px-4 py-3 text-center text-gray-600 whitespace-nowrap border border-gray-700">
+                        {new Date(loan.created_at).toLocaleDateString()}
+                      </td>
 
-      {/* Actions */}
-      <td className="px-4 py-3 text-center border border-gray-700">
-        <div className="flex justify-center gap-2">
-          <Link
-            href={route("loan.view", { id: loan.id })}
-            className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
-            title="View"
-          >
-            <Eye size={15} />
-          </Link>
-          {/* <Link
-            href={route("loan.edit", { id: loan.id })}
-            className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
-            title="Edit"
-          >
-            <Pencil size={15} />
-          </Link> */}
-          {/* <button
-            onClick={() => handleDelete(loan.id)}
-            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md"
-            title="Delete"
-          >
-            <Trash2 size={15} />
-          </button> */}
-        </div>
-      </td>
-    </tr>
-  ))}
+                      {/* Actions */}
+                      <td className="px-4 py-3 text-center border border-gray-700">
+                        <div className="flex justify-center gap-2">
+                          <Link
+                            href={route("loan.view", { id: loan.id })}
+                            className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+                            title="View"
+                          >
+                            <Eye size={15} />
+                          </Link>
+                          {/* <Link
+                            href={route("loan.edit", { id: loan.id })}
+                            className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md"
+                            title="Edit"
+                          >
+                            <Pencil size={15} />
+                          </Link> */}
+                          {/* <button
+                            onClick={() => handleDelete(loan.id)}
+                            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md"
+                            title="Delete"
+                          >
+                            <Trash2 size={15} />
+                          </button> */}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                   </tbody>
 
                 </table>
