@@ -244,7 +244,7 @@ useEffect(() => {
       .filter((i) => i.status?.toLowerCase() === "paid")
       .reduce((sum, i) => sum + (Number(i.emi_amount) || 0), 0);
 
-    return basePaid + extraPaidSum;
+    return basePaid ;
   };
 
   const isCollectible = (loan) => {
@@ -612,6 +612,28 @@ useEffect(() => {
                   <h4 className="font-semibold text-lg text-gray-800">
                     Selected Loans ({selectedLoanIds.length})
                   </h4>
+                   {/* MIDDLE: NEW INPUT FIELDS */}
+                    <div className="flex items-center gap-3">
+                      {/* DATE INPUT */}
+                      <div className="flex flex-col text-xs">
+                        <label className="font-semibold text-gray-600">Payment Date</label>
+                        <input
+                          type="date"
+                          className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        />
+                      </div>
+
+                      {/* ID INPUT */}
+                      <div className="flex flex-col text-xs">
+                        <label className="font-semibold text-gray-600">Transaction ID</label>
+                        <input
+                          type="text"
+                          placeholder="Enter ID"
+                          className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        />
+                      </div>
+                    </div>
+
                   <button
                     onClick={handleCollectEMI}
                     className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md shadow-sm"
@@ -625,17 +647,28 @@ useEffect(() => {
                   <table className="min-w-full text-sm">
                     <thead className="bg-green-700 text-white sticky top-0 z-20">
                       <tr>
-                        <th className="p-2 text-left">Remove</th>
-                        <th className="p-2 text-left">Loan ID</th>
-                        <th className="p-2 text-left">Customer</th>
-                        <th className="p-2 text-left">Next Due</th>
-                        <th className="p-2 text-left">EMI Amount</th>
-                        <th className="p-2 text-left">Total Repayable</th>
-                        <th className="p-2 text-left">Total Paid</th>
-                        <th className="p-2 text-left">Remaining F/N</th>
-                        <th className="p-2 text-left">Remaining Balance</th>
-                        <th className="p-2 text-left">Counter</th> {/* NEW */}
-                        <th className="p-2 text-left">Status</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">Remove</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">Loan ID</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">Customer</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">Next Due</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">EMI Amount</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">Total Repayable</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">Total Paid</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">Remaining F/N</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">Remaining Balance</th>
+                        <th className="p-2 text-left border-r border-gray-300
+">Counter</th> {/* NEW */}
+                        <th className="p-2 text-left border-r border-gray-300
+">Status</th>
                       </tr>
                     </thead>
 
@@ -645,24 +678,50 @@ useEffect(() => {
                         .map((loan) => {
                           const cust = loan.customer || {};
 
+                          // const baseRemaining =
+                          //   loan.tenure_fortnight - (loan.installments.length || 0);
+
+                          // const counter = emiCounter[loan.id] ?? 1;
+                          // const collectEmi= parseFloat(loan.emi_amount) * counter;
+                          // // const totalRepay = parseFloat(loan.total_repay_amt) || 0;
+                          // const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+
+                          // const totalPaid = parseFloat(getTotalPaidAmount(loan)) || 0;
+
+                          // // 🔥 Updated Remaining F/N Calculation
+                          // const finalRemaining = Math.max(baseRemaining - counter, 0);
+                          //  // 🔥 New Remaining Balance (After Applying Counter)
+                          // let remainingBalance = totalRepay - (totalPaid);
+
+
                           const baseRemaining =
-                            loan.tenure_fortnight - (loan.installments.length || 0);
+                          loan.tenure_fortnight - (loan.installments.length || 0);
 
-                          const counter = emiCounter[loan.id] ?? 1;
-                          const collectEmi= parseFloat(loan.emi_amount) * counter;
-                          // const totalRepay = parseFloat(loan.total_repay_amt) || 0;
-                          const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+                        const counter = emiCounter[loan.id] ?? 1;
 
-                          const totalPaid = parseFloat(getTotalPaidAmount(loan)) || 0;
+                        // EMI Amount × Counter
+                        const collectEmi = parseFloat(loan.emi_amount) * counter;
 
-                          // 🔥 Updated Remaining F/N Calculation
-                          const finalRemaining = Math.max(baseRemaining - counter, 0);
-                           // 🔥 New Remaining Balance (After Applying Counter)
-                          let remainingBalance = totalRepay - (totalPaid);
+                        // FIX: Convert repay amount safely
+                        const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+
+                        // FIX: EXISTING paid amount
+                        const totalPaidBefore = parseFloat(getTotalPaidAmount(loan)) || 0;
+
+                        // ⭐ NEW: Total Paid AFTER applying counter
+                        const totalPaid = totalPaidBefore + collectEmi;
+
+                        // 🔥 NEW Remaining Fortnights (never negative)
+                        const finalRemaining = Math.max(baseRemaining - counter, 0);
+
+                        // ⭐ NEW: Remaining Balance AFTER subtracting counter EMI
+                        const remainingBalance = Math.max(totalRepay - totalPaid, 0);
+
 
                           return (
                             <tr key={loan.id} className="hover:bg-green-100 transition-all">
-                              <td className="p-2 text-center">
+                              <td className="p-2 text-center border-r border-gray-300
+">
                                 <input
                                   type="checkbox"
                                   checked={selectedLoanIds.includes(loan.id)}
@@ -671,30 +730,36 @@ useEffect(() => {
                                   title="Remove this loan from selection"
                                 />
                               </td>
-                              <td className="p-2">#{loan.id}</td>
-                              <td className="p-2 font-medium text-gray-800">
+                              <td className="p-2 border-r border-gray-300
+                              ">#{loan.id}</td>
+                              <td className="p-2 font-medium text-gray-800 border-r border-gray-300">
                                 {cust.first_name} {cust.last_name} ({cust.employee_no || "N/A"})
                               </td>
-                              <td className="p-2">{loan.next_due_date || "N/A"}</td>
-                              <td className="p-2 font-semibold text-green-700">
+                              <td className="p-2 border-r border-gray-300
+                              ">{loan.next_due_date || "N/A"}</td>
+                              <td className="p-2 font-semibold text-green-700 border-r border-gray-300
+                              ">
                                 {currencyPrefix} {collectEmi.toFixed(2)}
                               </td>
-                              <td className="p-2">
+                              <td className="p-2 border-r border-gray-300">
                                 {/* {currencyPrefix} {parseFloat(loan.total_repay_amt).toFixed(2)} */}
                                 {currencyPrefix} {(parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0).toFixed(2)}
 
                               </td>
 
-                              <td className="p-2">
-                                {currencyPrefix} {parseFloat(getTotalPaidAmount(loan)).toFixed(2)}
+                              <td className="p-2 border-r border-gray-300
+">
+                                {currencyPrefix} {totalPaid.toFixed(2)}
                               </td>
 
                               {/* 🔥 Updated Remaining F/N (Never Below 0) */}
-                              <td className="p-2">{finalRemaining}</td>
-                              <td className="p-2">{remainingBalance.toFixed(2)  || "0"}</td>
+                              <td className="p-2 border-r border-gray-300
+">{finalRemaining}</td>
+                              <td className="p-2 border-r border-gray-300
+">{remainingBalance.toFixed(2)}</td>
 
                               {/* 🔥 NEW Counter Column */}
-                              <td className="p-2">
+                              <td className="p-2 border-r border-gray-300">
                                 <div className="flex items-center gap-2">
                                   <button
                                     onClick={() => decreaseCounter(loan)}
@@ -715,7 +780,7 @@ useEffect(() => {
                                 </div>
                               </td>
 
-                              <td className="p-2">
+                              <td className="p-2 border-r border-gray-300">
                                 <span className="text-green-700 font-semibold">Ready</span>
                               </td>
                             </tr>
