@@ -68,6 +68,8 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   
   // counter
   const [emiCounter, setEmiCounter] = useState({});
+  const [collectionId, setCollectionId] = useState({});
+  const [emiPayDate, setEmiPayDate] = useState({});
   const [selectedSummary, setSelectedSummary] = useState({
     total: 0,
     pending: 0,
@@ -281,6 +283,8 @@ useEffect(() => {
       const response = await axios.post("/api/loans/collect-emi", {
         loan_ids: selectedLoanIds,
         emi_counter: emiCounter, // pass the emiCounter object
+        collection_uid: collectionId,
+        payment_date: emiPayDate,
       });
 
       Swal.fire("✅ Success", response.data.message || "EMI collected successfully!", "success");
@@ -559,7 +563,10 @@ useEffect(() => {
                             {loan.organisation?.organisation_name}
                           </span>
                           <button
-                            onClick={() => setSelectedLoan(loan)}
+                            onClick={() => {
+                              setSelectedLoan(loan);
+                              setSelectedLoanIds([]);
+                            }}
                             disabled={selectedLoanIds.length > 1}
                             className={`text-xs underline ${selectedLoanIds.length > 1
                                 ? "text-gray-400 cursor-not-allowed"
@@ -619,17 +626,24 @@ useEffect(() => {
                         <label className="font-semibold text-gray-600">Payment Date</label>
                         <input
                           type="date"
+                          name="payment_date"
                           className="border border-gray-300 rounded px-2 py-1 text-sm"
+                          value={new Date().toISOString().split("T")[0]} // Default to today
+                          onChange={(e)=>setEmiPayDate(e.target.value)}
                         />
                       </div>
 
                       {/* ID INPUT */}
                       <div className="flex flex-col text-xs">
-                        <label className="font-semibold text-gray-600">Transaction ID</label>
+                        <label className="font-semibold text-gray-600">Collection ID</label>
                         <input
                           type="text"
-                          placeholder="Enter ID"
-                          className="border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="E.g., COL12345"
+                          name="collection_uid"
+                          className="border border-gray-300 rounded px-2 py-1 text-sm cursor-not-allowed bg-gray-100"
+                          readOnly={true}
+                          value={`COL${Date.now()}`} // Example: auto-generate ID
+                          onChange={(e)=>setCollectionId(e.target.value)}
                         />
                       </div>
                     </div>

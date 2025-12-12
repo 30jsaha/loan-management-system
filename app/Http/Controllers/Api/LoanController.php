@@ -742,12 +742,15 @@ class LoanController extends Controller
             'loan_ids'   => 'required|array',
             'loan_ids.*' => 'exists:loan_applications,id',
             'emi_counter' => 'required|array', // array of loan_id => count
+            'emi_counter.*' => 'integer|min:1',
+            'payment_date' => 'nullable|date',
+            'collection_uid' => 'nullable|string|max:20',
         ]);
 
         $emiCounters = $validated['emi_counter'];
 
         // Generate 6–7 character batch ID
-        $collectionUid = strtoupper(substr(md5(time() . rand()), 0, 7));
+        $collectionUid = $validated['collection_uid'] ?? strtoupper(substr(md5(time() . rand()), 0, 7));
 
         foreach ($validated['loan_ids'] as $loanId) {
 
@@ -776,7 +779,7 @@ class LoanController extends Controller
                     'installment_no'      => $currentInstallments + $i,
                     'due_date'            => now()->addDays(($i - 1) * $emiFreq),
                     'emi_amount'          => $loan->emi_amount,
-                    'payment_date'        => now(),
+                    'payment_date'        => $validated['payment_date'] ?? now(),
                     'status'              => 'Paid',
                     'emi_collected_by_id' => auth()->user()->id,
                     'emi_collected_date'  => now(),
