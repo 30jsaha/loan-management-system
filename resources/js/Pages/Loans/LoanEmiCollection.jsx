@@ -62,12 +62,23 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   const [orgTypeFilter, setOrgTypeFilter] = useState("");
   const [selectedOrgs, setSelectedOrgs] = useState([]);
   const [filterLoading, setFilterLoading] = useState(false);
-
   const [totalPendingAmount, setTotalPendingAmount] = useState(0);
   const [totalCollectedAmount, setTotalCollectedAmount] = useState(0);
+
+  // Generate once and keep fixed for entire page session
+  const collectionUniqueIdRef = React.useRef(`COL${Date.now()}`);
+  const collectionUniqueId = collectionUniqueIdRef.current;
+
   
   // counter
   const [emiCounter, setEmiCounter] = useState({});
+  const [collectionId, setCollectionId] = useState(collectionUniqueId);
+  const [emiPayDate, setEmiPayDate] = useState({});
+  useEffect(() => {
+    // initialize emiPayDate as YYYY-MM-DD string (date input value)
+    const today = new Date().toISOString().split("T")[0];
+    setEmiPayDate(today);
+  }, []);
   const [selectedSummary, setSelectedSummary] = useState({
     total: 0,
     pending: 0,
@@ -244,7 +255,7 @@ useEffect(() => {
       .filter((i) => i.status?.toLowerCase() === "paid")
       .reduce((sum, i) => sum + (Number(i.emi_amount) || 0), 0);
 
-    return basePaid ;
+    return basePaid;
   };
 
   const isCollectible = (loan) => {
@@ -281,6 +292,8 @@ useEffect(() => {
       const response = await axios.post("/api/loans/collect-emi", {
         loan_ids: selectedLoanIds,
         emi_counter: emiCounter, // pass the emiCounter object
+        collection_uid: collectionId,
+        payment_date: emiPayDate,
       });
 
       Swal.fire("✅ Success", response.data.message || "EMI collected successfully!", "success");
@@ -621,7 +634,10 @@ useEffect(() => {
                             {loan.organisation?.organisation_name}
                           </span>
                           <button
-                            onClick={() => setSelectedLoan(loan)}
+                            onClick={() => {
+                              setSelectedLoan(loan);
+                              setSelectedLoanIds([]);
+                            }}
                             disabled={selectedLoanIds.length > 1}
                             className={`text-xs underline ${selectedLoanIds.length > 1
                                 ? "text-gray-400 cursor-not-allowed"
@@ -681,17 +697,24 @@ useEffect(() => {
                         <label className="font-semibold text-gray-600">Payment Date</label>
                         <input
                           type="date"
+                          name="payment_date"
                           className="border border-gray-300 rounded px-2 py-1 text-sm"
+                          value={new Date().toISOString().split("T")[0]} // Default to today
+                          onChange={(e)=>setEmiPayDate(e.target.value)}
                         />
                       </div>
 
                       {/* ID INPUT */}
                       <div className="flex flex-col text-xs">
-                        <label className="font-semibold text-gray-600">Transaction ID</label>
+                        <label className="font-semibold text-gray-600">Collection ID</label>
                         <input
                           type="text"
-                          placeholder="Enter ID"
-                          className="border border-gray-300 rounded px-2 py-1 text-sm"
+                          placeholder="E.g., COL12345"
+                          name="collection_uid"
+                          className="border border-gray-300 rounded px-2 py-1 text-sm cursor-not-allowed bg-gray-100"
+                          readOnly={true}
+                          value={collectionUniqueId} // Example: auto-generate ID
+                          onChange={(e)=>setCollectionId(e.target.value)}
                         />
                       </div>
                     </div>
@@ -778,7 +801,7 @@ useEffect(() => {
                               {currencyPrefix} {totalPaid.toFixed(2)}
                             </td>
                             <td className="p-2 border-r border-gray-300">{finalRemaining}</td>
-                            <td className="p-2 border-r border-gray-300">{remainingBalance.toFixed(2)}</td>
+                            <td className="p-2 border-r border-gray-300">{currencyPrefix} {remainingBalance.toFixed(2)}</td>
                             <td className="p-2 border-r border-gray-300">
                               <div className="flex items-center gap-2">
                                 <button
