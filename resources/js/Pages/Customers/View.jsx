@@ -306,7 +306,7 @@ function LoanTab({ loans, collections }) {
             loan={loan}
             collections={loanCollections}
             totalCollected={totalCollected}
-            initiallyOpen={false}
+            initiallyOpen={index==1}
           />
         );
       })}

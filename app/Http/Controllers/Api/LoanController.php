@@ -630,7 +630,7 @@ class LoanController extends Controller
             'company'
         ])
         ->where('status', 'Approved')
-        ->orderBy('approved_date', 'desc')
+        ->orderBy('id', 'desc')
         ->get();
 
         // ----------------------------
