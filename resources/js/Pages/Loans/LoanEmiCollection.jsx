@@ -190,7 +190,8 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   const getTotalPaidAmount = (loan) => {
     if (!loan) return 0;
 
-    const basePaid = loan.total_emi_paid_amount || 0;
+    // const basePaid = loan.total_emi_paid_amount || 0;
+    const basePaid = loan.emi_amount || 0;
 
     if (!Array.isArray(loan.installments)) return basePaid;
 
@@ -315,7 +316,7 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
           {/* Header */}
           <div className="flex items-center mb-3">
             <Link href={route("loan.emi")}><ArrowLeft size={16} className="mr-2 text-gray-600" /></Link>
-            <span className="font-semibold text-lg text-gray-800">Loan EMI Collection</span>
+            <span className="font-semibold text-lg text-gray-800">Collectible EMIs</span>
           </div>
           {/* Summary */}
           <div className="grid grid-cols-3 text-center border border-gray-200 rounded-lg overflow-hidden mb-3">
@@ -592,7 +593,7 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
                           // 🔥 Updated Remaining F/N Calculation
                           const finalRemaining = Math.max(baseRemaining - counter, 0);
                            // 🔥 New Remaining Balance (After Applying Counter)
-                          let remainingBalance = totalRepay - (totalPaid + collectEmi);
+                          let remainingBalance = totalRepay - (totalPaid);
 
                           return (
                             <tr key={loan.id} className="hover:bg-green-100 transition-all">
