@@ -308,7 +308,13 @@ export default function EmiCollection({ auth, approved_loans = null }) {
       }
     });
 
-    return list;
+    // Sort by collection date DESC
+  return list.sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB - dateA; // descending
+  });
+
   }, [
     collections,
     filterCollectionId,

@@ -206,15 +206,15 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
                             borderBottomLeftRadius: "0.375rem",
                             borderBottomRightRadius: "0.375rem",
                           }}
-                          onClick={() => handleViewDocument(files[doc])}
+                          // onClick={() => handleViewDocument(files[doc])}
                         >
-                          <div className="d-flex align-items-center gap-2">
+                          {/* <div className="d-flex align-items-center gap-2">
                             <Eye
                               size={28}
                               className="hover:scale-110 transition-transform text-blue"
                             />
                             <span className="font-bold text-black">View</span>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                       <div className="mt-2">
@@ -309,17 +309,15 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
                   Remove
                 </Button>
 
-              <Button
-                className="px-3 sm:px-4 rounded-pill fw-medium w-full sm:w-1/2 text-white bg-blue-500"
-                onClick={() => handleViewDocument(files[doc])}
-                disabled={!files[doc]}
-                style={{
-                  border: "none",
-                }}
-              >
-                <Eye size={18} className="me-2" />
-                View
-              </Button>
+                <Button
+                  className="d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-pill fw-medium bg-blue-500 border-0 w-full sm:w-1/2"
+                  onClick={() => handleViewDocument(files[doc])}
+                  disabled={!files[doc]}
+                >
+                  <Eye size={18} />
+                  <span>View</span>
+                </Button>
+
 
               </div>
             </div>

@@ -247,41 +247,47 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
 
   // Filtered data (search + slab filter)
   const filteredData = useMemo(() => {
-    return sortedData.filter((item) => {
-      // 1. Search Filter
-      const matchesSearch =
-        item.loan_desc?.toLowerCase().includes(searchTerm.toLowerCase());
+      return sortedData.filter((item) => {
+          // 1. SEARCH filter
+          const matchesSearch =
+              item.loan_desc?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // 2. Slab Filter
-      // If no slabs are selected in the filter, return true (show all)
-      if (filterSelectedSslabs.length === 0) return matchesSearch;
+          // 2. If NO slab selected → allow all
+          if (filterSelectedSslabs.length === 0) {
+              return matchesSearch;
+          }
 
-      // Normalize selected filter IDs to Strings to ensure type safety
-      const selectedIds = filterSelectedSslabs.map((s) => String(s.code));
+          // Get selected slab IDs as strings
+          const selectedIds = filterSelectedSslabs.map(s => String(s.code));
 
-      // Get the item's slab IDs, handling both single ID (legacy) and List (new)
-      const itemSingleSlabId = item.slab_id ? String(item.slab_id) : null;
-      
-      let itemSlabList = [];
-      if (Array.isArray(item.ss_id_list)) {
-        itemSlabList = item.ss_id_list.map(id => String(id));
-      } else if (item.ss_id_list && typeof item.ss_id_list === 'string') {
-         // Handle edge case where backend returns a JSON string instead of array
-         try { 
-            const parsed = JSON.parse(item.ss_id_list);
-            if(Array.isArray(parsed)) itemSlabList = parsed.map(id => String(id));
-         } catch(e) {}
-      }
+          // Extract item slab IDs (handle ALL formats safely)
+          let itemSlabIds = [];
 
-      // Check if the single slab matches
-      const singleMatch = itemSingleSlabId && selectedIds.includes(itemSingleSlabId);
-      
-      // Check if ANY of the loan's multiple slabs match the selected filter
-      const listMatch = itemSlabList.some(id => selectedIds.includes(id));
+          // Case A: brand new multi-slab array
+          if (Array.isArray(item.ss_id_list)) {
+              itemSlabIds = item.ss_id_list.map(id => String(id));
+          }
+          // Case B: ss_id_list returned as JSON string
+          else if (typeof item.ss_id_list === "string" && item.ss_id_list.trim() !== "") {
+              try {
+                  const parsed = JSON.parse(item.ss_id_list);
+                  if (Array.isArray(parsed)) {
+                      itemSlabIds = parsed.map(id => String(id));
+                  }
+              } catch (e) {}
+          }
+          // Case C: old system single slab_id
+          else if (item.slab_id) {
+              itemSlabIds = [String(item.slab_id)];
+          }
 
-      return matchesSearch && (singleMatch || listMatch);
-    });
+          // Final slab match → check if ANY match
+          const slabMatch = itemSlabIds.some(id => selectedIds.includes(id));
+
+          return matchesSearch && slabMatch;
+      });
   }, [sortedData, searchTerm, filterSelectedSslabs]);
+
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
@@ -303,7 +309,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
 
       <div className="min-h-screen bg-gray-100 p-6 space-y-6 ">
         {/* Back Button */}
-        <div className="max-w-9xl mx-auto -mb-3 -mt-2 ">
+        <div className="max-w-7xl mx-auto -mb-3 -mt-2 ">
           <Link
             href={route("loans")}
             className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
@@ -313,7 +319,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         </div>
 
         {/* Form */}
-        <div className="max-w-9xl mx-auto bg-white rounded-0xl shadow-lg p-6 border border-gray-100">
+        <div className="max-w-7xl mx-auto bg-white rounded-0xl shadow-lg p-6 border border-gray-100">
           <h4 className="text-lg font-semibold text-gray-700 mb-4">{isEditing ? "Edit Loan Setting" : "Add Loan Type"}</h4>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
@@ -382,7 +388,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         </div>
 
         {/* --- FILTER BAR --- */}
-        <div className="max-w-9xl mx-auto bg-white shadow-sm border border-gray-100 p-3 
+        <div className="max-w-7xl mx-auto bg-white shadow-sm border border-gray-100 p-3 
             flex flex-wrap md:flex-nowrap items-center justify-between ">
 
           {/* Search by Loan Name */}

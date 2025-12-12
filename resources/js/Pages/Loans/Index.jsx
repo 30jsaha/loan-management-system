@@ -32,8 +32,12 @@ export default function Index({ auth }) {
   const fetchLoans = async () => {
     try {
       const res = await axios.get("/api/loans");
-      setLoans(res.data);
-      setFilteredLoans(res.data);
+      // Sort by created_at DESCENDING (newest first)
+      const sorted = [...res.data].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      setLoans(sorted);
+      setFilteredLoans(sorted);
+
     } catch (error) {
       console.error(error);
       setMessage("❌ Failed to load loan list.");

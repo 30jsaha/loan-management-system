@@ -91,7 +91,7 @@ class LoansController extends Controller
             'company'
         ])
         ->where('status', 'Approved')
-        ->orderBy('approved_date', 'desc')
+        ->orderBy('id', 'desc')
         ->get();
         $approvedLoans = $approvedLoans->map(function ($loan) {
             $total_paid_amount_all_loan=$total_outstanding_amount_all_loan=$totalRepayAmtAll=0.00;
