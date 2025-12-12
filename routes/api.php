@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/higher-approve/{loanId}', [LoanController::class, 'higherApproveLoan']);
     Route::post('/loans-update-after-higher-approval', [LoanController::class, 'loan_update_after_higher_approval']);
     Route::post('/loans/{loanId}/mark-ack-downloaded', [LoanController::class, 'markAckDownloaded']);
+    Route::post('/loans/{loanId}/mark-sent-approval', [LoanController::class, 'markSentApproval']);
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);

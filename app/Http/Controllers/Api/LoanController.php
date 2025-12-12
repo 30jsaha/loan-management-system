@@ -1122,5 +1122,20 @@ class LoanController extends Controller
             'is_ack_downloaded' => $loan->is_ack_downloaded,
         ]);
     }
+    public function markSentApproval($loanId)
+    {
+        $loan = Loan::findOrFail($loanId);
+
+        // Only update if value is still 0
+        if ($loan->is_sent_for_approval == 0) {
+            $loan->is_sent_for_approval = 1;
+            $loan->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'is_sent_for_approval' => $loan->is_sent_for_approval,
+        ]);
+    }
 
 }

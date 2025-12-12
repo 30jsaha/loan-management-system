@@ -6,7 +6,6 @@ import { ArrowLeft } from "lucide-react";
 import MainLogo from "@/Components/MainLogo";
 
 // --- CSS rules for TWO-PAGE printing ---
-// --- CSS rules for TWO-PAGE printing ---
 const printStyles = `
   /* Hide page 2 header on screen */
   .print-only {

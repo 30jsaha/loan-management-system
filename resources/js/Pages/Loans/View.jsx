@@ -26,6 +26,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [allDocVerivied, setAllDocVerified] = useState(false);
+    const [isSentApproval, setIsSentApproval] = useState(false);
 
     const [videoFile, setVideoFile] = useState(null);
     const [pdfFile, setPdfFile] = useState(null);
@@ -136,6 +137,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         copyStyles: true,
     });
     const handlePrintAck = useReactToPrint({
+    
         content: () => {
             console.log("ACK PRINT CONTENT:", ackPrintRef.current);
 
@@ -263,6 +265,11 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                 bank_account_no: loan.bank_account_no,
                 remarks: loan.remarks
             }));
+            if (loan.is_sent_for_approval == 1) {
+                setIsSentApproval(true);
+            } else {
+                setIsSentApproval(false);
+            }
         }
         axios
             .get(`/api/loans/${loanId}`)
@@ -883,6 +890,18 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             setLoan(res.data);
         } catch (err) {
             console.error("Failed to update ack download status", err);
+        }
+    };
+    const markSentApproval = async () => {
+        try {
+            await axios.post(`/api/loans/${loanId}/mark-sent-approval`);
+            const res = await axios.get(`/api/loans/${loanId}`);
+            setLoan(res.data);
+            if (res.data.is_sent_for_approval == 1) {
+                setIsSentApproval(true);
+            }
+        } catch (err) {
+            console.error("Failed to update sent approval status", err);
         }
     };
 
@@ -1861,8 +1880,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                     if (!showModal1) {
                                                                         setShowModal1(true);
                                                                         setTimeout(() => handlePrintAck(), 1000);
+                                                                        markAckDownloaded();
                                                                     } else {
                                                                         handlePrintAck();
+                                                                        markAckDownloaded();
                                                                     }
                                                                 }}
                                                                 className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
@@ -1936,8 +1957,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 if (!showModal1) {
                                                     setShowModal1(true);
                                                     setTimeout(() => handlePrintAck(), 1000);
+                                                    markAckDownloaded();
                                                 } else {
                                                     handlePrintAck();
+                                                    markAckDownloaded();
                                                 }
                                             }}
                                             className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
@@ -2728,8 +2751,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 >
                                                     <button
                                                         className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md`}
+                                                        onClick={markSentApproval}
                                                     >
-                                                        Send for approval
+                                                        {loan?.is_sent_for_approval == 1 ? ("Back to the list") : ("Send for approval")}
                                                     </button>
                                                 </Link>
                                             </div>
