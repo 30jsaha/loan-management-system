@@ -942,8 +942,8 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             >
                 {ackReady && loan && <AppF loan={loan} auth={auth} />}
             </div>
-            <div className="py-12">
-                <div className="max-w-9xl mx-auto sm:px-6 lg:px-8 custPadding">
+            <div className="">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
                     <div className="bg-white shadow-sm sm:rounded-lg p-6">
                         {/* Top Action Bar */}
                         <Row className="mb-3 pb-4 pt-4">
@@ -1439,7 +1439,22 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                     if (doc.verification_status === "Pending") {
                                                                         return (
                                                                             <>
-                                                                                <span className="text-yellow-600 font-semibold">Pending ⏳</span>
+                                                                                {(doc.has_reuploaded_after_rejection == 1) ? (
+                                                                                    <>
+                                                                                        <div className="mt-2">
+                                                                                            <span className="text-blue-600 font-semibold">
+                                                                                                Awaiting Re-Verification ⏳
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <div className="mt-2">
+                                                                                            <span className="text-black-600 font-semibold">
+                                                                                                Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <span className="text-yellow-600 font-semibold">Pending ⏳</span>
+                                                                                )}
 
                                                                                 {/* Admin Action Buttons */}
                                                                                 {auth.user.is_admin == 1 && (
@@ -1493,27 +1508,34 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                                                 Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
                                                                                                             </span>
                                                                                                         </div>
+                                                                                                        <div className="flex gap-2 justify-center mt-2">
+                                                                                                            <button
+                                                                                                                onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                                                            >
+                                                                                                                Verify
+                                                                                                            </button>
+
+                                                                                                            <button
+                                                                                                                onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                                                            >
+                                                                                                                Reject
+                                                                                                            </button>
+                                                                                                        </div>
                                                                                                     </>
+                                                                                                );
+                                                                                            } else {
+                                                                                                return (
+                                                                                                    <div className="mt-2">
+                                                                                                        <span className="text-blue-400 font-semibold">
+                                                                                                            Awaiting User Re-upload
+                                                                                                        </span>
+                                                                                                    </div>
                                                                                                 );
                                                                                             }
                                                                                             return null;
                                                                                         })()}
-
-                                                                                        <div className="flex gap-2 justify-center mt-2">
-                                                                                            <button
-                                                                                                onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                                                            >
-                                                                                                Verify
-                                                                                            </button>
-
-                                                                                            <button
-                                                                                                onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                                                            >
-                                                                                                Reject
-                                                                                            </button>
-                                                                                        </div>
                                                                                     </>
                                                                                 )}
 
@@ -1563,7 +1585,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                         </tr>
 
                                                     ))}
-                                                    {auth.user.is_admin == 1 || (auth.user.is_admin != 1 && (loan?.status == 'Approved' || loan?.status == 'Rejected')) && (
+                                                    {auth.user.is_admin == 1 ? (
                                                         <>
                                                             {loan.video_consent_path && (
                                                                 <tr key="video-consent" className="hover:bg-gray-50 transition">
@@ -1701,7 +1723,145 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                 </tr>
                                                             )}
                                                         </>
-                                                    )}
+                                                    ) : ((auth.user.is_admin != 1 && (loan?.status == 'Approved' || loan?.status == 'Rejected') && (
+                                                        <>
+                                                            {loan.video_consent_path && (
+                                                                <tr key="video-consent" className="hover:bg-gray-50 transition">
+                                                                    <td className="border p-2">Video Consent</td>
+                                                                    <td className="border p-2">{loan.video_consent_file_name.split("/").pop()}</td>
+                                                                    <td className="border p-2">-</td>
+                                                                    <td className="border p-2">-</td>
+
+                                                                    {/* 👁️ View Button - opens custom video modal */}
+                                                                    <td className="border p-2 text-center">
+                                                                        <button
+                                                                            onClick={() => handleOpenVideoModal(loan.video_consent_path)}
+                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                        >
+                                                                            <Eye size={16} /> View
+                                                                        </button>
+                                                                    </td>
+
+                                                                    {/* ⬇️ Download Button */}
+                                                                    <td className="border p-2 text-center">
+                                                                        <a
+                                                                            href={loan.video_consent_path}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                        >
+                                                                            Download <Download size={16} />
+                                                                        </a>
+                                                                    </td>
+                                                                    <td className="border p-2 text-center">-</td>
+                                                                </tr>
+                                                            )}
+                                                            {/* 🎥 Video Player Modal */}
+                                                            <Modal
+                                                                show={showVideoModal}
+                                                                onHide={closeVideoModal}
+                                                                size="lg"
+                                                                centered
+                                                                dialogClassName="max-w-[800px]"
+                                                            >
+                                                                <Modal.Header closeButton className="bg-gray-100">
+                                                                    <Modal.Title className="text-lg font-semibold text-gray-800">
+                                                                        🎬 Video Consent Preview
+                                                                    </Modal.Title>
+                                                                </Modal.Header>
+
+                                                                <Modal.Body className="bg-black p-2">
+                                                                    {videoSrc ? (
+                                                                        <video
+                                                                            controls
+                                                                            autoPlay
+                                                                            className="w-100 rounded shadow-sm border border-gray-300"
+                                                                            style={{ maxHeight: "70vh", display: "block", margin: "0 auto" }}
+                                                                        >
+                                                                            <source src={videoSrc} type="video/mp4" />
+                                                                            Your browser does not support the video tag.
+                                                                        </video>
+                                                                    ) : (
+                                                                        <p className="text-gray-500 text-center">No video available for preview.</p>
+                                                                    )}
+                                                                </Modal.Body>
+
+                                                                <Modal.Footer className="bg-gray-50">
+                                                                    <Button variant="secondary" onClick={closeVideoModal}>
+                                                                        Close
+                                                                    </Button>
+                                                                </Modal.Footer>
+                                                            </Modal>
+                                                            {loan.isda_signed_upload_path && (
+                                                                <tr key="isda-signed" className="hover:bg-gray-50 transition">
+                                                                    <td className="border p-2">ISDA Signed Document</td>
+                                                                    <td className="border p-2">{loan.isda_signed_upload_path.split("/").pop()}</td>
+                                                                    <td className="border p-2">-</td>
+                                                                    <td className="border p-2">-</td>
+                                                                    <td className="border p-2 text-center">
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                // openDocModal({
+                                                                                //      file_path: loan.isda_signed_upload_path,
+                                                                                //      file_name: loan.isda_signed_upload_path.split("/").pop(),
+                                                                                //      doc_type: "ISDA Signed Document",
+                                                                                // })
+                                                                                openDocModal({
+                                                                                    doc: loan.isda_signed_upload_path
+                                                                                })
+                                                                            }
+                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                        >
+                                                                            <Eye size={16} /> View
+                                                                        </button>
+                                                                    </td>
+                                                                    <td className="border p-2 text-center">
+                                                                        <a
+                                                                            href={loan.isda_signed_upload_path}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                        >
+                                                                            Download <Download size={16} />
+                                                                        </a>
+                                                                    </td>
+                                                                    <td className="border p-2 text-center">-</td>
+                                                                </tr>
+                                                            )}
+
+                                                            {loan.org_signed_upload_path && (
+                                                                <tr key="org-signed" className="hover:bg-gray-50 transition">
+                                                                    <td className="border p-2">Organisation Standard Document</td>
+                                                                    <td className="border p-2">{loan.org_signed_upload_path.split("/").pop()}</td>
+                                                                    <td className="border p-2">-</td>
+                                                                    <td className="border p-2">-</td>
+                                                                    <td className="border p-2 text-center">
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                openDocModal({
+                                                                                    doc: loan.org_signed_upload_path
+                                                                                })
+                                                                            }
+                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                        >
+                                                                            <Eye size={16} /> View
+                                                                        </button>
+                                                                    </td>
+                                                                    <td className="border p-2 text-center">
+                                                                        <a
+                                                                            href={loan.org_signed_upload_path}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                        >
+                                                                            Download <Download size={16} />
+                                                                        </a>
+                                                                    </td>
+                                                                    <td className="border p-2 text-center">-</td>
+                                                                </tr>
+                                                            )}
+                                                        </>
+                                                    )))}
                                                 </tbody>
                                             </table>
                                         ) : (

@@ -652,7 +652,7 @@ export default function Create({ auth, loan_settings }) {
                 Please go through the tabs to complete the loan application.
             </Alert>
             <div className="py-2">
-                <div className="max-w-9xl mx-auto sm:px-6 lg:px-8 custPadding">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         {/* Top Action Bar */}
                         <Row className="mb-3 px-4 pt-4">
