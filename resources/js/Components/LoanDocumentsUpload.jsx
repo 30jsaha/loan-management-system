@@ -309,25 +309,18 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
                   Remove
                 </Button>
 
-                <Button
-                  className="px-3 sm:px-4 rounded-pill fw-medium w-full sm:w-1/2 text-white"
-                  onClick={() => handleUpload(doc)}
-                  disabled={uploading || !files[doc]}
-                  style={{
-                    backgroundColor: uploading
-                      ? "#38bdf8cc"
-                      : uploadedFiles[doc]
-                      ? "#22c55e"
-                      : "#38bdf8",
-                    border: "none",
-                  }}
-                >
-                  {uploading
-                    ? "Uploading..."
-                    : uploadedFiles[doc]
-                    ? "Uploaded"
-                    : "Upload"}
-                </Button>
+              <Button
+                className="px-3 sm:px-4 rounded-pill fw-medium w-full sm:w-1/2 text-white bg-blue-500"
+                onClick={() => handleViewDocument(files[doc])}
+                disabled={!files[doc]}
+                style={{
+                  border: "none",
+                }}
+              >
+                <Eye size={18} className="me-2" />
+                View
+              </Button>
+
               </div>
             </div>
           ))}
