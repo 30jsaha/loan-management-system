@@ -296,7 +296,7 @@ function LoanTab({ loans, collections }) {
 
   return (
     <div className="space-y-4 overflow-y-auto max-h-[600px] pr-2">
-      {loans.map((loan) => {
+      {loans.map((loan,index) => {
         const loanCollections = collectionMap[loan.id] || [];
         const totalCollected = loanCollections.reduce((s, c) => s + Number(c.emi_amount || 0), 0);
 
@@ -306,7 +306,7 @@ function LoanTab({ loans, collections }) {
             loan={loan}
             collections={loanCollections}
             totalCollected={totalCollected}
-            initiallyOpen={index==1}
+            initiallyOpen={index===0}
           />
         );
       })}
@@ -543,15 +543,16 @@ const DocumentTab = ({ loans }) => {
 
   return (
     <div className="space-y-3">
-      {loansWithDocs.map((loan) => (
-        <LoanDocumentSection key={loan.id} loan={loan} />
+      {loansWithDocs.map((loan,index) => (
+        <LoanDocumentSection key={loan.id} loan={loan} initiallyOpen={index === 0}/>
       ))}
     </div>
   );
 };
 
-const LoanDocumentSection = ({ loan }) => {
-  const [open, setOpen] = useState(false);
+const LoanDocumentSection = ({ loan, initiallyOpen = false }) => {
+  const [open, setOpen] = useState(initiallyOpen);
+
 
   return (
     <div className="border rounded-xl bg-white shadow-sm overflow-hidden transition-all duration-200">
