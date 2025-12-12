@@ -346,7 +346,65 @@ useEffect(() => {
     return () => clearTimeout(t);
   }, [searchQuery, dateFilter, selectedOrgs, loans]);
 
+  const selectedLoanRows = useMemo(() => {
+    return filteredLoans
+      .filter((loan) => selectedLoanIds.includes(loan.id))
+      .map((loan) => {
+        const baseRemaining =
+          loan.tenure_fortnight - (loan.installments?.length || 0);
 
+        const counter = emiCounter[loan.id] ?? 1;
+
+        const emiAmount = parseFloat(loan.emi_amount) || 0;
+        const collectEmi = emiAmount * counter;
+
+        const totalRepay =
+          parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+
+        const totalPaidBefore = parseFloat(getTotalPaidAmount(loan)) || 0;
+
+        const totalPaid = totalPaidBefore + collectEmi;
+
+        const finalRemaining = Math.max(baseRemaining - counter, 0);
+
+        const remainingBalance = Math.max(totalRepay - totalPaid, 0);
+
+        return {
+          loan,
+          counter,
+          collectEmi,
+          totalPaid,
+          finalRemaining,
+          remainingBalance,
+        };
+      });
+  }, [filteredLoans, selectedLoanIds, emiCounter]);
+
+  const summaryData = React.useMemo(() => {
+    let totalCount = 0;
+    let totalPendingAfterPayment = 0; 
+    let totalCollected = 0;
+
+    filteredLoans.forEach((loan) => {
+      if (selectedLoanIds.includes(loan.id)) {
+        totalCount++;
+        const counter = emiCounter[loan.id] ?? 1;
+        const emiAmount = parseFloat(loan.emi_amount) || 0;
+        const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+        const previouslyPaid = parseFloat(getTotalPaidAmount(loan)) || 0;
+
+        // Current collection based on counter
+        const currentCollection = emiAmount * counter;
+        totalCollected += currentCollection;
+
+        // Pending balance decreases as you collect more
+        const projectedBalance = Math.max(totalRepay - (previouslyPaid + currentCollection), 0);
+        totalPendingAfterPayment += projectedBalance;
+      }
+    });
+
+    return { totalCount, totalPendingAfterPayment, totalCollected };
+  }, [selectedLoanIds, emiCounter, filteredLoans]);
   return (
     <AuthenticatedLayout
       user={auth.user}
@@ -372,12 +430,12 @@ useEffect(() => {
           </div>
           {/* Summary */}
           <div className="grid grid-cols-3 text-center border border-gray-200 rounded-lg overflow-hidden mb-3">
-            
+
             {/* TOTAL */}
             <div className="py-3">
               <div className="text-sm text-gray-500">Total</div>
               <div className="text-xl font-bold">
-                {selectedLoanIds.length > 0 ? selectedSummary.total : filteredLoans.length}
+                {selectedLoanIds.length > 0 ? summaryData.totalCount : filteredLoans.length}
               </div>
             </div>
 
@@ -386,7 +444,9 @@ useEffect(() => {
               <div className="text-sm text-gray-500">Pending</div>
               <div className="text-xl font-bold">
                 {currencyPrefix}&nbsp;
-                {selectedLoanIds.length > 0 ? selectedSummary.pending : totalPendingAmount}
+                {selectedLoanIds.length > 0
+                  ? summaryData.totalPendingAfterPayment.toFixed(2)
+                  : totalPendingAmount}
               </div>
             </div>
 
@@ -395,7 +455,9 @@ useEffect(() => {
               <div className="text-sm text-gray-500">Collected</div>
               <div className="text-xl font-bold">
                 {currencyPrefix}&nbsp;
-                {selectedLoanIds.length > 0 ? selectedSummary.collected : totalCollectedAmount}
+                {selectedLoanIds.length > 0
+                  ? summaryData.totalCollected.toFixed(2)
+                  : totalCollectedAmount}
               </div>
             </div>
 
@@ -643,153 +705,107 @@ useEffect(() => {
                 </div>
 
                 {/* Selected Loans Summary */}
-                <div className="max-h-[70vh] overflow-y-auto border rounded-lg shadow-sm relative">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-green-700 text-white sticky top-0 z-20">
-                      <tr>
-                        <th className="p-2 text-left border-r border-gray-300
-">Remove</th>
-                        <th className="p-2 text-left border-r border-gray-300
-">Loan ID</th>
-                        <th className="p-2 text-left border-r border-gray-300
-">Customer</th>
-                        <th className="p-2 text-left border-r border-gray-300
-">Next Due</th>
-                        <th className="p-2 text-left border-r border-gray-300
-">EMI Amount</th>
-                        <th className="p-2 text-left border-r border-gray-300
-">Total Repayable</th>
-                        <th className="p-2 text-left border-r border-gray-300
-">Total Paid</th>
-                        <th className="p-2 text-left border-r border-gray-300
-">Remaining F/N</th>
-                        <th className="p-2 text-left border-r border-gray-300
-">Remaining Balance</th>
-                        <th className="p-2 text-left border-r border-gray-300
-">Counter</th> {/* NEW */}
-                        <th className="p-2 text-left border-r border-gray-300
-">Status</th>
-                      </tr>
-                    </thead>
+              <div className="max-h-[70vh] overflow-y-auto border border-gray-300 rounded-lg shadow-sm relative">
+                <table className="min-w-full text-sm border-collapse">
+                  <colgroup>
+                    <col className="w-16" /> {/* Remove */}
+                    <col className="w-20" /> {/* Loan ID */}
+                    <col className="w-48" /> {/* Customer */}
+                    <col className="w-32" /> {/* Next Due */}
+                    <col className="w-32" /> {/* EMI Amount */}
+                    <col className="w-40" /> {/* Total Repayable */}
+                    <col className="w-32" /> {/* Total Paid */}
+                    <col className="w-28" /> {/* Remaining F/N */}
+                    <col className="w-36" /> {/* Remaining Balance */}
+                    <col className="w-32" /> {/* Counter */}
+                    <col className="w-24" /> {/* Status */}
+                  </colgroup>
 
-                    <tbody className="divide-y divide-gray-200 bg-green-50">
-                      {filteredLoans
-                        .filter((loan) => selectedLoanIds.includes(loan.id))
-                        .map((loan) => {
-                          const cust = loan.customer || {};
+                  {/* ---------- STICKY HEADER ---------- */}
+                  <thead className="bg-green-700 text-white sticky top-0 z-20">
+                    <tr>
+                      <th className="p-2 border-r border-green-600 text-left">Remove</th>
+                      <th className="p-2 border-r border-green-600 text-left">Loan ID</th>
+                      <th className="p-2 border-r border-green-600 text-left">Customer</th>
+                      <th className="p-2 border-r border-green-600 text-left">Next Due</th>
+                      <th className="p-2 border-r border-green-600 text-left">EMI Amount</th>
+                      <th className="p-2 border-r border-green-600 text-left">Total Repayable</th>
+                      <th className="p-2 border-r border-green-600 text-left">Total Paid</th>
+                      <th className="p-2 border-r border-green-600 text-left">Remaining F/N</th>
+                      <th className="p-2 border-r border-green-600 text-left">Remaining Balance</th>
+                      <th className="p-2 border-r border-green-600 text-left">Counter</th>
+                      <th className="p-2 text-left">Status</th>
+                    </tr>
+                  </thead>
 
-                          // const baseRemaining =
-                          //   loan.tenure_fortnight - (loan.installments.length || 0);
-
-                          // const counter = emiCounter[loan.id] ?? 1;
-                          // const collectEmi= parseFloat(loan.emi_amount) * counter;
-                          // // const totalRepay = parseFloat(loan.total_repay_amt) || 0;
-                          // const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
-
-                          // const totalPaid = parseFloat(getTotalPaidAmount(loan)) || 0;
-
-                          // // 🔥 Updated Remaining F/N Calculation
-                          // const finalRemaining = Math.max(baseRemaining - counter, 0);
-                          //  // 🔥 New Remaining Balance (After Applying Counter)
-                          // let remainingBalance = totalRepay - (totalPaid);
-
-
-                          const baseRemaining =
-                          loan.tenure_fortnight - (loan.installments.length || 0);
-
+                  {/* ---------- BODY ---------- */}
+                  <tbody className="divide-y divide-gray-200 bg-green-50">
+                    {filteredLoans
+                      .filter((loan) => selectedLoanIds.includes(loan.id))
+                      .map((loan) => {
+                        const cust = loan.customer || {};
+                        const baseRemaining = loan.tenure_fortnight - (loan.installments.length || 0);
                         const counter = emiCounter[loan.id] ?? 1;
-
-                        // EMI Amount × Counter
                         const collectEmi = parseFloat(loan.emi_amount) * counter;
-
-                        // FIX: Convert repay amount safely
                         const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
-
-                        // FIX: EXISTING paid amount
                         const totalPaidBefore = parseFloat(getTotalPaidAmount(loan)) || 0;
-
-                        // ⭐ NEW: Total Paid AFTER applying counter
                         const totalPaid = totalPaidBefore + collectEmi;
-
-                        // 🔥 NEW Remaining Fortnights (never negative)
                         const finalRemaining = Math.max(baseRemaining - counter, 0);
-
-                        // ⭐ NEW: Remaining Balance AFTER subtracting counter EMI
                         const remainingBalance = Math.max(totalRepay - totalPaid, 0);
 
-
-                          return (
-                            <tr key={loan.id} className="hover:bg-green-100 transition-all">
-                              <td className="p-2 text-center border-r border-gray-300
-">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedLoanIds.includes(loan.id)}
-                                  onChange={() => toggleLoanSelection(loan.id)}
-                                  className="h-4 w-4 cursor-pointer"
-                                  title="Remove this loan from selection"
-                                />
-                              </td>
-                              <td className="p-2 border-r border-gray-300
-                              ">#{loan.id}</td>
-                              <td className="p-2 font-medium text-gray-800 border-r border-gray-300">
-                                {cust.first_name} {cust.last_name} ({cust.employee_no || "N/A"})
-                              </td>
-                              <td className="p-2 border-r border-gray-300
-                              ">{loan.next_due_date || "N/A"}</td>
-                              <td className="p-2 font-semibold text-green-700 border-r border-gray-300
-                              ">
-                                {currencyPrefix} {collectEmi.toFixed(2)}
-                              </td>
-                              <td className="p-2 border-r border-gray-300">
-                                {/* {currencyPrefix} {parseFloat(loan.total_repay_amt).toFixed(2)} */}
-                                {currencyPrefix} {(parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0).toFixed(2)}
-
-                              </td>
-
-                              <td className="p-2 border-r border-gray-300
-">
-                                {currencyPrefix} {totalPaid.toFixed(2)}
-                              </td>
-
-                              {/* 🔥 Updated Remaining F/N (Never Below 0) */}
-                              <td className="p-2 border-r border-gray-300
-">{finalRemaining}</td>
-                              <td className="p-2 border-r border-gray-300
-">{remainingBalance.toFixed(2)}</td>
-
-                              {/* 🔥 NEW Counter Column */}
-                              <td className="p-2 border-r border-gray-300">
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => decreaseCounter(loan)}
-                                    className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400"
-                                  >
-                                    -
-                                  </button>
-
-                                  <span className="font-semibold">{counter}</span>
-
-                                  <button
-                                    onClick={() => increaseCounter(loan)}
-                                    className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                                    disabled={counter >= baseRemaining}
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              </td>
-
-                              <td className="p-2 border-r border-gray-300">
-                                <span className="text-green-700 font-semibold">Ready</span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-
-                  </table>
-                </div>
+                        return (
+                          <tr key={loan.id} className="hover:bg-green-100 transition">
+                            <td className="p-2 text-center border-r border-gray-300">
+                              <input
+                                type="checkbox"
+                                checked={selectedLoanIds.includes(loan.id)}
+                                onChange={() => toggleLoanSelection(loan.id)}
+                                className="h-4 w-4 cursor-pointer"
+                              />
+                            </td>
+                            <td className="p-2 border-r border-gray-300 font-semibold">#{loan.id}</td>
+                            <td className="p-2 border-r border-gray-300 font-medium">
+                              {cust.first_name} {cust.last_name} ({cust.employee_no || "N/A"})
+                            </td>
+                            <td className="p-2 border-r border-gray-300">{loan.next_due_date || "N/A"}</td>
+                            <td className="p-2 border-r border-gray-300 font-semibold text-green-700">
+                              {currencyPrefix} {collectEmi.toFixed(2)}
+                            </td>
+                            <td className="p-2 border-r border-gray-300">
+                              {currencyPrefix} {totalRepay.toFixed(2)}
+                            </td>
+                            <td className="p-2 border-r border-gray-300">
+                              {currencyPrefix} {totalPaid.toFixed(2)}
+                            </td>
+                            <td className="p-2 border-r border-gray-300">{finalRemaining}</td>
+                            <td className="p-2 border-r border-gray-300">{remainingBalance.toFixed(2)}</td>
+                            <td className="p-2 border-r border-gray-300">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => decreaseCounter(loan)}
+                                  className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                                >
+                                  -
+                                </button>
+                                <span className="font-semibold">{counter}</span>
+                                <button
+                                  onClick={() => increaseCounter(loan)}
+                                  className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                  disabled={counter >= baseRemaining}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </td>
+                            <td className="p-2">
+                              <span className="text-green-700 font-semibold">Ready</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
 
               </>
             ) : (
