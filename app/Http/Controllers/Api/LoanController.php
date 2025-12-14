@@ -384,7 +384,7 @@ class LoanController extends Controller
                 'message' => '❌ No matching loan tier found for this amount.',
             ], 200);
         }
-
+ 
         // Validate term range
         if ($request->term < $tier->min_term_fortnight || $request->term > $tier->max_term_fortnight) {
             return response()->json([
@@ -630,7 +630,7 @@ class LoanController extends Controller
             'company'
         ])
         ->where('status', 'Approved')
-        ->orderBy('approved_date', 'desc')
+        ->orderBy('id', 'desc')
         ->get();
 
         // ----------------------------
@@ -741,13 +741,16 @@ class LoanController extends Controller
         $validated = $request->validate([
             'loan_ids'   => 'required|array',
             'loan_ids.*' => 'exists:loan_applications,id',
-            'emi_counter' => 'required|array', // array of loan_id => count
+            // 'emi_counter' => 'required|array', // array of loan_id => count
+            // 'emi_counter.*' => 'integer|min:1',
+            'payment_date' => 'nullable|date',
+            'collection_uid' => 'nullable|string|max:20',
         ]);
 
         $emiCounters = $validated['emi_counter'];
 
         // Generate 6–7 character batch ID
-        $collectionUid = strtoupper(substr(md5(time() . rand()), 0, 7));
+        $collectionUid = $validated['collection_uid'] ?? strtoupper(substr(md5(time() . rand()), 0, 7));
 
         foreach ($validated['loan_ids'] as $loanId) {
 
@@ -776,7 +779,7 @@ class LoanController extends Controller
                     'installment_no'      => $currentInstallments + $i,
                     'due_date'            => now()->addDays(($i - 1) * $emiFreq),
                     'emi_amount'          => $loan->emi_amount,
-                    'payment_date'        => now(),
+                    'payment_date'        => $validated['payment_date'] ?? now(),
                     'status'              => 'Paid',
                     'emi_collected_by_id' => auth()->user()->id,
                     'emi_collected_date'  => now(),
@@ -1120,6 +1123,21 @@ class LoanController extends Controller
         return response()->json([
             'success' => true,
             'is_ack_downloaded' => $loan->is_ack_downloaded,
+        ]);
+    }
+    public function markSentApproval($loanId)
+    {
+        $loan = Loan::findOrFail($loanId);
+
+        // Only update if value is still 0
+        if ($loan->is_sent_for_approval == 0) {
+            $loan->is_sent_for_approval = 1;
+            $loan->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'is_sent_for_approval' => $loan->is_sent_for_approval,
         ]);
     }
 
