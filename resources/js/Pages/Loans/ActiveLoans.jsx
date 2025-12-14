@@ -308,7 +308,13 @@ export default function EmiCollection({ auth, approved_loans = null }) {
       }
     });
 
-    return list;
+    // Sort by collection date DESC
+  return list.sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB - dateA; // descending
+  });
+
   }, [
     collections,
     filterCollectionId,
@@ -473,7 +479,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     <AuthenticatedLayout user={auth.user} header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan EMI Collection</h2>}>
       <Head title="Loan EMI Collection" />
 
-      <div className="py-6 max-w-9xl mx-auto sm:px-6 lg:px-8">
+      <div className="py-6 max-w-7xl mx-auto sm:px-6 lg:px-8">
 
         {/* Filters */}
         <div className="bg-white border border-gray-200 shadow-sm p-4 rounded-lg">
