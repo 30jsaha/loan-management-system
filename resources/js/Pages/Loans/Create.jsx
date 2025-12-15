@@ -1207,7 +1207,3 @@ export default function Create({ auth, loan_settings }) {
         </AuthenticatedLayout>
     );
 }
-
-
-
-

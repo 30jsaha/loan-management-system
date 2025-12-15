@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LoansController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\Api\LoanController;
 use App\Http\Controllers\SalarySlabController;
 use App\Http\Controllers\OrganizationsController;
@@ -154,9 +155,14 @@ Route::middleware('auth')->get('/customers/{id}/edit', fn($id) =>
 Route::middleware(['auth', 'verified'])
     ->get('/loan-emi-collection', [LoansController::class, 'loanEmiCollectionPage'])
     ->name('loan.emi.collection');
+
 Route::middleware(['auth', 'verified'])
     ->get('/completed-loans', [LoansController::class, 'CompletedLoansWithEmiCollection'])
     ->name('loan.completed');
+
+    Route::middleware(['auth', 'verified'])
+    ->get('/document-types', [DocumentController::class, 'index'])
+    ->name('loan.documents');
 
 
 //     Route::get('/organizations', function () {
