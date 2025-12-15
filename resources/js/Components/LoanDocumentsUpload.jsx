@@ -303,7 +303,7 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
                       delete newState[doc];
                       return newState;
                     });
-                  }}
+                  }} 
                   disabled={uploading}
                 >
                   Remove

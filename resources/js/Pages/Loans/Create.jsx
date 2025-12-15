@@ -1033,19 +1033,36 @@ export default function Create({ auth, loan_settings }) {
                                 </form>
                             )}
                             {step === 3 && (
+                                // <LoanDocumentsUpload
+                                //     loanFormData={loanFormData}
+                                //     setLoanFormData={setLoanFormData}
+                                //     onUploadComplete={() => {
+                                //         setMessage("✅ All steps completed successfully!");
+                                //         // Swal.fire({
+                                //         //     title: "Success !",
+                                //         //     text: "✅ All steps completed successfully!",
+                                //         //     icon: "success"
+                                //         // });
+                                //         setTimeout(() => router.visit(route("loans")), 1000);
+                                //     }}
+                                // />
                                 <LoanDocumentsUpload
-                                    loanFormData={loanFormData}
-                                    setLoanFormData={setLoanFormData}
-                                    onUploadComplete={() => {
-                                        setMessage("✅ All steps completed successfully!");
-                                        // Swal.fire({
-                                        //     title: "Success !",
-                                        //     text: "✅ All steps completed successfully!",
-                                        //     icon: "success"
-                                        // });
-                                        setTimeout(() => router.visit(route("loans")), 1000);
-                                    }}
-                                />
+                                loanFormData={loanFormData}
+                                setLoanFormData={setLoanFormData}
+                                onUploadComplete={() => {
+                                    setMessage("🎉 Thank you for applying! Your documents were submitted successfully.");
+                                    // REMOVE redirect
+                                    // setTimeout(() => router.visit(route("loans")), 1000);
+
+                                    // OPTIONAL: show SweetAlert (uncomment if needed)
+                                    // Swal.fire({
+                                    //     title: "Thank You!",
+                                    //     text: "Your documents were submitted successfully.",
+                                    //     icon: "success"
+                                    // });
+                                }}
+                            />
+
                             )}
                         </div>
                     </div>
