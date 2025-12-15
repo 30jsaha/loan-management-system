@@ -90,6 +90,15 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
       }));
       return;
     }
+    setMessage(prev => ({
+    ...prev,
+    [doc.doc_key]: ""
+  }));
+
+  setFiles(prev => ({
+    ...prev,
+    [doc.doc_key]: file
+  }));
 
     setFiles(prev => ({ ...prev, [doc.doc_key]: file }));
   };
@@ -168,192 +177,105 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
 
       <form onSubmit={handleUploadAll}>
         {/* Responsive Grid: Stacks on mobile, 1 col, then 2, then 3 on huge screens */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 justify-items-center mb-3">
-          {docTypes.map((doc) => (
-            <div
-              key={doc}
-              className="bg-white rounded-4 shadow-sm border border-gray-200 p-3 w-full max-w-[530px] transition-all duration-300 transform hover:shadow-lg hover:-translate-y-1"
-            >
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <h6 className="fw-semibold mb-0 text-gray-700">
-                  {doc.replace(/_/g, " ")}
-                </h6>
-                {files[doc] && (
-                  <X
-                    className="text-muted cursor-pointer"
-                    size={18}
-                    onClick={() => {
-                      const updated = { ...files };
-                      delete updated[doc];
-                      setFiles(updated);
-                      setProgress((prev) => ({ ...prev, [doc]: 0 }));
-                      setUploadedFiles((prev) => {
-                        const newState = { ...prev };
-                        delete newState[doc];
-                        return newState;
-                      });
-                    }}
-                  />
-                )}
-              </div>
+<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+  {docTypes.map((doc) => {
+    const file = files[doc.doc_key];
 
-              {!files[doc] ? (
-                <div
-                  className="border border-2 border-dashed rounded-4 d-flex flex-column justify-content-center align-items-center py-6 bg-light hover:bg-gray-100 transition-all duration-300 transform hover:border-blue-400 position-relative w-full"
-                  style={{ minHeight: 220 }}
-                >
-                  <Upload size={48} className="text-secondary mb-3" />
-                  <p className="fw-semibold text-dark mb-1 text-center text-sm sm:text-base">
-                    Click to upload or drag and drop
-                  </p>
-                  <p className="text-muted small mb-0 text-center px-2">
-                    Upload .txt, .docx, or .pdf (MAX 20MB)
-                  </p>
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,.txt"
-                    onChange={(e) => handleFileSelect(e, doc)}
-                    className="position-absolute top-0 start-0 end-0 bottom-0 opacity-0"
-                    style={{ cursor: "pointer" }}
-                  />
-                </div>
-              ) : (
-                <div className="border rounded-4 p-2 bg-light w-full overflow-hidden">
-                  {files[doc].type === "application/pdf" ? (
-                    <div className="text-center w-full">
-                      <div className="position-relative w-full">
-                        <embed
-                          src={URL.createObjectURL(files[doc])}
-                          type="application/pdf"
-                          width="100%"
-                          height="200"
-                          className="border rounded shadow-sm w-full"
-                        />
-                        <div
-                          className="position-absolute bottom-0 start-0 w-100 d-flex align-items-center justify-content-center px-3 py-2 cursor-pointer"
-                          style={{
-                            background:
-                              "linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.6))",
-                            borderBottomLeftRadius: "0.375rem",
-                            borderBottomRightRadius: "0.375rem",
-                          }}
-                          // onClick={() => handleViewDocument(files[doc])}
-                        >
-                          {/* <div className="d-flex align-items-center gap-2">
-                            <Eye
-                              size={28}
-                              className="hover:scale-110 transition-transform text-blue"
-                            />
-                            <span className="font-bold text-black">View</span>
-                          </div> */}
-                        </div>
-                      </div>
-                      <div className="mt-2">
-                        <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
-                          <div
-                            className="fw-semibold text-dark small text-truncate w-full sm:w-4/5"
-                            title={files[doc].name}
-                          >
-                            {files[doc].name}
-                          </div>
-                        </div>
-                        <div className="text-muted small mb-2">
-                          {(files[doc].size / 1024 / 1024).toFixed(2)} MB
-                        </div>
-                        {(progress[doc] || 0) < 100 && (
-                          <ProgressBar
-                            now={progress[doc] || 0}
-                            label={`${progress[doc] || 0}%`}
-                            variant="success"
-                            animated
-                            style={{ height: "8px" }}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center p-3">
-                      <i className="bi bi-file-earmark-text text-secondary fs-2"></i>
-                      <div className="d-flex align-items-center justify-content-center gap-2">
-                        <div
-                          className="fw-semibold text-dark small mt-2 text-truncate w-full sm:w-4/5"
-                          title={files[doc].name}
-                        >
-                          {files[doc].name}
-                        </div>
-                        <Button
-                          variant="link"
-                          className="p-0 text-primary mt-2"
-                          onClick={() => handleViewDocument(files[doc])}
-                        >
-                          <Eye size={16} />
-                        </Button>
-                      </div>
-                      <div className="text-muted small mb-1">
-                        {(files[doc].size / 1024 / 1024).toFixed(2)} MB
-                      </div>
-                      {(progress[doc] || 0) < 100 && (
-                        <ProgressBar
-                          now={progress[doc] || 0}
-                          label={`${progress[doc] || 0}%`}
-                          variant="success"
-                          animated
-                          className="mt-2"
-                          style={{ height: "8px" }}
-                        />
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+    return (
+      <div
+        key={doc.id}
+        className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 transition hover:shadow-md"
+      >
+        {/* HEADER */}
+        <div className="flex justify-between items-start mb-2">
+          <h6 className="font-semibold text-gray-800">
+            {doc.doc_name}
+            {doc.is_required === 1 && (
+              <span className="text-red-500 ml-1">*</span>
+            )}
+          </h6>
 
-              {message[doc] && !message[doc].startsWith("✅") && (
-                <div
-                  className={`mt-2 p-2 rounded text-center small ${
-                    message[doc].startsWith("⚠️")
-                      ? "bg-warning bg-opacity-10 text-warning"
-                      : "bg-danger bg-opacity-10 text-danger"
-                  }`}
-                >
-                  {message[doc]}
-                </div>
-              )}
-
-              {/* Stack buttons on very small screens, row on sm+ */}
-              <div className="flex flex-col sm:flex-row justify-between gap-2 mt-3">
-                <Button
-                  variant="outline-secondary"
-                  className="px-4 rounded-pill fw-medium w-full sm:w-1/2"
-                  onClick={() => {
-                    const updated = { ...files };
-                    delete updated[doc];
-                    setFiles(updated);
-                    setProgress((prev) => ({ ...prev, [doc]: 0 }));
-                    setUploadedFiles((prev) => {
-                      const newState = { ...prev };
-                      delete newState[doc];
-                      return newState;
-                    });
-                  }} 
-                  disabled={uploading}
-                >
-                  Remove
-                </Button>
-
-                <Button
-                  className="d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-pill fw-medium bg-blue-500 border-0 w-full sm:w-1/2"
-                  onClick={() => handleViewDocument(files[doc])}
-                  disabled={!files[doc]}
-                >
-                  <Eye size={18} />
-                  <span>View</span>
-                </Button>
-
-
-              </div>
-            </div>
-          ))}
+          {file && (
+            <X
+              size={18}
+              className="text-gray-400 hover:text-red-500 cursor-pointer"
+              onClick={() => {
+                const updated = { ...files };
+                delete updated[doc.doc_key];
+                setFiles(updated);
+              }}
+            />
+          )}
         </div>
+
+        {/* SIZE INFO */}
+        <p className="text-xs text-gray-500 mb-3">
+          Min {doc.min_size_kb} KB · Max {doc.max_size_kb / 1024} MB
+        </p>
+
+        {/* UPLOAD AREA */}
+        {!file ? (
+          <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+            <Upload size={40} className="text-gray-400 mb-2" />
+            <p className="text-sm font-medium text-gray-700">
+              Click or drag file
+            </p>
+            <p className="text-xs text-gray-500">PDF / DOCX / TXT</p>
+
+            <input
+              type="file"
+              accept=".pdf,.docx,.txt"
+              className="hidden"
+              onChange={(e) => handleFileSelect(e, doc)}
+            />
+          </label>
+        ) : (
+          <div className="bg-gray-50 border rounded-lg p-3">
+            <p className="text-sm font-medium text-gray-800 truncate">
+              {file.name}
+            </p>
+            <p className="text-xs text-gray-500 mb-2">
+              {(file.size / 1024 / 1024).toFixed(2)} MB
+            </p>
+
+            {/* ACTION BUTTONS */}
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline-primary"
+                className="flex items-center gap-1"
+                onClick={() => handleViewDocument(file)}
+              >
+                <Eye size={14} />
+                View
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline-danger"
+                onClick={() => {
+                  const updated = { ...files };
+                  delete updated[doc.doc_key];
+                  setFiles(updated);
+                }}
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR MESSAGE */}
+        {message[doc.doc_key] && (
+          <p className="text-xs mt-2 text-red-600">
+            {message[doc.doc_key]}
+          </p>
+        )}
+      </div>
+    );
+  })}
+</div>
+
 
         <div className="text-center mt-5">
           <Button
