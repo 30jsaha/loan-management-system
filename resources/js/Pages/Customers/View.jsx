@@ -2,7 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { router, Head, Link } from "@inertiajs/react";
 import axios from "axios";
-
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
 import {
@@ -19,6 +21,7 @@ import {
   ChevronUp,
   FolderOpen,
   Landmark,
+  Download, 
 } from "lucide-react";
 
 axios.defaults.withCredentials = true;
@@ -141,7 +144,7 @@ export default function View({ auth, customerId }) {
             <div className="lg:col-span-2 flex flex-col">
               
               {/* TABS HEADER */}
-              <div className="border-b px-6 py-4 bg-white flex flex-wrap gap-2 sticky top-0 z-10">
+              <div className="border-b px-4 py-4 bg-white flex flex-wrap gap-2 sticky top-0 z-10">
                 <TabButton 
                   id="company" 
                   label="Company" 
@@ -170,6 +173,14 @@ export default function View({ auth, customerId }) {
                   setActiveTab={setActiveTab} 
                   icon={<Landmark size={16} />} 
                 />
+                <TabButton 
+                  id="statement" 
+                  label="Loan Statement" 
+                  activeTab={activeTab} 
+                  setActiveTab={setActiveTab} 
+                  icon={<FileText size={16} />} 
+                />
+
               </div>
 
               {/* TAB CONTENT */}
@@ -198,6 +209,15 @@ export default function View({ auth, customerId }) {
 
                   </div>
                 )}
+                {activeTab === "statement" && (
+                  <LoanStatementTab
+                    loans={loans}
+                    collections={history.collections}
+                    customer={customer}   
+                  />
+                )}
+
+
               </div>
 
             </div>
@@ -698,6 +718,308 @@ const BankTab = ({ customer, loans }) => {
     </div>
   );
 };
+
+
+/* -----------------------------------
+        Loan Statement PDF Export
+-------------------------------------- */
+const LoanStatementTab = ({ loans, collections, customer }) => {
+  if (!loans.length) {
+    return <p className="text-gray-500 text-sm">No loan data available.</p>;
+  }
+
+  // flatten collections once
+  const flatCollections = Array.isArray(collections)
+    ? collections
+    : Object.values(collections || {}).flat();
+
+  return (
+    <div className="space-y-6">
+      {loans.map((loan,index) => (
+        <LoanStatementCard
+          key={loan.id}
+          loan={loan}
+          customer={customer}
+          collections={flatCollections}
+          defaultOpen={index === 0}
+        />
+      ))}
+    </div>
+  );
+};
+
+const LoanStatementCard = ({
+  loan,
+  customer,
+  collections,
+  defaultOpen = false,
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+
+  const totalRepayable = Number(loan.total_repay_amt || 0);
+  const emiAmount = Number(loan.emi_amount || 0);
+  const tenure = Number(loan.tenure_fortnight || 0);
+
+  /* =============================
+     PAID INSTALLMENTS
+  ============================= */
+  const paidInstallments = collections
+    .filter(
+      (c) =>
+        c.loan_id === loan.id &&
+        c.status?.toLowerCase() === "paid"
+    )
+    .sort((a, b) => a.installment_no - b.installment_no);
+
+  const totalPaid = paidInstallments.reduce(
+    (sum, i) => sum + Number(i.emi_amount || 0),
+    0
+  );
+
+  const outstanding = totalRepayable - totalPaid;
+
+  let runningBalance = totalRepayable;
+
+  const rows = paidInstallments.map((i) => {
+    runningBalance -= Number(i.emi_amount || 0);
+    return [
+      i.installment_no,
+      i.due_date || "—",
+      i.payment_date || "—",
+      `PGK ${Number(i.emi_amount || 0).toFixed(2)}`,
+      `PGK ${runningBalance.toFixed(2)}`,
+    ];
+  });
+
+  /* =============================
+     DOWNLOAD PDF
+  ============================= */
+  const downloadStatement = () => {
+    const doc = new jsPDF();
+
+    /* ======================
+      TITLE
+    ====================== */
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Loan Statement", 14, 15);
+
+    /* ======================
+      CUSTOMER DETAILS
+    ====================== */
+    doc.setFontSize(11);
+    doc.text(
+      `${customer?.first_name || ""} ${customer?.last_name || ""}`,
+      14,
+      25
+    );
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      customer?.company?.company_name ||
+        loan.organisation?.organisation_name ||
+        "—",
+      14,
+      31
+    );
+
+    doc.text(`Phone: ${customer?.phone || "—"}`, 14, 40);
+    doc.text(`Email: ${customer?.email || "—"}`, 14, 46);
+
+    /* ======================
+      LOAN SUMMARY (NEW)
+    ====================== */
+    doc.setFont("helvetica", "bold");
+    doc.text("Loan Summary", 14, 58);
+
+    doc.setFont("helvetica", "normal");
+    doc.text(`Loan ID: ${loan.id}`, 14, 65);
+    doc.text(`EMI Amount: PGK ${emiAmount.toFixed(2)}`, 14, 71);
+    doc.text(`Tenure: ${tenure} Fortnights`, 14, 77);
+
+    doc.text(
+      `Total Repayable: PGK ${totalRepayable.toFixed(2)}`,
+      110,
+      65
+    );
+    doc.text(
+      `Total Paid: PGK ${totalPaid.toFixed(2)}`,
+      110,
+      71
+    );
+    doc.text(
+      `Outstanding: PGK ${outstanding.toFixed(2)}`,
+      110,
+      77
+    );
+
+    /* ======================
+      INSTALLMENT TABLE
+    ====================== */
+    if (rows.length > 0) {
+      autoTable(doc, {
+        startY: 85,
+        head: [[
+          "EMI No",
+          "Due Date",
+          "Paid On",
+          "Amount (PGK)",
+          "Balance (PGK)",
+        ]],
+        body: rows,
+        styles: {
+          fontSize: 9,
+          halign: "center",
+          lineWidth: 0.3,
+          lineColor: [0, 0, 0],
+        },
+        headStyles: {
+          fillColor: [79, 70, 229],
+          textColor: 255,
+          fontStyle: "bold",
+          lineWidth: 0.5,
+        },
+        tableLineWidth: 0.3,
+      });
+    } else {
+      doc.setFontSize(11);
+      doc.text("No installments paid yet.", 14, 90);
+      doc.text(
+        `Outstanding Amount: PGK ${outstanding.toFixed(2)}`,
+        14,
+        98
+      );
+    }
+
+    /* ======================
+      FOOTER
+    ====================== */
+    const pageHeight = doc.internal.pageSize.height;
+    doc.setFontSize(8);
+    doc.text(
+      "Generated by Loan Management System",
+      14,
+      pageHeight - 10
+    );
+
+    doc.save(`loan-statement-${loan.id}.pdf`);
+  };
+
+  return (
+    <div className="border rounded-xl shadow-sm bg-white overflow-hidden">
+
+      {/* ================= HEADER ================= */}
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full flex justify-between items-center px-4 py-3 text-left ${
+          open ? "bg-indigo-50" : "hover:bg-gray-50"
+        }`}
+      >
+        <div>
+          <h4 className="font-semibold text-gray-800">
+            Loan #{loan.id}
+          </h4>
+          <p className="text-xs text-gray-500">
+            Total Repayable: PGK {totalRepayable.toFixed(2)}
+          </p>
+        </div>
+
+        {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </button>
+
+      {/* ================= BODY ================= */}
+      {open && (
+        <div className="p-4 space-y-4 animate-in fade-in">
+
+          {/* DOWNLOAD BUTTON */}
+          <div className="flex justify-end">
+            <button
+              onClick={downloadStatement}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            >
+              <Download size={14} />
+              Download Statement
+            </button>
+          </div>
+
+          {/* SUMMARY */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <InfoBox label="EMI" value={`PGK ${emiAmount.toFixed(2)}`} />
+            <InfoBox label="Tenure" value={`${tenure} FN`} />
+            <InfoBox
+              label="Paid"
+              value={`PGK ${totalPaid.toFixed(2)}`}
+              className="text-green-700"
+            />
+            <InfoBox
+              label="Outstanding"
+              value={`PGK ${outstanding.toFixed(2)}`}
+              className="text-red-600"
+            />
+          </div>
+
+          {/* TABLE OR MESSAGE */}
+          {rows.length > 0 ? (
+            <div className="overflow-y-auto max-h-[300px] border rounded">
+              <table className="w-full text-sm border-collapse">
+                <thead className="bg-indigo-600 text-white sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 border-r">EMI</th>
+                    <th className="px-3 py-2 border-r">Due</th>
+                    <th className="px-3 py-2 border-r">Paid</th>
+                    <th className="px-3 py-2 border-r text-right">Amount</th>
+                    <th className="px-3 py-2 text-right">Balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {rows.map((r, i) => (
+                    <tr key={i}>
+                      {r.map((c, j) => (
+                        <td
+                          key={j}
+                          className={`px-3 py-2 ${
+                            j < 4 ? "border-r" : ""
+                          } ${j >= 3 ? "text-right" : ""}`}
+                        >
+                          {c}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="font-semibold text-yellow-800">
+                No payments made yet
+              </p>
+              <p className="text-sm">
+                Outstanding: PGK {outstanding.toFixed(2)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+
+
+const InfoBox = ({ label, value, valueClass = "" }) => (
+  <div className="border rounded-lg p-3 bg-gray-50">
+    <div className="text-xs text-gray-500 font-medium">{label}</div>
+    <div className={`text-sm font-semibold ${valueClass}`}>
+      {value}
+    </div>
+  </div>
+);
+
+
+
 
 
 
