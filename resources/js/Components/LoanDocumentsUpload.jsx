@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { X, Upload, Eye } from "lucide-react";
 import { Button, ProgressBar, Modal } from "react-bootstrap";
@@ -14,7 +14,7 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
     "ISDA_Signed",
     "LoanForm_Scanned",
   ];
-
+  const [docTypes, setDocTypes] = useState([]);
   const [files, setFiles] = useState({});
   const [progress, setProgress] = useState({});
   const [uploading, setUploading] = useState(false);
@@ -27,40 +27,71 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
   const loanId = loanFormData?.id || "";
   const customerId = loanFormData?.customer_id || "";
 
+  useEffect(() => {
+    axios.get("/api/document-types").then(res => {
+      setDocTypes(res.data);
+    });
+  }, []);
+
   const handleViewDocument = (doc) => {
     setSelectedDoc(doc);
     setShowModal(true);
   };
 
-  const handleFileSelect = (e, docType) => {
+  // const handleFileSelect = (e, docType) => {
+  //   const file = e.target.files[0];
+  //   if (!file) return;
+
+  //   if (
+  //     ![
+  //       "application/pdf",
+  //       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  //       "text/plain",
+  //     ].includes(file.type)
+  //   ) {
+  //     setMessage((prev) => ({
+  //       ...prev,
+  //       [docType]: "❌ Only .pdf, .docx, or .txt files allowed.",
+  //     }));
+  //     return;
+  //   }
+
+  //   if (file.size > 20 * 1024 * 1024) {
+  //     setMessage((prev) => ({
+  //       ...prev,
+  //       [docType]: "⚠️ File exceeds 20MB limit.",
+  //     }));
+  //     return;
+  //   }
+
+  //   setFiles((prev) => ({ ...prev, [docType]: file }));
+  //   setProgress((prev) => ({ ...prev, [docType]: 0 }));
+  //   setMessage((prev) => ({ ...prev, [docType]: "" }));
+  // };
+  const handleFileSelect = (e, doc) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (
-      ![
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "text/plain",
-      ].includes(file.type)
-    ) {
-      setMessage((prev) => ({
+    const minSize = doc.min_size_kb * 1024;
+    const maxSize = doc.max_size_kb * 1024;
+
+    if (file.size < minSize) {
+      setMessage(prev => ({
         ...prev,
-        [docType]: "❌ Only .pdf, .docx, or .txt files allowed.",
+        [doc.doc_key]: `⚠️ File too small (min ${doc.min_size_kb} KB)`
       }));
       return;
     }
 
-    if (file.size > 20 * 1024 * 1024) {
-      setMessage((prev) => ({
+    if (file.size > maxSize) {
+      setMessage(prev => ({
         ...prev,
-        [docType]: "⚠️ File exceeds 20MB limit.",
+        [doc.doc_key]: `⚠️ Max allowed ${doc.max_size_kb / 1024} MB`
       }));
       return;
     }
 
-    setFiles((prev) => ({ ...prev, [docType]: file }));
-    setProgress((prev) => ({ ...prev, [docType]: 0 }));
-    setMessage((prev) => ({ ...prev, [docType]: "" }));
+    setFiles(prev => ({ ...prev, [doc.doc_key]: file }));
   };
 
   const handleUpload = async (docType) => {
@@ -138,7 +169,7 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
       <form onSubmit={handleUploadAll}>
         {/* Responsive Grid: Stacks on mobile, 1 col, then 2, then 3 on huge screens */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 justify-items-center mb-3">
-          {allowedDocs.map((doc) => (
+          {docTypes.map((doc) => (
             <div
               key={doc}
               className="bg-white rounded-4 shadow-sm border border-gray-200 p-3 w-full max-w-[530px] transition-all duration-300 transform hover:shadow-lg hover:-translate-y-1"

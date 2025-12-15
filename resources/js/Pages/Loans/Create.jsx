@@ -9,8 +9,10 @@ import LoanDocumentsUpload from '@/Components/LoanDocumentsUpload';
 import CustomerEligibilityForm from '@/Components/CustomerEligibilityForm';
 import CustomerForm from '@/Components/CustomerForm';
 //icon pack
-import { ArrowLeft, LucideNavigation } from "lucide-react";
+import { ArrowLeft, LucideNavigation, Check } from "lucide-react";
 import Swal from 'sweetalert2';
+import {formatCurrency} from "@/Utils/formatters";
+import {currencyPrefix} from "@/config";
 
 export default function Create({ auth, loan_settings }) {
     const [isEligible, setIsEligible] = useState(false);
@@ -28,7 +30,12 @@ export default function Create({ auth, loan_settings }) {
     const [loanSettings, setLoanSettings] = useState(loan_settings);
     console.log("loanSettings: ", loanSettings);
     // setLoanSettings(loa        n_settings);
-    // const [tempCusFormData, settempCusFormData] = useState({
+    const [isCompleted, setIsCompleted] = useState(false);
+    const [mailBody, setMailBody] = useState("");
+    const [isSendingMail, setIsSendingMail] = useState(false);
+    const [savedCustomerData, setSavedCustomerData] = useState({});
+    const [fnRange, setFnRange] = useState(null);
+    const [isFetchingFn, setIsFetchingFn] = useState(false);
     const [formData, setFormData] = useState({
         cus_id: 0,
         company_id: 1,
@@ -120,6 +127,7 @@ export default function Create({ auth, loan_settings }) {
             .then((res) => res.json())
             .then(data => {
                 setCompanies(data);
+                console.log("Companies Data",data);
             })
             .catch(error => {
                 console.error('There was an error fetching the companies!', error);
@@ -255,15 +263,6 @@ export default function Create({ auth, loan_settings }) {
             setIsChecking(false);
             return;
         }
-        // else {
-        //     if (Number(loanFormData.loan_amount_applied) < Number(recProposedPvaAmt)) {
-        //         //check if the amount is divisable by 50
-        //         if (loanFormData.loan_amount_applied % loan_settings.amt_multiplier !== 0) {
-        //             setMessage('❌ Loan Amount Applied must be in multiples of PGK 50. Please adjust accordingly.');
-        //             return;
-        //         }
-        //     }
-        // }
         if (Array.isArray(loanSettings) && loanSettings.length > 0) {
             // Find selected loan setting based on loan type
             const selectedLoanSetting = loanSettings.find(
@@ -273,22 +272,6 @@ export default function Create({ auth, loan_settings }) {
             console.log("loanSettings:", loanSettings);
             console.log("loanFormData.loan_type:", loanFormData.loan_type);
             console.log("selectedLoanSetting:", selectedLoanSetting);
-
-            // const validationErrors = validateLoanAmountAndTerm(
-            //     loanFormData.loan_amount_applied,
-            //     loanFormData.tenure_fortnight,
-            //     selectedLoanSetting
-            // );
-
-            // if (validationErrors.length > 0) {
-            //     Swal.fire({
-            //         title: "Validation Error",
-            //         html: validationErrors.join("<br>"),
-            //         icon: "warning",
-            //     });
-            //     return;
-            // }
-            // return;
             if (selectedLoanSetting) {
                 const {
                     amt_multiplier,
@@ -476,7 +459,8 @@ export default function Create({ auth, loan_settings }) {
                 designation: "",
                 employment_type: "",
                 date_joined: "",
-                monthly_salary: "",
+                monthly_salary: 0.00,
+                net_salary: 0.00,
                 work_location: "",
             });
             setLoanDocumentFormData({
@@ -621,7 +605,8 @@ export default function Create({ auth, loan_settings }) {
                 designation: "",
                 employment_type: "",
                 date_joined: "",
-                monthly_salary: "",
+                monthly_salary: 0.00,
+                net_salary: 0.00,
                 work_location: "",
             });
             // setStep(3); // Move to next tab
@@ -636,6 +621,127 @@ export default function Create({ auth, loan_settings }) {
             });
         }
     }
+    useEffect(() => {
+        if (isCompleted && loanFormData?.id) {
+            setMailBody(
+                buildLoanCompletionEmail(
+                    loanFormData,
+                    formData || {}
+                )
+            );
+        }
+    }, [isCompleted, loanFormData]);
+    const handleSendMail = async () => {
+        try {
+            setIsSendingMail(true);
+
+            await axios.post("/api/loans/send-completion-mail", {
+                loan_id: loanFormData.id,
+                body: mailBody,
+            });
+
+            Swal.fire({
+                title: "Mail Sent",
+                text: "Customer notification email sent successfully.",
+                icon: "success",
+            });
+        } catch (error) {
+            console.error(error);
+            Swal.fire({
+                title: "Error",
+                text: "Failed to send email.",
+                icon: "error",
+            });
+        } finally {
+            setIsSendingMail(false);
+        }
+    };
+    const buildLoanCompletionEmail = (loan, customer = {}) => {
+        const today = new Date().toLocaleDateString();
+        customer = customer.length>0 ? customer : savedCustomerData;
+        let loan_type_name = "";
+        if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+            // Find selected loan setting based on loan type
+            const selectedLoanSetting = loanSettings.find(
+                (ls) => ls.id === Number(loan.loan_type)
+            );
+            if (selectedLoanSetting) {
+                loan_type_name = selectedLoanSetting.loan_desc;
+            }
+        }
+
+        return `Dear ${customer.first_name || "Customer"} ${customer.last_name || ""},
+
+        We are pleased to inform you that your loan application has been successfully completed.
+
+        Below are the details of your loan:
+
+        --------------------------------------------------
+        Loan Reference No : ${loan.id || "N/A"}
+        Loan Type         : ${loan_type_name || "N/A"}
+        Loan Amount       : ${currencyPrefix} ${formatCurrency(loan.loan_amount_applied) || 0}
+        Approved Amount   : ${currencyPrefix} ${formatCurrency(loan.loan_amount_approved) || formatCurrency(loan.loan_amount_applied) || formatCurrency(0)}
+        Tenure (FN)       : ${loan.tenure_fortnight || "N/A"}
+        EMI Amount        : ${currencyPrefix} ${formatCurrency(loan.emi_amount) || "N/A"}
+        Interest Rate     : ${loan.interest_rate || "N/A"} %
+        Processing Fee    : ${currencyPrefix} ${formatCurrency(loan.processing_fee) || 0}
+        Application Date  : ${today}
+        --------------------------------------------------
+
+        Your loan is now under final processing. Our team will contact you if any additional information is required.
+
+        If you have any questions, please feel free to reach out to us.
+
+        Thank you for choosing our services.
+
+        Warm regards,
+        Loan Processing Team
+        ${companies[0].company_name || "Your Company"}
+        `;
+    };
+
+    const fetchFnRange = async (amount) => {
+        console.log("fetchFnRange entered");
+        if (!loanFormData.loan_type || !amount) {
+            setFnRange(null);
+            return;
+        }
+
+        try {
+            setIsFetchingFn(true);
+
+            const res = await axios.post("/api/loan-fn-range", {
+                loan_setting_id: loanFormData.loan_type,
+                amount: amount,
+            });
+
+            setFnRange({
+                min: res.data.fn_min,
+                max: res.data.fn_max,
+            });
+
+            // Auto-correct tenure if outside range
+            setLoanFormData((prev) => ({
+                ...prev,
+                tenure_fortnight:
+                    prev.tenure_fortnight < res.data.fn_min
+                        ? res.data.fn_min
+                        : prev.tenure_fortnight > res.data.fn_max
+                        ? res.data.fn_max
+                        : prev.tenure_fortnight,
+            }));
+        } catch (err) {
+            setFnRange(null);
+            // Swal.fire({
+            //     title: "Invalid Amount",
+            //     text: err.response?.data?.message || "Invalid loan amount",
+            //     icon: "warning",
+            // });
+        } finally {
+            setIsFetchingFn(false);
+        }
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -665,387 +771,434 @@ export default function Create({ auth, loan_settings }) {
                                 </Link>
                             </Col>
                         </Row>
-                        {/*<div className="flex justify-between items-center sm:rounded-lg px-4 pt-4">
-                                                    <h3 className="text-lg font-semibold text-gray-700">
-                                                        &nbsp;
-                                                    </h3>
-                                                    <Link
-                                                        href={route('loans')}
-                                                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap w-fit"
-                                                    >
-                                                        <ArrowLeft size={18} strokeWidth={2} />
-                                                        <span>Back to the List</span>
-                                                    </Link>
-                                                </div> */}
                         <div className="p-6 pt-2 text-gray-900">
                             {message && (
                                 <div className={`mb-4 p-3 rounded ${message.startsWith('✅')
-                                        ? 'bg-green-100 text-green-700'
-                                        : message.startsWith('ℹ️')
-                                            ? 'bg-sky-200 text-black-700'
-                                            : 'bg-red-100 text-red-700'
+                                    ? 'bg-green-100 text-green-700'
+                                    : message.startsWith('ℹ️')
+                                        ? 'bg-sky-200 text-black-700'
+                                        : 'bg-red-100 text-red-700'
                                     }`
                                 }>
 
                                     {message}
                                 </div>
                             )}
-
-                            <div className="tabs">
-                                <ul className="flex border-b">
-                                    <li className={`px-4 py-2 newloanSteps ${step === 1 ? 'border-b-2 border-indigo-600 font-semibold' : ''}`} onClick={handleStep(1)}>
-                                        Customer Info
-                                    </li>
-                                    <li className={`px-4 py-2 newloanSteps ${step === 2 ? 'border-b-2 border-indigo-600 font-semibold' : ''}`} onClick={handleStep(2)}>
-                                        Loan Application
-                                    </li>
-                                    <li className={`px-4 py-2 newloanSteps ${step === 3 ? 'border-b-2 border-indigo-600 font-semibold' : ''}`} onClick={handleStep(3)}>
-                                        Document Upload
-                                    </li>
-                                </ul>
-                            </div>
-
-                            {step === 1 && (
-                                <CustomerForm
-                                    formData={formData}
-                                    setFormData={setFormData}
-                                    companies={companies}
-                                    organisations={organisations}
-                                    allCustMast={allCustMast}
-                                    setMessage={setMessage}
-                                    setIsFormDirty={setIsFormDirty}
-                                    onNext={(savedCustomer) => {
-                                        const infoMsg = '✅ customer data saved. You can continue filling the loan application.';
-                                        setMessage(infoMsg);
-                                        // show same message in SweetAlert
-                                        Swal.fire({
-                                            title: "Success",
-                                            text: infoMsg,
-                                            icon: "success"
-                                        });
-
-                                        setIsFormDirty(false);
-                                        fetchCustomers();
-
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            cus_id: savedCustomer.id,
-                                            monthly_salary: savedCustomer.monthly_salary
-                                        }));
-
-                                        setLoanFormData((prev) => ({
-                                            ...prev,
-                                            customer_id: savedCustomer.id,
-                                        }));
-
-                                        setStep(2);
-                                        setCustSelectable(false);
-                                        // 🔥 Fetch loan types based on salary and organisation
-                                        axios.get(`/api/filtered-loan-types/${savedCustomer.id}`)
-                                            .then((res) => {
-                                                setLoanTypes(res.data);
-                                            })
-                                            .catch((err) => console.error("Error fetching loan types:", err));
-                                    }}
-                                />
-                            )}
-
-                            {step === 2 && (
-                                <form onSubmit={handleSubmit}> {/* Loan application form here */}
-                                    <div className="row mb-3">
-                                        {/* <div className="col-md-4">
-                                            <label className="form-label">Company</label>
-                                            <select className="form-select" name="company_id" value={loanFormData.company_id || 0} onChange={loanHandleChange} required aria-readonly disabled>
-                                            <option value="">Select Company</option>
-                                            {companies.map((c) => (
-                                                <option key={c.id} value={c.id}>{c.company_name}</option>
-                                            ))}
-                                            </select>
-                                        </div> */}
-
-                                        <div className="col-md-4">
-                                            <label className="form-label">Customer</label>
-                                            <select
-                                                className="form-select"
-                                                name="customer_id"
-                                                value={loanFormData.customer_id || ""}  // ✅ always non-null
-                                                disabled={!isCustSelectable}
-                                                onChange={(e) => {
-                                                    // Always call your main handler first
-                                                    loanHandleChange(e);
-
-                                                    // Extract selected value
-                                                    const selectedValue = e.target.value;
-                                                    // fetchLoanTypes();
-                                                    // Check if value is not null or 0
-                                                    if (selectedValue && selectedValue !== "0") {
-                                                        // Check your custom condition
-                                                        if (isTruelyEligible) {
-                                                            setIsEligible(true);
-                                                        }
-                                                        // 🔥 Fetch loan types based on salary and organisation
-                                                        axios.get(`/api/filtered-loan-types/${selectedValue}`)
-                                                            .then((res) => {
-                                                                setLoanTypes(res.data);
-                                                            })
-                                                            .catch((err) => console.error("Error fetching loan types:", err));
-                                                    } else {
-                                                        // Optional: reset eligibility when no customer selected
-                                                        setIsEligible(false);
-                                                    }
-                                                }}
-                                                required
-                                            >
-                                                <option value="">Select Customer</option>
-                                                {customers.map((c) => (
-                                                    <option key={c.id} value={c.id}>
-                                                        {c.first_name} {c.last_name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        {/* <div className="col-md-4">
-                                            <label className="form-label">Organisation</label>
-                                            <select className="form-select" name="organisation_id" value={loanFormData.organisation_id || 0} onChange={loanHandleChange} aria-readonly disabled>
-                                            <option value="">Select Organisation</option>
-                                            {organisations.map((o) => (
-                                                <option key={o.id} value={o.id}>{o.organisation_name}</option>
-                                            ))}
-                                            </select>
-                                        </div> */}
+                            {!isCompleted && (
+                                <>
+                                    <div className="tabs">
+                                        <ul className="flex border-b">
+                                            <li className={`px-4 py-2 newloanSteps ${step === 1 ? 'border-b-2 border-indigo-600 font-semibold' : ''}`} onClick={handleStep(1)}>
+                                                Customer Info
+                                            </li>
+                                            <li className={`px-4 py-2 newloanSteps ${step === 2 ? 'border-b-2 border-indigo-600 font-semibold' : ''}`} onClick={handleStep(2)}>
+                                                Loan Application
+                                            </li>
+                                            <li className={`px-4 py-2 newloanSteps ${step === 3 ? 'border-b-2 border-indigo-600 font-semibold' : ''}`} onClick={handleStep(3)}>
+                                                Document Upload
+                                            </li>
+                                        </ul>
                                     </div>
-                                    <fieldset className="fldset">
-                                        <legend className="font-semibold">Eligibility</legend>
-                                        <div className="mt-6">
-                                            {/* {loanFormData.customer_id && (
-                                            <CustomerEligibilityForm key={loanFormData.customer_id} customerId={loanFormData.customer_id} />
-                                        )} */}
-                                            <CustomerEligibilityForm
-                                                customerId={loanFormData.customer_id}
-                                                onEligibilityChange={(eligible) => {
-                                                    setIsEligible(eligible);
-                                                    console.log("isEligible on CustomerEligibilityCheck", isEligible);
-                                                }}
-                                                onEligibilityChangeTruely={(isTruelyEligible) => {
-                                                    setIsTruelyEligible(isTruelyEligible);
-                                                    console.log("isTruelyEligible on CustomerEligibilityCheck", isTruelyEligible);
-                                                }}
-                                                proposedPvaAmt={(recProposedPvaAmt) => {
-                                                    setRecProposedPvaAmt(recProposedPvaAmt);
-                                                    setLoanFormData((prev) => ({ ...prev, loan_amount_applied: recProposedPvaAmt }));
-                                                }}
-                                                eleigibleAmount={(recEleigibleAmount) => {
-                                                    setRecEleigibleAmount(recEleigibleAmount);
-                                                    setLoanFormData((prev) => ({ ...prev, elegible_amount: parseFloat(recEleigibleAmount) }));
-                                                }}
-                                            />
-                                        </div>
-                                        {console.log("recEleigibleAmount", recEleigibleAmount)}
-                                        {console.log("isEligible", isEligible)}
-                                        {(!isTruelyEligible && recEleigibleAmount != 0) ? (
-                                            <Row>
-                                                <Col md={12} className='text-center'>
-                                                    <Button variant="primary" type="button" onClick={handleNotElegibleSubmit}>
-                                                        Make Elegible
-                                                    </Button>
+
+                                    {step === 1 && (
+                                        <CustomerForm
+                                            formData={formData}
+                                            setFormData={setFormData}
+                                            companies={companies}
+                                            organisations={organisations}
+                                            allCustMast={allCustMast}
+                                            setMessage={setMessage}
+                                            setIsFormDirty={setIsFormDirty}
+                                            onNext={(savedCustomer) => {
+                                                const infoMsg = '✅ customer data saved. You can continue filling the loan application.';
+                                                setMessage(infoMsg);
+                                                // show same message in SweetAlert
+                                                Swal.fire({
+                                                    title: "Success",
+                                                    text: infoMsg,
+                                                    icon: "success"
+                                                });
+                                                console.log("savedCustomer data",savedCustomer);
+                                                setSavedCustomerData(savedCustomer);
+                                                setIsFormDirty(false);
+                                                fetchCustomers();
+
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    cus_id: savedCustomer.id,
+                                                    monthly_salary: savedCustomer.monthly_salary,
+                                                    net_salary: savedCustomer.net_salary
+                                                }));
+
+                                                setLoanFormData((prev) => ({
+                                                    ...prev,
+                                                    customer_id: savedCustomer.id,
+                                                }));
+
+                                                setStep(2);
+                                                setCustSelectable(false);
+                                                // 🔥 Fetch loan types based on salary and organisation
+                                                axios.get(`/api/filtered-loan-types/${savedCustomer.id}`)
+                                                    .then((res) => {
+                                                        setLoanTypes(res.data);
+                                                    })
+                                                    .catch((err) => console.error("Error fetching loan types:", err));
+                                            }}
+                                        />
+                                    )}
+
+                                    {step === 2 && (
+                                        <form onSubmit={handleSubmit}> {/* Loan application form here */}
+                                            <div className="row mb-3">
+                                                <div className="col-md-4">
+                                                    <label className="form-label">Customer</label>
+                                                    <select
+                                                        className="form-select"
+                                                        name="customer_id"
+                                                        value={loanFormData.customer_id || ""}  // ✅ always non-null
+                                                        disabled={!isCustSelectable}
+                                                        onChange={(e) => {
+                                                            // Always call your main handler first
+                                                            loanHandleChange(e);
+
+                                                            // Extract selected value
+                                                            const selectedValue = e.target.value;
+                                                            // fetchLoanTypes();
+                                                            // Check if value is not null or 0
+                                                            if (selectedValue && selectedValue !== "0") {
+                                                                // Check your custom condition
+                                                                if (isTruelyEligible) {
+                                                                    setIsEligible(true);
+                                                                }
+                                                                // 🔥 Fetch loan types based on salary and organisation
+                                                                axios.get(`/api/filtered-loan-types/${selectedValue}`)
+                                                                    .then((res) => {
+                                                                        setLoanTypes(res.data);
+                                                                    })
+                                                                    .catch((err) => console.error("Error fetching loan types:", err));
+                                                            } else {
+                                                                // Optional: reset eligibility when no customer selected
+                                                                setIsEligible(false);
+                                                            }
+                                                        }}
+                                                        required
+                                                    >
+                                                        <option value="">Select Customer</option>
+                                                        {customers.map((c) => (
+                                                            <option key={c.id} value={c.id}>
+                                                                {c.first_name} {c.last_name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <fieldset className="fldset">
+                                                <legend className="font-semibold">Eligibility</legend>
+                                                <div className="mt-6">
+                                                    <CustomerEligibilityForm
+                                                        customerId={loanFormData.customer_id}
+                                                        grossSalary={parseFloat(savedCustomerData?.monthly_salary)}
+                                                        netSalary={parseFloat(savedCustomerData?.net_salary)}
+                                                        onEligibilityChange={(eligible) => {
+                                                            setIsEligible(eligible);
+                                                            console.log("isEligible on CustomerEligibilityCheck", isEligible);
+                                                        }}
+                                                        onEligibilityChangeTruely={(isTruelyEligible) => {
+                                                            setIsTruelyEligible(isTruelyEligible);
+                                                            console.log("isTruelyEligible on CustomerEligibilityCheck", isTruelyEligible);
+                                                        }}
+                                                        proposedPvaAmt={(recProposedPvaAmt) => {
+                                                            setRecProposedPvaAmt(recProposedPvaAmt);
+                                                            setLoanFormData((prev) => ({ ...prev, loan_amount_applied: recProposedPvaAmt }));
+                                                            if (!isNaN(recProposedPvaAmt) && recProposedPvaAmt > 0) {
+                                                                fetchFnRange(recProposedPvaAmt); // 🔥 API call here
+                                                            }
+                                                        }}
+                                                        eleigibleAmount={(recEleigibleAmount) => {
+                                                            setRecEleigibleAmount(recEleigibleAmount);
+                                                            setLoanFormData((prev) => ({ ...prev, elegible_amount: parseFloat(recEleigibleAmount) }));
+                                                        }}
+                                                    />
+                                                </div>
+                                                {console.log("recEleigibleAmount", recEleigibleAmount)}
+                                                {console.log("isEligible", isEligible)}
+                                                {(!isTruelyEligible && recEleigibleAmount != 0) ? (
+                                                    <Row>
+                                                        <Col md={12} className='text-center'>
+                                                            <Button variant="primary" type="button" onClick={handleNotElegibleSubmit}>
+                                                                Make Elegible
+                                                            </Button>
+                                                        </Col>
+                                                    </Row>
+                                                ) : ("")}
+                                            </fieldset>
+                                            <fieldset className="fldset" disabled={!isEligible}>
+                                                <legend className="font-semibold">Loan Details</legend>
+                                                <div className="row mb-3">
+                                                    <div className="col-md-4">
+                                                        <label className="form-label">Loan Type</label>
+                                                        <select
+                                                            className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                            name="loan_type" value={loanFormData.loan_type}
+                                                            onChange={(e) => {
+                                                                loanHandleChange(e);
+                                                                //fetch loan settings based on selected loan type
+                                                                const selectedLoanTypeId = e.target.value;
+
+                                                                if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+                                                                    // Find selected loan setting based on loan type
+                                                                    const selectedLoanSetting = loanSettings.find(
+                                                                        (ls) => ls.id === Number(selectedLoanTypeId)
+                                                                    );
+
+                                                                    console.log("loanSettings:", loanSettings);
+                                                                    console.log("loanFormData.loan_type:", loanFormData.loan_type);
+                                                                    console.log("selectedLoanSetting:", selectedLoanSetting);
+                                                                    // return;
+                                                                    if (selectedLoanSetting) {
+                                                                        const {
+                                                                            process_fees,
+                                                                            interest_rate,
+                                                                        } = selectedLoanSetting;
+
+                                                                        // Auto-fill processing fee and interest rate
+                                                                        setLoanFormData((prev) => ({
+                                                                            ...prev,
+                                                                            processing_fee: parseFloat(process_fees),
+                                                                            interest_rate: parseFloat(interest_rate)
+                                                                        }));
+                                                                        //make the form read-only and disabled for these two fields
+                                                                        document.querySelector('input[name="processing_fee"]').readOnly = true;
+                                                                        document.querySelector('input[name="interest_rate"]').readOnly = true;
+                                                                        document.querySelector('input[name="processing_fee"]').disabled = true;
+                                                                        document.querySelector('input[name="interest_rate"]').disabled = true;
+                                                                    }
+                                                                }
+                                                            }}
+                                                        // required
+                                                        >
+                                                            (<option value="">Select Loan Type</option>
+                                                            {loanTypes.map((lt) => (
+                                                                <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
+                                                            ))})
+                                                        </select>
+                                                    </div>
+
+                                                    <div className="col-md-4">
+                                                        <label className="form-label">Purpose</label>
+                                                        <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
+                                                            <option value="">Select Purpose</option>
+                                                            <option value="School Fee">School Fee</option>
+                                                            <option value="Personal Expenses">Personal Expenses</option>
+                                                            <option value="Funeral Expenses">Funeral Expenses</option>
+                                                            <option value="Refinancing">Refinancing</option>
+                                                            <option value="Other">Other</option>
+                                                        </select>
+                                                    </div>
+
+                                                    {loanFormData.purpose === "Other" && (
+                                                        <div className="col-md-4">
+                                                            <label className="form-label">Other Purpose</label>
+                                                            <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="row mb-3">
+                                                    <div className="col-md-3">
+                                                        <label className="form-label">Loan Amount Applied</label>
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                            name="loan_amount_applied"
+                                                            value={loanFormData.loan_amount_applied}
+                                                            disabled={!isEligible}
+                                                            onChange={(e) => {
+                                                                loanHandleChange(e);
+
+                                                                const val = parseFloat(e.target.value);
+                                                                if (!isNaN(val) && val > 0) {
+                                                                    fetchFnRange(val); // 🔥 API call here
+                                                                }
+                                                            }}
+                                                            onBlur={calculateRepaymentDetails}
+                                                            required
+                                                        />
+                                                        {isFetchingFn && (
+                                                            <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                                <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
+                                                                Checking FN range...
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+
+
+                                                    <div className="col-md-3">
+                                                        <label className="form-label">Tenure (Fortnight)</label>
+                                                        <input
+                                                            type="number" step="1"
+                                                            name="tenure_fortnight"
+                                                            className={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                            value={loanFormData.tenure_fortnight}
+                                                            onChange={(e) => loanHandleChange(e)}
+                                                            onKeyUp={calculateRepaymentDetails}
+                                                            required
+                                                        />
+                                                        {fnRange && (
+                                                            <div className="text-sm text-blue-600 mt-1">
+                                                                <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b> – <b>{fnRange.max}</b>&nbsp;FN</small>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="col-md-3">
+                                                        <label className="form-label">Interest Rate (%)</label>
+                                                        <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="interest_rate" value={loanFormData.interest_rate} onChange={loanHandleChange} />
+                                                    </div>
+
+                                                    <div className="col-md-3">
+                                                        <label className="form-label">Processing Fee</label>
+                                                        <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="processing_fee" value={loanFormData.processing_fee} onChange={loanHandleChange} />
+                                                    </div>
+                                                </div>
+
+                                                {(loanFormData.total_interest_amt) ? (
+                                                    <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id="repayDetailsDiv">
+                                                        <fieldset className="fldset w-full">
+                                                            <legend className="font-semibold">Repayment Details</legend>
+                                                            <div className="row mt-3">
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Total Interest (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
+                                                                </div>
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Total Repay (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
+                                                                </div>
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Repay per FN (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
+                                                                </div>
+                                                            </div>
+                                                        </fieldset>
+                                                    </div>
+                                                ) : null}
+
+                                                <div className="row mb-3">
+                                                    <div className="col-md-4">
+                                                        <label className="form-label">Bank Name</label>
+                                                        <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="bank_name" value={loanFormData.bank_name} onChange={loanHandleChange} />
+                                                    </div>
+
+                                                    <div className="col-md-4">
+                                                        <label className="form-label">Bank Branch</label>
+                                                        <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="bank_branch" value={loanFormData.bank_branch} onChange={loanHandleChange} />
+                                                    </div>
+
+                                                    <div className="col-md-4">
+                                                        <label className="form-label">Bank Account No</label>
+                                                        <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="bank_account_no" value={loanFormData.bank_account_no} onChange={loanHandleChange} />
+                                                    </div>
+                                                </div>
+
+                                                <div className="mb-3">
+                                                    <label className="form-label">Remarks</label>
+                                                    <textarea className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="remarks" rows="3" value={loanFormData.remarks} onChange={loanHandleChange}></textarea>
+                                                </div>
+                                            </fieldset>
+                                            <Row className="mt-4 text-end">
+                                                <Col>
+                                                    <button
+                                                        type="submit"
+                                                        className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${!isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""
+                                                            }`}
+                                                        disabled={!isEligible || isChecking}
+                                                    >
+                                                        {isChecking ? (
+                                                            <>
+                                                                <span
+                                                                    className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+                                                                    role="status"
+                                                                ></span>
+                                                                Checking...
+                                                            </>
+                                                        ) : (
+                                                            "Save & Upload Documents →"
+                                                        )}
+                                                    </button>
+
                                                 </Col>
                                             </Row>
-                                        ) : ("")}
-                                    </fieldset>
-                                    <fieldset className="fldset" disabled={!isEligible}>
-                                        <legend className="font-semibold">Loan Details</legend>
-                                        <div className="row mb-3">
-                                            <div className="col-md-4">
-                                                <label className="form-label">Loan Type</label>
-                                                <select
-                                                    className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
-                                                    name="loan_type" value={loanFormData.loan_type}
-                                                    onChange={(e) => {
-                                                        loanHandleChange(e);
-                                                        //fetch loan settings based on selected loan type
-                                                        const selectedLoanTypeId = e.target.value;
+                                        </form>
+                                    )}
+                                    {step === 3 && (
+                                        <LoanDocumentsUpload
+                                            loanFormData={loanFormData}
+                                            setLoanFormData={setLoanFormData}
+                                            onUploadComplete={() => {
+                                                setMessage("✅ All steps completed successfully!");
+                                                // Swal.fire({
+                                                //     title: "Success !",
+                                                //     text: "✅ All steps completed successfully!",
+                                                //     icon: "success"
+                                                // });
+                                                // setTimeout(() => router.visit(route("loans")), 1000);
+                                                setIsCompleted(true);
+                                            }}
+                                        />
+                                    )}
+                                </>
+                            )}
+                            {isCompleted && (
+                                <div className="p-8 text-center animate__animated animate__fadeIn">
+                                    <div className="max-w-6xl mx-auto bg-green-50 border border-green-200 rounded-lg p-6">
+                                        <h2 className="text-2xl font-bold text-green-700 mb-3 d-flex justify-center">
+                                            {/* <Check className='text-green-700' />  */}
+                                            Loan Application Successfully Completed
+                                        </h2>
 
-                                                        if (Array.isArray(loanSettings) && loanSettings.length > 0) {
-                                                            // Find selected loan setting based on loan type
-                                                            const selectedLoanSetting = loanSettings.find(
-                                                                (ls) => ls.id === Number(selectedLoanTypeId)
-                                                            );
+                                        <p className="text-gray-700 mb-6">
+                                            All required steps have been completed. You may now notify the customer.
+                                        </p>
 
-                                                            console.log("loanSettings:", loanSettings);
-                                                            console.log("loanFormData.loan_type:", loanFormData.loan_type);
-                                                            console.log("selectedLoanSetting:", selectedLoanSetting);
-                                                            // return;
-                                                            if (selectedLoanSetting) {
-                                                                const {
-                                                                    process_fees,
-                                                                    interest_rate,
-                                                                } = selectedLoanSetting;
-
-                                                                // Auto-fill processing fee and interest rate
-                                                                setLoanFormData((prev) => ({
-                                                                    ...prev,
-                                                                    processing_fee: parseFloat(process_fees),
-                                                                    interest_rate: parseFloat(interest_rate)
-                                                                }));
-                                                                //make the form read-only and disabled for these two fields
-                                                                document.querySelector('input[name="processing_fee"]').readOnly = true;
-                                                                document.querySelector('input[name="interest_rate"]').readOnly = true;
-                                                                document.querySelector('input[name="processing_fee"]').disabled = true;
-                                                                document.querySelector('input[name="interest_rate"]').disabled = true;
-                                                            }
-                                                        }
-                                                    }}
-                                                // required
-                                                >
-                                                    (<option value="">Select Loan Type</option>
-                                                    {loanTypes.map((lt) => (
-                                                        <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
-                                                    ))})
-                                                </select>
-                                            </div>
-
-                                            <div className="col-md-4">
-                                                <label className="form-label">Purpose</label>
-                                                <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
-                                                    <option value="">Select Purpose</option>
-                                                    <option value="School Fee">School Fee</option>
-                                                    <option value="Personal Expenses">Personal Expenses</option>
-                                                    <option value="Funeral Expenses">Funeral Expenses</option>
-                                                    <option value="Refinancing">Refinancing</option>
-                                                    <option value="Other">Other</option>
-                                                </select>
-                                            </div>
-
-                                            {loanFormData.purpose === "Other" && (
-                                                <div className="col-md-4">
-                                                    <label className="form-label">Other Purpose</label>
-                                                    <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
-                                                </div>
-                                            )}
+                                        {/* Mail Body */}
+                                        <div className="text-left mb-4">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                                Email Body
+                                            </label>
+                                            <textarea
+                                                className="w-full border rounded-md p-3 text-sm font-mono leading-relaxed
+                                                    focus:ring-2 focus:ring-green-500"
+                                                rows={10}
+                                                value={mailBody}
+                                                onChange={(e) => setMailBody(e.target.value)}
+                                            />
                                         </div>
 
-                                        <div className="row mb-3">
-                                            <div className="col-md-3">
-                                                <label className="form-label">Loan Amount Applied</label>
-                                                <input
-                                                    type="number" step="0.01"
-                                                    className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
-                                                    name="loan_amount_applied"
-                                                    value={loanFormData.loan_amount_applied}
-                                                    onChange={(e) => loanHandleChange(e)}
-                                                    onKeyUp={calculateRepaymentDetails}
-                                                    required
-                                                />
-                                            </div>
-
-                                            <div className="col-md-3">
-                                                <label className="form-label">Tenure (Fortnight)</label>
-                                                <input
-                                                    type="number" step="1"
-                                                    name="tenure_fortnight"
-                                                    className={`form-control tenure_fortnight ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
-                                                    value={loanFormData.tenure_fortnight}
-                                                    onChange={(e) => loanHandleChange(e)}
-                                                    onKeyUp={calculateRepaymentDetails}
-                                                    required
-                                                />
-                                            </div>
-
-                                            <div className="col-md-3">
-                                                <label className="form-label">Interest Rate (%)</label>
-                                                <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="interest_rate" value={loanFormData.interest_rate} onChange={loanHandleChange} />
-                                            </div>
-
-                                            <div className="col-md-3">
-                                                <label className="form-label">Processing Fee</label>
-                                                <input type="number" step="0.01" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="processing_fee" value={loanFormData.processing_fee} onChange={loanHandleChange} />
-                                            </div>
-                                        </div>
-
-                                        {(loanFormData.total_interest_amt) && (
-                                            <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id='repayDetailsDiv'>
-                                                <fieldset className="fldset w-full">
-                                                    <legend className="font-semibold">Repayment Details</legend>
-                                                    <div className="row mt-3">
-                                                        <div className="col-md-3">
-                                                            <label className="form-label fw-bold">Total Interest (PGK)</label>
-                                                            <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
-                                                        </div>
-                                                        <div className="col-md-3">
-                                                            <label className="form-label fw-bold">Total Repay (PGK)</label>
-                                                            <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
-                                                        </div>
-                                                        <div className="col-md-3">
-                                                            <label className="form-label fw-bold">Repay per FN (PGK)</label>
-                                                            <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
-                                                        </div>
-                                                    </div>
-                                                </fieldset>
-                                            </div>
-                                        )}
-
-                                        <div className="row mb-3">
-                                            <div className="col-md-4">
-                                                <label className="form-label">Bank Name</label>
-                                                <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="bank_name" value={loanFormData.bank_name} onChange={loanHandleChange} />
-                                            </div>
-
-                                            <div className="col-md-4">
-                                                <label className="form-label">Bank Branch</label>
-                                                <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="bank_branch" value={loanFormData.bank_branch} onChange={loanHandleChange} />
-                                            </div>
-
-                                            <div className="col-md-4">
-                                                <label className="form-label">Bank Account No</label>
-                                                <input type="text" className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="bank_account_no" value={loanFormData.bank_account_no} onChange={loanHandleChange} />
-                                            </div>
-                                        </div>
-
-                                        <div className="mb-3">
-                                            <label className="form-label">Remarks</label>
-                                            <textarea className={`form-control ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="remarks" rows="3" value={loanFormData.remarks} onChange={loanHandleChange}></textarea>
-                                        </div>
-                                    </fieldset>
-                                    <Row className="mt-4 text-end">
-                                        <Col>
+                                        {/* Actions */}
+                                        <div className="flex justify-center gap-3 mt-4">
                                             <button
-                                                type="submit"
-                                                className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${!isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""
+                                                onClick={handleSendMail}
+                                                disabled={isSendingMail}
+                                                className={`px-5 py-2 rounded-md text-white ${isSendingMail
+                                                        ? "bg-gray-400 cursor-not-allowed"
+                                                        : "bg-green-600 hover:bg-green-700"
                                                     }`}
-                                                disabled={!isEligible || isChecking}
                                             >
-                                                {isChecking ? (
-                                                    <>
-                                                        <span
-                                                            className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
-                                                            role="status"
-                                                        ></span>
-                                                        Checking...
-                                                    </>
-                                                ) : (
-                                                    "Save & Upload Documents →"
-                                                )}
+                                                {isSendingMail ? "Sending..." : "📧 Send Mail"}
                                             </button>
 
-                                        </Col>
-                                    </Row>
-                                </form>
-                            )}
-                            {step === 3 && (
-                                <LoanDocumentsUpload
-                                    loanFormData={loanFormData}
-                                    setLoanFormData={setLoanFormData}
-                                    onUploadComplete={() => {
-                                        setMessage("✅ All steps completed successfully!");
-                                        // Swal.fire({
-                                        //     title: "Success !",
-                                        //     text: "✅ All steps completed successfully!",
-                                        //     icon: "success"
-                                        // });
-                                        setTimeout(() => router.visit(route("loans")), 1000);
-                                    }}
-                                />
+                                            <button
+                                                onClick={() => router.visit(route("loans"))}
+                                                className="px-5 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+                                            >
+                                                Back to Loans
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>

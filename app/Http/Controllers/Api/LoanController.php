@@ -18,6 +18,7 @@ use App\Models\DocumentUpload;
 use Illuminate\Support\Facades\Log;
 use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class LoanController extends Controller
 {
@@ -1138,6 +1139,53 @@ class LoanController extends Controller
         return response()->json([
             'success' => true,
             'is_sent_for_approval' => $loan->is_sent_for_approval,
+        ]);
+    }
+    public function sendCompletionMail(Request $request)
+    {
+        $request->validate([
+            'loan_id' => 'required|exists:loan_applications,id',
+            'body' => 'required|string',
+        ]);
+
+        $loan = Loan::with('customer')->findOrFail($request->loan_id);
+
+        Mail::raw($request->body, function ($msg) use ($loan) {
+            // $msg->to($loan->customer->email)
+            $msg->to("jsaha.adzguru@gmail.com")
+                ->subject('Loan Application Completed');
+        });
+
+        return response()->json(['message' => 'Mail sent']);
+    }
+    public function getFnRangeByAmount(Request $request)
+    {
+        $validated = $request->validate([
+            'loan_setting_id' => 'required|exists:loan_settings,id',
+            'amount' => 'required|numeric|min:1',
+        ]);
+
+        $amount = (float) $validated['amount'];
+
+        $rule = LoanTierRule::where('loan_setting_id', $validated['loan_setting_id'])
+            ->where('min_amount', '<=', $amount)
+            ->where('max_amount', '>=', $amount)
+            ->orderBy('min_amount')
+            ->first();
+
+        if (!$rule) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'No FN rule found for the given loan amount.',
+            ], 422);
+        }
+
+        return response()->json([
+            'valid' => true,
+            'tier'  => $rule->tier_type,
+            'fn_min' => (int) $rule->min_term_fortnight,
+            'fn_max' => (int) $rule->max_term_fortnight,
+            'rule_id' => $rule->id,
         ]);
     }
 

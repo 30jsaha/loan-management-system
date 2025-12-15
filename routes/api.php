@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\DocumentUploadController;
 use App\Http\Controllers\Api\AllCustController;
 use App\Http\Controllers\Api\FrontEndController;
 use App\Http\Controllers\Api\SalarySlabController;
+use App\Http\Controllers\Api\DocumentController;
 use App\Models\LoanTempCustomer;
 /*
 |--------------------------------------------------------------------------
@@ -62,6 +63,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans-update-after-higher-approval', [LoanController::class, 'loan_update_after_higher_approval']);
     Route::post('/loans/{loanId}/mark-ack-downloaded', [LoanController::class, 'markAckDownloaded']);
     Route::post('/loans/{loanId}/mark-sent-approval', [LoanController::class, 'markSentApproval']);
+    Route::post('/loans/send-completion-mail', [LoanController::class, 'sendCompletionMail']);
+    Route::post('/loan-fn-range', [LoanController::class, 'getFnRangeByAmount']);
+    Route::get('/document-types', [DocumentController::class, 'getDocumentTypes']);
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);

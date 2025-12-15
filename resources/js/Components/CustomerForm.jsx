@@ -26,6 +26,7 @@ export default function CustomerForm({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isDataSaving, setIsDataSaving] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
 
   // Fetch employees
@@ -100,7 +101,7 @@ export default function CustomerForm({
   const handleNext = async (e) => {
     e.preventDefault();
     setMessage("");
-
+    setIsDataSaving(true);
     try {
       let res, savedCustomer;
 
@@ -145,9 +146,10 @@ export default function CustomerForm({
           },
         });
       }
-
+      setIsDataSaving(false);
       onNext(savedCustomer);
     } catch (error) {
+      setIsDataSaving(false);
       console.error(error);
 
       // 🔴 Laravel Validation Errors (422)
@@ -292,26 +294,6 @@ export default function CustomerForm({
                     ))}
                   </select>
                 </div>
-
-                {/* <div>
-                  <label className="block text-gray-700 font-medium">
-                    EMP Code <ImportantField />
-                  </label>
-                  <select
-                    name="employee_no"
-                    value={formData.employee_no || ""}
-                    onChange={handleEmployeeChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    required
-                  >
-                    <option value="">-- Select EMP --</option>
-                    {custList.map((emp, idx) => (
-                      <option key={`${emp.emp_code}-${idx}`} value={emp.emp_code}>
-                        {emp.emp_code} - {emp.cust_name}
-                      </option>
-                    ))}
-                  </select>
-                </div> */}
                 <div className="relative" ref={empAreaRef}>
                     <label className="block text-gray-700 font-medium">
                       EMP Code <ImportantField />
@@ -391,7 +373,7 @@ export default function CustomerForm({
                     onChange={handleChange}
                     disabled={!isOrgSelectable}
                     aria-readonly={!isOrgSelectable}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && ("bg-gray-100 cursor-not-allowed")}`}
                     required
                   >
                     <option value="">-- Select Organisation --</option>
@@ -781,9 +763,20 @@ export default function CustomerForm({
           <Col>
             <button
               type="submit"
-              className="bg-indigo-600 text-white px-4 py-2 mt-3 rounded hover:bg-indigo-700 transition-all"
+              disabled={isDataSaving}
+              className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""} bg-indigo-600 text-white px-4 py-2 mt-3 rounded hover:bg-indigo-700 transition-all`}
             >
-              Save →
+              {isDataSaving ? (
+                <>
+                    <span
+                        className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+                        role="status"
+                    ></span>
+                    Saving...
+                </>
+              ) : (
+                  "Save →"
+              )}
             </button>
           </Col>
         </Row>
