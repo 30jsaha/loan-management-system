@@ -16,6 +16,8 @@ export default function DocumentTypesIndex({ auth }) {
   const itemsPerPage = 10;
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [isEditing, setIsEditing] = useState(false);
+  const [isKeyManuallyEdited, setIsKeyManuallyEdited] = useState(false);
+
   useEffect(() => {
     fetchDocs();
   }, []);
@@ -30,8 +32,30 @@ export default function DocumentTypesIndex({ auth }) {
   });
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    // When document name changes → auto-generate key ONLY if user didn't edit it
+    if (name === "doc_name") {
+      setFormData((prev) => ({
+        ...prev,
+        doc_name: value,
+        doc_key: isKeyManuallyEdited
+          ? prev.doc_key
+          : generateDocKey(value),
+      }));
+      return;
+    }
+
+    // When user edits doc_key manually
+    if (name === "doc_key") {
+      setIsKeyManuallyEdited(true);
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
+
   const resetForm = () => {
     setFormData({
       id: null,
@@ -90,6 +114,16 @@ const handleDelete = (id) => {
     }
   });
 };
+const generateDocKey = (name) => {
+  if (!name) return "";
+  return name
+    .replace(/[^a-zA-Z0-9 ]/g, "")
+    .split(" ")
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join("");
+};
+
 
 
   const fetchDocs = async () => {
@@ -166,8 +200,11 @@ const handleDelete = (id) => {
                 value={formData.doc_key}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
+                placeholder="Auto-generated, but editable"
               />
             </div>
+
+
 
             <div>
               <label className="text-sm font-medium">Document Name</label>

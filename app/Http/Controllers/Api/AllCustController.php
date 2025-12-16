@@ -13,103 +13,103 @@ class AllCustController extends Controller
     {
         return response()->json(AllCustMaster::orderBy('id', 'desc')->get());
     }
-    // public function paginatedData(Request $request)
-    // {
-    //     $query = AllCustMaster::query();
-
-    //     // SEARCH by name or email
-    //     if ($request->search) {
-    //         $q = $request->search;
-    //         $query->where(function ($sub) use ($q) {
-    //             $sub->where('cust_name', 'like', "%$q%")
-    //                 ->orWhere('email', 'like', "%$q%")
-    //                 ->orWhere('emp_code', 'like', "%$q%");
-    //         });
-    //     }
-
-    //     // SEARCH by employee code
-    //     if ($request->searchEmpCode) {
-    //         $query->where('emp_code', 'like', "%{$request->searchEmpCode}%");
-    //     }
-
-    //     // FILTER by organisation — FIXED
-    //     if ($request->org && $request->org !== "all") {
-    //         $query->where('organization_id', $request->org);
-    //     }
-
-    //     // SORTING
-    //     $sortKey = $request->sortKey ?? 'cust_name';
-    //     $sortDir = $request->sortDir ?? 'asc';
-    //     $query->orderBy($sortKey, $sortDir);
-
-    //     // PAGINATION
-    //     $perPage = $request->perPage ?? 20;
-
-    //     return response()->json(
-    //         $query->paginate($perPage)
-    //     );
-    // }
-
     public function paginatedData(Request $request)
     {
         $query = AllCustMaster::query();
 
-        /* -------------------------------------------------
-        EXCLUDE emp_code already used in customers table
-        ------------------------------------------------- */
-        $query->whereNotIn('emp_code', function ($sub) {
-            $sub->select('employee_no')
-                ->from('customers')
-                ->whereNotNull('employee_no');
-        });
-
-        /* -----------------------------
-        SEARCH by name / email / emp
-        ----------------------------- */
+        // SEARCH by name or email
         if ($request->search) {
             $q = $request->search;
             $query->where(function ($sub) use ($q) {
-                $sub->where('cust_name', 'like', "%{$q}%")
-                    ->orWhere('email', 'like', "%{$q}%")
-                    ->orWhere('emp_code', 'like', "%{$q}%");
+                $sub->where('cust_name', 'like', "%$q%")
+                    ->orWhere('email', 'like', "%$q%")
+                    ->orWhere('emp_code', 'like', "%$q%");
             });
         }
 
-        /* -----------------------------
-        SEARCH by employee code
-        ----------------------------- */
+        // SEARCH by employee code
         if ($request->searchEmpCode) {
             $query->where('emp_code', 'like', "%{$request->searchEmpCode}%");
         }
 
-        /* -----------------------------
-        FILTER by organisation
-        ----------------------------- */
-        if ($request->org && $request->org !== 'all') {
+        // FILTER by organisation — FIXED
+        if ($request->org && $request->org !== "all") {
             $query->where('organization_id', $request->org);
         }
 
-        /* -----------------------------
-        SORTING (SAFE)
-        ----------------------------- */
-        $allowedSorts = ['cust_name', 'emp_code', 'email', 'gross_pay', 'id'];
-        $sortKey = in_array($request->sortKey, $allowedSorts)
-            ? $request->sortKey
-            : 'cust_name';
-
-        $sortDir = $request->sortDir === 'desc' ? 'desc' : 'asc';
-
+        // SORTING
+        $sortKey = $request->sortKey ?? 'cust_name';
+        $sortDir = $request->sortDir ?? 'asc';
         $query->orderBy($sortKey, $sortDir);
 
-        /* -----------------------------
-        PAGINATION
-        ----------------------------- */
-        $perPage = (int) ($request->perPage ?? 20);
+        // PAGINATION
+        $perPage = $request->perPage ?? 20;
 
         return response()->json(
             $query->paginate($perPage)
         );
     }
+
+    // public function paginatedData(Request $request)
+    // {
+    //     $query = AllCustMaster::query();
+
+    //     /* -------------------------------------------------
+    //     EXCLUDE emp_code already used in customers table
+    //     ------------------------------------------------- */
+    //     $query->whereNotIn('emp_code', function ($sub) {
+    //         $sub->select('employee_no')
+    //             ->from('customers')
+    //             ->whereNotNull('employee_no');
+    //     });
+
+    //     /* -----------------------------
+    //     SEARCH by name / email / emp
+    //     ----------------------------- */
+    //     if ($request->search) {
+    //         $q = $request->search;
+    //         $query->where(function ($sub) use ($q) {
+    //             $sub->where('cust_name', 'like', "%{$q}%")
+    //                 ->orWhere('email', 'like', "%{$q}%")
+    //                 ->orWhere('emp_code', 'like', "%{$q}%");
+    //         });
+    //     }
+
+    //     /* -----------------------------
+    //     SEARCH by employee code
+    //     ----------------------------- */
+    //     if ($request->searchEmpCode) {
+    //         $query->where('emp_code', 'like', "%{$request->searchEmpCode}%");
+    //     }
+
+    //     /* -----------------------------
+    //     FILTER by organisation
+    //     ----------------------------- */
+    //     if ($request->org && $request->org !== 'all') {
+    //         $query->where('organization_id', $request->org);
+    //     }
+
+    //     /* -----------------------------
+    //     SORTING (SAFE)
+    //     ----------------------------- */
+    //     $allowedSorts = ['cust_name', 'emp_code', 'email', 'gross_pay', 'id'];
+    //     $sortKey = in_array($request->sortKey, $allowedSorts)
+    //         ? $request->sortKey
+    //         : 'cust_name';
+
+    //     $sortDir = $request->sortDir === 'desc' ? 'desc' : 'asc';
+
+    //     $query->orderBy($sortKey, $sortDir);
+
+    //     /* -----------------------------
+    //     PAGINATION
+    //     ----------------------------- */
+    //     $perPage = (int) ($request->perPage ?? 20);
+
+    //     return response()->json(
+    //         $query->paginate($perPage)
+    //     );
+    // }
 
 
     public function store(Request $request)

@@ -96,6 +96,7 @@ Route::post('/document-upload/verify/{id}', [DocumentUploadController::class, 'v
 Route::get('/customers', [CustomerController::class, 'index']);
 Route::post('/customers', [CustomerController::class, 'store']); //handled in save-new-customer-for-new-loan route above
 Route::get('/customers/{id}', [CustomerController::class, 'show']);
+Route::get('/customers/by-emp/{empCode}', [CustomerController::class, 'getByEmpCode']); // avoid 404
 Route::get('/customers-history/{id}', [CustomerController::class, 'customerLoanHistory']);
 Route::post('/customers/{id}', [CustomerController::class, 'update']);
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
