@@ -260,6 +260,12 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             ? <HealthF auth={auth} loan={loan} />
             : <EduPrintFormat auth={auth} loan={loan} />;
     };
+    const normalizeFilePath = (path) => {
+        if (!path) return "";
+
+        // Remove leading "/storage/" if present
+        return path.replace(/^\/?storage\//, "");
+    };
 
     // Open modal with selected document
     const openDocModal = (doc) => {
@@ -1720,7 +1726,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                 //      doc_type: "ISDA Signed Document",
                                                                                 // })
                                                                                 openDocModal({
-                                                                                    doc: loan.isda_signed_upload_path
+                                                                                    id: loan.id,
+                                                                                    doc_type: "ISDA Signed Document",
+                                                                                    file_name: "ISDA_signed_document.pdf",
+                                                                                    file_path: loan.isda_signed_upload_path
                                                                                 })
                                                                             }
                                                                             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
@@ -1752,7 +1761,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                         <button
                                                                             onClick={() =>
                                                                                 openDocModal({
-                                                                                    doc: loan.org_signed_upload_path
+                                                                                    id: loan.id,
+                                                                                    doc_type: "Organisation Document",
+                                                                                    file_name: "organisation_document.pdf",
+                                                                                    file_path: loan.org_signed_upload_path
                                                                                 })
                                                                             }
                                                                             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
@@ -1858,7 +1870,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                 //      doc_type: "ISDA Signed Document",
                                                                                 // })
                                                                                 openDocModal({
-                                                                                    doc: loan.isda_signed_upload_path
+                                                                                    id: loan.id,
+                                                                                    doc_type: "ISDA Signed Document",
+                                                                                    file_name: "ISDA_signed_document.pdf",
+                                                                                    file_path: loan.isda_signed_upload_path
                                                                                 })
 
 
@@ -1893,7 +1908,10 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                         <button
                                                                             onClick={() =>
                                                                                 openDocModal({
-                                                                                    doc: loan.org_signed_upload_path
+                                                                                    id: loan.id,
+                                                                                    doc_type: "Organisation Document",
+                                                                                    file_name: "Organisation_Document.pdf",
+                                                                                    file_path: loan.org_signed_upload_path
                                                                                 })
                                                                             }
                                                                             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
