@@ -4,7 +4,7 @@ import { Head } from "@inertiajs/react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Swal from "sweetalert2";
-
+import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 export default function Index({ auth }) {
   const [reasons, setReasons] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -237,13 +237,13 @@ export default function Index({ auth }) {
                           onClick={() => handleEdit(r)}
                           className="bg-orange-500 text-white px-2 py-1 rounded"
                         >
-                          ✏️
+                          <Pencil size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(r.id)}
                           className="bg-red-500 text-white px-2 py-1 rounded"
                         >
-                          🗑
+                           <Trash2 size={14} />
                         </button>
                       </div>
                     </td>
