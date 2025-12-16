@@ -22,6 +22,8 @@ import {
   FolderOpen,
   Landmark,
   Download, 
+  IdCard,
+  Briefcase,
 } from "lucide-react";
 
 axios.defaults.withCredentials = true;
@@ -102,7 +104,7 @@ export default function View({ auth, customerId }) {
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">{fullName}</h2>
                   <p className="text-gray-500 text-sm font-medium">
-                    {customer.company?.company_name || "—"}
+                    {customer.employee_no || "—"}
                   </p>
                 </div>
               </div>
@@ -115,6 +117,7 @@ export default function View({ auth, customerId }) {
                     ["DOB", customer.dob ? new Date(customer.dob).toLocaleDateString() : "—"],
                     ["Dependents", customer.no_of_dependents ?? "—"],
                     ["Created", new Date(customer.created_at).toLocaleDateString()],
+                    ["Joined Date", new Date(customer.date_joined).toLocaleDateString()],
                   ]}
                 />
               </div>
@@ -146,8 +149,15 @@ export default function View({ auth, customerId }) {
               {/* TABS HEADER */}
               <div className="border-b px-4 py-4 bg-white flex flex-wrap gap-2 sticky top-0 z-10">
                 <TabButton 
+                  id="personalinfo" 
+                  label="Personal Information" 
+                  activeTab={activeTab} 
+                  setActiveTab={setActiveTab} 
+                  icon={<FileText size={16} />} 
+                />
+                <TabButton 
                   id="company" 
-                  label="Organisation" 
+                  label="Employment" 
                   activeTab={activeTab} 
                   setActiveTab={setActiveTab} 
                   icon={<Building size={16} />} 
@@ -216,6 +226,13 @@ export default function View({ auth, customerId }) {
                     customer={customer}   
                   />
                 )}
+                {activeTab === "personalinfo" && (
+                  <PersonalInfo
+                    loans={loans}
+                    collections={history.collections}
+                    customer={customer}   
+                  />
+                )}
 
 
               </div>
@@ -275,25 +292,38 @@ const CompanyTab = ({ customer }) => {
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">Company & Organisation Details</h3>
+      <h3 className="text-lg font-semibold mb-4">
+        Employment Details
+      </h3>
 
       <InfoTable
         rows={[
+          // Organisation info (kept)
           ["Organisation Name", org.organisation_name || "—"],
           ["Sector", org.sector_type || "—"],
-          ["Department Code", org.department_code || "—"],
-          ["Location Code", org.location_code || "—"],
           ["Address", org.address || "—"],
-          ["Province", org.province || "—"],
-          ["Contact Person", org.contact_person || "—"],
           ["Contact Number", org.contact_no || "—"],
           ["Email", org.email || "—"],
           ["Status", org.status || "—"],
+
+          // Employment info (added)
+          ["Employee No", customer.employee_no || "—"],
+          ["Designation", customer.designation || "—"],
+          ["Employment Type", customer.employment_type || "—"],
+          ["Department", customer.employer_department || "—"],
+          ["Work Location", customer.work_location || "—"],
+          ["Work District", customer.work_district || "—"],
+          ["Work Province", customer.work_province || "—"],
+          ["Immediate Supervisor", customer.immediate_supervisor || "—"],
+          ["Date Joined", customer.date_joined || "—"],
+          ["Monthly Salary", customer.monthly_salary ? `PGK ${customer.monthly_salary}` : "—"],
+          ["Net Salary", customer.net_salary ? `PGK ${customer.net_salary}` : "—"],
         ]}
       />
     </div>
   );
 };
+
 
 /* -----------------------------------
         LOAN TAB
@@ -536,16 +566,10 @@ const InfoCard = ({ label, value, color }) => (
   </div>
 );
 
-/* -----------------------------------
-        DOCUMENT TAB
--------------------------------------- */
+
 
 /* -----------------------------------
-        DOCUMENT TAB (Grouped by Loan)
--------------------------------------- */
-
-/* -----------------------------------
-        DOCUMENT TAB (Enhanced UI)
+        DOCUMENT TAB 
 -------------------------------------- */
 
 const DocumentTab = ({ loans }) => {
@@ -798,6 +822,27 @@ const LoanStatementCard = ({
     const doc = new jsPDF();
 
     /* ======================
+      DATE FORMATTER
+    ====================== */
+    const formatDate = (date) => {
+      if (!date) return "—";
+      return new Date(date).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    };
+
+    /* ======================
+      DERIVED DATES
+    ====================== */
+    const loanAppliedDate = formatDate(loan.created_at);
+    const loanApprovedDate = formatDate(loan.approved_date);
+    const emiStartDate = formatDate(
+      paidInstallments[0]?.due_date || loan.next_due_date
+    );
+
+    /* ======================
       TITLE
     ====================== */
     doc.setFontSize(16);
@@ -828,30 +873,31 @@ const LoanStatementCard = ({
     doc.text(`Email: ${customer?.email || "—"}`, 14, 46);
 
     /* ======================
-      LOAN SUMMARY (NEW)
+      LOAN SUMMARY
     ====================== */
     doc.setFont("helvetica", "bold");
     doc.text("Loan Summary", 14, 58);
 
     doc.setFont("helvetica", "normal");
-    doc.text(`Loan ID: ${loan.id}`, 14, 65);
-    doc.text(`EMI Amount: PGK ${emiAmount.toFixed(2)}`, 14, 71);
-    doc.text(`Tenure: ${tenure} Fortnights`, 14, 77);
 
+    // LEFT COLUMN
+    doc.text(`Loan ID: ${loan.id}`, 14, 65);
+    doc.text(`Loan Applied: ${loanAppliedDate}`, 14, 71);
+    doc.text(`Loan Approved: ${loanApprovedDate}`, 14, 77);
+    doc.text(`EMI Start Date: ${emiStartDate}`, 14, 83);
+
+    // RIGHT COLUMN
+    doc.text(`EMI Amount: PGK ${emiAmount.toFixed(2)}`, 110, 65);
+    doc.text(`Tenure: ${tenure} Fortnights`, 110, 71);
     doc.text(
       `Total Repayable: PGK ${totalRepayable.toFixed(2)}`,
       110,
-      65
-    );
-    doc.text(
-      `Total Paid: PGK ${totalPaid.toFixed(2)}`,
-      110,
-      71
+      77
     );
     doc.text(
       `Outstanding: PGK ${outstanding.toFixed(2)}`,
       110,
-      77
+      83
     );
 
     /* ======================
@@ -859,7 +905,7 @@ const LoanStatementCard = ({
     ====================== */
     if (rows.length > 0) {
       autoTable(doc, {
-        startY: 85,
+        startY: 92,
         head: [[
           "EMI No",
           "Due Date",
@@ -884,11 +930,11 @@ const LoanStatementCard = ({
       });
     } else {
       doc.setFontSize(11);
-      doc.text("No installments paid yet.", 14, 90);
+      doc.text("No installments paid yet.", 14, 92);
       doc.text(
         `Outstanding Amount: PGK ${outstanding.toFixed(2)}`,
         14,
-        98
+        100
       );
     }
 
@@ -1006,9 +1052,6 @@ const LoanStatementCard = ({
   );
 };
 
-
-
-
 const InfoBox = ({ label, value, valueClass = "" }) => (
   <div className="border rounded-lg p-3 bg-gray-50">
     <div className="text-xs text-gray-500 font-medium">{label}</div>
@@ -1019,7 +1062,79 @@ const InfoBox = ({ label, value, valueClass = "" }) => (
 );
 
 
+/* -----------------------------------
+      Personal Info Tab
+-------------------------------------- */
 
+const InfoItem = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-2 px-2 py-1 rounded-md hover:bg-gray-50 transition">
+    <Icon size={14} className="text-indigo-500 mt-0.5" />
+    <div className="leading-tight">
+      <p className="text-[16px] text-gray-500">{label}</p>
+      <p className="text-s font-medium text-gray-800 truncate">
+        {value || "—"}
+      </p>
+    </div>
+  </div>
+);
+
+const PersonalInfo = ({ customer }) => {
+  if (!customer) return null;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      
+      {/* Header */}
+      <div className="px-4 py-3 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-white border-b">
+        <h5 className="text-sm font-semibold text-gray-800">
+          Personal Details
+        </h5>
+
+        <span className="text-[17px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+          {customer.status}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="p-1 text-sm space-y-4">
+
+        {/* PERSONAL INFO */}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <InfoItem label="Gender" value={customer.gender} icon={User} />
+            <InfoItem label="Date of Birth" value={customer.dob} icon={User} />
+            <InfoItem label="Marital Status" value={customer.marital_status} icon={User} />
+            <InfoItem label="No. of Dependents" value={customer.no_of_dependents} icon={User} />
+          </div>
+        </div>
+
+        <div className="border-t" />
+
+        {/* PAYROLL & FAMILY */}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <InfoItem label="Payroll Number" value={customer.payroll_number} icon={IdCard} />
+            <InfoItem label="Home Province" value={customer.home_province} icon={Building} />
+            <InfoItem label="District / Village" value={customer.district_village} icon={Building} />
+            <InfoItem label="Spouse Full Name" value={customer.spouse_full_name} icon={User} />
+            <InfoItem label="Spouse Contact" value={customer.spouse_contact} icon={Phone} />
+          </div>
+        </div>
+
+        <div className="border-t" />
+
+        {/* ADDRESS */}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <InfoItem label="Present Address" value={customer.present_address} icon={Building} />
+            <InfoItem label="Permanent Address" value={customer.permanent_address} icon={Building} />
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
 
 
 
