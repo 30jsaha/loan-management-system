@@ -147,7 +147,7 @@ export default function View({ auth, customerId }) {
               <div className="border-b px-4 py-4 bg-white flex flex-wrap gap-2 sticky top-0 z-10">
                 <TabButton 
                   id="company" 
-                  label="Company" 
+                  label="Organisation" 
                   activeTab={activeTab} 
                   setActiveTab={setActiveTab} 
                   icon={<Building size={16} />} 
