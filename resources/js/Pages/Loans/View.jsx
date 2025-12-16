@@ -1530,7 +1530,6 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                         );
                                                                     }
 
-
                                                                     /* =============================
                                                                     3. STATUS: REJECTED (Always show reason)
                                                                     ============================== */
@@ -1861,6 +1860,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                 openDocModal({
                                                                                     doc: loan.isda_signed_upload_path
                                                                                 })
+
+
+
                                                                             }
                                                                             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
                                                                         >
