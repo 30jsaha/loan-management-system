@@ -1214,6 +1214,7 @@ export default function Create({ auth, loan_settings }) {
                             )}
                             {isCompleted && (
                                 <div className="p-8 text-center animate__animated animate__fadeIn">
+
                                     <div className="max-w-6xl mx-auto bg-green-50 border border-green-200 rounded-lg p-6">
                                         <h2 className="text-2xl font-bold text-green-700 mb-3 d-flex justify-center">
                                             {/* <Check className='text-green-700' />  */}

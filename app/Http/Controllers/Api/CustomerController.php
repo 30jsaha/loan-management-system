@@ -37,6 +37,21 @@ class CustomerController extends Controller
         }
         return response()->json($customer);
     }
+     public function getByEmpCode($empCode)
+    {
+        $customer = Customer::where('employee_no', $empCode)->first();
+
+        if (!$customer) {
+            return response()->json([
+                'exists' => false
+            ], 200);
+        }
+
+        return response()->json([
+            'exists' => true,
+            'customer' => $customer
+        ], 200);
+    }
     //function to save new customer for new loan
     public function store(Request $request)
     {

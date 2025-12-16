@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\AllCustController;
 use App\Http\Controllers\Api\FrontEndController;
 use App\Http\Controllers\Api\SalarySlabController;
 use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\RejectionController;
 use App\Models\LoanTempCustomer;
 /*
 |--------------------------------------------------------------------------
@@ -96,6 +97,7 @@ Route::post('/document-upload/verify/{id}', [DocumentUploadController::class, 'v
 Route::get('/customers', [CustomerController::class, 'index']);
 Route::post('/customers', [CustomerController::class, 'store']); //handled in save-new-customer-for-new-loan route above
 Route::get('/customers/{id}', [CustomerController::class, 'show']);
+Route::get('/customers/by-emp/{empCode}', [CustomerController::class, 'getByEmpCode']); // avoid 404
 Route::get('/customers-history/{id}', [CustomerController::class, 'customerLoanHistory']);
 Route::post('/customers/{id}', [CustomerController::class, 'update']);
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
@@ -140,4 +142,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/document-type-remove/{id}', [DocumentController::class, 'remove_document_type']); // DELETE
     // Route::get('/document-type-list', [DocumentController::class, 'document_type_list']); // GET
     
+});
+// Rejection Reasons
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/rejection-reasons', [RejectionController::class, 'getRejectionReasons']);
+    Route::post('/rejection-reason-create', [RejectionController::class, 'create']);
+    Route::put('/rejection-reason-modify/{id}', [RejectionController::class, 'update']);
+    Route::delete('/rejection-reason-remove/{id}', [RejectionController::class, 'destroy']);
 });

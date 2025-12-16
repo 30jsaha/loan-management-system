@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RejectionReson extends Model
+class RejectionReason extends Model
 {
     use HasFactory;
 
@@ -15,6 +15,6 @@ class RejectionReson extends Model
         'reason_desc',
         'do_allow_reapply',
         'reason_type',
-        'created_by'
+        'created_by',
     ];
 }

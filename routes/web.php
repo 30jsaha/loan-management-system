@@ -6,6 +6,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\Api\LoanController;
 use App\Http\Controllers\SalarySlabController;
 use App\Http\Controllers\OrganizationsController;
+use App\Http\Controllers\RejectionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
@@ -174,6 +175,10 @@ Route::middleware(['auth', 'verified'])
 Route::middleware(['auth', 'verified'])
     ->get('/organizations', [OrganizationsController::class, 'index'])
     ->name('orgs');
+
+Route::middleware(['auth', 'verified'])
+    ->get('/loan-rejections', [RejectionController::class, 'index'])
+    ->name('loan.rejections');
 
 
 require __DIR__.'/auth.php';
