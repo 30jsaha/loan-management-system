@@ -164,7 +164,7 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
         >
             <Head title="Completed Loans" />
 
-            <div className="p-6 bg-gray-100 min-h-screen">
+            <div className="p-6 bg-gray-100 min-h-screen max-w-7xl mx-auto">
 
                 {/* --- Background Card Wrapper --- */}
                 <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200">

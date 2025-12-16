@@ -359,7 +359,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
         </div>
 
         {/* === TABLE === */}
-        <div className="bg-white border shadow-md overflow-x-auto">
+        <div className="bg-white border shadow-md overflow-x-auto max-w-7xl mx-auto">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-emerald-600 text-white">
               <tr>
