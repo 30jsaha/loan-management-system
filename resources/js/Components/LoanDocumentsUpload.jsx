@@ -177,106 +177,157 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
 
       <form onSubmit={handleUploadAll}>
         {/* Responsive Grid: Stacks on mobile, 1 col, then 2, then 3 on huge screens */}
-<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
-  {docTypes.map((doc) => {
-    const file = files[doc.doc_key];
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+          {docTypes.map((doc) => {
+            const file = files[doc.doc_key];
 
-    return (
-      <div
-        key={doc.id}
-        className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 transition hover:shadow-md"
-      >
-        {/* HEADER */}
-        <div className="flex justify-between items-start mb-2">
-          <h6 className="font-semibold text-gray-800">
-            {doc.doc_name}
-            {doc.is_required === 1 && (
-              <span className="text-red-500 ml-1">*</span>
-            )}
-          </h6>
+            return (
+              <div
+                 key={doc.id}
+                className="
+                  relative
+                  bg-white/80 backdrop-blur-md
+                  rounded-1xl
+                  border border-gray-200
+                  p-3
+                  shadow-sm
+                  hover:shadow-lg
+                  transition-all duration-300
+                "
+              >
+                <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-400" />
+                {/* HEADER */}
+                <div className="flex justify-between items-start mb-2">
+                  <h6 className="font-semibold text-gray-800">
+                    {doc.doc_name}
+                    {doc.is_required === 1 && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </h6>
 
-          {file && (
-            <X
-              size={18}
-              className="text-gray-400 hover:text-red-500 cursor-pointer"
-              onClick={() => {
-                const updated = { ...files };
-                delete updated[doc.doc_key];
-                setFiles(updated);
-              }}
-            />
-          )}
+                  {file && (
+                    <X
+                      size={18}
+                      className="text-gray-400 hover:text-red-500 cursor-pointer"
+                      onClick={() => {
+                        const updated = { ...files };
+                        delete updated[doc.doc_key];
+                        setFiles(updated);
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* SIZE INFO */}
+                <p className="text-xs text-gray-500 mb-3">
+                  Min {doc.min_size_kb} KB · Max {doc.max_size_kb / 1024} MB
+                </p>
+
+                {/* UPLOAD AREA */}
+                {!file ? (
+                  /* UPLOAD AREA */
+                  <label className="
+                      group
+                      flex flex-col items-center justify-center
+                      h-44
+                      rounded-xl
+                      border-2 border-dashed border-gray-300
+                      bg-gradient-to-br from-gray-50 to-white
+                      cursor-pointer
+                      hover:border-indigo-400
+                      hover:bg-indigo-50/40
+                      transition-all duration-300
+                    ">
+                    <Upload  size={42}
+                    className="text-gray-400 mb-2 group-hover:text-indigo-500 group-hover:scale-110 transition" />
+                    <p className="text-sm font-medium text-gray-700">
+                      Click or drag file
+                    </p>
+                    <p className="text-xs text-gray-500">PDF / DOCX / TXT</p>
+
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.txt"
+                      className="hidden"
+                      onChange={(e) => handleFileSelect(e, doc)}
+                    />
+                  </label>
+                ) : (
+                  <>
+                {/* PREVIEW BOX */}
+              <div className="h-40 rounded-xl border bg-gray-50 overflow-hidden relative">
+                {file.type === "application/pdf" ? (
+                  <>
+                    <embed
+                      src={URL.createObjectURL(file)}
+                      type="application/pdf"
+                      className="w-full h-full"
+                    />
+
+                    {/* Overlay info */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur px-2 py-1 text-[11px] flex justify-between">
+                      <span className="truncate">{file.name}</span>
+                      <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-3">
+                    <div className="h-10 w-10 mb-2 flex items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 text-white text-xs font-semibold shadow">
+                      {file.name.split(".").pop()?.toUpperCase()}
+                    </div>
+
+                    <p className="text-xs font-medium text-gray-800 truncate w-full">
+                      {file.name}
+                    </p>
+                    <p className="text-[11px] text-gray-500">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                )}
+              </div>
+
+
+                    {/* ACTION BUTTONS – BELOW BOX */}
+                    <div className="flex justify-between items-center gap-2 mt-3">
+                      <Button
+                        size="sm"
+                        variant="outline-primary"
+                        className="flex items-center gap-1"
+                        onClick={() => handleViewDocument(file)}
+                      > 
+                       <div className="flex gap-2">
+                        <Eye size={14} className="mt-1" />
+                        View
+                        </div>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline-danger"
+                        onClick={() => {
+                          const updated = { ...files };
+                          delete updated[doc.doc_key];
+                          setFiles(updated);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+
+                {/* ERROR MESSAGE */}
+                {message[doc.doc_key] && (
+                  <p className="text-xs mt-2 text-red-600">
+                    {message[doc.doc_key]}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
-
-        {/* SIZE INFO */}
-        <p className="text-xs text-gray-500 mb-3">
-          Min {doc.min_size_kb} KB · Max {doc.max_size_kb / 1024} MB
-        </p>
-
-        {/* UPLOAD AREA */}
-        {!file ? (
-          <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-            <Upload size={40} className="text-gray-400 mb-2" />
-            <p className="text-sm font-medium text-gray-700">
-              Click or drag file
-            </p>
-            <p className="text-xs text-gray-500">PDF / DOCX / TXT</p>
-
-            <input
-              type="file"
-              accept=".pdf,.docx,.txt"
-              className="hidden"
-              onChange={(e) => handleFileSelect(e, doc)}
-            />
-          </label>
-        ) : (
-          <div className="bg-gray-50 border rounded-lg p-3">
-            <p className="text-sm font-medium text-gray-800 truncate">
-              {file.name}
-            </p>
-            <p className="text-xs text-gray-500 mb-2">
-              {(file.size / 1024 / 1024).toFixed(2)} MB
-            </p>
-
-            {/* ACTION BUTTONS */}
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline-primary"
-                className="flex items-center gap-1"
-                onClick={() => handleViewDocument(file)}
-              >
-                <Eye size={14} />
-                View
-              </Button>
-
-              <Button
-                size="sm"
-                variant="outline-danger"
-                onClick={() => {
-                  const updated = { ...files };
-                  delete updated[doc.doc_key];
-                  setFiles(updated);
-                }}
-              >
-                Remove
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* ERROR MESSAGE */}
-        {message[doc.doc_key] && (
-          <p className="text-xs mt-2 text-red-600">
-            {message[doc.doc_key]}
-          </p>
-        )}
-      </div>
-    );
-  })}
-</div>
-
-
+        
         <div className="text-center mt-5">
           <Button
             type="submit"
