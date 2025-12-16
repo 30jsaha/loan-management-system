@@ -11,6 +11,7 @@ use App\Models\LoanApplication as Loan;
 use App\Models\InstallmentDetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
 {
@@ -40,40 +41,116 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         // ✅ Validate incoming request data
-        $validated = $request->validate([
+        // $validated = $request->validate([
+        //     'company_id' => 'required|integer|exists:company_master,id',
+        //     'user_id' => 'nullable|integer|default:0',
+        //     'organisation_id' => 'required|integer|exists:organisation_master,id',
+        //     'first_name' => 'required|string|max:100',
+        //     'last_name' => 'required|string|max:100',
+        //     'email' => 'required|email|max:100',
+        //     'gender' => 'nullable|in:Male,Female,Other',
+        //     'dob' => 'nullable|date',
+        //     'marital_status' => 'nullable|in:Single,Married,Divorced,Widowed',
+        //     'no_of_dependents' => 'nullable|integer|min:0',
+        //     'phone' => 'required|string|max:20',
+        //     'present_address' => 'nullable|string',
+        //     'permanent_address' => 'nullable|string',
+        //     'employee_no' => 'nullable|string|max:50',
+        //     'designation' => 'nullable|string|max:100',
+        //     'employment_type' => 'nullable|in:Permanent,Contract',
+        //     'date_joined' => 'nullable|date',
+        //     'monthly_salary' => 'nullable|numeric',
+        //     'work_location' => 'nullable|string|max:100',
+        //     'status' => 'nullable|in:Active,Inactive',
+        //     'payroll_number' => 'nullable|string|max:150',
+        //     'home_province' => 'nullable|string',
+        //     'district_village' => 'nullable|string',
+        //     'spouse_full_name' => 'nullable|string|max:150',
+        //     'spouse_contact' => 'nullable|string|max:50',
+        //     'employer_department' => 'nullable|string|max:200',
+        //     'employer_address' => 'nullable|string',
+        //     'work_district' => 'nullable|string',
+        //     'work_province' => 'nullable|string|max:100',
+        //     'immediate_supervisor' => 'nullable|string|max:100',
+        //     'years_at_current_employer' => 'nullable|integer|min:0',
+        //     'net_salary' => 'nullable|numeric',
+        // ]);
+        $rules = [
             'company_id' => 'required|integer|exists:company_master,id',
-            'user_id' => 'nullable|integer|default:0',
+            'user_id' => 'nullable|integer',
             'organisation_id' => 'required|integer|exists:organisation_master,id',
+
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'email' => 'required|email|max:100',
+
+            'email' => [
+                'required',
+                'email',
+                'max:100',
+                Rule::unique('customers', 'email'),
+            ],
+
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('customers', 'phone'),
+            ],
+
+            'payroll_number' => [
+                'nullable',
+                'string',
+                'max:150',
+                Rule::unique('customers', 'payroll_number'),
+            ],
+
+            'employee_no' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('customers', 'employee_no'),
+            ],
+
             'gender' => 'nullable|in:Male,Female,Other',
             'dob' => 'nullable|date',
             'marital_status' => 'nullable|in:Single,Married,Divorced,Widowed',
             'no_of_dependents' => 'nullable|integer|min:0',
-            'phone' => 'required|string|max:20',
+
             'present_address' => 'nullable|string',
             'permanent_address' => 'nullable|string',
-            'employee_no' => 'nullable|string|max:50',
+
             'designation' => 'nullable|string|max:100',
             'employment_type' => 'nullable|in:Permanent,Contract',
             'date_joined' => 'nullable|date',
             'monthly_salary' => 'nullable|numeric',
+
             'work_location' => 'nullable|string|max:100',
             'status' => 'nullable|in:Active,Inactive',
-            'payroll_number' => 'nullable|string|max:150',
+
             'home_province' => 'nullable|string',
             'district_village' => 'nullable|string',
+
             'spouse_full_name' => 'nullable|string|max:150',
             'spouse_contact' => 'nullable|string|max:50',
+
             'employer_department' => 'nullable|string|max:200',
             'employer_address' => 'nullable|string',
             'work_district' => 'nullable|string',
             'work_province' => 'nullable|string|max:100',
+
             'immediate_supervisor' => 'nullable|string|max:100',
             'years_at_current_employer' => 'nullable|integer|min:0',
+
             'net_salary' => 'nullable|numeric',
-        ]);
+        ];
+        $messages = [
+            'email.unique' => 'This email is already registered.',
+            'phone.unique' => 'This phone number is already registered.',
+            'payroll_number.unique' => 'This payroll number already exists.',
+            'employee_no.unique' => 'This employee number is already assigned.',
+        ];
+
+        $validated= $request->validate($rules, $messages);
 
         // ✅ Set user ID automatically
         $validated['user_id'] = $request->user()->id ?? 0;
@@ -93,27 +170,50 @@ class CustomerController extends Controller
     public function edit_new_customer_for_new_loan(Request $request, $id)
     {
         // Validate incoming request data
-        $validated = $request->validate([
+        $rules = [
+            'email' => [
+                'required',
+                'email',
+                'max:100',
+                Rule::unique('customers', 'email')->ignore($id),
+            ],
+
+            'phone' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('customers', 'phone')->ignore($id),
+            ],
+
+            'payroll_number' => [
+                'nullable',
+                'string',
+                'max:150',
+                Rule::unique('customers', 'payroll_number')->ignore($id),
+            ],
+
+            'employee_no' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('customers', 'employee_no')->ignore($id),
+            ],
             'company_id' => 'required|integer|exists:company_master,id',
             'organisation_id' => 'required|integer|exists:organisation_master,id',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'email' => 'required|email|max:100',
             'gender' => 'required|in:Male,Female,Other',
             'dob' => 'nullable|date',
             'marital_status' => 'nullable|in:Single,Married,Divorced,Widowed',
             'no_of_dependents' => 'nullable|integer|min:0',
-            'phone' => 'required|string|max:20',
             'present_address' => 'nullable|string',
             'permanent_address' => 'nullable|string',
-            'employee_no' => 'nullable|string|max:50',
             'designation' => 'nullable|string|max:100',
             'employment_type' => 'nullable|in:Permanent,Contract',
             'date_joined' => 'nullable|date',
             'monthly_salary' => 'nullable|numeric',
             'work_location' => 'nullable|string|max:100',
             'status' => 'nullable|in:Active,Inactive',
-            'payroll_number' => 'nullable|string|max:150',
             'home_province' => 'nullable|string',
             'district_village' => 'nullable|string',
             'spouse_full_name' => 'nullable|string|max:150',
@@ -125,7 +225,16 @@ class CustomerController extends Controller
             'immediate_supervisor' => 'nullable|string|max:100',
             'years_at_current_employer' => 'nullable|integer|min:0',
             'net_salary' => 'nullable|numeric',
-        ]);
+        ];
+        $messages = [
+            'email.unique' => 'This email is already registered.',
+            'phone.unique' => 'This phone number is already registered.',
+            'payroll_number.unique' => 'This payroll number already exists.',
+            'employee_no.unique' => 'This employee number is already assigned.',
+        ];
+
+        $validated= $request->validate($rules, $messages);
+
         // Find the customer by ID
         $customer = Customer::find($id);
         if (!$customer) {

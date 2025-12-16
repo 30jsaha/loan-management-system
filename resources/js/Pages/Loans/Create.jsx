@@ -1,4 +1,4 @@
-import { use, useCallback, useEffect, useState, props } from 'react';
+import { use, useCallback, useEffect, useState, props, useMemo } from 'react';
 import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
@@ -121,6 +121,15 @@ export default function Create({ auth, loan_settings }) {
     useEffect(() => {
         fetchCustomers();
     }, []);
+    const customerMap = useMemo(() => {
+        const map = {};
+        customers.forEach(c => {
+            const label = `${c.employee_no} - ${c.first_name} ${c.last_name}`;
+            map[label] = c;
+        });
+        return map;
+    }, [customers]);
+
     useEffect(() => {
         // Fetch Companies from the API
         fetch('/api/company-list')
@@ -850,7 +859,7 @@ export default function Create({ auth, loan_settings }) {
                                     {step === 2 && (
                                         <form onSubmit={handleSubmit}> {/* Loan application form here */}
                                             <div className="row mb-3">
-                                                <div className="col-md-4">
+                                                {/* <div className="col-md-4">
                                                     <label className="form-label">Customer</label>
                                                     <select
                                                         className="form-select"
@@ -860,10 +869,8 @@ export default function Create({ auth, loan_settings }) {
                                                         onChange={(e) => {
                                                             // Always call your main handler first
                                                             loanHandleChange(e);
-
                                                             // Extract selected value
                                                             const selectedValue = e.target.value;
-                                                            // fetchLoanTypes();
                                                             // Check if value is not null or 0
                                                             if (selectedValue && selectedValue !== "0") {
                                                                 // Check your custom condition
@@ -886,10 +893,60 @@ export default function Create({ auth, loan_settings }) {
                                                         <option value="">Select Customer</option>
                                                         {customers.map((c) => (
                                                             <option key={c.id} value={c.id}>
-                                                                {c.first_name} {c.last_name}
+                                                                {c.employee_no} - {c.first_name} {c.last_name}
                                                             </option>
                                                         ))}
                                                     </select>
+                                                </div> */}
+                                                <div className="col-md-4">
+                                                    <label className="form-label">Customer</label>
+
+                                                    <input
+                                                        type="text"
+                                                        list="customer-list"
+                                                        className="form-control"
+                                                        placeholder="Type EMP Code or Name"
+                                                        disabled={!isCustSelectable}
+                                                        onChange={(e) => {
+                                                        const inputValue = e.target.value;
+                                                        const selectedCustomer = customerMap[inputValue];
+
+                                                        if (selectedCustomer) {
+                                                            // ✅ Set customer_id
+                                                            setLoanFormData(prev => ({
+                                                            ...prev,
+                                                            customer_id: selectedCustomer.id
+                                                            }));
+
+                                                            // Eligibility logic (unchanged)
+                                                            if (isTruelyEligible) {
+                                                            setIsEligible(true);
+                                                            }
+
+                                                            // 🔥 Fetch loan types
+                                                            axios.get(`/api/filtered-loan-types/${selectedCustomer.id}`)
+                                                            .then(res => setLoanTypes(res.data))
+                                                            .catch(err => console.error(err));
+                                                        } else {
+                                                            // Reset if invalid text
+                                                            setLoanFormData(prev => ({
+                                                            ...prev,
+                                                            customer_id: 0
+                                                            }));
+                                                            setIsEligible(false);
+                                                        }
+                                                        }}
+                                                        required
+                                                    />
+
+                                                    <datalist id="customer-list">
+                                                        {customers.map(c => {
+                                                        const label = `${c.employee_no} - ${c.first_name} ${c.last_name}`;
+                                                        return (
+                                                            <option key={c.id} value={label} />
+                                                        );
+                                                        })}
+                                                    </datalist>
                                                 </div>
                                             </div>
                                             <fieldset className="fldset">
