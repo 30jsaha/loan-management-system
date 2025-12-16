@@ -65,7 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/{loanId}/mark-sent-approval', [LoanController::class, 'markSentApproval']);
     Route::post('/loans/send-completion-mail', [LoanController::class, 'sendCompletionMail']);
     Route::post('/loan-fn-range', [LoanController::class, 'getFnRangeByAmount']);
-    Route::get('/document-types', [DocumentController::class, 'getDocumentTypes']);
+    
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);
@@ -130,3 +130,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/organisation-list', [OrganisationController::class, 'organisation_list']); // GET
 });
 
+
+
+//Document Type
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/document-types', [DocumentController::class, 'getDocumentTypes']);
+    Route::post('/document-type-create', [DocumentController::class, 'create_document_type']); // CREATE
+    Route::put('/document-type-modify/{id}', [DocumentController::class, 'modify_document_type']); // UPDATE
+    Route::delete('/document-type-remove/{id}', [DocumentController::class, 'remove_document_type']); // DELETE
+    // Route::get('/document-type-list', [DocumentController::class, 'document_type_list']); // GET
+    
+});
