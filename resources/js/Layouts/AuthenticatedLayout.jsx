@@ -79,7 +79,8 @@ export default function Authenticated({ user, header, children }) {
                                     className={`ms-3 relative pt-3 ${route().current('loan.settings') ||
                                         route().current('loan.income.slabs') ||
                                         route().current('orgs') ||
-                                        route().current('loan.documents') 
+                                        route().current('loan.documents') ||
+                                        route().current('loan.rejections') 
                                         ? 'dropdown-nav-active' // Active style
                                         : 'text-gray-500'
                                         }`}

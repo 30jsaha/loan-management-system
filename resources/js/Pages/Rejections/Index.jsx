@@ -110,7 +110,7 @@ export default function Index({ auth }) {
       <Head title="Rejection Reasons" />
       <Toaster position="top-right" />
 
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 max-w-7xl mx-auto">
 
         {/* ================= FORM ================= */}
         <div className="bg-white p-6 rounded-xl shadow border">
