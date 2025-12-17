@@ -392,8 +392,18 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                   </td>
                 </tr>
               ) : (
-                paginatedData.map((org, idx) => (
-                  <tr key={org.id} className="hover:bg-gray-50">
+                paginatedData.map((org, idx) => {
+                  const isEditingRow = formData.id === org.id;
+                  return (
+                  <tr 
+                    key={org.id} 
+                    className={`transition-all duration-300 ${isEditingRow
+                        ? "bg-amber-100 ring-2 ring-amber-200"
+                        : idx % 2 === 0
+                            ? "bg-white"
+                            : "bg-emerald-50/40"
+                    } hover:bg-emerald-100/70`}
+                  >
                     <td className="border px-2 py-2 text-center">
                       {(currentPage - 1) * itemsPerPage + idx + 1}
                     </td>
@@ -440,7 +450,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                       </div>
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>

@@ -433,7 +433,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                         <tbody>
                             {paginatedData.map((slab, idx) => {
                                 const isEditingRow = formData.id === slab.id; // highlight current edit row
-                                return (
+                                return ( 
                                     <tr
                                         key={slab.id}
                                         className={`transition-all duration-300 ${isEditingRow

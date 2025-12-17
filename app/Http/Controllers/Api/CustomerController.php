@@ -37,7 +37,7 @@ class CustomerController extends Controller
         }
         return response()->json($customer);
     }
-     public function getByEmpCode($empCode)
+    public function getByEmpCode($empCode)
     {
         $customer = Customer::where('employee_no', $empCode)->first();
 
@@ -165,7 +165,7 @@ class CustomerController extends Controller
             'employee_no.unique' => 'This employee number is already assigned.',
         ];
 
-        $validated= $request->validate($rules, $messages);
+        $validated = $request->validate($rules, $messages);
 
         // ✅ Set user ID automatically
         $validated['user_id'] = $request->user()->id ?? 0;
@@ -184,35 +184,43 @@ class CustomerController extends Controller
     //function to edit new customer for new loan
     public function edit_new_customer_for_new_loan(Request $request, $id)
     {
-        // Validate incoming request data
+        $customer = Customer::find($id);
+
+        if (!$customer) {
+            return response()->json([
+                'message' => 'Customer not found.'
+            ], 404);
+        }
+
         $rules = [
             'email' => [
                 'required',
                 'email',
                 'max:100',
-                Rule::unique('customers', 'email')->ignore($id),
+                Rule::unique('customers', 'email')->ignore($customer->id),
             ],
 
             'phone' => [
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('customers', 'phone')->ignore($id),
+                Rule::unique('customers', 'phone')->ignore($customer->id),
             ],
 
             'payroll_number' => [
                 'nullable',
                 'string',
                 'max:150',
-                Rule::unique('customers', 'payroll_number')->ignore($id),
+                Rule::unique('customers', 'payroll_number')->ignore($customer->id),
             ],
 
             'employee_no' => [
                 'nullable',
                 'string',
                 'max:50',
-                Rule::unique('customers', 'employee_no')->ignore($id),
+                Rule::unique('customers', 'employee_no')->ignore($customer->id),
             ],
+
             'company_id' => 'required|integer|exists:company_master,id',
             'organisation_id' => 'required|integer|exists:organisation_master,id',
             'first_name' => 'required|string|max:100',
@@ -241,6 +249,7 @@ class CustomerController extends Controller
             'years_at_current_employer' => 'nullable|integer|min:0',
             'net_salary' => 'nullable|numeric',
         ];
+
         $messages = [
             'email.unique' => 'This email is already registered.',
             'phone.unique' => 'This phone number is already registered.',
@@ -248,23 +257,16 @@ class CustomerController extends Controller
             'employee_no.unique' => 'This employee number is already assigned.',
         ];
 
-        $validated= $request->validate($rules, $messages);
+        $validated = $request->validate($rules, $messages);
 
-        // Find the customer by ID
-        $customer = Customer::find($id);
-        if (!$customer) {
-            return response()->json([
-                'message' => 'Customer not found.',
-            ], 404); // Not Found status code
-        }
-        // Update customer record
         $customer->update($validated);
-        // Return the updated customer as a JSON response
+
         return response()->json([
             'message' => 'Customer info updated successfully.',
             'customer' => $customer
         ], 200);
     }
+
     //function to check customer eligibility
     public function old_check_eligibility(Request $request)
     {
@@ -414,7 +416,7 @@ class CustomerController extends Controller
                 'data' => $record,
             ], 201);
         } catch (\Throwable $e) {
-            Log::error('Eligibility save error: '.$e->getMessage());
+            Log::error('Eligibility save error: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Failed to save eligibility.',
                 'error' => $e->getMessage(),
@@ -453,14 +455,14 @@ class CustomerController extends Controller
         $query = DB::table('all_cust_master')
             ->whereNotIn('emp_code', function ($q) {
                 $q->select('employee_no')
-                ->from('customers')
-                ->whereNotNull('employee_no');
+                    ->from('customers')
+                    ->whereNotNull('employee_no');
             });
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('cust_name', 'LIKE', "%$search%")
-                ->orWhere('emp_code', 'LIKE', "%$search%");
+                    ->orWhere('emp_code', 'LIKE', "%$search%");
             });
         }
 
@@ -492,12 +494,12 @@ class CustomerController extends Controller
     {
         // Get all loans for this customer
         $loans = Loan::with([
-                'organisation',
-                'loan_settings',
-                'company',
-                'documents',
-                'installments'
-            ])
+            'organisation',
+            'loan_settings',
+            'company',
+            'documents',
+            'installments'
+        ])
             ->where('customer_id', $customerId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -515,10 +517,10 @@ class CustomerController extends Controller
 
         // Fetch all EMI collections for those loans
         $collections = InstallmentDetail::with([
-                'loan',
-                'loan.customer',
-                'loan.organisation'
-            ])
+            'loan',
+            'loan.customer',
+            'loan.organisation'
+        ])
             ->whereIn('loan_id', $loanIds)
             ->orderBy('collection_uid', 'desc')
             ->get()
@@ -530,5 +532,4 @@ class CustomerController extends Controller
             'collections' => $collections
         ]);
     }
-
 }

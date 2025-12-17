@@ -435,8 +435,18 @@ export default function DeptDatabase({ auth }) {
                     </td>
                   </tr>
                 ) : paginatedData.length > 0 ? (
-                  paginatedData.map((c, i) => (
-                    <tr key={c.id} className="border-b hover:bg-gray-50">
+                  paginatedData.map((c, i) => {
+                    const isEditingRow = formData.id === c.id;
+                    return (
+                    <tr 
+                      key={c.id} 
+                      className={`transition-all duration-300 ${isEditingRow
+                        ? "bg-amber-100 ring-2 ring-amber-200"
+                        : i % 2 === 0
+                            ? "bg-white"
+                            : "bg-emerald-50/40"
+                        } hover:bg-emerald-100/70`}
+                    >
                       <td className="px-4 py-3 text-center text-gray-500">
                         {(currentPage - 1) * itemsPerPage + i + 1}
                       </td>
@@ -477,7 +487,7 @@ export default function DeptDatabase({ auth }) {
                         </div>
                       </td>
                     </tr>
-                  ))
+                  )})
                 ) : (
                   <tr>
                     <td colSpan={8} className="text-center py-8 text-gray-500">

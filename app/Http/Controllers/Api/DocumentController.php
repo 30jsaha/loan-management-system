@@ -15,7 +15,7 @@ class DocumentController extends Controller
     {
         return response()->json(
             DocumentType::where('active', 1)
-                ->orderBy('id')
+                ->orderByDesc('id')
                 ->get()
         );
     }

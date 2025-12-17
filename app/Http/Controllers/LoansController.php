@@ -10,7 +10,7 @@ use App\Models\allCustMaster;
 use App\Models\SalarySlab;
 use App\Models\OrganisationMaster as Org;
 use App\Models\InstallmentDetail;
-use App\Models\RejectionReson;
+use App\Models\RejectionReason;
 
 class LoansController extends Controller
 {
@@ -26,11 +26,34 @@ class LoansController extends Controller
     }
     public function loanDetailsView($id)
     {
-        $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
-        ->where('id',$id)
-        ->orderBy('created_at','desc')->get();
+        // $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        // ->where('id',$id)
+        // ->orderBy('created_at','desc')->get();
 
-        $rejectionReasons = RejectionReson::all();
+        $loans = Loan::with([
+            'customer',
+            'organisation',
+            'installments',
+            'loan_settings',
+            'company',
+            'documents' => function ($q) {
+                $q->leftJoin(
+                    'document_types',
+                    'document_types.doc_key',
+                    '=',
+                    'document_upload.doc_type'
+                )
+                ->select(
+                    'document_upload.*',
+                    'document_types.is_required',
+                    'document_types.doc_name'
+                );
+            }
+        ])->findOrFail($id);
+
+        // return response()->json($loan);
+
+        $rejectionReasons = RejectionReason::all();
 
         return inertia('Loans/View', [
             'loans' => $loans,
@@ -44,7 +67,7 @@ class LoansController extends Controller
         ->where('id',$id)
         ->orderBy('created_at','desc')->get();
 
-        $rejectionReasons = RejectionReson::all();
+        $rejectionReasons = RejectionReason::all();
 
         return inertia('Loans/PrintFunc', [
             'loans' => $loans,

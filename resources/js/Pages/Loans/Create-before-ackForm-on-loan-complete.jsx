@@ -1,24 +1,18 @@
-import { use, useCallback, useEffect, useState, props, useMemo, useRef } from 'react';
-import { useReactToPrint } from "react-to-print";
+import { use, useCallback, useEffect, useState, props, useMemo } from 'react';
 import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs, Modal } from "react-bootstrap";
+import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import useBeforeUnload from '@/Components/useBeforeUnload';
 import LoanDocumentsUpload from '@/Components/LoanDocumentsUpload';
 import CustomerEligibilityForm from '@/Components/CustomerEligibilityForm';
 import CustomerForm from '@/Components/CustomerForm';
 //icon pack
-import { ArrowLeft, LucideNavigation, Check, Download, Printer, Eye } from "lucide-react";
+import { ArrowLeft, LucideNavigation, Check, Download } from "lucide-react";
 import Swal from 'sweetalert2';
 import {formatCurrency} from "@/Utils/formatters";
 import {currencyPrefix} from "@/config";
-import AppF from "@/Components/AppF";
-import HealthF from "@/Components/HealthF";
-import EduF from "@/Components/EduF";
-import EduPrintFormat from "@/Components/EduPrintFormat";
-import toast, { Toaster } from "react-hot-toast";
 
 export default function Create({ auth, loan_settings }) {
     const [isEligible, setIsEligible] = useState(false);
@@ -40,7 +34,6 @@ export default function Create({ auth, loan_settings }) {
     const [mailBody, setMailBody] = useState("");
     const [isSendingMail, setIsSendingMail] = useState(false);
     const [savedCustomerData, setSavedCustomerData] = useState({});
-    const [savedLoanData, setSavedLoanData] = useState({});
     const [fnRange, setFnRange] = useState(null);
     const [isFetchingFn, setIsFetchingFn] = useState(false);
     const [customerDisplayValue, setCustomerDisplayValue] = useState("");
@@ -442,7 +435,6 @@ export default function Create({ auth, loan_settings }) {
                 icon: "success"
             });
             const savedLoan = res.data.loan;
-            setSavedLoanData(savedLoan);
             setLoanFormData({
                 id: savedLoan.id,
                 // company_id: savedLoan.company_id,
@@ -758,177 +750,23 @@ export default function Create({ auth, loan_settings }) {
             setIsFetchingFn(false);
         }
     };
-    useEffect(() => {
-    if (!savedLoanData?.id) return;
-
-    axios
-        .get(`/api/loans/${savedLoanData.id}`)
-        .then((res) => {
-            setSavedLoanData(res.data);   // ✅ correct
-            // setLoading(false);
-        })
-        .catch((error) => {
-            console.error("Failed to fetch loan:", error);
-            // setLoading(false);
-        });
-    }, [savedLoanData?.id]);
     const pdfPath = "/storage/uploads/documents/Loan Application Form - loanms.pdf";
     const fileName = "Loan Application Form - loanms.pdf";
-    const ackPrintRef = useRef(null);
-    const printRef = useRef(null);
-    const [ackReady, setAckReady] = useState(false);
-    const [showModal1, setShowModal1] = useState(false);
-    const [selectedDoc, setSelectedDoc] = useState(null);
-    const [showSectorModal, setShowSectorModal] = useState(false);
-    // Helper logic
-    const orgSector = savedLoanData?.organisation?.sector_type;
-    const isHealth = orgSector === "Health";
-    const isEducation = orgSector === "Education";
-    const canPrintSector = isHealth || isEducation; // Render for both
-    const sectorDocTitle = isHealth ? "Health Declaration Form" : "Education Grant Form";
-
-    const handlePrintSectorForm = useReactToPrint({
-        content: () => {
-            // Debug: Check what we're trying to print
-            console.log("Print content ref:", printRef.current);
-
-            // Make sure we have content
-            if (!printRef.current || !printRef.current.innerHTML.trim()) {
-                console.error("No content to print!");
-
-                // Try to force a re-render
-                setTimeout(() => {
-                    handlePrintSectorForm();
-                }, 500);
-
-                return null;
-            }
-
-            return printRef.current;
-        },
-        contentRef: printRef,         // <-- NEW in v3.0+
-        documentTitle: `Education_Form_${savedLoanData?.id || "Form"}`,
-        onBeforeGetContent: async () => {
-            console.log("Starting print process...");
-
-            return new Promise((resolve) => {
-                // Ensure component is fully rendered
-                setTimeout(() => {
-                    console.log("Content ready for printing:", printRef.current);
-                    resolve();
-                }, 1000); // Increased timeout to ensure DOM is ready
-            });
-        },
-        onAfterPrint: () => {
-            console.log("Printed successfully!");
-            Swal.fire({
-                title: 'Success!',
-                text: 'Document printed successfully.',
-                icon: 'success',
-                timer: 2000
-            });
-        },
-        onPrintError: (err) => {
-            console.error("Print error:", err);
-            Swal.fire({
-                title: 'Print Failed',
-                text: 'Unable to print the document. Please try again.',
-                icon: 'error'
-            });
-        },
-        removeAfterPrint: false,
-        copyStyles: true,
-    });
-    const renderSectorForm = () => {
-        if (!savedLoanData) return null;
-
-        return savedLoanData.organisation?.sector_type === "Health"
-            ? <HealthF auth={auth} loan={savedLoanData} />
-            : <EduPrintFormat auth={auth} loan={savedLoanData} />;
-    };
-    const handlePrintAck = useReactToPrint({
-        content: () => {
-            console.log("ACK PRINT CONTENT:", ackPrintRef.current);
-
-            if (!ackPrintRef.current || !ackPrintRef.current.innerHTML.trim()) {
-                console.error("No ACKNOWLEDGEMENT content to print!");
-
-                // Try again after rendering
-                setTimeout(() => {
-                    handlePrintAck();
-                }, 500);
-
-                return null;
-            }
-
-            return ackPrintRef.current;
-        },
-        contentRef: ackPrintRef,
-        documentTitle: `Acknowledgement_${savedLoanData?.id || ""}`,
-        onBeforeGetContent: async () => {
-            return new Promise((resolve) => {
-                setAckReady(true);
-                setTimeout(() => {
-                    console.log("ACK PRINT READY");
-                    resolve();
-                }, 1000);
-            });
-        },
-        onAfterPrint: () => {
-            setAckReady(false);
-        },
-        onPrintError: (err) => {
-            console.error("Acknowledgement Print Error:", err);
-            Swal.fire("Error", "Unable to print acknowledgement.", "error");
-        },
-        removeAfterPrint: false,
-        copyStyles: true,
-    });
     return (
         <AuthenticatedLayout
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">New Loan Application</h2>}
         >
+
             {/*  map the loan_settings passed from controller for debugging */}
             {/* <pre>
                 {JSON.stringify(loan_settings, null, 2)}
             </pre>
             <p>max_loan_amount: {`${loan_settings.max_loan_amount}`}</p> */}
             <Head title="New Loan Application" />
-            <Toaster position="top-right" reverseOrder={false} />
             <Alert key="primary" variant="primary">
                 Please go through the tabs to complete the loan application.
             </Alert>
-            <div
-                ref={ackPrintRef}
-                style={{
-                    position: "absolute",
-                    left: "-9999px",
-                    top: 0,
-                    width: "210mm",
-                    padding: "20mm",
-                    background: "white"
-                }}
-            >
-                {ackReady && savedLoanData && <AppF loan={savedLoanData} auth={auth} />}
-            </div>
-            <div className="p-4 bg-gray-100 print-area text-black">
-                {showSectorModal && (
-                    <div
-                        ref={printRef}
-                        style={{
-                            position: "absolute",
-                            left: "-9999px",
-                            top: 0,
-                            width: "210mm",
-                            padding: "20mm"
-                        }}
-                    >
-                        {renderSectorForm()}
-                    </div>
-
-                )}
-            </div>
             <div className="py-2">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -985,11 +823,11 @@ export default function Create({ auth, loan_settings }) {
                                                 const infoMsg = '✅ customer data saved. You can continue filling the loan application.';
                                                 setMessage(infoMsg);
                                                 // show same message in SweetAlert
-                                                // Swal.fire({
-                                                //     title: "Success",
-                                                //     text: infoMsg,
-                                                //     icon: "success"
-                                                // });
+                                                Swal.fire({
+                                                    title: "Success",
+                                                    text: infoMsg,
+                                                    icon: "success"
+                                                });
                                                 const displayLabel = `${savedCustomer.employee_no} - ${savedCustomer.first_name} ${savedCustomer.last_name}`;
                                                 setCustomerDisplayValue(displayLabel);
                                                 console.log("savedCustomer data",savedCustomer);
@@ -1388,98 +1226,21 @@ export default function Create({ auth, loan_settings }) {
                                             {/* <Check className='text-green-700' />  */}
                                             Loan Application Successfully Completed
                                         </h2>
-                                        {/* 📄 Downloads Section */}
-                                        <div className="max-w-4xl mx-auto mt-6">
-                                            <table className="w-full text-sm text-gray-700">
-                                                <tbody>
-
-                                                    {/* Acknowledgement */}
-                                                    <tr>
-                                                        <td className="py-3 font-medium">
-                                                            Application Form
-                                                        </td>
-
-                                                        <td className="py-3 text-center">
-                                                            <button
-                                                                onClick={() => setShowModal1(true)}
-                                                                className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                                                            >
-                                                                <Download size={18} />
-                                                                Download
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-
-                                                    {/* Sector Form */}
-                                                    {(isHealth || isEducation) && (
-                                                        <tr>
-                                                            <td className="py-3 font-medium">
-                                                                {isHealth ? "Health Declaration Form" : "Education Grant Form"}
-                                                            </td>
-
-                                                            <td className="py-3 text-center">
-                                                                <button
-                                                                    onClick={() => setShowSectorModal(true)}
-                                                                    className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                                                                >
-                                                                    <Download size={18} />
-                                                                    Download
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-
-                                                </tbody>
-                                            </table>
+                                        {/* ✅ Acknowledgement Download */}
+                                        <div className="flex justify-center mb-6">
+                                        <a
+                                            href={pdfPath}
+                                            download
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 px-5 py-2 rounded-md
+                                                    bg-green-600 text-white hover:bg-green-700
+                                                    shadow-sm transition"
+                                        >
+                                            <Download size={18} className="shrink-0" />
+                                            Download Acknowledgement
+                                        </a>
                                         </div>
-
-                                        <div className="flex justify-center gap-6 mb-6 flex-wrap d-none">
-
-                                            {/* ACKNOWLEDGEMENT */}
-                                            <div className="bg-white border border-green-300 rounded-lg shadow-sm p-4 w-72 text-center">
-                                                <h4 className="font-semibold text-green-700 mb-2">
-                                                    Acknowledgement
-                                                </h4>
-
-                                                <button
-                                                    onClick={() => {
-                                                        if (!showModal1) {
-                                                            setShowModal1(true);
-                                                            setTimeout(() => handlePrintAck(), 1000);
-                                                        } else {
-                                                            handlePrintAck();
-                                                        }
-                                                    }}
-                                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md
-                                                            bg-green-600 text-white hover:bg-green-700 w-full"
-                                                >
-                                                    <Download size={18} />
-                                                    Download
-                                                </button>
-                                            </div>
-
-                                            {/* SECTOR FORM */}
-                                            {(isHealth || isEducation) && (
-                                                <div className="bg-white border border-blue-300 rounded-lg shadow-sm p-4 w-72 text-center">
-                                                    <h4 className="font-semibold text-blue-700 mb-2">
-                                                        {isHealth ? "Health Declaration Form" : "Education Grant Form"}
-                                                    </h4>
-
-                                                    <button
-                                                        onClick={() => {
-                                                            setShowSectorModal(true);
-                                                            setTimeout(() => handlePrintSectorForm(), 1000);
-                                                        }}
-                                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md
-                                                                bg-blue-600 text-white hover:bg-blue-700 w-full"
-                                                    >
-                                                        <Download size={18} />
-                                                        Download
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-
 
 
                                         <p className="text-gray-700 mb-6">
@@ -1520,84 +1281,6 @@ export default function Create({ auth, loan_settings }) {
                                                 Back to Loans
                                             </button>
                                         </div>
-                                        <Modal
-                                            show={showModal1}
-                                            onHide={() => setShowModal1(false)}
-                                            size="xl"
-                                            centered
-                                            contentClassName="bg-white"
-                                            enforceFocus={false}
-                                            restoreFocus={false}
-                                        >
-                                            <Modal.Header closeButton className="no-print">
-                                                <Modal.Title>📄 Application Form View</Modal.Title>
-                                            </Modal.Header>
-
-                                            <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
-                                                <div className="p-1 bg-gray-100 print-area text-black" ref={ackPrintRef}>
-                                                    {savedLoanData && <AppF loan={savedLoanData} auth={auth} />}
-                                                </div>
-                                            </Modal.Body>
-
-                                            <Modal.Footer className="no-print">
-                                                <Button variant="secondary" onClick={() => setShowModal1(false)}>Close</Button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        if (!showModal1) {
-                                                            setShowModal1(true);
-                                                            setTimeout(() => handlePrintAck(), 1000);
-                                                            // markAckDownloaded();
-                                                        } else {
-                                                            handlePrintAck();
-                                                            // markAckDownloaded();
-                                                        }
-                                                    }}
-                                                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
-                                                >
-                                                    <Printer size={14} /> Print Acknowledgement
-                                                </button>
-                                            </Modal.Footer>
-                                        </Modal>
-                                        <Modal
-                                            show={showSectorModal}
-                                            onHide={() => setShowSectorModal(false)}
-                                            size="xl"
-                                            centered
-                                            contentClassName="bg-white"
-                                            enforceFocus={false}
-                                            restoreFocus={false}
-                                        >
-                                            <Modal.Header closeButton>
-                                                <Modal.Title>
-                                                    {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
-                                                </Modal.Title>
-                                            </Modal.Header>
-
-                                            <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
-                                                <div className="p-1 bg-gray-100 print-area text-black" ref={printRef}>
-                                                    {savedLoanData && renderSectorForm()}
-                                                </div>
-                                            </Modal.Body>
-
-                                            <Modal.Footer>
-                                                <Button variant="secondary" onClick={() => setShowSectorModal(false)}>Close</Button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        if (!showSectorModal) {
-                                                            setShowSectorModal(true);
-                                                            setTimeout(() => handlePrintSectorForm(), 1000);
-                                                        } else {
-                                                            handlePrintSectorForm();
-                                                        }
-                                                    }}
-                                                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
-                                                >
-                                                    <Printer size={14} /> Print
-                                                </button>
-                                            </Modal.Footer>
-                                        </Modal>
                                     </div>
                                 </div>
                             )}

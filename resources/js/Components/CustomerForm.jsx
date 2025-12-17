@@ -20,6 +20,7 @@ export default function CustomerForm({
   const ImportantField = () => <span className="text-danger">*</span>;
   const [empSearch, setEmpSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [isExistingFound, setIsExistingFound] = useState(false);
   const [empOptions, setEmpOptions] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -138,7 +139,8 @@ export default function CustomerForm({
       console.error(error);
       if (error.response && error.response.status === 422) {
         setMessage("❌ Validation failed.");
-        toast.error("Validation error.", { style: { background: "#dc2626", color: "#fff" } });
+        console.log("update customer error", error);
+        toast.error(error.response.data.message, { style: { background: "#dc2626", color: "#fff" } });
       } else if (error.response && error.response.status === 409) {
         const msg = error.response.data.message || "Customer already exists.";
         setMessage(`❌ ${msg}`);
@@ -157,8 +159,10 @@ export default function CustomerForm({
       const res = await axios.get(`/api/customers/by-emp/${empCode}`);
 
       if (!res.data.exists) {
+        setIsExistingFound(false);
         return null;
       }
+      setIsExistingFound(true);
       return res.data.customer;
     } catch (err) {
       console.error("Fetch customer failed", err);
@@ -379,9 +383,8 @@ export default function CustomerForm({
                     onChange={handleChange}
                     disabled={!isOrgSelectable}
                     aria-readonly={!isOrgSelectable}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${
-                      !isOrgSelectable && "bg-gray-100 cursor-not-allowed"
-                    }`}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && "bg-gray-100 cursor-not-allowed"
+                      }`}
                     required
                   >
                     <option value="">-- Select Organisation --</option>
@@ -772,9 +775,8 @@ export default function CustomerForm({
             <button
               type="submit"
               disabled={isDataSaving}
-              className={`${
-                isDataSaving ? "cursor-not-allowed opacity-50" : ""
-              } bg-indigo-600 text-white px-4 py-2 mt-3 rounded hover:bg-indigo-700 transition-all`}
+              className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""
+                } bg-indigo-600 text-white px-4 py-2 mt-3 rounded hover:bg-indigo-700 transition-all`}
             >
               {isDataSaving ? (
                 <>
@@ -784,6 +786,8 @@ export default function CustomerForm({
                   ></span>
                   Saving...
                 </>
+              ) : isExistingFound ? (
+                "Update →"
               ) : (
                 "Save →"
               )}

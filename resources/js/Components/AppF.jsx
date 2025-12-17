@@ -1,5 +1,6 @@
 import React from "react";
 import MainLogo from "@/Components/MainLogo";
+import { useEffect, useState } from "react";
 import { Row, Col } from "react-bootstrap";
 
 // All your print CSS
@@ -173,7 +174,26 @@ const printStyles = `
   }
 `;
 
-const AppF = React.forwardRef(function AppF({ loan, auth }, ref) {
+const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
+  const [loan, setLoan] = useState(initialLoan);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!initialLoan?.id) return;
+
+    axios
+      .get(`/api/loans/${initialLoan.id}`)
+      .then((res) => {
+        setLoan(res.data);   // ✅ correct
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch loan:", error);
+        setLoading(false);
+      });
+  }, [initialLoan?.id]);
+
+  console.log("Loan Data in AppF",loan);
   // safe shortcuts / fallbacks
   const customer = loan.customer || {};
   const company = loan.company || {};
@@ -205,6 +225,14 @@ const AppF = React.forwardRef(function AppF({ loan, auth }, ref) {
   const lot = ""; // per confirmation keep blank
   const streetName = ""; // per confirmation keep blank
   const suburb = ""; // per confirmation keep blank
+
+  if (loading || !loan) {
+    return (
+      <div ref={ref} className="p-4 text-center">
+        Loading data...
+      </div>
+    );
+  }
 
   return (
     <>

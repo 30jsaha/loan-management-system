@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 import { router, Head, Link } from "@inertiajs/react";
@@ -16,6 +16,7 @@ import AppF from "@/Components/AppF";
 import HealthF from "@/Components/HealthF";
 import EduF from "@/Components/EduF";
 import EduPrintFormat from "@/Components/EduPrintFormat";
+import Select from "react-select";
 
 export default function View({ auth, loans, loanId, rejectionReasons }) {
     // console.log("Initial rejectionReasons prop: ", rejectionReasons);
@@ -78,34 +79,42 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [recordedChunks, setRecordedChunks] = useState([]);
     const videoRef = useRef(null);
 
+    const rejectReasonOptions = rejectReasons
+        .filter(r => r.reason_type === 1)
+        .map(r => ({
+            value: r.id,
+            label: r.reason_desc,
+            canReapply: r.do_allow_reapply === 1
+        }));
+
     const startRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true,
+                video: true,
+                audio: true,
             });
 
             videoRef.current.srcObject = stream;
             videoRef.current.play();
 
             const recorder = new MediaRecorder(stream, {
-            mimeType: "video/webm",
+                mimeType: "video/webm",
             });
 
             const chunks = [];
             recorder.ondataavailable = (e) => {
-            if (e.data.size > 0) chunks.push(e.data);
+                if (e.data.size > 0) chunks.push(e.data);
             };
 
             recorder.onstop = () => {
-            const blob = new Blob(chunks, { type: "video/webm" });
-            const file = new File([blob], "video-consent.webm", {
-                type: "video/webm",
-            });
+                const blob = new Blob(chunks, { type: "video/webm" });
+                const file = new File([blob], "video-consent.webm", {
+                    type: "video/webm",
+                });
 
-            setVideoFile(file); // ✅ SAME upload flow
-            setVideoPreview(URL.createObjectURL(blob));
-            setRecordedChunks([]);
+                setVideoFile(file); // ✅ SAME upload flow
+                setVideoPreview(URL.createObjectURL(blob));
+                setRecordedChunks([]);
             };
 
             recorder.start();
@@ -117,9 +126,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         }
     };
     const stopRecording = () => {
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach((t) => t.stop());
-    setIsRecording(false);
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
     };
 
     // ✅ 1. CREATE REF
@@ -189,7 +198,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         copyStyles: true,
     });
     const handlePrintAck = useReactToPrint({
-    
+
         content: () => {
             console.log("ACK PRINT CONTENT:", ackPrintRef.current);
 
@@ -389,27 +398,6 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             });
         }
     };
-
-    // const handleReject = async () => {
-    //     try {
-    //         await axios.post(`/api/loans/${loanId}/reject`);
-    //         setMessage("❌ Loan rejected.");
-    //         Swal.fire({
-    //             title: "Info !",
-    //             text: "Loan rejected",
-    //             icon: "success"
-    //         });
-    //         router.visit(route("loans"));
-    //     } catch (error) {
-    //         console.error(error);
-    //         setMessage("❌ Failed to reject loan.");
-    //         Swal.fire({
-    //             title: "Error !",
-    //             text: "Failed to reject loan",
-    //             icon: "error"
-    //         });
-    //     }
-    // };
 
     const handleReject = () => {
         setShowLoanRejectModal(true); // Open modal instead of rejecting immediately
@@ -859,17 +847,17 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             setIsReuploading(false);
         }
     };
-    if (loading) {
-        return (
-            <AuthenticatedLayout user={auth.user}>
-                {/* <div className="p-6 text-gray-700">Loading loan details...</div> */}
-                <div className="text-center py-5">
-                    <Spinner animation="border" variant="primary" />
-                    <p className="mt-2 text-gray-600">Loading loan details...</p>
-                </div>
-            </AuthenticatedLayout>
-        );
-    }
+    // if (loading) {
+    //     return (
+    //         <AuthenticatedLayout user={auth.user}>
+    //             {/* <div className="p-6 text-gray-700">Loading loan details...</div> */}
+    //             <div className="text-center py-5">
+    //                 <Spinner animation="border" variant="primary" />
+    //                 <p className="mt-2 text-gray-600">Loading loan details...</p>
+    //             </div>
+    //         </AuthenticatedLayout>
+    //     );
+    // }
     //  console.log("LOAN DATA:", loan);
 
     const handleVerifyDoc = async (docId, status) => {
@@ -963,2276 +951,2384 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         }
     };
 
+    const approvalBlockers = useMemo(() => {
+        if (!loan?.documents?.length) return { blocked: true, reason: "No documents uploaded" };
+
+        // 1️⃣ Any pending docs
+        const hasPending = loan.documents.some(
+            doc => doc.verification_status === "Pending"
+        );
+
+        if (hasPending) {
+            return {
+                blocked: true,
+                reason: "Some documents are still pending verification"
+            };
+        }
+
+        // 2️⃣ Any REQUIRED document rejected
+        const rejectedRequiredDoc = loan.documents.find(
+            doc =>
+                doc.verification_status === "Rejected" &&
+                Number(doc.is_required) === 1
+        );
+
+        if (rejectedRequiredDoc) {
+            console.log("reason: ",`Required document rejected: ${rejectedRequiredDoc.doc_type}`);
+            return {
+                blocked: true,
+                reason: `Required document rejected: ${rejectedRequiredDoc.doc_type}`
+            };
+        }
+
+        // ✅ All clear
+        return { blocked: false, reason: "" };
+    }, [loan]);
+
+
+    const isApproveDisabled =
+        approvalBlockers.blocked ||
+        !loan.video_consent_path ||
+        !loan.isda_signed_upload_path ||
+        !loan.org_signed_upload_path;
     return (
         <AuthenticatedLayout
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan Details</h2>}
         >
             <Head title="Loan Details" />
-            {/* Always mounted print target */}
-            <div className="p-4 bg-gray-100 print-area text-black">
-                {showSectorModal && (
+            {loading ? (
+                <div className="text-center py-5">
+                    <Spinner animation="border" variant="primary" />
+                    <p className="mt-2 text-gray-600">Loading loan details...</p>
+                </div>
+            ) : (
+                <>
+                    {/* Always mounted print target */}
+                    <div className="p-4 bg-gray-100 print-area text-black">
+                        {showSectorModal && (
+                            <div
+                                ref={printRef}
+                                style={{
+                                    position: "absolute",
+                                    left: "-9999px",
+                                    top: 0,
+                                    width: "210mm",
+                                    padding: "20mm"
+                                }}
+                            >
+                                {renderSectorForm()}
+                            </div>
+
+                        )}
+                    </div>
                     <div
-                        ref={printRef}
+                        ref={ackPrintRef}
                         style={{
                             position: "absolute",
                             left: "-9999px",
                             top: 0,
                             width: "210mm",
-                            padding: "20mm"
+                            padding: "20mm",
+                            background: "white"
                         }}
                     >
-                        {renderSectorForm()}
+                        {ackReady && loan && <AppF loan={loan} auth={auth} />}
                     </div>
-
-                )}
-            </div>
-            <div
-                ref={ackPrintRef}
-                style={{
-                    position: "absolute",
-                    left: "-9999px",
-                    top: 0,
-                    width: "210mm",
-                    padding: "20mm",
-                    background: "white"
-                }}
-            >
-                {ackReady && loan && <AppF loan={loan} auth={auth} />}
-            </div>
-            <div className="">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
-                    <div className="bg-white shadow-sm sm:rounded-lg p-6">
-                        {/* Top Action Bar */}
-                        <Row className="mb-3 pb-4 pt-4">
-                            <Col className="d-flex justify-content-between align-items-center">
-                                <Link
-                                    href={route("loans")}
-                                    className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
-                                >
-                                    <ArrowLeft size={16} className="me-1" /> Back to the List
-                                </Link>
-                            </Col>
-                        </Row>
-                        {message && (
-                            <div className="mb-4 text-center text-sm font-medium text-green-600">
-                                {message}
-                            </div>
-                        )}
-
-                        {loan ? (
-                            <Row>
-                                <Col md={6}>
-                                    <h3 className="text-lg font-semibold mb-4">
-                                        Loan ID: #{loan.id}
-                                    </h3>
-                                </Col>
-                                <Col md={12}>
-                                    {(loan.status === "Approved") ? (
-                                        <Alert variant="success" className="d-flex align-items-center justify-content-between">
-                                            <div>
-                                                <strong>Loan Approved ✅</strong>
-                                                <div className="small">This loan has already been approved.</div>
-                                            </div>
-                                            <div>
-                                                <Button variant="outline-success" size="sm" onClick={() => router.visit(route("loans"))}>
-                                                    Back to List
-                                                </Button>
-                                            </div>
-                                        </Alert>
-                                    ) : (
-                                        loan?.status === "Closed" && (
-                                            <Alert variant="info" className="d-flex align-items-center justify-content-between">
-                                                <div>
-                                                    <strong>Loan Closed ℹ️</strong>
-                                                    <div className="small">This loan has been closed.</div>
-                                                </div>
-                                                <div>
-                                                    <Button variant="outline-secondary" size="sm" onClick={() => router.visit(route("loans"))}>
-                                                        Back to List
-                                                    </Button>
-                                                </div>
-                                            </Alert>
-                                        )
-                                    )}
-                                    {(loan.status === "Rejected") && (
-                                        <Alert variant="danger" className="d-flex align-items-center justify-content-between">
-                                            <div>
-                                                <strong>Loan Rejected ❌</strong>
-                                                <div className="small">This loan has been rejected.</div>
-                                                {loan.loan_reject_reason_id && (
-                                                    (() => {
-                                                        const r = rejectReasons.find(rr => rr.id === loan.loan_reject_reason_id);
-                                                        return r ? <div className="small">Reason: {r.reason_desc}</div> : null;
-                                                    })()
-                                                )}
-                                            </div>
-                                            <div>
-                                                <Button variant="outline-secondary" size="sm" onClick={() => router.visit(route("loans"))}>
-                                                    Back to List
-                                                </Button>
-                                            </div>
-                                        </Alert>
-                                    )}
-                                </Col>
-                                <Col md={6}>
-                                    <fieldset className="fldset mb-4">
-                                        <legend className="font-semibold mb-2">Application Details</legend>
-                                        <table className="w-full border-collapse border border-gray-300 text-sm">
-                                            <tbody>
-                                                <tr><td className="border p-2 font-semibold">Loan Type</td><td className="border p-2">{loan.loan_settings?.loan_desc || "-"}</td></tr>
-                                                <tr><td className="border p-2 font-semibold">Purpose</td><td className="border p-2">{(loan.purpose) == "Other" ? loan.other_purpose_text : loan.purpose}</td></tr>
-                                                <tr><td className="border p-2 font-semibold">Tenure (fortnight)</td><td className="border p-2">{loan.tenure_fortnight}</td></tr>
-                                                <tr><td className="border p-2 font-semibold">EMI Amount</td><td className="border p-2">{(loan.emi_amount != null) ? `${currencyPrefix} ${parseFloat(loan.emi_amount).toFixed(2)}` : 0.00}</td></tr>
-                                                <tr><td className="border p-2 font-semibold">Interest Rate</td><td className="border p-2">{loan.interest_rate}%</td></tr>
-                                                <tr><td className="border p-2 font-semibold">Processing Fee</td><td className="border p-2">{(loan.processing_fee != null) ? currencyPrefix + " " + parseFloat(loan.processing_fee).toFixed(2) : 0.00}</td></tr>
-                                                <tr>
-                                                    <td className="border p-2 font-semibold">Amount Details</td>
-                                                    <td className="border p-2">
-                                                        <strong>Applied Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.loan_amount_applied).toFixed(2)}<br />
-                                                        <strong>Elegible Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.elegible_amount).toFixed(2)}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border p-2 font-semibold">Organisation Details</td>
-                                                    <td className="border p-2">
-                                                        <strong>Name: </strong>{loan.organisation.organisation_name} [{loan.organisation.sector_type}]<br />
-                                                        <strong>Contact: </strong>{loan.organisation.contact_no || "-"}<br />
-                                                        <strong>Email: </strong>{loan.organisation.email || "-"}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border p-2 font-semibold">Bank Details</td>
-                                                    <td className="border p-2">
-                                                        {loan.bank_account_no == null && loan.bank_branch == null && loan.bank_name == null ? "N/A" : (
-                                                            <>
-                                                                <strong>Account No: </strong>{loan.bank_account_no || "-"}<br />
-                                                                <strong>Branch: </strong>{loan.bank_branch || "-"}<br />
-                                                                <strong>Bank Name: </strong>{loan.bank_name || "-"}
-                                                            </>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                                <tr><td className="border p-2 font-semibold">Status</td><td className="border p-2">{loan.status} {(loan.video_consent_path == null) ? "[Video Consent Pending]" : ""}</td></tr>
-                                                <tr><td className="border p-2 font-semibold">Remarks</td><td className="border p-2">{loan.remarks != null ? loan.remarks : "-"}</td></tr>
-                                            </tbody>
-                                        </table>
-                                    </fieldset>
-                                </Col>
-                                <Col md={6}>
-                                    <fieldset className="fldset mb-4">
-                                        <legend className="font-semibold mb-2">Customer Details</legend>
-                                        <table className="w-full border-collapse border border-gray-300 text-sm">
-                                            <tbody>
-                                                <tr><td className="border p-2 font-semibold">Name</td><td className="border p-2">{loan.customer.first_name} {loan.customer.last_name}</td></tr>
-                                                <tr>
-                                                    <td className="border p-2 font-semibold">Details</td>
-                                                    <td className="border p-2">
-                                                        <strong>Employee No:</strong> {loan.customer.employee_no} <br />
-                                                        <strong>Employment Type:</strong> {loan.customer.employment_type} <br />
-                                                        <strong>Department:</strong> {loan.customer.employer_department} <br />
-                                                        <strong>Designation:</strong> {loan.customer.designation} <br />
-                                                        <strong>Immediate Supervisor:</strong> {loan.customer.immediate_supervisor} <br />
-                                                        <strong>Payroll Number:</strong> {loan.customer.payroll_number} <br />
-                                                        <strong>Joinning Date:</strong> {(loan.customer.date_joined != null) ? new Date(loan.customer.date_joined).toLocaleDateString() : ""}<br />
-                                                        <strong>Gross Salary:</strong> {(loan.customer.monthly_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.monthly_salary).toFixed(2)}` : ""}
-                                                        <br />
-                                                        <strong>Net Salary:</strong> {(loan.customer.net_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.net_salary).toFixed(2)}` : ""}
-                                                        <br />
-                                                        <strong>Work Location:</strong> {loan.customer.work_location}
-                                                        <br />
-                                                        <strong>Years at current employer:</strong> {(loan.customer.years_at_current_employer != null) ? parseFloat(loan.customer.years_at_current_employer) : "N/A"}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border p-2 font-semibold">Contact Information</td>
-                                                    <td className="border p-2">
-                                                        Phone: {loan.customer.phone} <br />
-                                                        Email: {loan.customer.email}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border p-2 font-semibold">Marital Info</td>
-                                                    <td className="border p-2">
-                                                        {loan.customer.marital_status == null && loan.customer.spouse_full_name == null && loan.customer.spouse_contact == null ? "N/A" : (
-                                                            <>
-                                                                {loan.customer.marital_status} <br />
-                                                                <strong>Spouse: </strong> {loan.customer.spouse_full_name || "-"} <br />
-                                                                <strong>Contact: </strong> {loan.customer.spouse_contact || "-"}
-                                                            </>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border p-2 font-semibold">Number of Dependents</td>
-                                                    <td className="border p-2">
-                                                        {loan.customer.no_of_dependents}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td className="border p-2 font-semibold">Address</td>
-                                                    <td className="border p-2">
-                                                        {loan.customer.home_province == null && loan.customer.district_village == null && loan.customer.present_address == null && loan.customer.permanent_address == null ? "N/A" : (
-                                                            <>
-                                                                Home Province: {loan.customer.home_province} <br />
-                                                                District & Village: {loan.customer.district_village}<br />
-                                                                Present Address: {loan.customer.present_address}<br />
-                                                                Permanent Address: {loan.customer.permanent_address}
-                                                            </>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </fieldset>
-                                </Col>
-                                {(loan?.higher_approved_by != null) && (
-                                    <Col md={12} className="mb-4">
-                                        <Alert variant="info">
-                                            <Alert.Heading style={{ fontSize: '18px' }}>ℹ Higher Approved</Alert.Heading>
-                                            <p>
-                                                This customer was marked as <strong>Not Eligible</strong> for the applied loan amount based on their salary and organisation criteria. However, the loan has been <strong>Higher Approved</strong> by&nbsp;
-                                                {
-                                                    (auth.user.is_admin == 1 &&
-                                                        auth.user.id === loan.higher_approved_by_id)
-                                                        ? "You"
-                                                        : loan.higher_approved_by
-                                                }.
-                                            </p>
-                                        </Alert>
+                    <div className="">
+                        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
+                            <div className="bg-white shadow-sm sm:rounded-lg p-6">
+                                {/* Top Action Bar */}
+                                <Row className="mb-3 pb-4 pt-4">
+                                    <Col className="d-flex justify-content-between align-items-center">
+                                        <Link
+                                            href={route("loans")}
+                                            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
+                                        >
+                                            <ArrowLeft size={16} className="me-1" /> Back to the List
+                                        </Link>
                                     </Col>
-                                )}
-                                {(loan?.is_elegible == 0) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
-                                    //alert box
-                                    <>
-                                        <form onSubmit={handleLoanSubmit}> {/* Loan application form here */}
-                                            <div className="row mb-3">
-                                            </div>
-                                            <fieldset className="fldset">
-                                                <legend className="font-semibold">Loan Details</legend>
-                                                <div className="row mb-3">
-                                                    <div className="col-md-4">
-                                                        <label className="form-label">Loan Type</label>
-                                                        <select
-                                                            className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
-                                                            name="loan_type" value={loanFormData.loan_type}
-                                                            onChange={(e) => {
-                                                                loanHandleChange(e);
-                                                                //fetch loan settings based on selected loan type
-                                                                const selectedLoanTypeId = e.target.value;
-
-                                                                if (Array.isArray(loanSettings) && loanSettings.length > 0) {
-                                                                    // Find selected loan setting based on loan type
-                                                                    const selectedLoanSetting = loanSettings.find(
-                                                                        (ls) => ls.id === Number(selectedLoanTypeId)
-                                                                    );
-
-                                                                    console.log("loanSettings:", loanSettings);
-                                                                    console.log("loanFormData.loan_type:", loanFormData.loan_type);
-                                                                    console.log("selectedLoanSetting:", selectedLoanSetting);
-                                                                    // return;
-                                                                    if (selectedLoanSetting) {
-                                                                        const {
-                                                                            process_fees,
-                                                                            interest_rate,
-                                                                        } = selectedLoanSetting;
-
-                                                                        // Auto-fill processing fee and interest rate
-                                                                        setLoanFormData((prev) => ({
-                                                                            ...prev,
-                                                                            processing_fee: parseFloat(process_fees),
-                                                                            interest_rate: parseFloat(interest_rate)
-                                                                        }));
-                                                                        //make the form read-only and disabled for these two fields
-                                                                        document.querySelector('input[name="processing_fee"]').readOnly = true;
-                                                                        document.querySelector('input[name="interest_rate"]').readOnly = true;
-                                                                        document.querySelector('input[name="processing_fee"]').disabled = true;
-                                                                        document.querySelector('input[name="interest_rate"]').disabled = true;
-                                                                    }
-                                                                }
-                                                            }}
-                                                            required
-                                                        >
-                                                            <option value="">Select Loan Type</option>
-                                                            {loanTypes.map((lt) => (
-                                                                <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-
-                                                    <div className="col-md-4">
-                                                        <label className="form-label">Purpose</label>
-                                                        <select className={`form-select`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
-                                                            <option value="">Select Purpose</option>
-                                                            <option>Tuition</option>
-                                                            <option>Living</option>
-                                                            <option>Medical</option>
-                                                            <option>Appliance</option>
-                                                            <option>Car</option>
-                                                            <option>Travel</option>
-                                                            <option>HomeImprovement</option>
-                                                            <option>Other</option>
-                                                        </select>
-                                                    </div>
-
-                                                    {loanFormData.purpose === "Other" && (
-                                                        <div className="col-md-4">
-                                                            <label className="form-label">Other Purpose</label>
-                                                            <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="row mb-3">
-                                                    <div className="col-md-3">
-                                                        <label className="form-label">Loan Amount Applied</label>
-                                                        <input
-                                                            type="number" step="0.01"
-                                                            className={`form-control`}
-                                                            name="loan_amount_applied"
-                                                            value={loanFormData.loan_amount_applied}
-                                                            onChange={(e) => loanHandleChange(e)}
-                                                            onKeyUp={calculateRepaymentDetails}
-                                                            disabled={true}
-                                                            required
-                                                        />
-                                                    </div>
-
-                                                    <div className="col-md-3">
-                                                        <label className="form-label">Tenure (Fortnight)</label>
-                                                        <input
-                                                            type="number" step="1"
-                                                            name="tenure_fortnight"
-                                                            className={`form-control tenure_fortnight`}
-                                                            value={loanFormData.tenure_fortnight}
-                                                            onChange={(e) => loanHandleChange(e)}
-                                                            onKeyUp={calculateRepaymentDetails}
-                                                            required
-                                                        />
-                                                    </div>
-
-                                                    <div className="col-md-3">
-                                                        <label className="form-label">Interest Rate (%)</label>
-                                                        <input type="number" step="0.01" className={`form-control`} name="interest_rate" value={loanFormData.interest_rate} onChange={loanHandleChange} />
-                                                    </div>
-
-                                                    <div className="col-md-3">
-                                                        <label className="form-label">Processing Fee</label>
-                                                        <input type="number" step="0.01" className={`form-control`} name="processing_fee" value={loanFormData.processing_fee} onChange={loanHandleChange} />
-                                                    </div>
-                                                </div>
-
-                                                {loanFormData.total_interest_amt && (
-                                                    <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id='repayDetailsDiv'>
-                                                        <fieldset className="fldset w-full">
-                                                            <legend className="font-semibold">Repayment Details</legend>
-                                                            <div className="row mt-3">
-                                                                <div className="col-md-3">
-                                                                    <label className="form-label fw-bold">Total Interest (PGK)</label>
-                                                                    <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
-                                                                </div>
-                                                                <div className="col-md-3">
-                                                                    <label className="form-label fw-bold">Total Repay (PGK)</label>
-                                                                    <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
-                                                                </div>
-                                                                <div className="col-md-3">
-                                                                    <label className="form-label fw-bold">Repay per FN (PGK)</label>
-                                                                    <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
-                                                                </div>
-                                                            </div>
-                                                        </fieldset>
-                                                    </div>
-                                                )}
-
-                                                <div className="row mb-3">
-                                                    <div className="col-md-4">
-                                                        <label className="form-label">Bank Name</label>
-                                                        <input type="text" className={`form-control`} name="bank_name" value={loanFormData.bank_name} onChange={loanHandleChange} />
-                                                    </div>
-
-                                                    <div className="col-md-4">
-                                                        <label className="form-label">Bank Branch</label>
-                                                        <input type="text" className={`form-control`} name="bank_branch" value={loanFormData.bank_branch} onChange={loanHandleChange} />
-                                                    </div>
-
-                                                    <div className="col-md-4">
-                                                        <label className="form-label">Bank Account No</label>
-                                                        <input type="text" className={`form-control`} name="bank_account_no" value={loanFormData.bank_account_no} onChange={loanHandleChange} />
-                                                    </div>
-                                                </div>
-
-                                                <div className="mb-3">
-                                                    <label className="form-label">Remarks</label>
-                                                    <textarea className={`form-control`} name="remarks" rows="3" value={loanFormData.remarks} onChange={loanHandleChange}></textarea>
-                                                </div>
-                                            </fieldset>
-                                            <Row className="mt-4">
-                                                <Col md={12} className="d-flex justify-content-end">
-                                                    <button
-                                                        type="submit"
-                                                        className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${isChecking ? "cursor-not-allowed opacity-50" : ""
-                                                            }`}
-                                                        disabled={isChecking}
-                                                    >
-                                                        {isChecking ? (
-                                                            <>
-                                                                <span
-                                                                    className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
-                                                                    role="status"
-                                                                ></span>
-                                                                Checking...
-                                                            </>
-                                                        ) : (
-                                                            "Save Loan Details →"
-                                                        )}
-                                                    </button>
-                                                </Col>
-                                            </Row>
-                                        </form>
-                                    </>
-                                )}
-                                {((loan?.is_elegible == 0) && (loan?.higher_approved_by == null)) && (
-                                    ((auth.user.is_admin == 1)) ? (
-                                        <Alert variant="warning" className="d-flex align-items-center justify-content-between">
-                                            <div>
-                                                <strong>Need Approval ⚠️</strong>
-                                                <div className="small">This loan needs additional approval as the applied amount is greater than the elegible amount</div>
-                                            </div>
-                                            <div>
-                                                <Button variant="outline-success" size="sm" onClick={handleHigherApproval}>
-                                                    Approve Loan
-                                                </Button>
-                                            </div>
-                                        </Alert>
-                                    ) : (
-                                        <Alert variant="warning" className="d-flex align-items-center justify-content-between">
-                                            <div>
-                                                <strong>Need Approval ⚠️</strong>
-                                                <div className="small">This loan needs additional approval as the applied amount is greater than the elegible amount</div>
-                                                <div className="small">Please wait untill the approver approves this loan.</div>
-                                            </div>
-                                        </Alert>
-                                    )
-                                )}
-                                <Col md={12}>
-                                    <fieldset className="fldset mb-4">
-                                        <legend className="font-semibold mb-2">Uploaded Documents</legend>
-                                        {loan.documents.length > 0 ? (
-                                            <table className="w-full border-collapse border border-gray-300 text-sm">
-                                                <thead className="bg-gray-100 text-center">
-                                                    <tr>
-                                                        <th className="border p-2">Document Type</th>
-                                                        <th className="border p-2">File Name</th>
-                                                        <th className="border p-2">Uploaded At</th>
-                                                        <th className="border p-2">Uploaded By</th>
-                                                        <th className="border p-2">View</th>
-                                                        <th className="border p-2">Download</th>
-                                                        {(auth.user.is_admin == 1) ? (
-                                                            <th className="border p-2">Verify</th>
-                                                        ) : (
-                                                            <th className="border p-2">Status</th>
-                                                        )}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {loan.documents.map((doc) => (
-                                                        <tr key={doc.id} className="hover:bg-gray-50 transition">
-                                                            <td className="border p-2">{doc.doc_type}</td>
-
-                                                            <td className="border p-2">{doc.file_name}</td>
-
-                                                            <td className="border p-2">
-                                                                {new Date(doc.uploaded_on).toLocaleDateString()}
-                                                            </td>
-
-                                                            <td className="border p-2">
-                                                                {doc.uploaded_by}
-                                                            </td>
-
-                                                            {/* View Button */}
-                                                            <td className="border p-2 text-center">
-                                                                <button
-                                                                    onClick={() =>
-                                                                        openDocModal({
-                                                                            id: doc.id,
-                                                                            doc_type: doc.doc_type,
-                                                                            file_name: doc.file_name,
-                                                                            file_path: doc.file_path,
-                                                                        })
-                                                                    }
-                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                >
-                                                                    <Eye size={16} /> View
-                                                                </button>
-                                                            </td>
-
-                                                            {/* Download Button */}
-                                                            <td className="border p-2 text-center">
-                                                                <a
-                                                                    href={route("document-upload.download", { id: doc.id })}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                >
-                                                                    Download <Download size={16} />
-                                                                </a>
-                                                            </td>
-
-                                                            {/* Verify / Reject Column */}
-                                                            <td className="border p-2 text-center">
-                                                                {/* Get the rejection reason object */}
-                                                                {(() => {
-                                                                    const r = rejectReasons.find(rr => rr.id === doc.rejection_reason_id);
-
-                                                                    /* =============================
-                                                                    1. STATUS: VERIFIED
-                                                                    ============================== */
-                                                                    if (doc.verification_status === "Verified") {
-                                                                        return <span className="text-green-600 font-semibold">Verified ✅</span>;
-                                                                    }
-
-                                                                    /* =============================
-                                                                    2. STATUS: PENDING
-                                                                    ============================== */
-                                                                    if (doc.verification_status === "Pending") {
-                                                                        return (
-                                                                            <>
-                                                                                {(doc.has_reuploaded_after_rejection == 1) ? (
-                                                                                    <>
-                                                                                        <div className="mt-2">
-                                                                                            <span className="text-blue-600 font-semibold">
-                                                                                                Awaiting Re-Verification ⏳
-                                                                                            </span>
-                                                                                        </div>
-                                                                                        <div className="mt-2">
-                                                                                            <span className="text-black-600 font-semibold">
-                                                                                                Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    </>
-                                                                                ) : (
-                                                                                    <span className="text-yellow-600 font-semibold">Pending ⏳</span>
-                                                                                )}
-
-                                                                                {/* Admin Action Buttons */}
-                                                                                {auth.user.is_admin == 1 && (
-                                                                                    <div className="flex gap-2 justify-center mt-2">
-                                                                                        <button
-                                                                                            onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                                                        >
-                                                                                            Verify
-                                                                                        </button>
-
-                                                                                        <button
-                                                                                            onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                                                        >
-                                                                                            Reject
-                                                                                        </button>
-                                                                                    </div>
-                                                                                )}
-                                                                            </>
-                                                                        );
-                                                                    }
-
-
-                                                                    /* =============================
-                                                                    3. STATUS: REJECTED (Always show reason)
-                                                                    ============================== */
-                                                                    if (doc.verification_status === "Rejected") {
-                                                                        const reasonText = r ? `— ${r.reason_desc}` : "";
-
-                                                                        return (
-                                                                            <>
-                                                                                <span className="text-red-600 font-semibold">
-                                                                                    Rejected ❌ {reasonText}
-                                                                                </span>
-
-                                                                                {/* === ADMIN ACTIONS === */}
-                                                                                {auth.user.is_admin == 1 && r?.do_allow_reapply == 1 && (
-                                                                                    <>
-                                                                                        {(() => {
-                                                                                            if (doc.has_reuploaded_after_rejection == 1) {
-                                                                                                return (
-                                                                                                    <>
-                                                                                                        <div className="mt-2">
-                                                                                                            <span className="text-blue-600 font-semibold">
-                                                                                                                Awaiting Re-Verification ⏳
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                        <div className="mt-2">
-                                                                                                            <span className="text-black-600 font-semibold">
-                                                                                                                Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                        <div className="flex gap-2 justify-center mt-2">
-                                                                                                            <button
-                                                                                                                onClick={() => handleVerifyDoc(doc.id, "Verified")}
-                                                                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-                                                                                                            >
-                                                                                                                Verify
-                                                                                                            </button>
-
-                                                                                                            <button
-                                                                                                                onClick={() => handleVerifyDoc(doc.id, "Rejected")}
-                                                                                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-                                                                                                            >
-                                                                                                                Reject
-                                                                                                            </button>
-                                                                                                        </div>
-                                                                                                    </>
-                                                                                                );
-                                                                                            } else {
-                                                                                                return (
-                                                                                                    <div className="mt-2">
-                                                                                                        <span className="text-blue-400 font-semibold">
-                                                                                                            Awaiting User Re-upload
-                                                                                                        </span>
-                                                                                                    </div>
-                                                                                                );
-                                                                                            }
-                                                                                            return null;
-                                                                                        })()}
-                                                                                    </>
-                                                                                )}
-
-
-                                                                                {/* === USER RE-UPLOAD OPTION === */}
-                                                                                {auth.user.is_admin != 1 && r?.do_allow_reapply == 1 && (
-                                                                                    <>
-                                                                                        {(() => {
-                                                                                            if (doc.has_reuploaded_after_rejection == 1) {
-                                                                                                return (
-                                                                                                    <>
-                                                                                                        <div className="mt-2">
-                                                                                                            <span className="text-blue-600 font-semibold">
-                                                                                                                Please wait for Re-Verification ⏳
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                        <div className="mt-2">
-                                                                                                            <span className="text-black-600 font-semibold">
-                                                                                                                Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
-                                                                                                            </span>
-                                                                                                        </div>
-                                                                                                    </>
-                                                                                                );
-                                                                                            }
-                                                                                            return null;
-                                                                                        })()}
-                                                                                        <div className="mt-2">
-                                                                                            <button
-                                                                                                type="button"
-                                                                                                className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md"
-                                                                                                onClick={() => openReuploadModal(doc)}
-                                                                                            >
-                                                                                                Re-upload Document
-                                                                                            </button>
-                                                                                        </div>
-                                                                                    </>
-                                                                                )}
-                                                                            </>
-                                                                        );
-                                                                    }
-
-                                                                    /* Fallback – should never happen */
-                                                                    return null;
-                                                                })()}
-                                                            </td>
-
-                                                        </tr>
-
-                                                    ))}
-                                                    {auth.user.is_admin == 1 ? (
-                                                        <>
-                                                            {loan.video_consent_path && (
-                                                                <tr key="video-consent" className="hover:bg-gray-50 transition">
-                                                                    <td className="border p-2">Video Consent</td>
-                                                                    <td className="border p-2">{loan.video_consent_file_name.split("/").pop()}</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2">-</td>
-
-                                                                    {/* 👁️ View Button - opens custom video modal */}
-                                                                    <td className="border p-2 text-center">
-                                                                        <button
-                                                                            onClick={() => handleOpenVideoModal(loan.video_consent_path)}
-                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                        >
-                                                                            <Eye size={16} /> View
-                                                                        </button>
-                                                                    </td>
-
-                                                                    {/* ⬇️ Download Button */}
-                                                                    <td className="border p-2 text-center">
-                                                                        <a
-                                                                            href={loan.video_consent_path}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                        >
-                                                                            Download <Download size={16} />
-                                                                        </a>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">-</td>
-                                                                </tr>
-                                                            )}
-                                                            {/* 🎥 Video Player Modal */}
-                                                            <Modal
-                                                                show={showVideoModal}
-                                                                onHide={closeVideoModal}
-                                                                size="lg"
-                                                                centered
-                                                                dialogClassName="max-w-[800px]"
-                                                            >
-                                                                <Modal.Header closeButton className="bg-gray-100">
-                                                                    <Modal.Title className="text-lg font-semibold text-gray-800">
-                                                                        🎬 Video Consent Preview
-                                                                    </Modal.Title>
-                                                                </Modal.Header>
-
-                                                                <Modal.Body className="bg-black p-2">
-                                                                    {videoSrc ? (
-                                                                        <video
-                                                                            controls
-                                                                            autoPlay
-                                                                            className="w-100 rounded shadow-sm border border-gray-300"
-                                                                            style={{ maxHeight: "70vh", display: "block", margin: "0 auto" }}
-                                                                        >
-                                                                            <source src={videoSrc} type="video/mp4" />
-                                                                            Your browser does not support the video tag.
-                                                                        </video>
-                                                                    ) : (
-                                                                        <p className="text-gray-500 text-center">No video available for preview.</p>
-                                                                    )}
-                                                                </Modal.Body>
-
-                                                                <Modal.Footer className="bg-gray-50">
-                                                                    <Button variant="secondary" onClick={closeVideoModal}>
-                                                                        Close
-                                                                    </Button>
-                                                                </Modal.Footer>
-                                                            </Modal>
-                                                            {loan.isda_signed_upload_path && (
-                                                                <tr key="isda-signed" className="hover:bg-gray-50 transition">
-                                                                    <td className="border p-2">ISDA Signed Document</td>
-                                                                    <td className="border p-2">{loan.isda_signed_upload_path.split("/").pop()}</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2 text-center">
-                                                                        <button
-                                                                            onClick={() =>
-                                                                                // openDocModal({
-                                                                                //      file_path: loan.isda_signed_upload_path,
-                                                                                //      file_name: loan.isda_signed_upload_path.split("/").pop(),
-                                                                                //      doc_type: "ISDA Signed Document",
-                                                                                // })
-                                                                                openDocModal({
-                                                                                    id: loan.id,
-                                                                                    doc_type: "ISDA Signed Document",
-                                                                                    file_name: "ISDA_signed_document.pdf",
-                                                                                    file_path: loan.isda_signed_upload_path
-                                                                                })
-                                                                            }
-                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                        >
-                                                                            <Eye size={16} /> View
-                                                                        </button>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">
-                                                                        <a
-                                                                            href={loan.isda_signed_upload_path}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                        >
-                                                                            Download <Download size={16} />
-                                                                        </a>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">-</td>
-                                                                </tr>
-                                                            )}
-
-                                                            {loan.org_signed_upload_path && (
-                                                                <tr key="org-signed" className="hover:bg-gray-50 transition">
-                                                                    <td className="border p-2">Organisation Standard Document</td>
-                                                                    <td className="border p-2">{loan.org_signed_upload_path.split("/").pop()}</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2 text-center">
-                                                                        <button
-                                                                            onClick={() =>
-                                                                                openDocModal({
-                                                                                    id: loan.id,
-                                                                                    doc_type: "Organisation Document",
-                                                                                    file_name: "organisation_document.pdf",
-                                                                                    file_path: loan.org_signed_upload_path
-                                                                                })
-                                                                            }
-                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                        >
-                                                                            <Eye size={16} /> View
-                                                                        </button>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">
-                                                                        <a
-                                                                            href={loan.org_signed_upload_path}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                        >
-                                                                            Download <Download size={16} />
-                                                                        </a>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">-</td>
-                                                                </tr>
-                                                            )}
-                                                        </>
-                                                    ) : ((auth.user.is_admin != 1 && (loan?.status == 'Approved' || loan?.status == 'Rejected') && (
-                                                        <>
-                                                            {loan.video_consent_path && (
-                                                                <tr key="video-consent" className="hover:bg-gray-50 transition">
-                                                                    <td className="border p-2">Video Consent</td>
-                                                                    <td className="border p-2">{loan.video_consent_file_name.split("/").pop()}</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2">-</td>
-
-                                                                    {/* 👁️ View Button - opens custom video modal */}
-                                                                    <td className="border p-2 text-center">
-                                                                        <button
-                                                                            onClick={() => handleOpenVideoModal(loan.video_consent_path)}
-                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                        >
-                                                                            <Eye size={16} /> View
-                                                                        </button>
-                                                                    </td>
-
-                                                                    {/* ⬇️ Download Button */}
-                                                                    <td className="border p-2 text-center">
-                                                                        <a
-                                                                            href={loan.video_consent_path}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                        >
-                                                                            Download <Download size={16} />
-                                                                        </a>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">-</td>
-                                                                </tr>
-                                                            )}
-                                                            {/* 🎥 Video Player Modal */}
-                                                            <Modal
-                                                                show={showVideoModal}
-                                                                onHide={closeVideoModal}
-                                                                size="lg"
-                                                                centered
-                                                                dialogClassName="max-w-[800px]"
-                                                            >
-                                                                <Modal.Header closeButton className="bg-gray-100">
-                                                                    <Modal.Title className="text-lg font-semibold text-gray-800">
-                                                                        🎬 Video Consent Preview
-                                                                    </Modal.Title>
-                                                                </Modal.Header>
-
-                                                                <Modal.Body className="bg-black p-2">
-                                                                    {videoSrc ? (
-                                                                        <video
-                                                                            controls
-                                                                            autoPlay
-                                                                            className="w-100 rounded shadow-sm border border-gray-300"
-                                                                            style={{ maxHeight: "70vh", display: "block", margin: "0 auto" }}
-                                                                        >
-                                                                            <source src={videoSrc} type="video/mp4" />
-                                                                            Your browser does not support the video tag.
-                                                                        </video>
-                                                                    ) : (
-                                                                        <p className="text-gray-500 text-center">No video available for preview.</p>
-                                                                    )}
-                                                                </Modal.Body>
-
-                                                                <Modal.Footer className="bg-gray-50">
-                                                                    <Button variant="secondary" onClick={closeVideoModal}>
-                                                                        Close
-                                                                    </Button>
-                                                                </Modal.Footer>
-                                                            </Modal>
-                                                            {loan.isda_signed_upload_path && (
-                                                                <tr key="isda-signed" className="hover:bg-gray-50 transition">
-                                                                    <td className="border p-2">ISDA Signed Document</td>
-                                                                    <td className="border p-2">{loan.isda_signed_upload_path.split("/").pop()}</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2 text-center">
-                                                                        <button
-                                                                            onClick={() =>
-                                                                                // openDocModal({
-                                                                                //      file_path: loan.isda_signed_upload_path,
-                                                                                //      file_name: loan.isda_signed_upload_path.split("/").pop(),
-                                                                                //      doc_type: "ISDA Signed Document",
-                                                                                // })
-                                                                                openDocModal({
-                                                                                    id: loan.id,
-                                                                                    doc_type: "ISDA Signed Document",
-                                                                                    file_name: "ISDA_signed_document.pdf",
-                                                                                    file_path: loan.isda_signed_upload_path
-                                                                                })
-                                                                            }
-                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                        >
-                                                                            <Eye size={16} /> View
-                                                                        </button>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">
-                                                                        <a
-                                                                            href={loan.isda_signed_upload_path}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                        >
-                                                                            Download <Download size={16} />
-                                                                        </a>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">-</td>
-                                                                </tr>
-                                                            )}
-
-                                                            {loan.org_signed_upload_path && (
-                                                                <tr key="org-signed" className="hover:bg-gray-50 transition">
-                                                                    <td className="border p-2">Organisation Standard Document</td>
-                                                                    <td className="border p-2">{loan.org_signed_upload_path.split("/").pop()}</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2">-</td>
-                                                                    <td className="border p-2 text-center">
-                                                                        <button
-                                                                            onClick={() =>
-                                                                                openDocModal({
-                                                                                    id: loan.id,
-                                                                                    doc_type: "Organisation Document",
-                                                                                    file_name: "Organisation_Document.pdf",
-                                                                                    file_path: loan.org_signed_upload_path
-                                                                                })
-                                                                            }
-                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                        >
-                                                                            <Eye size={16} /> View
-                                                                        </button>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">
-                                                                        <a
-                                                                            href={loan.org_signed_upload_path}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                        >
-                                                                            Download <Download size={16} />
-                                                                        </a>
-                                                                    </td>
-                                                                    <td className="border p-2 text-center">-</td>
-                                                                </tr>
-                                                            )}
-                                                        </>
-                                                    )))}
-                                                </tbody>
-                                            </table>
-                                        ) : (
-                                            <>
-                                                <div className="p-3 border rounded bg-gray-50">
-                                                    <p className="text-gray-600 mb-3">No documents uploaded yet.</p>
-                                                    {(loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) && (
-                                                        <LoanDocumentsUpload
-                                                            loanFormData={loan}
-                                                            onUploadComplete={async () => {
-                                                                // ✅ Re-fetch loan details after upload completion
-                                                                try {
-                                                                    const res = await axios.get(`/api/loans/${loanId}`);
-                                                                    setLoan(res.data);
-                                                                    setMessage("✅ Document uploaded successfully! Data refreshed.");
-                                                                } catch (err) {
-                                                                    console.error("Failed to refresh after upload:", err);
-                                                                    setMessage("⚠️ Upload succeeded but failed to refresh loan data.");
-                                                                }
-                                                            }}
-                                                        />
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {/* Modal for viewing document */}
-                                        <Modal
-                                            show={showModal}
-                                            onHide={closeDocModal}
-                                            size="xl"
-                                            centered
-                                            dialogClassName="max-w-[900px]"
-                                        >
-                                            <Modal.Header closeButton>
-                                                <Modal.Title>
-                                                    {selectedDoc?.doc_type} — {selectedDoc?.file_name}
-                                                </Modal.Title>
-                                            </Modal.Header>
-
-                                            <Modal.Body>
-                                                {selectedDoc?.file_path && selectedDoc.file_name.endsWith(".pdf") ? (
-                                                    <iframe
-                                                        src={`/storage/${selectedDoc.file_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                        width="100%"
-                                                        height="600"
-                                                        className="rounded border shadow-sm"
-                                                        title={selectedDoc.file_name}
-                                                    />
-                                                ) : selectedDoc?.file_path?.endsWith(".mp4") ? (
-                                                    <video
-                                                        width="100%"
-                                                        height="auto"
-                                                        controls
-                                                        src={`/storage/${selectedDoc.file_path}`}
-                                                        className="rounded border shadow-sm"
-                                                    />
-                                                ) : (
-                                                    <p className="text-gray-500 text-center">
-                                                        Preview not available for this file type.
-                                                    </p>
-                                                )}
-                                            </Modal.Body>
-
-                                            <Modal.Footer>
-                                                {auth.user.is_admin == 1 && (
-                                                    <>
-                                                        <Button
-                                                            variant="success"
-                                                            onClick={async () => {
-                                                                await handleVerifyDoc(selectedDoc.id, "Verified");
-                                                                closeDocModal();
-                                                            }}
-                                                        >
-                                                            Approve
-                                                        </Button>
-                                                        <Button
-                                                            variant="danger"
-                                                            onClick={async () => {
-                                                                await handleVerifyDoc(selectedDoc.id, "Rejected");
-                                                                closeDocModal();
-                                                            }}
-                                                        >
-                                                            Reject
-                                                        </Button>
-                                                    </>
-                                                )}
-                                                <Button variant="secondary" onClick={closeDocModal}>
-                                                    Close
-                                                </Button>
-                                            </Modal.Footer>
-                                        </Modal>
-                                        {showRejectModal && (
-                                            <div className="fixed inset-0 bg-slate-600 bg-opacity-40 flex items-center justify-center z-50">
-                                                <div className="bg-white p-5 rounded-lg shadow-lg w-96">
-                                                    <h2 className="text-lg font-semibold mb-3">Reject Document</h2>
-
-                                                    <label className="block text-sm font-medium mb-1">Select Rejection Reason</label>
-                                                    <select
-                                                        className="border rounded w-full px-3 py-2 mb-4"
-                                                        value={selectedRejectionReason}
-                                                        onChange={(e) => setSelectedRejectionReason(e.target.value)}
-                                                    >
-                                                        <option value="">-- Select Reason --</option>
-                                                        {rejectReasons.map((r) => (
-                                                            (r.reason_type === 1) && (
-                                                                <option key={r.id} value={r.id}>
-                                                                    {r.reason_desc}
-                                                                </option>
-                                                            )
-                                                        ))}
-                                                    </select>
-
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
-                                                            onClick={() => {
-                                                                setShowRejectModal(false);
-                                                                setSelectedRejectionReason("");
-                                                                setRejectingDocId(null);
-                                                            }}
-                                                        >
-                                                            Cancel
-                                                        </button>
-
-                                                        <button
-                                                            className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
-                                                            onClick={submitRejection}
-                                                        >
-                                                            Reject
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </fieldset>
-                                </Col>
-                                {/* documents section */}
-                                <fieldset className="fldset mb-2">
-                                    <legend className="font-semibold mb-2">📑 Documents</legend>
-
-                                    <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
-                                        <thead className="bg-indigo-600 text-white">
-                                            <tr>
-                                                <th className="border p-2 text-center">Document Type</th>
-                                                <th className="border p-2 text-center">File Name</th>
-                                                <th className="border p-2 text-center">View</th>
-                                                <th className="border p-2 text-center">Print</th>
-                                            </tr>
-                                        </thead>
-
-                                        <tbody>
-
-                                            {/* --------------- APPLICATION FORM ROW ---------------- */}
-                                            {(loan?.status === "Rejected" && loan?.is_temp_rejection === 1)
-                                                || (loan?.is_elegible === 1 && loan?.status === "Pending")
-                                                || (loan?.is_elegible === 1 && (loan?.status === "Approved" || loan?.status === "Closed"))
-                                                || (loan?.is_elegible === 1 && loan?.is_loan_re_updated_after_higher_approval === 1 && loan?.higher_approved_by != null)
-                                                ? (
-                                                    <tr className="hover:bg-gray-50 transition">
-                                                        <td className="border p-2 text-center">Application Form</td>
-                                                        <td className="border p-2 text-center">Application Form</td>
-
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={() => setShowModal1(true)}
-                                                                className="bg-blue-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
-                                                            >
-                                                                <Eye size={14} /> View
-                                                            </button>
-                                                        </td>
-
-                                                        <td className="border p-2 text-center">
-                                                            <button
-                                                                onClick={() => {
-                                                                    if (!showModal1) {
-                                                                        setShowModal1(true);
-                                                                        setTimeout(() => handlePrintAck(), 1000);
-                                                                        markAckDownloaded();
-                                                                    } else {
-                                                                        handlePrintAck();
-                                                                        markAckDownloaded();
-                                                                    }
-                                                                }}
-                                                                className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
-                                                            >
-                                                                <Printer size={14} /> Print
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ) : null}
-
-                                            {/* --------------- SECTOR DOCUMENT ROW ---------------- */}
-                                            {canPrintSector && (
-                                                <tr className="hover:bg-gray-50 transition">
-                                                    <td className="border p-2 text-center">{sectorDocTitle}</td>
-                                                    <td className="border p-2 text-center">{sectorDocTitle}</td>
-
-                                                    <td className="border p-2 text-center">
-                                                        <button
-                                                            onClick={() => setShowSectorModal(true)}
-                                                            className="bg-blue-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
-                                                        >
-                                                            <Eye size={14} /> View
-                                                        </button>
-                                                    </td>
-
-                                                    <td className="border p-2 text-center">
-                                                        <button
-                                                            onClick={() => {
-                                                                if (!showSectorModal) {
-                                                                    setShowSectorModal(true);
-                                                                    setTimeout(() => handlePrintSectorForm(), 1000);
-                                                                } else {
-                                                                    handlePrintSectorForm();
-                                                                }
-                                                            }}
-                                                            className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
-                                                        >
-                                                            <Printer size={14} /> Print
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            )}
-
-                                        </tbody>
-                                    </table>
-                                </fieldset>
-                                <Modal
-                                    show={showModal1}
-                                    onHide={() => setShowModal1(false)}
-                                    size="xl"
-                                    centered
-                                    contentClassName="bg-white"
-                                    enforceFocus={false}
-                                    restoreFocus={false}
-                                >
-                                    <Modal.Header closeButton className="no-print">
-                                        <Modal.Title>📄 Application Form View</Modal.Title>
-                                    </Modal.Header>
-
-                                    <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
-                                        <div className="p-1 bg-gray-100 print-area text-black" ref={ackPrintRef}>
-                                            {loan && <AppF loan={loan} auth={auth} />}
-                                        </div>
-                                    </Modal.Body>
-
-                                    <Modal.Footer className="no-print">
-                                        <Button variant="secondary" onClick={() => setShowModal1(false)}>Close</Button>
-
-                                        <button
-                                            onClick={() => {
-                                                if (!showModal1) {
-                                                    setShowModal1(true);
-                                                    setTimeout(() => handlePrintAck(), 1000);
-                                                    markAckDownloaded();
-                                                } else {
-                                                    handlePrintAck();
-                                                    markAckDownloaded();
-                                                }
-                                            }}
-                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
-                                        >
-                                            <Printer size={14} /> Print Acknowledgement
-                                        </button>
-                                    </Modal.Footer>
-                                </Modal>
-                                <Modal
-                                    show={showSectorModal}
-                                    onHide={() => setShowSectorModal(false)}
-                                    size="xl"
-                                    centered
-                                    contentClassName="bg-white"
-                                    enforceFocus={false}
-                                    restoreFocus={false}
-                                >
-                                    <Modal.Header closeButton>
-                                        <Modal.Title>
-                                            {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
-                                        </Modal.Title>
-                                    </Modal.Header>
-
-                                    <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
-                                        <div className="p-1 bg-gray-100 print-area text-black" ref={printRef}>
-                                            {loan && renderSectorForm()}
-                                        </div>
-                                    </Modal.Body>
-
-                                    <Modal.Footer>
-                                        <Button variant="secondary" onClick={() => setShowSectorModal(false)}>Close</Button>
-
-                                        <button
-                                            onClick={() => {
-                                                if (!showSectorModal) {
-                                                    setShowSectorModal(true);
-                                                    setTimeout(() => handlePrintSectorForm(), 1000);
-                                                } else {
-                                                    handlePrintSectorForm();
-                                                }
-                                            }}
-                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
-                                        >
-                                            <Printer size={14} /> Print
-                                        </button>
-                                    </Modal.Footer>
-                                </Modal>
-
-
-                                {/* --- Video Consent Upload / Preview --- */}
-                                {(loan?.status == "Rejected") && (auth.user.is_admin != 1) && (loan?.is_temp_rejection == 1) ? (
-                                    (loan?.is_ack_downloaded == 1) && (
-                                        <>
-                                            <React.Fragment>
-                                                <Row className="g-4 align-items-start mb-1">
-                                                    <Col md={6}>
-                                                        <fieldset className="fldset mb-4">
-                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                                <span>🎥 Video Consent</span>
-                                                                {loan.video_consent_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
-                                                                )}
-                                                            </legend>
-
-                                                            <Form.Group>
-                                                                <Form.Label className="font-medium">
-                                                                    Upload Consent Video (MP4 only)
-                                                                </Form.Label>
-
-                                                                <Form.Control
-                                                                    type="file"
-                                                                    accept="video/mp4"
-                                                                    key={videoFile ? videoFile.name : ""}
-                                                                    disabled={loan.status === "Approved"}
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files[0];
-                                                                        if (file) {
-                                                                            setVideoFile(file);
-                                                                            setVideoPreview(URL.createObjectURL(file));
-                                                                        }
-                                                                    }}
-                                                                />
-
-                                                                <Form.Text className="text-muted">Max size: 20MB</Form.Text>
-                                                            </Form.Group>
-
-                                                            <div className="flex gap-2 mt-3">
-                                                            <Button
-                                                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                                                onClick={() => handleUpload("video")}
-                                                                disabled={!videoFile}
-                                                            >
-                                                                {uploadProgress.video > 0 && uploadProgress.video < 100
-                                                                ? "Uploading..."
-                                                                : loan.video_consent_path
-                                                                    ? "Replace Video Consent"
-                                                                    : "Upload Video Consent"}
-                                                            </Button>
-
-                                                            {!isRecording ? (
-                                                                <Button
-                                                                variant="outline-secondary"
-                                                                onClick={startRecording}
-                                                                >
-                                                                🎥 Record via Webcam
-                                                                </Button>
-                                                            ) : (
-                                                                <Button
-                                                                variant="danger"
-                                                                onClick={stopRecording}
-                                                                >
-                                                                ⏹ Stop Recording
-                                                                </Button>
-                                                            )}
-                                                            </div>
-                                                            {isRecording && (
-                                                                <div className="mt-3 border rounded bg-black p-2">
-                                                                    <video
-                                                                    ref={videoRef}
-                                                                    autoPlay
-                                                                    muted
-                                                                    className="w-full rounded"
-                                                                    />
-                                                                    <p className="text-xs text-center text-white mt-1">
-                                                                    Recording in progress...
-                                                                    </p>
-                                                                </div>
-                                                                )}
-
-
-                                                            {uploadProgress.video > 0 && (
-                                                                <ProgressBar
-                                                                    now={uploadProgress.video}
-                                                                    label={`${uploadProgress.video}%`}
-                                                                    animated
-                                                                    variant={uploadProgress.video < 100 ? "info" : "success"}
-                                                                    className="mt-3"
-                                                                />
-                                                            )}
-                                                        </fieldset>
-                                                    </Col>
-
-                                                    <Col md={6}>
-                                                        {(videoPreview || loan.video_consent_path) && (
-                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                                <video
-                                                                    width="100%"
-                                                                    height="auto"
-                                                                    controls
-                                                                    src={videoPreview || loan.video_consent_path}
-                                                                    className="rounded shadow-sm"
-                                                                >
-                                                                    Your browser does not support video.
-                                                                </video>
-                                                            </div>
-                                                        )}
-                                                    </Col>
-                                                </Row>
-
-                                                <Row className="g-4 align-items-start mb-5">
-                                                    <Col md={6}>
-                                                        <fieldset className="fldset mb-4">
-                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                                <span>📄 ISDA Signed Document</span>
-                                                                {loan.isda_signed_upload_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
-                                                                )}
-                                                            </legend>
-
-                                                            <Form.Group>
-                                                                <Form.Label className="font-medium">Upload Signed ISDA (PDF only)</Form.Label>
-                                                                <Form.Control
-                                                                    type="file"
-                                                                    accept="application/pdf"
-                                                                    disabled={loan.status === "Approved"}
-                                                                    key={pdfFile ? pdfFile.name : ""}
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files[0];
-                                                                        if (file) {
-                                                                            setPdfFile(file);
-                                                                            setPdfPreview(URL.createObjectURL(file));
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
-                                                            </Form.Group>
-
-                                                            <Button
-                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
-                                                                onClick={() => handleUpload("pdf")}
-                                                                disabled={!pdfFile}
-                                                            >
-                                                                {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
-                                                                    ? "Uploading..."
-                                                                    : loan.isda_signed_upload_path
-                                                                        ? "Replace ISDA Signed PDF"
-                                                                        : "Upload ISDA Signed PDF"}
-                                                            </Button>
-
-                                                            {uploadProgress.pdf > 0 && (
-                                                                <ProgressBar
-                                                                    now={uploadProgress.pdf}
-                                                                    label={`${uploadProgress.pdf}%`}
-                                                                    animated
-                                                                    variant={uploadProgress.pdf < 100 ? "info" : "success"}
-                                                                    className="mt-3"
-                                                                />
-                                                            )}
-                                                        </fieldset>
-                                                    </Col>
-
-                                                    <Col md={6}>
-                                                        {(pdfPreview || loan.isda_signed_upload_path) && (
-                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                                <iframe
-                                                                    src={`${pdfPreview || loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                                    width="100%"
-                                                                    height="500"
-                                                                    className="rounded shadow-sm border"
-                                                                    style={{
-                                                                        border: "1px solid #ddd",
-                                                                        borderRadius: "8px",
-                                                                        overflow: "hidden",
-                                                                    }}
-                                                                    title="ISDA Signed Document"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </Col>
-                                                </Row>
-
-                                                <Row className="g-4 align-items-start mb-5">
-                                                    <Col md={6}>
-                                                        <fieldset className="fldset mb-4">
-                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                                <span>📄 Organization Signed Document</span>
-                                                                {loan.org_signed_upload_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
-                                                                )}
-                                                            </legend>
-
-                                                            <Form.Group>
-                                                                <Form.Label className="font-medium">Upload Signed Organization Standard (PDF only)</Form.Label>
-                                                                <Form.Control
-                                                                    type="file"
-                                                                    accept="application/pdf"
-                                                                    disabled={loan.status === "Approved"}
-                                                                    key={pdfFile1 ? pdfFile1.name : ""}
-                                                                    onChange={(e) => {
-                                                                        const file1 = e.target.files[0];
-                                                                        if (file1) {
-                                                                            setPdfFile1(file1);
-                                                                            setPdfPreview1(URL.createObjectURL(file1));
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
-                                                            </Form.Group>
-
-                                                            <Button
-                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
-                                                                onClick={() => handleUpload("pdf1")}
-                                                                disabled={!pdfFile1}
-                                                            >
-                                                                {uploadProgress.pdf1 > 0 && uploadProgress.pdf1 < 100
-                                                                    ? "Uploading..."
-                                                                    : loan.org_signed_upload_path
-                                                                        ? "Replace Organization Signed PDF"
-                                                                        : "Upload Organization Signed PDF"}
-                                                            </Button>
-
-                                                            {uploadProgress.pdf1 > 0 && (
-                                                                <ProgressBar
-                                                                    now={uploadProgress.pdf1}
-                                                                    label={`${uploadProgress.pdf1}%`}
-                                                                    animated
-                                                                    variant={uploadProgress.pdf1 < 100 ? "info" : "success"}
-                                                                    className="mt-3"
-                                                                />
-                                                            )}
-                                                        </fieldset>
-                                                    </Col>
-
-                                                    <Col md={6}>
-                                                        {(pdfPreview1 || loan.org_signed_upload_path) && (
-                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                                <iframe
-                                                                    src={`${pdfPreview1 || loan.org_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                                    width="100%"
-                                                                    height="500"
-                                                                    className="rounded shadow-sm border"
-                                                                    style={{
-                                                                        border: "1px solid #ddd",
-                                                                        borderRadius: "8px",
-                                                                        overflow: "hidden",
-                                                                    }}
-                                                                    title="Organization Signed Document"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </Col>
-                                                </Row>
-                                            </React.Fragment>
-                                        </>
-                                    )
-                                ) :
-                                (loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) && (loan?.higher_approved_by == null) ? (
-
-                                        (loan?.is_ack_downloaded == 1) && (
-                                        <>
-                                            <React.Fragment>
-                                                <Row className="g-4 align-items-start mb-1">
-                                                    <Col md={6}>
-                                                        <fieldset className="fldset mb-4">
-                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                                <span>🎥 Video Consent</span>
-                                                                {loan.video_consent_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
-                                                                )}
-                                                            </legend>
-
-                                                            <Form.Group>
-                                                                <Form.Label className="font-medium">
-                                                                    Upload Consent Video (MP4 only)
-                                                                </Form.Label>
-
-                                                                <Form.Control
-                                                                    type="file"
-                                                                    accept="video/mp4"
-                                                                    key={videoFile ? videoFile.name : ""}
-                                                                    disabled={loan.status === "Approved"}
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files[0];
-                                                                        if (file) {
-                                                                            setVideoFile(file);
-                                                                            setVideoPreview(URL.createObjectURL(file));
-                                                                        }
-                                                                    }}
-                                                                />
-
-                                                                <Form.Text className="text-muted">Max size: 20MB</Form.Text>
-                                                            </Form.Group>
-
-                                                            <div className="flex gap-2 mt-3">
-                                                            <Button
-                                                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                                                onClick={() => handleUpload("video")}
-                                                                disabled={!videoFile}
-                                                            >
-                                                                {uploadProgress.video > 0 && uploadProgress.video < 100
-                                                                ? "Uploading..."
-                                                                : loan.video_consent_path
-                                                                    ? "Replace Video Consent"
-                                                                    : "Upload Video Consent"}
-                                                            </Button>
-
-                                                            {!isRecording ? (
-                                                                <Button
-                                                                variant="outline-secondary"
-                                                                onClick={startRecording}
-                                                                >
-                                                                🎥 Record via Webcam
-                                                                </Button>
-                                                            ) : (
-                                                                <Button
-                                                                variant="danger"
-                                                                onClick={stopRecording}
-                                                                >
-                                                                ⏹ Stop Recording
-                                                                </Button>
-                                                            )}
-                                                            </div>
-                                                            {isRecording && (
-                                                                <div className="mt-3 border rounded bg-black p-2">
-                                                                    <video
-                                                                    ref={videoRef}
-                                                                    autoPlay
-                                                                    muted
-                                                                    className="w-full rounded"
-                                                                    />
-                                                                    <p className="text-xs text-center text-white mt-1">
-                                                                    Recording in progress...
-                                                                    </p>
-                                                                </div>
-                                                                )}
-
-
-                                                            {uploadProgress.video > 0 && (
-                                                                <ProgressBar
-                                                                    now={uploadProgress.video}
-                                                                    label={`${uploadProgress.video}%`}
-                                                                    animated
-                                                                    variant={uploadProgress.video < 100 ? "info" : "success"}
-                                                                    className="mt-3"
-                                                                />
-                                                            )}
-                                                        </fieldset>
-                                                    </Col>
-
-                                                    <Col md={6}>
-                                                        {(videoPreview || loan.video_consent_path) && (
-                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                                <video
-                                                                    width="100%"
-                                                                    height="auto"
-                                                                    controls
-                                                                    src={videoPreview || loan.video_consent_path}
-                                                                    className="rounded shadow-sm"
-                                                                >
-                                                                    Your browser does not support video.
-                                                                </video>
-                                                            </div>
-                                                        )}
-                                                    </Col>
-                                                </Row>
-
-                                                <Row className="g-4 align-items-start mb-5">
-                                                    <Col md={6}>
-                                                        <fieldset className="fldset mb-4">
-                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                                <span>📄 ISDA Signed Document</span>
-                                                                {loan.isda_signed_upload_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
-                                                                )}
-                                                            </legend>
-
-                                                            <Form.Group>
-                                                                <Form.Label className="font-medium">Upload Signed ISDA (PDF only)</Form.Label>
-                                                                <Form.Control
-                                                                    type="file"
-                                                                    accept="application/pdf"
-                                                                    disabled={loan.status === "Approved"}
-                                                                    key={pdfFile ? pdfFile.name : ""}
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files[0];
-                                                                        if (file) {
-                                                                            setPdfFile(file);
-                                                                            setPdfPreview(URL.createObjectURL(file));
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
-                                                            </Form.Group>
-
-                                                            <Button
-                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
-                                                                onClick={() => handleUpload("pdf")}
-                                                                disabled={!pdfFile}
-                                                            >
-                                                                {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
-                                                                    ? "Uploading..."
-                                                                    : loan.isda_signed_upload_path
-                                                                        ? "Replace ISDA Signed PDF"
-                                                                        : "Upload ISDA Signed PDF"}
-                                                            </Button>
-
-                                                            {uploadProgress.pdf > 0 && (
-                                                                <ProgressBar
-                                                                    now={uploadProgress.pdf}
-                                                                    label={`${uploadProgress.pdf}%`}
-                                                                    animated
-                                                                    variant={uploadProgress.pdf < 100 ? "info" : "success"}
-                                                                    className="mt-3"
-                                                                />
-                                                            )}
-                                                        </fieldset>
-                                                    </Col>
-
-                                                    <Col md={6}>
-                                                        {(pdfPreview || loan.isda_signed_upload_path) && (
-                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                                <iframe
-                                                                    src={`${pdfPreview || loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                                    width="100%"
-                                                                    height="500"
-                                                                    className="rounded shadow-sm border"
-                                                                    style={{
-                                                                        border: "1px solid #ddd",
-                                                                        borderRadius: "8px",
-                                                                        overflow: "hidden",
-                                                                    }}
-                                                                    title="ISDA Signed Document"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </Col>
-                                                </Row>
-
-                                                <Row className="g-4 align-items-start mb-5">
-                                                    <Col md={6}>
-                                                        <fieldset className="fldset mb-4">
-                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                                <span>📄 Organization Signed Document</span>
-                                                                {loan.org_signed_upload_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
-                                                                )}
-                                                            </legend>
-
-                                                            <Form.Group>
-                                                                <Form.Label className="font-medium">Upload Signed Organization Standard (PDF only)</Form.Label>
-                                                                <Form.Control
-                                                                    type="file"
-                                                                    accept="application/pdf"
-                                                                    disabled={loan.status === "Approved"}
-                                                                    key={pdfFile1 ? pdfFile1.name : ""}
-                                                                    onChange={(e) => {
-                                                                        const file1 = e.target.files[0];
-                                                                        if (file1) {
-                                                                            setPdfFile1(file1);
-                                                                            setPdfPreview1(URL.createObjectURL(file1));
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
-                                                            </Form.Group>
-
-                                                            <Button
-                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
-                                                                onClick={() => handleUpload("pdf1")}
-                                                                disabled={!pdfFile1}
-                                                            >
-                                                                {uploadProgress.pdf1 > 0 && uploadProgress.pdf1 < 100
-                                                                    ? "Uploading..."
-                                                                    : loan.org_signed_upload_path
-                                                                        ? "Replace Organization Signed PDF"
-                                                                        : "Upload Organization Signed PDF"}
-                                                            </Button>
-
-                                                            {uploadProgress.pdf1 > 0 && (
-                                                                <ProgressBar
-                                                                    now={uploadProgress.pdf1}
-                                                                    label={`${uploadProgress.pdf1}%`}
-                                                                    animated
-                                                                    variant={uploadProgress.pdf1 < 100 ? "info" : "success"}
-                                                                    className="mt-3"
-                                                                />
-                                                            )}
-                                                        </fieldset>
-                                                    </Col>
-
-                                                    <Col md={6}>
-                                                        {(pdfPreview1 || loan.org_signed_upload_path) && (
-                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                                <iframe
-                                                                    src={`${pdfPreview1 || loan.org_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                                    width="100%"
-                                                                    height="500"
-                                                                    className="rounded shadow-sm border"
-                                                                    style={{
-                                                                        border: "1px solid #ddd",
-                                                                        borderRadius: "8px",
-                                                                        overflow: "hidden",
-                                                                    }}
-                                                                    title="Organization Signed Document"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </Col>
-                                                </Row>
-                                            </React.Fragment>
-                                        </>
-                                        )
-                                ) :
-                                (loan?.is_elegible == 1) && (loan?.is_loan_re_updated_after_higher_approval == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && loan?.status != "Rejected" && (
-                                            (loan?.is_ack_downloaded == 1) && (
-                                        <>
-                                            <React.Fragment>
-                                                <Row className="g-4 align-items-start mb-1">
-                                                    <Col md={6}>
-                                                        <fieldset className="fldset mb-4">
-                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                                <span>🎥 Video Consent</span>
-                                                                {loan.video_consent_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
-                                                                )}
-                                                            </legend>
-
-                                                            <Form.Group>
-                                                                <Form.Label className="font-medium">
-                                                                    Upload Consent Video (MP4 only)
-                                                                </Form.Label>
-
-                                                                <Form.Control
-                                                                    type="file"
-                                                                    accept="video/mp4"
-                                                                    key={videoFile ? videoFile.name : ""}
-                                                                    disabled={loan.status === "Approved"}
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files[0];
-                                                                        if (file) {
-                                                                            setVideoFile(file);
-                                                                            setVideoPreview(URL.createObjectURL(file));
-                                                                        }
-                                                                    }}
-                                                                />
-
-                                                                <Form.Text className="text-muted">Max size: 20MB</Form.Text>
-                                                            </Form.Group>
-
-                                                            <div className="flex gap-2 mt-3">
-                                                            <Button
-                                                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                                                onClick={() => handleUpload("video")}
-                                                                disabled={!videoFile}
-                                                            >
-                                                                {uploadProgress.video > 0 && uploadProgress.video < 100
-                                                                ? "Uploading..."
-                                                                : loan.video_consent_path
-                                                                    ? "Replace Video Consent"
-                                                                    : "Upload Video Consent"}
-                                                            </Button>
-
-                                                            {!isRecording ? (
-                                                                <Button
-                                                                variant="outline-secondary"
-                                                                onClick={startRecording}
-                                                                >
-                                                                🎥 Record via Webcam
-                                                                </Button>
-                                                            ) : (
-                                                                <Button
-                                                                variant="danger"
-                                                                onClick={stopRecording}
-                                                                >
-                                                                ⏹ Stop Recording
-                                                                </Button>
-                                                            )}
-                                                            </div>
-                                                            {isRecording && (
-                                                                <div className="mt-3 border rounded bg-black p-2">
-                                                                    <video
-                                                                    ref={videoRef}
-                                                                    autoPlay
-                                                                    muted
-                                                                    className="w-full rounded"
-                                                                    />
-                                                                    <p className="text-xs text-center text-white mt-1">
-                                                                    Recording in progress...
-                                                                    </p>
-                                                                </div>
-                                                                )}
-
-
-                                                            {uploadProgress.video > 0 && (
-                                                                <ProgressBar
-                                                                    now={uploadProgress.video}
-                                                                    label={`${uploadProgress.video}%`}
-                                                                    animated
-                                                                    variant={uploadProgress.video < 100 ? "info" : "success"}
-                                                                    className="mt-3"
-                                                                />
-                                                            )}
-                                                        </fieldset>
-                                                    </Col>
-
-                                                    <Col md={6}>
-                                                        {(videoPreview || loan.video_consent_path) && (
-                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                                <video
-                                                                    width="100%"
-                                                                    height="auto"
-                                                                    controls
-                                                                    src={videoPreview || loan.video_consent_path}
-                                                                    className="rounded shadow-sm"
-                                                                >
-                                                                    Your browser does not support video.
-                                                                </video>
-                                                            </div>
-                                                        )}
-                                                    </Col>
-                                                </Row>
-
-                                                <Row className="g-4 align-items-start mb-5">
-                                                    <Col md={6}>
-                                                        <fieldset className="fldset mb-4">
-                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                                <span>📄 ISDA Signed Document</span>
-                                                                {loan.isda_signed_upload_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
-                                                                )}
-                                                            </legend>
-
-                                                            <Form.Group>
-                                                                <Form.Label className="font-medium">Upload Signed ISDA (PDF only)</Form.Label>
-                                                                <Form.Control
-                                                                    type="file"
-                                                                    accept="application/pdf"
-                                                                    disabled={loan.status === "Approved"}
-                                                                    key={pdfFile ? pdfFile.name : ""}
-                                                                    onChange={(e) => {
-                                                                        const file = e.target.files[0];
-                                                                        if (file) {
-                                                                            setPdfFile(file);
-                                                                            setPdfPreview(URL.createObjectURL(file));
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
-                                                            </Form.Group>
-
-                                                            <Button
-                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
-                                                                onClick={() => handleUpload("pdf")}
-                                                                disabled={!pdfFile}
-                                                            >
-                                                                {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
-                                                                    ? "Uploading..."
-                                                                    : loan.isda_signed_upload_path
-                                                                        ? "Replace ISDA Signed PDF"
-                                                                        : "Upload ISDA Signed PDF"}
-                                                            </Button>
-
-                                                            {uploadProgress.pdf > 0 && (
-                                                                <ProgressBar
-                                                                    now={uploadProgress.pdf}
-                                                                    label={`${uploadProgress.pdf}%`}
-                                                                    animated
-                                                                    variant={uploadProgress.pdf < 100 ? "info" : "success"}
-                                                                    className="mt-3"
-                                                                />
-                                                            )}
-                                                        </fieldset>
-                                                    </Col>
-
-                                                    <Col md={6}>
-                                                        {(pdfPreview || loan.isda_signed_upload_path) && (
-                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                                <iframe
-                                                                    src={`${pdfPreview || loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                                    width="100%"
-                                                                    height="500"
-                                                                    className="rounded shadow-sm border"
-                                                                    style={{
-                                                                        border: "1px solid #ddd",
-                                                                        borderRadius: "8px",
-                                                                        overflow: "hidden",
-                                                                    }}
-                                                                    title="ISDA Signed Document"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </Col>
-                                                </Row>
-
-                                                <Row className="g-4 align-items-start mb-5">
-                                                    <Col md={6}>
-                                                        <fieldset className="fldset mb-4">
-                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
-                                                                <span>📄 Organization Signed Document</span>
-                                                                {loan.org_signed_upload_path && (
-                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
-                                                                )}
-                                                            </legend>
-
-                                                            <Form.Group>
-                                                                <Form.Label className="font-medium">Upload Signed Organization Standard (PDF only)</Form.Label>
-                                                                <Form.Control
-                                                                    type="file"
-                                                                    accept="application/pdf"
-                                                                    disabled={loan.status === "Approved"}
-                                                                    key={pdfFile1 ? pdfFile1.name : ""}
-                                                                    onChange={(e) => {
-                                                                        const file1 = e.target.files[0];
-                                                                        if (file1) {
-                                                                            setPdfFile1(file1);
-                                                                            setPdfPreview1(URL.createObjectURL(file1));
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
-                                                            </Form.Group>
-
-                                                            <Button
-                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
-                                                                onClick={() => handleUpload("pdf1")}
-                                                                disabled={!pdfFile1}
-                                                            >
-                                                                {uploadProgress.pdf1 > 0 && uploadProgress.pdf1 < 100
-                                                                    ? "Uploading..."
-                                                                    : loan.org_signed_upload_path
-                                                                        ? "Replace Organization Signed PDF"
-                                                                        : "Upload Organization Signed PDF"}
-                                                            </Button>
-
-                                                            {uploadProgress.pdf1 > 0 && (
-                                                                <ProgressBar
-                                                                    now={uploadProgress.pdf1}
-                                                                    label={`${uploadProgress.pdf1}%`}
-                                                                    animated
-                                                                    variant={uploadProgress.pdf1 < 100 ? "info" : "success"}
-                                                                    className="mt-3"
-                                                                />
-                                                            )}
-                                                        </fieldset>
-                                                    </Col>
-
-                                                    <Col md={6}>
-                                                        {(pdfPreview1 || loan.org_signed_upload_path) && (
-                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
-                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
-                                                                <iframe
-                                                                    src={`${pdfPreview1 || loan.org_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                                    width="100%"
-                                                                    height="500"
-                                                                    className="rounded shadow-sm border"
-                                                                    style={{
-                                                                        border: "1px solid #ddd",
-                                                                        borderRadius: "8px",
-                                                                        overflow: "hidden",
-                                                                    }}
-                                                                    title="Organization Signed Document"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </Col>
-                                                </Row>
-                                            </React.Fragment>
-                                        </>
-                                            )
-                                )}
-
-                                {/* --- Message area --- */}
+                                </Row>
                                 {message && (
-                                    <div
-                                        className={`mt-3 p-2 rounded text-center transition-all ${message.startsWith("✅")
-                                            ? "bg-green-100 text-green-700"
-                                            : message.startsWith("⚠️")
-                                                ? "bg-yellow-100 text-yellow-700"
-                                                : "bg-red-100 text-red-700"
-                                            }`}
-                                    >
+                                    <div className="mb-4 text-center text-sm font-medium text-green-600">
                                         {message}
                                     </div>
                                 )}
 
-                                {(auth.user.is_admin == 1) ? (
-                                    <Col md={12}>
-                                        {(loan.status === "Pending") ? (
-                                            <div className="mt-6 flex justify-center gap-4">
-                                                <button
-                                                    onClick={handleApprove}
-                                                    disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
-                                                    className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    onClick={handleReject}
-                                                    disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
-                                                    className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                >
-                                                    Reject
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {(loan.status === "Rejected" && loan.has_fixed_temp_rejection == 1) && (
-                                                    <div className="mt-6 flex justify-center gap-4">
-                                                        <button
-                                                            onClick={handleApprove}
-                                                            disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null)}
-                                                            className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        >
-                                                            Approve
-                                                        </button>
+                                {loan ? (
+                                    <Row>
+                                        <Col md={6}>
+                                            <h3 className="text-lg font-semibold mb-4">
+                                                Loan ID: #{loan.id}
+                                            </h3>
+                                        </Col>
+                                        <Col md={12}>
+                                            {(loan.status === "Approved") ? (
+                                                <Alert variant="success" className="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong>Loan Approved ✅</strong>
+                                                        <div className="small">This loan has already been approved.</div>
                                                     </div>
-                                                )}
+                                                    <div>
+                                                        <Button variant="outline-success" size="sm" onClick={() => router.visit(route("loans"))}>
+                                                            Back to List
+                                                        </Button>
+                                                    </div>
+                                                </Alert>
+                                            ) : (
+                                                loan?.status === "Closed" && (
+                                                    <Alert variant="info" className="d-flex align-items-center justify-content-between">
+                                                        <div>
+                                                            <strong>Loan Closed ℹ️</strong>
+                                                            <div className="small">This loan has been closed.</div>
+                                                        </div>
+                                                        <div>
+                                                            <Button variant="outline-secondary" size="sm" onClick={() => router.visit(route("loans"))}>
+                                                                Back to List
+                                                            </Button>
+                                                        </div>
+                                                    </Alert>
+                                                )
+                                            )}
+                                            {(loan.status === "Rejected") && (
+                                                <Alert variant="danger" className="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong>Loan Rejected ❌</strong>
+                                                        <div className="small">This loan has been rejected.</div>
+                                                        {loan.loan_reject_reason_id && (
+                                                            (() => {
+                                                                const r = rejectReasons.find(rr => rr.id === loan.loan_reject_reason_id);
+                                                                return r ? <div className="small">Reason: {r.reason_desc}</div> : null;
+                                                            })()
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <Button variant="outline-secondary" size="sm" onClick={() => router.visit(route("loans"))}>
+                                                            Back to List
+                                                        </Button>
+                                                    </div>
+                                                </Alert>
+                                            )}
+                                        </Col>
+                                        <Col md={6}>
+                                            <fieldset className="fldset mb-4">
+                                                <legend className="font-semibold mb-2">Application Details</legend>
+                                                <table className="w-full border-collapse border border-gray-300 text-sm">
+                                                    <tbody>
+                                                        <tr><td className="border p-2 font-semibold">Loan Type</td><td className="border p-2">{loan.loan_settings?.loan_desc || "-"}</td></tr>
+                                                        <tr><td className="border p-2 font-semibold">Purpose</td><td className="border p-2">{(loan.purpose) == "Other" ? loan.other_purpose_text : loan.purpose}</td></tr>
+                                                        <tr><td className="border p-2 font-semibold">Tenure (fortnight)</td><td className="border p-2">{loan.tenure_fortnight}</td></tr>
+                                                        <tr><td className="border p-2 font-semibold">EMI Amount</td><td className="border p-2">{(loan.emi_amount != null) ? `${currencyPrefix} ${parseFloat(loan.emi_amount).toFixed(2)}` : 0.00}</td></tr>
+                                                        <tr><td className="border p-2 font-semibold">Interest Rate</td><td className="border p-2">{loan.interest_rate}%</td></tr>
+                                                        <tr><td className="border p-2 font-semibold">Processing Fee</td><td className="border p-2">{(loan.processing_fee != null) ? currencyPrefix + " " + parseFloat(loan.processing_fee).toFixed(2) : 0.00}</td></tr>
+                                                        <tr>
+                                                            <td className="border p-2 font-semibold">Amount Details</td>
+                                                            <td className="border p-2">
+                                                                <strong>Applied Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.loan_amount_applied).toFixed(2)}<br />
+                                                                <strong>Elegible Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.elegible_amount).toFixed(2)}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="border p-2 font-semibold">Organisation Details</td>
+                                                            <td className="border p-2">
+                                                                <strong>Name: </strong>{loan.organisation.organisation_name} [{loan.organisation.sector_type}]<br />
+                                                                <strong>Contact: </strong>{loan.organisation.contact_no || "-"}<br />
+                                                                <strong>Email: </strong>{loan.organisation.email || "-"}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="border p-2 font-semibold">Bank Details</td>
+                                                            <td className="border p-2">
+                                                                {loan.bank_account_no == null && loan.bank_branch == null && loan.bank_name == null ? "N/A" : (
+                                                                    <>
+                                                                        <strong>Account No: </strong>{loan.bank_account_no || "-"}<br />
+                                                                        <strong>Branch: </strong>{loan.bank_branch || "-"}<br />
+                                                                        <strong>Bank Name: </strong>{loan.bank_name || "-"}
+                                                                    </>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                        <tr><td className="border p-2 font-semibold">Status</td><td className="border p-2">{loan.status} {(loan.video_consent_path == null) ? "[Video Consent Pending]" : ""}</td></tr>
+                                                        <tr><td className="border p-2 font-semibold">Remarks</td><td className="border p-2">{loan.remarks != null ? loan.remarks : "-"}</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </fieldset>
+                                        </Col>
+                                        <Col md={6}>
+                                            <fieldset className="fldset mb-4">
+                                                <legend className="font-semibold mb-2">Customer Details</legend>
+                                                <table className="w-full border-collapse border border-gray-300 text-sm">
+                                                    <tbody>
+                                                        <tr><td className="border p-2 font-semibold">Name</td><td className="border p-2">{loan.customer.first_name} {loan.customer.last_name}</td></tr>
+                                                        <tr>
+                                                            <td className="border p-2 font-semibold">Details</td>
+                                                            <td className="border p-2">
+                                                                <strong>Employee No:</strong> {loan.customer.employee_no} <br />
+                                                                <strong>Employment Type:</strong> {loan.customer.employment_type} <br />
+                                                                <strong>Department:</strong> {loan.customer.employer_department} <br />
+                                                                <strong>Designation:</strong> {loan.customer.designation} <br />
+                                                                <strong>Immediate Supervisor:</strong> {loan.customer.immediate_supervisor} <br />
+                                                                <strong>Payroll Number:</strong> {loan.customer.payroll_number} <br />
+                                                                <strong>Joinning Date:</strong> {(loan.customer.date_joined != null) ? new Date(loan.customer.date_joined).toLocaleDateString() : ""}<br />
+                                                                <strong>Gross Salary:</strong> {(loan.customer.monthly_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.monthly_salary).toFixed(2)}` : ""}
+                                                                <br />
+                                                                <strong>Net Salary:</strong> {(loan.customer.net_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.net_salary).toFixed(2)}` : ""}
+                                                                <br />
+                                                                <strong>Work Location:</strong> {loan.customer.work_location}
+                                                                <br />
+                                                                <strong>Years at current employer:</strong> {(loan.customer.years_at_current_employer != null) ? parseFloat(loan.customer.years_at_current_employer) : "N/A"}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="border p-2 font-semibold">Contact Information</td>
+                                                            <td className="border p-2">
+                                                                Phone: {loan.customer.phone} <br />
+                                                                Email: {loan.customer.email}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="border p-2 font-semibold">Marital Info</td>
+                                                            <td className="border p-2">
+                                                                {loan.customer.marital_status == null && loan.customer.spouse_full_name == null && loan.customer.spouse_contact == null ? "N/A" : (
+                                                                    <>
+                                                                        {loan.customer.marital_status} <br />
+                                                                        <strong>Spouse: </strong> {loan.customer.spouse_full_name || "-"} <br />
+                                                                        <strong>Contact: </strong> {loan.customer.spouse_contact || "-"}
+                                                                    </>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="border p-2 font-semibold">Number of Dependents</td>
+                                                            <td className="border p-2">
+                                                                {loan.customer.no_of_dependents}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="border p-2 font-semibold">Address</td>
+                                                            <td className="border p-2">
+                                                                {loan.customer.home_province == null && loan.customer.district_village == null && loan.customer.present_address == null && loan.customer.permanent_address == null ? "N/A" : (
+                                                                    <>
+                                                                        Home Province: {loan.customer.home_province} <br />
+                                                                        District & Village: {loan.customer.district_village}<br />
+                                                                        Present Address: {loan.customer.present_address}<br />
+                                                                        Permanent Address: {loan.customer.permanent_address}
+                                                                    </>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </fieldset>
+                                        </Col>
+                                        {(loan?.higher_approved_by != null) && (
+                                            <Col md={12} className="mb-4">
+                                                <Alert variant="info">
+                                                    <Alert.Heading style={{ fontSize: '18px' }}>ℹ Higher Approved</Alert.Heading>
+                                                    <p>
+                                                        This customer was marked as <strong>Not Eligible</strong> for the applied loan amount based on their salary and organisation criteria. However, the loan has been <strong>Higher Approved</strong> by&nbsp;
+                                                        {
+                                                            (auth.user.is_admin == 1 &&
+                                                                auth.user.id === loan.higher_approved_by_id)
+                                                                ? "You"
+                                                                : loan.higher_approved_by
+                                                        }.
+                                                    </p>
+                                                </Alert>
+                                            </Col>
+                                        )}
+                                        {(loan?.is_elegible == 0) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && (
+                                            //alert box
+                                            <>
+                                                <form onSubmit={handleLoanSubmit}> {/* Loan application form here */}
+                                                    <div className="row mb-3">
+                                                    </div>
+                                                    <fieldset className="fldset">
+                                                        <legend className="font-semibold">Loan Details</legend>
+                                                        <div className="row mb-3">
+                                                            <div className="col-md-4">
+                                                                <label className="form-label">Loan Type</label>
+                                                                <select
+                                                                    className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                                    name="loan_type" value={loanFormData.loan_type}
+                                                                    onChange={(e) => {
+                                                                        loanHandleChange(e);
+                                                                        //fetch loan settings based on selected loan type
+                                                                        const selectedLoanTypeId = e.target.value;
+
+                                                                        if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+                                                                            // Find selected loan setting based on loan type
+                                                                            const selectedLoanSetting = loanSettings.find(
+                                                                                (ls) => ls.id === Number(selectedLoanTypeId)
+                                                                            );
+
+                                                                            console.log("loanSettings:", loanSettings);
+                                                                            console.log("loanFormData.loan_type:", loanFormData.loan_type);
+                                                                            console.log("selectedLoanSetting:", selectedLoanSetting);
+                                                                            // return;
+                                                                            if (selectedLoanSetting) {
+                                                                                const {
+                                                                                    process_fees,
+                                                                                    interest_rate,
+                                                                                } = selectedLoanSetting;
+
+                                                                                // Auto-fill processing fee and interest rate
+                                                                                setLoanFormData((prev) => ({
+                                                                                    ...prev,
+                                                                                    processing_fee: parseFloat(process_fees),
+                                                                                    interest_rate: parseFloat(interest_rate)
+                                                                                }));
+                                                                                //make the form read-only and disabled for these two fields
+                                                                                document.querySelector('input[name="processing_fee"]').readOnly = true;
+                                                                                document.querySelector('input[name="interest_rate"]').readOnly = true;
+                                                                                document.querySelector('input[name="processing_fee"]').disabled = true;
+                                                                                document.querySelector('input[name="interest_rate"]').disabled = true;
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    required
+                                                                >
+                                                                    <option value="">Select Loan Type</option>
+                                                                    {loanTypes.map((lt) => (
+                                                                        <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+
+                                                            <div className="col-md-4">
+                                                                <label className="form-label">Purpose</label>
+                                                                <select className={`form-select`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
+                                                                    <option value="">Select Purpose</option>
+                                                                    <option>Tuition</option>
+                                                                    <option>Living</option>
+                                                                    <option>Medical</option>
+                                                                    <option>Appliance</option>
+                                                                    <option>Car</option>
+                                                                    <option>Travel</option>
+                                                                    <option>HomeImprovement</option>
+                                                                    <option>Other</option>
+                                                                </select>
+                                                            </div>
+
+                                                            {loanFormData.purpose === "Other" && (
+                                                                <div className="col-md-4">
+                                                                    <label className="form-label">Other Purpose</label>
+                                                                    <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="row mb-3">
+                                                            <div className="col-md-3">
+                                                                <label className="form-label">Loan Amount Applied</label>
+                                                                <input
+                                                                    type="number" step="0.01"
+                                                                    className={`form-control`}
+                                                                    name="loan_amount_applied"
+                                                                    value={loanFormData.loan_amount_applied}
+                                                                    onChange={(e) => loanHandleChange(e)}
+                                                                    onKeyUp={calculateRepaymentDetails}
+                                                                    disabled={true}
+                                                                    required
+                                                                />
+                                                            </div>
+
+                                                            <div className="col-md-3">
+                                                                <label className="form-label">Tenure (Fortnight)</label>
+                                                                <input
+                                                                    type="number" step="1"
+                                                                    name="tenure_fortnight"
+                                                                    className={`form-control tenure_fortnight`}
+                                                                    value={loanFormData.tenure_fortnight}
+                                                                    onChange={(e) => loanHandleChange(e)}
+                                                                    onKeyUp={calculateRepaymentDetails}
+                                                                    required
+                                                                />
+                                                            </div>
+
+                                                            <div className="col-md-3">
+                                                                <label className="form-label">Interest Rate (%)</label>
+                                                                <input type="number" step="0.01" className={`form-control`} name="interest_rate" value={loanFormData.interest_rate} onChange={loanHandleChange} />
+                                                            </div>
+
+                                                            <div className="col-md-3">
+                                                                <label className="form-label">Processing Fee</label>
+                                                                <input type="number" step="0.01" className={`form-control`} name="processing_fee" value={loanFormData.processing_fee} onChange={loanHandleChange} />
+                                                            </div>
+                                                        </div>
+
+                                                        {loanFormData.total_interest_amt && (
+                                                            <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id='repayDetailsDiv'>
+                                                                <fieldset className="fldset w-full">
+                                                                    <legend className="font-semibold">Repayment Details</legend>
+                                                                    <div className="row mt-3">
+                                                                        <div className="col-md-3">
+                                                                            <label className="form-label fw-bold">Total Interest (PGK)</label>
+                                                                            <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
+                                                                        </div>
+                                                                        <div className="col-md-3">
+                                                                            <label className="form-label fw-bold">Total Repay (PGK)</label>
+                                                                            <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
+                                                                        </div>
+                                                                        <div className="col-md-3">
+                                                                            <label className="form-label fw-bold">Repay per FN (PGK)</label>
+                                                                            <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </fieldset>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="row mb-3">
+                                                            <div className="col-md-4">
+                                                                <label className="form-label">Bank Name</label>
+                                                                <input type="text" className={`form-control`} name="bank_name" value={loanFormData.bank_name} onChange={loanHandleChange} />
+                                                            </div>
+
+                                                            <div className="col-md-4">
+                                                                <label className="form-label">Bank Branch</label>
+                                                                <input type="text" className={`form-control`} name="bank_branch" value={loanFormData.bank_branch} onChange={loanHandleChange} />
+                                                            </div>
+
+                                                            <div className="col-md-4">
+                                                                <label className="form-label">Bank Account No</label>
+                                                                <input type="text" className={`form-control`} name="bank_account_no" value={loanFormData.bank_account_no} onChange={loanHandleChange} />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="mb-3">
+                                                            <label className="form-label">Remarks</label>
+                                                            <textarea className={`form-control`} name="remarks" rows="3" value={loanFormData.remarks} onChange={loanHandleChange}></textarea>
+                                                        </div>
+                                                    </fieldset>
+                                                    <Row className="mt-4">
+                                                        <Col md={12} className="d-flex justify-content-end">
+                                                            <button
+                                                                type="submit"
+                                                                className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${isChecking ? "cursor-not-allowed opacity-50" : ""
+                                                                    }`}
+                                                                disabled={isChecking}
+                                                            >
+                                                                {isChecking ? (
+                                                                    <>
+                                                                        <span
+                                                                            className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+                                                                            role="status"
+                                                                        ></span>
+                                                                        Checking...
+                                                                    </>
+                                                                ) : (
+                                                                    "Save Loan Details →"
+                                                                )}
+                                                            </button>
+                                                        </Col>
+                                                    </Row>
+                                                </form>
                                             </>
                                         )}
-                                    </Col>
-                                ) : (
-                                    <Col md={12}>
-                                        {(loan.status === "Pending") ? (
-                                            <div className="mt-6 flex justify-center gap-4">
-                                                <Link
-                                                    href={route("loans")}
+                                        {((loan?.is_elegible == 0) && (loan?.higher_approved_by == null)) && (
+                                            ((auth.user.is_admin == 1)) ? (
+                                                <Alert variant="warning" className="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong>Need Approval ⚠️</strong>
+                                                        <div className="small">This loan needs additional approval as the applied amount is greater than the elegible amount</div>
+                                                    </div>
+                                                    <div>
+                                                        <Button variant="outline-success" size="sm" onClick={handleHigherApproval}>
+                                                            Approve Loan
+                                                        </Button>
+                                                    </div>
+                                                </Alert>
+                                            ) : (
+                                                <Alert variant="warning" className="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong>Need Approval ⚠️</strong>
+                                                        <div className="small">This loan needs additional approval as the applied amount is greater than the elegible amount</div>
+                                                        <div className="small">Please wait untill the approver approves this loan.</div>
+                                                    </div>
+                                                </Alert>
+                                            )
+                                        )}
+                                        <Col md={12}>
+                                            <fieldset className="fldset mb-4">
+                                                <legend className="font-semibold mb-2">Uploaded Documents</legend>
+                                                {loan.documents.length > 0 ? (
+                                                    <table className="w-full border-collapse border border-gray-300 text-sm">
+                                                        <thead className="bg-gray-100 text-center">
+                                                            <tr>
+                                                                <th className="border p-2">Doc Type</th>
+                                                                <th className="border p-2">Doc Name</th>
+                                                                <th className="border p-2">Uploaded At</th>
+                                                                <th className="border p-2">Uploaded By</th>
+                                                                <th className="border p-2">View</th>
+                                                                <th className="border p-2">Download</th>
+                                                                {(auth.user.is_admin == 1) ? (
+                                                                    <th className="border p-2">Verify</th>
+                                                                ) : (
+                                                                    <th className="border p-2">Status</th>
+                                                                )}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {loan.documents.map((doc) => (
+                                                                <tr key={doc.id} className="hover:bg-gray-50 transition">
+                                                                    <td className="border p-2">{doc.doc_type}</td>
+                                                                    <td className="border p-2">{doc.doc_name}</td>
+
+                                                                    {/* <td className="border p-2">{doc.file_name}</td> */}
+
+                                                                    <td className="border p-2">
+                                                                        {new Date(doc.uploaded_on).toLocaleDateString()}
+                                                                    </td>
+
+                                                                    <td className="border p-2">
+                                                                        {doc.uploaded_by}
+                                                                    </td>
+
+                                                                    {/* View Button */}
+                                                                    <td className="border p-2 text-center">
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                openDocModal({
+                                                                                    id: doc.id,
+                                                                                    doc_type: doc.doc_type,
+                                                                                    file_name: doc.file_name,
+                                                                                    file_path: doc.file_path,
+                                                                                })
+                                                                            }
+                                                                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                        >
+                                                                            <Eye size={16} /> View
+                                                                        </button>
+                                                                    </td>
+
+                                                                    {/* Download Button */}
+                                                                    <td className="border p-2 text-center">
+                                                                        <a
+                                                                            href={route("document-upload.download", { id: doc.id })}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                        >
+                                                                            Download <Download size={16} />
+                                                                        </a>
+                                                                    </td>
+
+                                                                    {/* Verify / Reject Column */}
+                                                                    <td className="border p-2 text-center">
+                                                                        {/* Get the rejection reason object */}
+                                                                        {(() => {
+                                                                            const r = rejectReasons.find(rr => rr.id === doc.rejection_reason_id);
+
+                                                                            /* =============================
+                                                                            1. STATUS: VERIFIED
+                                                                            ============================== */
+                                                                            if (doc.verification_status === "Verified") {
+                                                                                return <span className="text-green-600 font-semibold">Verified ✅</span>;
+                                                                            }
+
+                                                                            /* =============================
+                                                                            2. STATUS: PENDING
+                                                                            ============================== */
+                                                                            if (doc.verification_status === "Pending") {
+                                                                                return (
+                                                                                    <>
+                                                                                        {(doc.has_reuploaded_after_rejection == 1) ? (
+                                                                                            <>
+                                                                                                <div className="mt-2">
+                                                                                                    <span className="text-blue-600 font-semibold">
+                                                                                                        Awaiting Re-Verification ⏳
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                                <div className="mt-2">
+                                                                                                    <span className="text-black-600 font-semibold">
+                                                                                                        Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            </>
+                                                                                        ) : (
+                                                                                            <span className="text-yellow-600 font-semibold">Pending ⏳</span>
+                                                                                        )}
+
+                                                                                        {/* Admin Action Buttons */}
+                                                                                        {auth.user.is_admin == 1 && (
+                                                                                            <div className="flex gap-2 justify-center mt-2">
+                                                                                                <button
+                                                                                                    onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                                                >
+                                                                                                    Verify
+                                                                                                </button>
+
+                                                                                                <button
+                                                                                                    onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                                                >
+                                                                                                    Reject
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </>
+                                                                                );
+                                                                            }
+
+
+                                                                            /* =============================
+                                                                            3. STATUS: REJECTED (Always show reason)
+                                                                            ============================== */
+                                                                            if (doc.verification_status === "Rejected") {
+                                                                                const reasonText = r ? `— ${r.reason_desc}` : "";
+
+                                                                                return (
+                                                                                    <>
+                                                                                        <span className="text-red-600 font-semibold">
+                                                                                            Rejected ❌ {reasonText}
+                                                                                        </span>
+
+                                                                                        {/* === ADMIN ACTIONS === */}
+                                                                                        {auth.user.is_admin == 1 && r?.do_allow_reapply == 1 && (
+                                                                                            <>
+                                                                                                {(() => {
+                                                                                                    if (doc.has_reuploaded_after_rejection == 1) {
+                                                                                                        return (
+                                                                                                            <>
+                                                                                                                <div className="mt-2">
+                                                                                                                    <span className="text-blue-600 font-semibold">
+                                                                                                                        Awaiting Re-Verification ⏳
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                                <div className="mt-2">
+                                                                                                                    <span className="text-black-600 font-semibold">
+                                                                                                                        Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                                <div className="flex gap-2 justify-center mt-2">
+                                                                                                                    <button
+                                                                                                                        onClick={() => handleVerifyDoc(doc.id, "Verified")}
+                                                                                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
+                                                                                                                    >
+                                                                                                                        Verify
+                                                                                                                    </button>
+
+                                                                                                                    <button
+                                                                                                                        onClick={() => handleVerifyDoc(doc.id, "Rejected")}
+                                                                                                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                                                                                                    >
+                                                                                                                        Reject
+                                                                                                                    </button>
+                                                                                                                </div>
+                                                                                                            </>
+                                                                                                        );
+                                                                                                    } else {
+                                                                                                        return (
+                                                                                                            <div className="mt-2">
+                                                                                                                <span className="text-blue-400 font-semibold">
+                                                                                                                    Awaiting User Re-upload
+                                                                                                                </span>
+                                                                                                            </div>
+                                                                                                        );
+                                                                                                    }
+                                                                                                    return null;
+                                                                                                })()}
+                                                                                            </>
+                                                                                        )}
+
+
+                                                                                        {/* === USER RE-UPLOAD OPTION === */}
+                                                                                        {auth.user.is_admin != 1 && r?.do_allow_reapply == 1 && (
+                                                                                            <>
+                                                                                                {(() => {
+                                                                                                    if (doc.has_reuploaded_after_rejection == 1) {
+                                                                                                        return (
+                                                                                                            <>
+                                                                                                                <div className="mt-2">
+                                                                                                                    <span className="text-blue-600 font-semibold">
+                                                                                                                        Please wait for Re-Verification ⏳
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                                <div className="mt-2">
+                                                                                                                    <span className="text-black-600 font-semibold">
+                                                                                                                        Last Updated: {new Date(doc.reupload_date).toLocaleDateString()}
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                            </>
+                                                                                                        );
+                                                                                                    }
+                                                                                                    return null;
+                                                                                                })()}
+                                                                                                <div className="mt-2">
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md"
+                                                                                                        onClick={() => openReuploadModal(doc)}
+                                                                                                    >
+                                                                                                        Re-upload Document
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </>
+                                                                                        )}
+                                                                                    </>
+                                                                                );
+                                                                            }
+
+                                                                            /* Fallback – should never happen */
+                                                                            return null;
+                                                                        })()}
+                                                                    </td>
+
+                                                                </tr>
+
+                                                            ))}
+                                                            {auth.user.is_admin == 1 ? (
+                                                                <>
+                                                                    {loan.video_consent_path && (
+                                                                        <tr key="video-consent" className="hover:bg-gray-50 transition">
+                                                                            <td className="border p-2">Video Consent</td>
+                                                                            <td className="border p-2">{loan.video_consent_file_name.split("/").pop()}</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2">-</td>
+
+                                                                            {/* 👁️ View Button - opens custom video modal */}
+                                                                            <td className="border p-2 text-center">
+                                                                                <button
+                                                                                    onClick={() => handleOpenVideoModal(loan.video_consent_path)}
+                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                                >
+                                                                                    <Eye size={16} /> View
+                                                                                </button>
+                                                                            </td>
+
+                                                                            {/* ⬇️ Download Button */}
+                                                                            <td className="border p-2 text-center">
+                                                                                <a
+                                                                                    href={loan.video_consent_path}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                                >
+                                                                                    Download <Download size={16} />
+                                                                                </a>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">-</td>
+                                                                        </tr>
+                                                                    )}
+                                                                    {/* 🎥 Video Player Modal */}
+                                                                    <Modal
+                                                                        show={showVideoModal}
+                                                                        onHide={closeVideoModal}
+                                                                        size="lg"
+                                                                        centered
+                                                                        dialogClassName="max-w-[800px]"
+                                                                    >
+                                                                        <Modal.Header closeButton className="bg-gray-100">
+                                                                            <Modal.Title className="text-lg font-semibold text-gray-800">
+                                                                                🎬 Video Consent Preview
+                                                                            </Modal.Title>
+                                                                        </Modal.Header>
+
+                                                                        <Modal.Body className="bg-black p-2">
+                                                                            {videoSrc ? (
+                                                                                <video
+                                                                                    controls
+                                                                                    autoPlay
+                                                                                    className="w-100 rounded shadow-sm border border-gray-300"
+                                                                                    style={{ maxHeight: "70vh", display: "block", margin: "0 auto" }}
+                                                                                >
+                                                                                    <source src={videoSrc} type="video/mp4" />
+                                                                                    Your browser does not support the video tag.
+                                                                                </video>
+                                                                            ) : (
+                                                                                <p className="text-gray-500 text-center">No video available for preview.</p>
+                                                                            )}
+                                                                        </Modal.Body>
+
+                                                                        <Modal.Footer className="bg-gray-50">
+                                                                            <Button variant="secondary" onClick={closeVideoModal}>
+                                                                                Close
+                                                                            </Button>
+                                                                        </Modal.Footer>
+                                                                    </Modal>
+                                                                    {loan.isda_signed_upload_path && (
+                                                                        <tr key="isda-signed" className="hover:bg-gray-50 transition">
+                                                                            <td className="border p-2">ISDA Signed Document</td>
+                                                                            <td className="border p-2">{loan.isda_signed_upload_path.split("/").pop()}</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2 text-center">
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        // openDocModal({
+                                                                                        //      file_path: loan.isda_signed_upload_path,
+                                                                                        //      file_name: loan.isda_signed_upload_path.split("/").pop(),
+                                                                                        //      doc_type: "ISDA Signed Document",
+                                                                                        // })
+                                                                                        openDocModal({
+                                                                                            id: loan.id,
+                                                                                            doc_type: "ISDA Signed Document",
+                                                                                            file_name: "ISDA_signed_document.pdf",
+                                                                                            file_path: loan.isda_signed_upload_path
+                                                                                        })
+                                                                                    }
+                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                                >
+                                                                                    <Eye size={16} /> View
+                                                                                </button>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">
+                                                                                <a
+                                                                                    href={loan.isda_signed_upload_path}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                                >
+                                                                                    Download <Download size={16} />
+                                                                                </a>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">-</td>
+                                                                        </tr>
+                                                                    )}
+
+                                                                    {loan.org_signed_upload_path && (
+                                                                        <tr key="org-signed" className="hover:bg-gray-50 transition">
+                                                                            <td className="border p-2">Organisation Standard Document</td>
+                                                                            <td className="border p-2">{loan.org_signed_upload_path.split("/").pop()}</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2 text-center">
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        openDocModal({
+                                                                                            id: loan.id,
+                                                                                            doc_type: "Organisation Document",
+                                                                                            file_name: "organisation_document.pdf",
+                                                                                            file_path: loan.org_signed_upload_path
+                                                                                        })
+                                                                                    }
+                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                                >
+                                                                                    <Eye size={16} /> View
+                                                                                </button>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">
+                                                                                <a
+                                                                                    href={loan.org_signed_upload_path}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                                >
+                                                                                    Download <Download size={16} />
+                                                                                </a>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">-</td>
+                                                                        </tr>
+                                                                    )}
+                                                                </>
+                                                            ) : ((auth.user.is_admin != 1 && (loan?.status == 'Approved' || loan?.status == 'Rejected') && (
+                                                                <>
+                                                                    {loan.video_consent_path && (
+                                                                        <tr key="video-consent" className="hover:bg-gray-50 transition">
+                                                                            <td className="border p-2">Video Consent</td>
+                                                                            <td className="border p-2">{loan.video_consent_file_name.split("/").pop()}</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2">-</td>
+
+                                                                            {/* 👁️ View Button - opens custom video modal */}
+                                                                            <td className="border p-2 text-center">
+                                                                                <button
+                                                                                    onClick={() => handleOpenVideoModal(loan.video_consent_path)}
+                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                                >
+                                                                                    <Eye size={16} /> View
+                                                                                </button>
+                                                                            </td>
+
+                                                                            {/* ⬇️ Download Button */}
+                                                                            <td className="border p-2 text-center">
+                                                                                <a
+                                                                                    href={loan.video_consent_path}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                                >
+                                                                                    Download <Download size={16} />
+                                                                                </a>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">-</td>
+                                                                        </tr>
+                                                                    )}
+                                                                    {/* 🎥 Video Player Modal */}
+                                                                    <Modal
+                                                                        show={showVideoModal}
+                                                                        onHide={closeVideoModal}
+                                                                        size="lg"
+                                                                        centered
+                                                                        dialogClassName="max-w-[800px]"
+                                                                    >
+                                                                        <Modal.Header closeButton className="bg-gray-100">
+                                                                            <Modal.Title className="text-lg font-semibold text-gray-800">
+                                                                                🎬 Video Consent Preview
+                                                                            </Modal.Title>
+                                                                        </Modal.Header>
+
+                                                                        <Modal.Body className="bg-black p-2">
+                                                                            {videoSrc ? (
+                                                                                <video
+                                                                                    controls
+                                                                                    autoPlay
+                                                                                    className="w-100 rounded shadow-sm border border-gray-300"
+                                                                                    style={{ maxHeight: "70vh", display: "block", margin: "0 auto" }}
+                                                                                >
+                                                                                    <source src={videoSrc} type="video/mp4" />
+                                                                                    Your browser does not support the video tag.
+                                                                                </video>
+                                                                            ) : (
+                                                                                <p className="text-gray-500 text-center">No video available for preview.</p>
+                                                                            )}
+                                                                        </Modal.Body>
+
+                                                                        <Modal.Footer className="bg-gray-50">
+                                                                            <Button variant="secondary" onClick={closeVideoModal}>
+                                                                                Close
+                                                                            </Button>
+                                                                        </Modal.Footer>
+                                                                    </Modal>
+                                                                    {loan.isda_signed_upload_path && (
+                                                                        <tr key="isda-signed" className="hover:bg-gray-50 transition">
+                                                                            <td className="border p-2">ISDA Signed Document</td>
+                                                                            <td className="border p-2">{loan.isda_signed_upload_path.split("/").pop()}</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2 text-center">
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        // openDocModal({
+                                                                                        //      file_path: loan.isda_signed_upload_path,
+                                                                                        //      file_name: loan.isda_signed_upload_path.split("/").pop(),
+                                                                                        //      doc_type: "ISDA Signed Document",
+                                                                                        // })
+                                                                                        openDocModal({
+                                                                                            id: loan.id,
+                                                                                            doc_type: "ISDA Signed Document",
+                                                                                            file_name: "ISDA_signed_document.pdf",
+                                                                                            file_path: loan.isda_signed_upload_path
+                                                                                        })
+                                                                                    }
+                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                                >
+                                                                                    <Eye size={16} /> View
+                                                                                </button>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">
+                                                                                <a
+                                                                                    href={loan.isda_signed_upload_path}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                                >
+                                                                                    Download <Download size={16} />
+                                                                                </a>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">-</td>
+                                                                        </tr>
+                                                                    )}
+
+                                                                    {loan.org_signed_upload_path && (
+                                                                        <tr key="org-signed" className="hover:bg-gray-50 transition">
+                                                                            <td className="border p-2">Organisation Standard Document</td>
+                                                                            <td className="border p-2">{loan.org_signed_upload_path.split("/").pop()}</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2">-</td>
+                                                                            <td className="border p-2 text-center">
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        openDocModal({
+                                                                                            id: loan.id,
+                                                                                            doc_type: "Organisation Document",
+                                                                                            file_name: "Organisation_Document.pdf",
+                                                                                            file_path: loan.org_signed_upload_path
+                                                                                        })
+                                                                                    }
+                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                                >
+                                                                                    <Eye size={16} /> View
+                                                                                </button>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">
+                                                                                <a
+                                                                                    href={loan.org_signed_upload_path}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                                >
+                                                                                    Download <Download size={16} />
+                                                                                </a>
+                                                                            </td>
+                                                                            <td className="border p-2 text-center">-</td>
+                                                                        </tr>
+                                                                    )}
+                                                                </>
+                                                            )))}
+                                                        </tbody>
+                                                    </table>
+                                                ) : (
+                                                    <>
+                                                        <div className="p-3 border rounded bg-gray-50">
+                                                            <p className="text-gray-600 mb-3">No documents uploaded yet.</p>
+                                                            {(loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) && (
+                                                                <LoanDocumentsUpload
+                                                                    loanFormData={loan}
+                                                                    onUploadComplete={async () => {
+                                                                        // ✅ Re-fetch loan details after upload completion
+                                                                        try {
+                                                                            const res = await axios.get(`/api/loans/${loanId}`);
+                                                                            setLoan(res.data);
+                                                                            setMessage("✅ Document uploaded successfully! Data refreshed.");
+                                                                        } catch (err) {
+                                                                            console.error("Failed to refresh after upload:", err);
+                                                                            setMessage("⚠️ Upload succeeded but failed to refresh loan data.");
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+
+                                                {/* Modal for viewing document */}
+                                                <Modal
+                                                    show={showModal}
+                                                    onHide={closeDocModal}
+                                                    size="xl"
+                                                    centered
+                                                    dialogClassName="max-w-[900px]"
                                                 >
-                                                    <button
-                                                        className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md`}
-                                                        onClick={markSentApproval}
-                                                    >
-                                                        {loan?.is_sent_for_approval == 1 ? ("Back to the list") : ("Send for approval")}
-                                                    </button>
-                                                </Link>
-                                            </div>
-                                        ) : (
-                                            <div className="mt-6 flex justify-center gap-4">
-                                                <Link
-                                                    href={route("loans")}
+                                                    <Modal.Header closeButton>
+                                                        <Modal.Title>
+                                                            {selectedDoc?.doc_type} — {selectedDoc?.file_name}
+                                                        </Modal.Title>
+                                                    </Modal.Header>
+
+                                                    <Modal.Body>
+                                                        {selectedDoc?.file_path && selectedDoc.file_name.endsWith(".pdf") ? (
+                                                            <iframe
+                                                                src={`/storage/${selectedDoc.file_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                width="100%"
+                                                                height="600"
+                                                                className="rounded border shadow-sm"
+                                                                title={selectedDoc.file_name}
+                                                            />
+                                                        ) : selectedDoc?.file_path?.endsWith(".mp4") ? (
+                                                            <video
+                                                                width="100%"
+                                                                height="auto"
+                                                                controls
+                                                                src={`/storage/${selectedDoc.file_path}`}
+                                                                className="rounded border shadow-sm"
+                                                            />
+                                                        ) : (
+                                                            <p className="text-gray-500 text-center">
+                                                                Preview not available for this file type.
+                                                            </p>
+                                                        )}
+                                                    </Modal.Body>
+
+                                                    <Modal.Footer>
+                                                        {auth.user.is_admin == 1 && (
+                                                            <>
+                                                                <Button
+                                                                    variant="success"
+                                                                    onClick={async () => {
+                                                                        await handleVerifyDoc(selectedDoc.id, "Verified");
+                                                                        closeDocModal();
+                                                                    }}
+                                                                >
+                                                                    Approve
+                                                                </Button>
+                                                                <Button
+                                                                    variant="danger"
+                                                                    onClick={async () => {
+                                                                        await handleVerifyDoc(selectedDoc.id, "Rejected");
+                                                                        closeDocModal();
+                                                                    }}
+                                                                >
+                                                                    Reject
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                        <Button variant="secondary" onClick={closeDocModal}>
+                                                            Close
+                                                        </Button>
+                                                    </Modal.Footer>
+                                                </Modal>
+                                                {showRejectModal && (
+                                                    <div className="fixed inset-0 bg-slate-600 bg-opacity-40 flex items-center justify-center z-50">
+                                                        <div className="bg-white p-5 rounded-lg shadow-lg w-98">
+                                                            <h2 className="text-lg font-semibold mb-3">Reject Document</h2>
+
+                                                            <label className="block text-sm font-medium mb-1">Select Rejection Reason</label>
+                                                            <Select
+                                                                options={rejectReasonOptions}
+                                                                value={rejectReasonOptions.find(o => o.value === selectedRejectionReason) || null}
+                                                                onChange={(opt) => setSelectedRejectionReason(opt?.value || null)}
+                                                                placeholder="Select a reason for this rejection"
+                                                                styles={{
+                                                                    container: (base) => ({
+                                                                        ...base,
+                                                                        width: "100%",
+                                                                    }),
+                                                                    control: (base) => ({
+                                                                        ...base,
+                                                                        minWidth: "100%",
+                                                                    }),
+                                                                    valueContainer: (base) => ({
+                                                                        ...base,
+                                                                        overflow: "hidden",
+                                                                    }),
+                                                                }}
+                                                                getOptionLabel={(opt) => (
+                                                                    <div className="flex justify-between items-center w-full">
+                                                                        <span className="truncate">{opt.label}</span>
+                                                                        <span
+                                                                            className={`ml-2 px-2 py-0.5 text-xs rounded whitespace-nowrap ${opt.canReapply
+                                                                                ? "bg-green-100 text-green-700"
+                                                                                : "bg-red-100 text-red-700"
+                                                                                }`}
+                                                                        >
+                                                                            {opt.canReapply ? "Can Reapply" : "Cannot Reapply"}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            />
+
+
+                                                            <div className="flex justify-end gap-2 mt-2">
+                                                                <button
+                                                                    className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
+                                                                    onClick={() => {
+                                                                        setShowRejectModal(false);
+                                                                        setSelectedRejectionReason("");
+                                                                        setRejectingDocId(null);
+                                                                    }}
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                                <button
+                                                                    className={`px-3 py-1 rounded text-white ${selectedRejectionReason
+                                                                        ? "bg-red-600 hover:bg-red-700"
+                                                                        : "bg-red-300 cursor-not-allowed"
+                                                                        }`}
+                                                                    disabled={!selectedRejectionReason}
+                                                                    onClick={submitRejection}
+                                                                >
+                                                                    Reject
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </fieldset>
+                                        </Col>
+                                        {/* documents section */}
+                                        <fieldset className="fldset mb-2">
+                                            <legend className="font-semibold mb-2">📑 Documents</legend>
+
+                                            <table className="w-full border-collapse border border-gray-300 text-sm shadow-sm">
+                                                <thead className="bg-indigo-600 text-white">
+                                                    <tr>
+                                                        <th className="border p-2 text-center">Document Type</th>
+                                                        <th className="border p-2 text-center">File Name</th>
+                                                        <th className="border p-2 text-center">View</th>
+                                                        <th className="border p-2 text-center">Print</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+
+                                                    {/* --------------- APPLICATION FORM ROW ---------------- */}
+                                                    {(loan?.status === "Rejected" && loan?.is_temp_rejection === 1)
+                                                        || (loan?.is_elegible === 1 && loan?.status === "Pending")
+                                                        || (loan?.is_elegible === 1 && (loan?.status === "Approved" || loan?.status === "Closed"))
+                                                        || (loan?.is_elegible === 1 && loan?.is_loan_re_updated_after_higher_approval === 1 && loan?.higher_approved_by != null)
+                                                        ? (
+                                                            <tr className="hover:bg-gray-50 transition">
+                                                                <td className="border p-2 text-center">Application Form</td>
+                                                                <td className="border p-2 text-center">Application Form</td>
+
+                                                                <td className="border p-2 text-center">
+                                                                    <button
+                                                                        onClick={() => setShowModal1(true)}
+                                                                        className="bg-blue-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
+                                                                    >
+                                                                        <Eye size={14} /> View
+                                                                    </button>
+                                                                </td>
+
+                                                                <td className="border p-2 text-center">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            if (!showModal1) {
+                                                                                setShowModal1(true);
+                                                                                setTimeout(() => handlePrintAck(), 1000);
+                                                                                markAckDownloaded();
+                                                                            } else {
+                                                                                handlePrintAck();
+                                                                                markAckDownloaded();
+                                                                            }
+                                                                        }}
+                                                                        className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
+                                                                    >
+                                                                        <Printer size={14} /> Print
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ) : null}
+
+                                                    {/* --------------- SECTOR DOCUMENT ROW ---------------- */}
+                                                    {canPrintSector && (
+                                                        <tr className="hover:bg-gray-50 transition">
+                                                            <td className="border p-2 text-center">{sectorDocTitle}</td>
+                                                            <td className="border p-2 text-center">{sectorDocTitle}</td>
+
+                                                            <td className="border p-2 text-center">
+                                                                <button
+                                                                    onClick={() => setShowSectorModal(true)}
+                                                                    className="bg-blue-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
+                                                                >
+                                                                    <Eye size={14} /> View
+                                                                </button>
+                                                            </td>
+
+                                                            <td className="border p-2 text-center">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (!showSectorModal) {
+                                                                            setShowSectorModal(true);
+                                                                            setTimeout(() => handlePrintSectorForm(), 1000);
+                                                                        } else {
+                                                                            handlePrintSectorForm();
+                                                                        }
+                                                                    }}
+                                                                    className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
+                                                                >
+                                                                    <Printer size={14} /> Print
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+
+                                                </tbody>
+                                            </table>
+                                        </fieldset>
+                                        <Modal
+                                            show={showModal1}
+                                            onHide={() => setShowModal1(false)}
+                                            size="xl"
+                                            centered
+                                            contentClassName="bg-white"
+                                            enforceFocus={false}
+                                            restoreFocus={false}
+                                        >
+                                            <Modal.Header closeButton className="no-print">
+                                                <Modal.Title>📄 Application Form View</Modal.Title>
+                                            </Modal.Header>
+
+                                            <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
+                                                <div className="p-1 bg-gray-100 print-area text-black" ref={ackPrintRef}>
+                                                    {loan && <AppF loan={loan} auth={auth} />}
+                                                </div>
+                                            </Modal.Body>
+
+                                            <Modal.Footer className="no-print">
+                                                <Button variant="secondary" onClick={() => setShowModal1(false)}>Close</Button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        if (!showModal1) {
+                                                            setShowModal1(true);
+                                                            setTimeout(() => handlePrintAck(), 1000);
+                                                            markAckDownloaded();
+                                                        } else {
+                                                            handlePrintAck();
+                                                            markAckDownloaded();
+                                                        }
+                                                    }}
+                                                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
                                                 >
-                                                    <button
-                                                        className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md`}
-                                                    >
-                                                        Back to the list
-                                                    </button>
-                                                </Link>
+                                                    <Printer size={14} /> Print Acknowledgement
+                                                </button>
+                                            </Modal.Footer>
+                                        </Modal>
+                                        <Modal
+                                            show={showSectorModal}
+                                            onHide={() => setShowSectorModal(false)}
+                                            size="xl"
+                                            centered
+                                            contentClassName="bg-white"
+                                            enforceFocus={false}
+                                            restoreFocus={false}
+                                        >
+                                            <Modal.Header closeButton>
+                                                <Modal.Title>
+                                                    {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
+                                                </Modal.Title>
+                                            </Modal.Header>
+
+                                            <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
+                                                <div className="p-1 bg-gray-100 print-area text-black" ref={printRef}>
+                                                    {loan && renderSectorForm()}
+                                                </div>
+                                            </Modal.Body>
+
+                                            <Modal.Footer>
+                                                <Button variant="secondary" onClick={() => setShowSectorModal(false)}>Close</Button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        if (!showSectorModal) {
+                                                            setShowSectorModal(true);
+                                                            setTimeout(() => handlePrintSectorForm(), 1000);
+                                                        } else {
+                                                            handlePrintSectorForm();
+                                                        }
+                                                    }}
+                                                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
+                                                >
+                                                    <Printer size={14} /> Print
+                                                </button>
+                                            </Modal.Footer>
+                                        </Modal>
+
+
+                                        {/* --- Video Consent Upload / Preview --- */}
+                                        {(loan?.status == "Rejected") && (auth.user.is_admin != 1) && (loan?.is_temp_rejection == 1) ? (
+                                            (loan?.is_ack_downloaded == 1) && (
+                                                <>
+                                                    <React.Fragment>
+                                                        <Row className="g-4 align-items-start mb-1">
+                                                            <Col md={6}>
+                                                                <fieldset className="fldset mb-4">
+                                                                    <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                        <span>🎥 Video Consent</span>
+                                                                        {loan.video_consent_path && (
+                                                                            <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
+                                                                        )}
+                                                                    </legend>
+
+                                                                    <Form.Group>
+                                                                        <Form.Label className="font-medium">
+                                                                            Upload Consent Video (MP4 only)
+                                                                        </Form.Label>
+
+                                                                        <Form.Control
+                                                                            type="file"
+                                                                            accept="video/mp4"
+                                                                            key={videoFile ? videoFile.name : ""}
+                                                                            disabled={loan.status === "Approved"}
+                                                                            onChange={(e) => {
+                                                                                const file = e.target.files[0];
+                                                                                if (file) {
+                                                                                    setVideoFile(file);
+                                                                                    setVideoPreview(URL.createObjectURL(file));
+                                                                                }
+                                                                            }}
+                                                                        />
+
+                                                                        <Form.Text className="text-muted">Max size: 20MB</Form.Text>
+                                                                    </Form.Group>
+
+                                                                    <div className="flex gap-2 mt-3">
+                                                                        <Button
+                                                                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                                            onClick={() => handleUpload("video")}
+                                                                            disabled={!videoFile}
+                                                                        >
+                                                                            {uploadProgress.video > 0 && uploadProgress.video < 100
+                                                                                ? "Uploading..."
+                                                                                : loan.video_consent_path
+                                                                                    ? "Replace Video Consent"
+                                                                                    : "Upload Video Consent"}
+                                                                        </Button>
+
+                                                                        {!isRecording ? (
+                                                                            <Button
+                                                                                variant="outline-secondary"
+                                                                                onClick={startRecording}
+                                                                            >
+                                                                                🎥 Record via Webcam
+                                                                            </Button>
+                                                                        ) : (
+                                                                            <Button
+                                                                                variant="danger"
+                                                                                onClick={stopRecording}
+                                                                            >
+                                                                                ⏹ Stop Recording
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                    {isRecording && (
+                                                                        <div className="mt-3 border rounded bg-black p-2">
+                                                                            <video
+                                                                                ref={videoRef}
+                                                                                autoPlay
+                                                                                muted
+                                                                                className="w-full rounded"
+                                                                            />
+                                                                            <p className="text-xs text-center text-white mt-1">
+                                                                                Recording in progress...
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+
+
+                                                                    {uploadProgress.video > 0 && (
+                                                                        <ProgressBar
+                                                                            now={uploadProgress.video}
+                                                                            label={`${uploadProgress.video}%`}
+                                                                            animated
+                                                                            variant={uploadProgress.video < 100 ? "info" : "success"}
+                                                                            className="mt-3"
+                                                                        />
+                                                                    )}
+                                                                </fieldset>
+                                                            </Col>
+
+                                                            <Col md={6}>
+                                                                {(videoPreview || loan.video_consent_path) && (
+                                                                    <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                        <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                        <video
+                                                                            width="100%"
+                                                                            height="auto"
+                                                                            controls
+                                                                            src={videoPreview || loan.video_consent_path}
+                                                                            className="rounded shadow-sm"
+                                                                        >
+                                                                            Your browser does not support video.
+                                                                        </video>
+                                                                    </div>
+                                                                )}
+                                                            </Col>
+                                                        </Row>
+
+                                                        <Row className="g-4 align-items-start mb-5">
+                                                            <Col md={6}>
+                                                                <fieldset className="fldset mb-4">
+                                                                    <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                        <span>📄 ISDA Signed Document</span>
+                                                                        {loan.isda_signed_upload_path && (
+                                                                            <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                                        )}
+                                                                    </legend>
+
+                                                                    <Form.Group>
+                                                                        <Form.Label className="font-medium">Upload Signed ISDA (PDF only)</Form.Label>
+                                                                        <Form.Control
+                                                                            type="file"
+                                                                            accept="application/pdf"
+                                                                            disabled={loan.status === "Approved"}
+                                                                            key={pdfFile ? pdfFile.name : ""}
+                                                                            onChange={(e) => {
+                                                                                const file = e.target.files[0];
+                                                                                if (file) {
+                                                                                    setPdfFile(file);
+                                                                                    setPdfPreview(URL.createObjectURL(file));
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                                                    </Form.Group>
+
+                                                                    <Button
+                                                                        className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                                                        onClick={() => handleUpload("pdf")}
+                                                                        disabled={!pdfFile}
+                                                                    >
+                                                                        {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
+                                                                            ? "Uploading..."
+                                                                            : loan.isda_signed_upload_path
+                                                                                ? "Replace ISDA Signed PDF"
+                                                                                : "Upload ISDA Signed PDF"}
+                                                                    </Button>
+
+                                                                    {uploadProgress.pdf > 0 && (
+                                                                        <ProgressBar
+                                                                            now={uploadProgress.pdf}
+                                                                            label={`${uploadProgress.pdf}%`}
+                                                                            animated
+                                                                            variant={uploadProgress.pdf < 100 ? "info" : "success"}
+                                                                            className="mt-3"
+                                                                        />
+                                                                    )}
+                                                                </fieldset>
+                                                            </Col>
+
+                                                            <Col md={6}>
+                                                                {(pdfPreview || loan.isda_signed_upload_path) && (
+                                                                    <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                        <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                        <iframe
+                                                                            src={`${pdfPreview || loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                            width="100%"
+                                                                            height="500"
+                                                                            className="rounded shadow-sm border"
+                                                                            style={{
+                                                                                border: "1px solid #ddd",
+                                                                                borderRadius: "8px",
+                                                                                overflow: "hidden",
+                                                                            }}
+                                                                            title="ISDA Signed Document"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </Col>
+                                                        </Row>
+
+                                                        <Row className="g-4 align-items-start mb-5">
+                                                            <Col md={6}>
+                                                                <fieldset className="fldset mb-4">
+                                                                    <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                        <span>📄 Organization Signed Document</span>
+                                                                        {loan.org_signed_upload_path && (
+                                                                            <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                                        )}
+                                                                    </legend>
+
+                                                                    <Form.Group>
+                                                                        <Form.Label className="font-medium">Upload Signed Organization Standard (PDF only)</Form.Label>
+                                                                        <Form.Control
+                                                                            type="file"
+                                                                            accept="application/pdf"
+                                                                            disabled={loan.status === "Approved"}
+                                                                            key={pdfFile1 ? pdfFile1.name : ""}
+                                                                            onChange={(e) => {
+                                                                                const file1 = e.target.files[0];
+                                                                                if (file1) {
+                                                                                    setPdfFile1(file1);
+                                                                                    setPdfPreview1(URL.createObjectURL(file1));
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                                                    </Form.Group>
+
+                                                                    <Button
+                                                                        className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                                                        onClick={() => handleUpload("pdf1")}
+                                                                        disabled={!pdfFile1}
+                                                                    >
+                                                                        {uploadProgress.pdf1 > 0 && uploadProgress.pdf1 < 100
+                                                                            ? "Uploading..."
+                                                                            : loan.org_signed_upload_path
+                                                                                ? "Replace Organization Signed PDF"
+                                                                                : "Upload Organization Signed PDF"}
+                                                                    </Button>
+
+                                                                    {uploadProgress.pdf1 > 0 && (
+                                                                        <ProgressBar
+                                                                            now={uploadProgress.pdf1}
+                                                                            label={`${uploadProgress.pdf1}%`}
+                                                                            animated
+                                                                            variant={uploadProgress.pdf1 < 100 ? "info" : "success"}
+                                                                            className="mt-3"
+                                                                        />
+                                                                    )}
+                                                                </fieldset>
+                                                            </Col>
+
+                                                            <Col md={6}>
+                                                                {(pdfPreview1 || loan.org_signed_upload_path) && (
+                                                                    <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                        <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                        <iframe
+                                                                            src={`${pdfPreview1 || loan.org_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                            width="100%"
+                                                                            height="500"
+                                                                            className="rounded shadow-sm border"
+                                                                            style={{
+                                                                                border: "1px solid #ddd",
+                                                                                borderRadius: "8px",
+                                                                                overflow: "hidden",
+                                                                            }}
+                                                                            title="Organization Signed Document"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </Col>
+                                                        </Row>
+                                                    </React.Fragment>
+                                                </>
+                                            )
+                                        ) :
+                                            (loan?.is_elegible == 1) && (loan?.status == "Pending") && (auth.user.is_admin != 1) && (loan?.higher_approved_by == null) ? (
+
+                                                (loan?.is_ack_downloaded == 1) && (
+                                                    <>
+                                                        <React.Fragment>
+                                                            <Row className="g-4 align-items-start mb-1">
+                                                                <Col md={6}>
+                                                                    <fieldset className="fldset mb-4">
+                                                                        <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                            <span>🎥 Video Consent</span>
+                                                                            {loan.video_consent_path && (
+                                                                                <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
+                                                                            )}
+                                                                        </legend>
+
+                                                                        <Form.Group>
+                                                                            <Form.Label className="font-medium">
+                                                                                Upload Consent Video (MP4 only)
+                                                                            </Form.Label>
+
+                                                                            <Form.Control
+                                                                                type="file"
+                                                                                accept="video/mp4"
+                                                                                key={videoFile ? videoFile.name : ""}
+                                                                                disabled={loan.status === "Approved"}
+                                                                                onChange={(e) => {
+                                                                                    const file = e.target.files[0];
+                                                                                    if (file) {
+                                                                                        setVideoFile(file);
+                                                                                        setVideoPreview(URL.createObjectURL(file));
+                                                                                    }
+                                                                                }}
+                                                                            />
+
+                                                                            <Form.Text className="text-muted">Max size: 20MB</Form.Text>
+                                                                        </Form.Group>
+
+                                                                        <div className="flex gap-2 mt-3">
+                                                                            <Button
+                                                                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                                                onClick={() => handleUpload("video")}
+                                                                                disabled={!videoFile}
+                                                                            >
+                                                                                {uploadProgress.video > 0 && uploadProgress.video < 100
+                                                                                    ? "Uploading..."
+                                                                                    : loan.video_consent_path
+                                                                                        ? "Replace Video Consent"
+                                                                                        : "Upload Video Consent"}
+                                                                            </Button>
+
+                                                                            {!isRecording ? (
+                                                                                <Button
+                                                                                    variant="outline-secondary"
+                                                                                    onClick={startRecording}
+                                                                                >
+                                                                                    🎥 Record via Webcam
+                                                                                </Button>
+                                                                            ) : (
+                                                                                <Button
+                                                                                    variant="danger"
+                                                                                    onClick={stopRecording}
+                                                                                >
+                                                                                    ⏹ Stop Recording
+                                                                                </Button>
+                                                                            )}
+                                                                        </div>
+                                                                        {isRecording && (
+                                                                            <div className="mt-3 border rounded bg-black p-2">
+                                                                                <video
+                                                                                    ref={videoRef}
+                                                                                    autoPlay
+                                                                                    muted
+                                                                                    className="w-full rounded"
+                                                                                />
+                                                                                <p className="text-xs text-center text-white mt-1">
+                                                                                    Recording in progress...
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
+
+
+                                                                        {uploadProgress.video > 0 && (
+                                                                            <ProgressBar
+                                                                                now={uploadProgress.video}
+                                                                                label={`${uploadProgress.video}%`}
+                                                                                animated
+                                                                                variant={uploadProgress.video < 100 ? "info" : "success"}
+                                                                                className="mt-3"
+                                                                            />
+                                                                        )}
+                                                                    </fieldset>
+                                                                </Col>
+
+                                                                <Col md={6}>
+                                                                    {(videoPreview || loan.video_consent_path) && (
+                                                                        <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                            <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                            <video
+                                                                                width="100%"
+                                                                                height="auto"
+                                                                                controls
+                                                                                src={videoPreview || loan.video_consent_path}
+                                                                                className="rounded shadow-sm"
+                                                                            >
+                                                                                Your browser does not support video.
+                                                                            </video>
+                                                                        </div>
+                                                                    )}
+                                                                </Col>
+                                                            </Row>
+
+                                                            <Row className="g-4 align-items-start mb-5">
+                                                                <Col md={6}>
+                                                                    <fieldset className="fldset mb-4">
+                                                                        <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                            <span>📄 ISDA Signed Document</span>
+                                                                            {loan.isda_signed_upload_path && (
+                                                                                <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                                            )}
+                                                                        </legend>
+
+                                                                        <Form.Group>
+                                                                            <Form.Label className="font-medium">Upload Signed ISDA (PDF only)</Form.Label>
+                                                                            <Form.Control
+                                                                                type="file"
+                                                                                accept="application/pdf"
+                                                                                disabled={loan.status === "Approved"}
+                                                                                key={pdfFile ? pdfFile.name : ""}
+                                                                                onChange={(e) => {
+                                                                                    const file = e.target.files[0];
+                                                                                    if (file) {
+                                                                                        setPdfFile(file);
+                                                                                        setPdfPreview(URL.createObjectURL(file));
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                            <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                                                        </Form.Group>
+
+                                                                        <Button
+                                                                            className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                                                            onClick={() => handleUpload("pdf")}
+                                                                            disabled={!pdfFile}
+                                                                        >
+                                                                            {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
+                                                                                ? "Uploading..."
+                                                                                : loan.isda_signed_upload_path
+                                                                                    ? "Replace ISDA Signed PDF"
+                                                                                    : "Upload ISDA Signed PDF"}
+                                                                        </Button>
+
+                                                                        {uploadProgress.pdf > 0 && (
+                                                                            <ProgressBar
+                                                                                now={uploadProgress.pdf}
+                                                                                label={`${uploadProgress.pdf}%`}
+                                                                                animated
+                                                                                variant={uploadProgress.pdf < 100 ? "info" : "success"}
+                                                                                className="mt-3"
+                                                                            />
+                                                                        )}
+                                                                    </fieldset>
+                                                                </Col>
+
+                                                                <Col md={6}>
+                                                                    {(pdfPreview || loan.isda_signed_upload_path) && (
+                                                                        <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                            <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                            <iframe
+                                                                                src={`${pdfPreview || loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                                width="100%"
+                                                                                height="500"
+                                                                                className="rounded shadow-sm border"
+                                                                                style={{
+                                                                                    border: "1px solid #ddd",
+                                                                                    borderRadius: "8px",
+                                                                                    overflow: "hidden",
+                                                                                }}
+                                                                                title="ISDA Signed Document"
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                </Col>
+                                                            </Row>
+
+                                                            <Row className="g-4 align-items-start mb-5">
+                                                                <Col md={6}>
+                                                                    <fieldset className="fldset mb-4">
+                                                                        <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                            <span>📄 Organization Signed Document</span>
+                                                                            {loan.org_signed_upload_path && (
+                                                                                <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                                            )}
+                                                                        </legend>
+
+                                                                        <Form.Group>
+                                                                            <Form.Label className="font-medium">Upload Signed Organization Standard (PDF only)</Form.Label>
+                                                                            <Form.Control
+                                                                                type="file"
+                                                                                accept="application/pdf"
+                                                                                disabled={loan.status === "Approved"}
+                                                                                key={pdfFile1 ? pdfFile1.name : ""}
+                                                                                onChange={(e) => {
+                                                                                    const file1 = e.target.files[0];
+                                                                                    if (file1) {
+                                                                                        setPdfFile1(file1);
+                                                                                        setPdfPreview1(URL.createObjectURL(file1));
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                            <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                                                        </Form.Group>
+
+                                                                        <Button
+                                                                            className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                                                            onClick={() => handleUpload("pdf1")}
+                                                                            disabled={!pdfFile1}
+                                                                        >
+                                                                            {uploadProgress.pdf1 > 0 && uploadProgress.pdf1 < 100
+                                                                                ? "Uploading..."
+                                                                                : loan.org_signed_upload_path
+                                                                                    ? "Replace Organization Signed PDF"
+                                                                                    : "Upload Organization Signed PDF"}
+                                                                        </Button>
+
+                                                                        {uploadProgress.pdf1 > 0 && (
+                                                                            <ProgressBar
+                                                                                now={uploadProgress.pdf1}
+                                                                                label={`${uploadProgress.pdf1}%`}
+                                                                                animated
+                                                                                variant={uploadProgress.pdf1 < 100 ? "info" : "success"}
+                                                                                className="mt-3"
+                                                                            />
+                                                                        )}
+                                                                    </fieldset>
+                                                                </Col>
+
+                                                                <Col md={6}>
+                                                                    {(pdfPreview1 || loan.org_signed_upload_path) && (
+                                                                        <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                            <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                            <iframe
+                                                                                src={`${pdfPreview1 || loan.org_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                                width="100%"
+                                                                                height="500"
+                                                                                className="rounded shadow-sm border"
+                                                                                style={{
+                                                                                    border: "1px solid #ddd",
+                                                                                    borderRadius: "8px",
+                                                                                    overflow: "hidden",
+                                                                                }}
+                                                                                title="Organization Signed Document"
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                </Col>
+                                                            </Row>
+                                                        </React.Fragment>
+                                                    </>
+                                                )
+                                            ) :
+                                                (loan?.is_elegible == 1) && (loan?.is_loan_re_updated_after_higher_approval == 1) && (loan?.higher_approved_by != null) && (auth.user.is_admin != 1) && loan?.status != "Rejected" && (
+                                                    (loan?.is_ack_downloaded == 1) && (
+                                                        <>
+                                                            <React.Fragment>
+                                                                <Row className="g-4 align-items-start mb-1">
+                                                                    <Col md={6}>
+                                                                        <fieldset className="fldset mb-4">
+                                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                                <span>🎥 Video Consent</span>
+                                                                                {loan.video_consent_path && (
+                                                                                    <span className="text-xs text-gray-500 italic">(Existing video will be replaced if a new one is uploaded)</span>
+                                                                                )}
+                                                                            </legend>
+
+                                                                            <Form.Group>
+                                                                                <Form.Label className="font-medium">
+                                                                                    Upload Consent Video (MP4 only)
+                                                                                </Form.Label>
+
+                                                                                <Form.Control
+                                                                                    type="file"
+                                                                                    accept="video/mp4"
+                                                                                    key={videoFile ? videoFile.name : ""}
+                                                                                    disabled={loan.status === "Approved"}
+                                                                                    onChange={(e) => {
+                                                                                        const file = e.target.files[0];
+                                                                                        if (file) {
+                                                                                            setVideoFile(file);
+                                                                                            setVideoPreview(URL.createObjectURL(file));
+                                                                                        }
+                                                                                    }}
+                                                                                />
+
+                                                                                <Form.Text className="text-muted">Max size: 20MB</Form.Text>
+                                                                            </Form.Group>
+
+                                                                            <div className="flex gap-2 mt-3">
+                                                                                <Button
+                                                                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                                                    onClick={() => handleUpload("video")}
+                                                                                    disabled={!videoFile}
+                                                                                >
+                                                                                    {uploadProgress.video > 0 && uploadProgress.video < 100
+                                                                                        ? "Uploading..."
+                                                                                        : loan.video_consent_path
+                                                                                            ? "Replace Video Consent"
+                                                                                            : "Upload Video Consent"}
+                                                                                </Button>
+
+                                                                                {!isRecording ? (
+                                                                                    <Button
+                                                                                        variant="outline-secondary"
+                                                                                        onClick={startRecording}
+                                                                                    >
+                                                                                        🎥 Record via Webcam
+                                                                                    </Button>
+                                                                                ) : (
+                                                                                    <Button
+                                                                                        variant="danger"
+                                                                                        onClick={stopRecording}
+                                                                                    >
+                                                                                        ⏹ Stop Recording
+                                                                                    </Button>
+                                                                                )}
+                                                                            </div>
+                                                                            {isRecording && (
+                                                                                <div className="mt-3 border rounded bg-black p-2">
+                                                                                    <video
+                                                                                        ref={videoRef}
+                                                                                        autoPlay
+                                                                                        muted
+                                                                                        className="w-full rounded"
+                                                                                    />
+                                                                                    <p className="text-xs text-center text-white mt-1">
+                                                                                        Recording in progress...
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+
+
+                                                                            {uploadProgress.video > 0 && (
+                                                                                <ProgressBar
+                                                                                    now={uploadProgress.video}
+                                                                                    label={`${uploadProgress.video}%`}
+                                                                                    animated
+                                                                                    variant={uploadProgress.video < 100 ? "info" : "success"}
+                                                                                    className="mt-3"
+                                                                                />
+                                                                            )}
+                                                                        </fieldset>
+                                                                    </Col>
+
+                                                                    <Col md={6}>
+                                                                        {(videoPreview || loan.video_consent_path) && (
+                                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                                <video
+                                                                                    width="100%"
+                                                                                    height="auto"
+                                                                                    controls
+                                                                                    src={videoPreview || loan.video_consent_path}
+                                                                                    className="rounded shadow-sm"
+                                                                                >
+                                                                                    Your browser does not support video.
+                                                                                </video>
+                                                                            </div>
+                                                                        )}
+                                                                    </Col>
+                                                                </Row>
+
+                                                                <Row className="g-4 align-items-start mb-5">
+                                                                    <Col md={6}>
+                                                                        <fieldset className="fldset mb-4">
+                                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                                <span>📄 ISDA Signed Document</span>
+                                                                                {loan.isda_signed_upload_path && (
+                                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                                                )}
+                                                                            </legend>
+
+                                                                            <Form.Group>
+                                                                                <Form.Label className="font-medium">Upload Signed ISDA (PDF only)</Form.Label>
+                                                                                <Form.Control
+                                                                                    type="file"
+                                                                                    accept="application/pdf"
+                                                                                    disabled={loan.status === "Approved"}
+                                                                                    key={pdfFile ? pdfFile.name : ""}
+                                                                                    onChange={(e) => {
+                                                                                        const file = e.target.files[0];
+                                                                                        if (file) {
+                                                                                            setPdfFile(file);
+                                                                                            setPdfPreview(URL.createObjectURL(file));
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                                                            </Form.Group>
+
+                                                                            <Button
+                                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                                                                onClick={() => handleUpload("pdf")}
+                                                                                disabled={!pdfFile}
+                                                                            >
+                                                                                {uploadProgress.pdf > 0 && uploadProgress.pdf < 100
+                                                                                    ? "Uploading..."
+                                                                                    : loan.isda_signed_upload_path
+                                                                                        ? "Replace ISDA Signed PDF"
+                                                                                        : "Upload ISDA Signed PDF"}
+                                                                            </Button>
+
+                                                                            {uploadProgress.pdf > 0 && (
+                                                                                <ProgressBar
+                                                                                    now={uploadProgress.pdf}
+                                                                                    label={`${uploadProgress.pdf}%`}
+                                                                                    animated
+                                                                                    variant={uploadProgress.pdf < 100 ? "info" : "success"}
+                                                                                    className="mt-3"
+                                                                                />
+                                                                            )}
+                                                                        </fieldset>
+                                                                    </Col>
+
+                                                                    <Col md={6}>
+                                                                        {(pdfPreview || loan.isda_signed_upload_path) && (
+                                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                                <iframe
+                                                                                    src={`${pdfPreview || loan.isda_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                                    width="100%"
+                                                                                    height="500"
+                                                                                    className="rounded shadow-sm border"
+                                                                                    style={{
+                                                                                        border: "1px solid #ddd",
+                                                                                        borderRadius: "8px",
+                                                                                        overflow: "hidden",
+                                                                                    }}
+                                                                                    title="ISDA Signed Document"
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                    </Col>
+                                                                </Row>
+
+                                                                <Row className="g-4 align-items-start mb-5">
+                                                                    <Col md={6}>
+                                                                        <fieldset className="fldset mb-4">
+                                                                            <legend className="font-semibold mb-3 flex items-center justify-between">
+                                                                                <span>📄 Organization Signed Document</span>
+                                                                                {loan.org_signed_upload_path && (
+                                                                                    <span className="text-xs text-gray-500 italic">(Existing document will be replaced if a new one is uploaded)</span>
+                                                                                )}
+                                                                            </legend>
+
+                                                                            <Form.Group>
+                                                                                <Form.Label className="font-medium">Upload Signed Organization Standard (PDF only)</Form.Label>
+                                                                                <Form.Control
+                                                                                    type="file"
+                                                                                    accept="application/pdf"
+                                                                                    disabled={loan.status === "Approved"}
+                                                                                    key={pdfFile1 ? pdfFile1.name : ""}
+                                                                                    onChange={(e) => {
+                                                                                        const file1 = e.target.files[0];
+                                                                                        if (file1) {
+                                                                                            setPdfFile1(file1);
+                                                                                            setPdfPreview1(URL.createObjectURL(file1));
+                                                                                        }
+                                                                                    }}
+                                                                                />
+                                                                                <Form.Text className="text-muted">Max size: 5MB</Form.Text>
+                                                                            </Form.Group>
+
+                                                                            <Button
+                                                                                className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                                                                                onClick={() => handleUpload("pdf1")}
+                                                                                disabled={!pdfFile1}
+                                                                            >
+                                                                                {uploadProgress.pdf1 > 0 && uploadProgress.pdf1 < 100
+                                                                                    ? "Uploading..."
+                                                                                    : loan.org_signed_upload_path
+                                                                                        ? "Replace Organization Signed PDF"
+                                                                                        : "Upload Organization Signed PDF"}
+                                                                            </Button>
+
+                                                                            {uploadProgress.pdf1 > 0 && (
+                                                                                <ProgressBar
+                                                                                    now={uploadProgress.pdf1}
+                                                                                    label={`${uploadProgress.pdf1}%`}
+                                                                                    animated
+                                                                                    variant={uploadProgress.pdf1 < 100 ? "info" : "success"}
+                                                                                    className="mt-3"
+                                                                                />
+                                                                            )}
+                                                                        </fieldset>
+                                                                    </Col>
+
+                                                                    <Col md={6}>
+                                                                        {(pdfPreview1 || loan.org_signed_upload_path) && (
+                                                                            <div className="border rounded bg-gray-50 shadow-sm p-3">
+                                                                                <h6 className="font-semibold mb-2 text-center text-gray-700">Preview</h6>
+                                                                                <iframe
+                                                                                    src={`${pdfPreview1 || loan.org_signed_upload_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                                    width="100%"
+                                                                                    height="500"
+                                                                                    className="rounded shadow-sm border"
+                                                                                    style={{
+                                                                                        border: "1px solid #ddd",
+                                                                                        borderRadius: "8px",
+                                                                                        overflow: "hidden",
+                                                                                    }}
+                                                                                    title="Organization Signed Document"
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                    </Col>
+                                                                </Row>
+                                                            </React.Fragment>
+                                                        </>
+                                                    )
+                                                )}
+
+                                        {/* --- Message area --- */}
+                                        {message && (
+                                            <div
+                                                className={`mt-3 p-2 rounded text-center transition-all ${message.startsWith("✅")
+                                                    ? "bg-green-100 text-green-700"
+                                                    : message.startsWith("⚠️")
+                                                        ? "bg-yellow-100 text-yellow-700"
+                                                        : "bg-red-100 text-red-700"
+                                                    }`}
+                                            >
+                                                {message}
                                             </div>
                                         )}
-                                    </Col>
-                                )}
-                            </Row>
-                        ) : (
-                            <p>No loan found.</p>
-                        )}
-                    </div>
-                </div>
-            </div>
-            {/* --- Re-upload Modal --- */}
-            <Modal
-                show={showReuploadModal}
-                onHide={() => setShowReuploadModal(false)}
-                size="lg"
-                centered
-            >
-                <Modal.Header closeButton>
-                    <Modal.Title>
-                        🔄 Re-upload: {reuploadDocData?.doc_type}
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold">Select New File</Form.Label>
-                        <Form.Control
-                            type="file"
-                            onChange={handleReuploadFileChange}
-                            accept={
-                                reuploadDocData?.file_name?.toLowerCase().endsWith(".pdf")
-                                    ? "application/pdf"
-                                    : reuploadDocData?.file_name?.toLowerCase().endsWith(".mp4")
-                                        ? "video/mp4"
-                                        : "*/*"
-                            }
-                        />
-                        <Form.Text className="text-muted">
-                            Please upload a valid file to replace the rejected document.
-                        </Form.Text>
-                    </Form.Group>
 
-                    {/* Preview Section */}
-                    {newReuploadPreview && (
-                        <div className="mt-4 p-3 border rounded bg-light">
-                            <h6 className="text-center mb-2 text-secondary">New File Preview</h6>
-                            {newReuploadFile?.type?.includes("pdf") || newReuploadFile?.name?.endsWith(".pdf") ? (
-                                <iframe
-                                    src={`${newReuploadPreview}#toolbar=0`}
-                                    width="100%"
-                                    height="400px"
-                                    className="border rounded"
-                                    title="New PDF Preview"
+                                        {(auth.user.is_admin == 1) ? (
+                                            <Col md={12}>
+                                                {(loan.status === "Pending") ? (
+                                                    <>
+                                                        {/* <div className="mt-6 flex justify-center gap-4">
+                                                            <button
+                                                                onClick={handleApprove}
+                                                                disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
+                                                                className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={handleReject}
+                                                                disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied}
+                                                                className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) || !allDocVerivied ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </div> */}
+                                                        {/* APPROVAL BLOCK MESSAGE */}
+                                                        {isApproveDisabled && approvalBlockers?.reason && (
+                                                            <div className="mb-4 flex justify-center">
+                                                                <div className="max-w-xl w-full bg-red-50 border border-red-300
+                                                                                text-red-700 px-4 py-3 rounded-md text-sm
+                                                                                flex items-start gap-2 justify-center">
+                                                                    <span className="text-red-600 font-bold mt-0.5">⚠️</span>
+                                                                    <span>
+                                                                        <strong>Approval blocked:</strong> {approvalBlockers.reason}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* ACTION BUTTONS */}
+                                                        <div className="mt-2 flex justify-center gap-4">
+                                                            <button
+                                                                onClick={handleApprove}
+                                                                disabled={isApproveDisabled}
+                                                                className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md
+                                                                ${isApproveDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                            >
+                                                                Approve
+                                                            </button>
+
+                                                            <button
+                                                                onClick={handleReject}
+                                                                disabled={isApproveDisabled}
+                                                                className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md
+                                                                ${isApproveDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {(loan.status === "Rejected" && loan.has_fixed_temp_rejection == 1) && (
+                                                            <div className="mt-6 flex justify-center gap-4">
+                                                                <button
+                                                                    onClick={handleApprove}
+                                                                    disabled={(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null)}
+                                                                    className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ${(loan.video_consent_path == null || loan.isda_signed_upload_path == null || loan.org_signed_upload_path == null) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                >
+                                                                    Approve
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </Col>
+                                        ) : (
+                                            <Col md={12}>
+                                                {(loan.status === "Pending") ? (
+                                                    <div className="mt-6 flex justify-center gap-4">
+                                                        <Link
+                                                            href={route("loans")}
+                                                        >
+                                                            <button
+                                                                className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md`}
+                                                                onClick={markSentApproval}
+                                                            >
+                                                                {loan?.is_sent_for_approval == 1 ? ("Back to the list") : ("Send for approval")}
+                                                            </button>
+                                                        </Link>
+                                                    </div>
+                                                ) : (
+                                                    <div className="mt-6 flex justify-center gap-4">
+                                                        <Link
+                                                            href={route("loans")}
+                                                        >
+                                                            <button
+                                                                className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md`}
+                                                            >
+                                                                Back to the list
+                                                            </button>
+                                                        </Link>
+                                                    </div>
+                                                )}
+                                            </Col>
+                                        )}
+                                    </Row>
+                                ) : (
+                                    <p>No loan found.</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    {/* --- Re-upload Modal --- */}
+                    <Modal
+                        show={showReuploadModal}
+                        onHide={() => setShowReuploadModal(false)}
+                        size="lg"
+                        centered
+                    >
+                        <Modal.Header closeButton>
+                            <Modal.Title>
+                                🔄 Re-upload: {reuploadDocData?.doc_type}
+                            </Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                            <Form.Group className="mb-3">
+                                <Form.Label className="fw-bold">Select New File</Form.Label>
+                                <Form.Control
+                                    type="file"
+                                    onChange={handleReuploadFileChange}
+                                    accept={
+                                        reuploadDocData?.file_name?.toLowerCase().endsWith(".pdf")
+                                            ? "application/pdf"
+                                            : reuploadDocData?.file_name?.toLowerCase().endsWith(".mp4")
+                                                ? "video/mp4"
+                                                : "*/*"
+                                    }
                                 />
-                            ) : newReuploadFile?.type?.includes("video") || newReuploadFile?.name?.endsWith(".mp4") ? (
-                                <video
-                                    src={newReuploadPreview}
-                                    controls
-                                    className="w-100 rounded"
-                                    style={{ maxHeight: "400px" }}
-                                />
-                            ) : (
-                                <div className="text-center text-muted py-4">
-                                    Preview not available for this file type.
+                                <Form.Text className="text-muted">
+                                    Please upload a valid file to replace the rejected document.
+                                </Form.Text>
+                            </Form.Group>
+
+                            {/* Preview Section */}
+                            {newReuploadPreview && (
+                                <div className="mt-4 p-3 border rounded bg-light">
+                                    <h6 className="text-center mb-2 text-secondary">New File Preview</h6>
+                                    {newReuploadFile?.type?.includes("pdf") || newReuploadFile?.name?.endsWith(".pdf") ? (
+                                        <iframe
+                                            src={`${newReuploadPreview}#toolbar=0`}
+                                            width="100%"
+                                            height="400px"
+                                            className="border rounded"
+                                            title="New PDF Preview"
+                                        />
+                                    ) : newReuploadFile?.type?.includes("video") || newReuploadFile?.name?.endsWith(".mp4") ? (
+                                        <video
+                                            src={newReuploadPreview}
+                                            controls
+                                            className="w-100 rounded"
+                                            style={{ maxHeight: "400px" }}
+                                        />
+                                    ) : (
+                                        <div className="text-center text-muted py-4">
+                                            Preview not available for this file type.
+                                        </div>
+                                    )}
                                 </div>
                             )}
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button variant="secondary" onClick={() => setShowReuploadModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={submitReupload}
+                                disabled={!newReuploadFile || isReuploading}
+                            >
+                                {isReuploading ? (
+                                    <>
+                                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    "Save & Re-upload"
+                                )}
+                            </Button>
+                        </Modal.Footer>
+                    </Modal>
+                    {showLoanRejectModal && (
+                        <div className="fixed inset-0 bg-slate-600 bg-opacity-40 flex items-center justify-center z-50">
+                            <div className="bg-white p-5 rounded-lg shadow-lg w-96">
+                                <h2 className="text-lg font-semibold mb-3">Reject Loan</h2>
+
+                                <label className="block text-sm font-medium mb-1">
+                                    Select Rejection Reason
+                                </label>
+
+                                <select
+                                    className="border rounded w-full px-3 py-2 mb-4"
+                                    value={selectedLoanRejectionReason}
+                                    onChange={(e) => setSelectedLoanRejectionReason(e.target.value)}
+                                >
+                                    <option value="">-- Select Reason --</option>
+
+                                    {rejectReasons.map((reason) => (
+                                        (reason.reason_type === 2) && (
+                                            <option key={reason.id} value={reason.id}>
+                                                {reason.reason_desc}
+                                            </option>
+                                        )
+                                    ))}
+                                </select>
+
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
+                                        onClick={() => {
+                                            setShowLoanRejectModal(false);
+                                            setSelectedLoanRejectionReason("");
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    <button
+                                        className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                                        onClick={submitLoanRejection}
+                                    >
+                                        Reject Loan
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowReuploadModal(false)}>
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="primary"
-                        onClick={submitReupload}
-                        disabled={!newReuploadFile || isReuploading}
-                    >
-                        {isReuploading ? (
-                            <>
-                                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
-                                Uploading...
-                            </>
-                        ) : (
-                            "Save & Re-upload"
-                        )}
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-            {showLoanRejectModal && (
-                <div className="fixed inset-0 bg-slate-600 bg-opacity-40 flex items-center justify-center z-50">
-                    <div className="bg-white p-5 rounded-lg shadow-lg w-96">
-                        <h2 className="text-lg font-semibold mb-3">Reject Loan</h2>
+                    {/* Use height: 0 and overflow: hidden instead of display: none */}
 
-                        <label className="block text-sm font-medium mb-1">
-                            Select Rejection Reason
-                        </label>
-
-                        <select
-                            className="border rounded w-full px-3 py-2 mb-4"
-                            value={selectedLoanRejectionReason}
-                            onChange={(e) => setSelectedLoanRejectionReason(e.target.value)}
-                        >
-                            <option value="">-- Select Reason --</option>
-
-                            {rejectReasons.map((reason) => (
-                                (reason.reason_type === 2) && (
-                                    <option key={reason.id} value={reason.id}>
-                                        {reason.reason_desc}
-                                    </option>
-                                )
-                            ))}
-                        </select>
-
-                        <div className="flex justify-end gap-2">
-                            <button
-                                className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
-                                onClick={() => {
-                                    setShowLoanRejectModal(false);
-                                    setSelectedLoanRejectionReason("");
-                                }}
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
-                                onClick={submitLoanRejection}
-                            >
-                                Reject Loan
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                </>
             )}
-            {/* Use height: 0 and overflow: hidden instead of display: none */}
-
-
 
         </AuthenticatedLayout>
     );

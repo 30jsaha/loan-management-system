@@ -194,6 +194,15 @@ const generateDocKey = (name) => {
 
           <form className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
+              <label className="text-sm font-medium">Document Name</label>
+              <input
+                name="doc_name"
+                value={formData.doc_name}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
               <label className="text-sm font-medium">Document Key</label>
               <input
                 name="doc_key"
@@ -203,19 +212,6 @@ const generateDocKey = (name) => {
                 placeholder="Auto-generated, but editable"
               />
             </div>
-
-
-
-            <div>
-              <label className="text-sm font-medium">Document Name</label>
-              <input
-                name="doc_name"
-                value={formData.doc_name}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-
             <div>
               <label className="text-sm font-medium">Min Size (KB)</label>
               <input
@@ -338,8 +334,18 @@ const generateDocKey = (name) => {
                   </td>
                 </tr>
               ) : (
-                paginatedData.map((doc, idx) => (
-                  <tr key={doc.id} className="hover:bg-gray-50">
+                paginatedData.map((doc, idx) => {
+                  const isEditingRow = formData.id === doc.id;
+                  return ( 
+                  <tr 
+                    key={doc.id} 
+                    className={`transition-all duration-300 ${isEditingRow
+                        ? "bg-amber-100 ring-2 ring-amber-200"
+                        : idx % 2 === 0
+                            ? "bg-white"
+                            : "bg-emerald-50/40"
+                    } hover:bg-emerald-100/70`}
+                  >
                     <td className="border px-2 py-2 text-center">
                       {(currentPage - 1) * itemsPerPage + idx + 1}
                     </td>
@@ -387,7 +393,8 @@ const generateDocKey = (name) => {
                       </div>
                     </td>
                   </tr>
-                ))
+                  )
+                })
               )}
             </tbody>
           </table>

@@ -214,15 +214,10 @@ export default function Index({ auth }) {
                         ["Name", "first_name"],
                         ["Emp No", "employee_no"],
                         ["Organisation", "organisation_name"],
-                        ["Gender", "gender"],
                         ["Contact Info", "contact_info"],
                         ["Payroll No", "payroll_number"],
-                        ["Type", "employment_type"],
-                        ["Designation", "designation"],
                         ["Salary Info", "salary_info"],
-                        ["Location", "work_location"],
-                        ["Created", "created_at"],
-                        ["Actions", "actions"],
+                        ["Actions", "actions"]
                       ].map(([label, key]) => (
                         <th
                            key={key}
@@ -265,7 +260,6 @@ export default function Index({ auth }) {
                         </td>
                         <td className="px-2 py-2 text-center border border-gray-700">{cust.employee_no}</td>
                         <td className="px-2 py-2 text-center border border-gray-700">{cust.organisation_name}</td>
-                        <td className="px-2 py-2 text-center border border-gray-700">{cust.gender}</td>
 
                         <td className="px-2 py-2 text-center text-gray-800 border border-gray-700 align-middle">
                           <div className="flex flex-col items-center text-center break-words whitespace-normal">
@@ -282,8 +276,6 @@ export default function Index({ auth }) {
 
 
                         <td className="px-2 py-2 text-center border border-gray-700">{cust.payroll_number}</td>
-                        <td className="px-2 py-2 text-center border border-gray-700">{cust.employment_type}</td>
-                        <td className="px-2 py-2 text-center border border-gray-700">{cust.designation}</td>
 
                         <td className="px-2 py-2 text-center text-emerald-700 font-semibold border border-gray-700">
                           <div className="flex flex-col items-center">
@@ -296,11 +288,6 @@ export default function Index({ auth }) {
                               {parseFloat(cust.net_salary || 0).toLocaleString()}
                             </span>
                           </div>
-                        </td>
-
-                        <td className="px-2 py-2 text-center border border-gray-700">{cust.work_location}</td>
-                        <td className="px-2 py-2 text-center text-gray-600 whitespace-nowrap border border-gray-700">
-                          {new Date(cust.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-2 py-2 text-center border border-gray-700">
                           <div className="flex justify-center gap-1 sm:gap-2">

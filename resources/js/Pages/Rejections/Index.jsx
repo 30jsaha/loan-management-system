@@ -213,8 +213,18 @@ export default function Index({ auth }) {
                   </td>
                 </tr>
               ) : (
-                reasons.map((r, i) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                reasons.map((r, i) => {
+                  const isEditingRow = formData.id === r.id;
+                  return(
+                  <tr 
+                    key={r.id} 
+                    className={`transition-all duration-300 ${isEditingRow
+                        ? "bg-amber-100 ring-2 ring-amber-200"
+                        : i % 2 === 0
+                            ? "bg-white"
+                            : "bg-emerald-50/40"
+                    } hover:bg-emerald-100/70`}
+                  >
                     <td className="p-3 border text-center">{i + 1}</td>
                     <td className="p-3 border">{r.reason_desc}</td>
                     <td className="p-3 border text-center">
@@ -248,7 +258,8 @@ export default function Index({ auth }) {
                       </div>
                     </td>
                   </tr>
-                ))
+                  )
+                })
               )}
             </tbody>
           </table>

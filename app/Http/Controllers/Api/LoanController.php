@@ -198,11 +198,31 @@ class LoanController extends Controller
      */
     public function show(string $id)
     {
-        // $loan = Loan::findOrFail($id);
+        // $loan = Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company'])
+        //     ->orderBy('id', 'desc')->findOrFail($id);
         // return response()->json($loan);
 
-        $loan = Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company'])
-            ->orderBy('id', 'desc')->findOrFail($id);
+        $loan = Loan::with([
+            'customer',
+            'organisation',
+            'installments',
+            'loan_settings',
+            'company',
+            'documents' => function ($q) {
+                $q->leftJoin(
+                    'document_types',
+                    'document_types.doc_key',
+                    '=',
+                    'document_upload.doc_type'
+                )
+                ->select(
+                    'document_upload.*',
+                    'document_types.is_required',
+                    'document_types.doc_name'
+                );
+            }
+        ])->findOrFail($id);
+
         return response()->json($loan);
     }
 
