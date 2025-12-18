@@ -12,6 +12,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { currencyPrefix } from "@/config";
 import { formatCurrency } from "@/Utils/formatters"
+const today = new Date().toISOString().split("T")[0];
 
 export default function LoanSettingMaster({ auth, salary_slabs }) {
   const [orgList, setOrgList] = useState([]);
@@ -19,7 +20,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
   const [loanSettings, setLoanSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-
+  
   const [formData, setFormData] = useState({
     id: null,
     loan_desc: "",
@@ -32,11 +33,31 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     max_loan_term_months: "",
     process_fees: "",
     min_repay_percentage_for_next_loan: "",
-    effect_date: "",
+    effect_date: today,
     end_date: "",
     ss_id_list: [],
+    purpose_id_list: [],
   });
+   const [loanPurposes, setLoanPurposes] = useState([]);
+   const [formSelectedPurposes, setFormSelectedPurposes] = useState([]);
+    useEffect(() => {
+      axios.get("/api/loan-purposes-list")
+        .then(res => {
+          // keep only active purposes
+          const active = res.data.filter(p => Number(p.status) === 1);
+          setLoanPurposes(active);
+        })
+        .catch(() => toast.error("Failed to load loan purposes"));
+    }, []);
+    const loanPurposeOptions = loanPurposes.map(p => ({
+      name: p.purpose_name,
+      code: p.id,
+    }));
 
+
+
+
+  
   // Filters and Sorting
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "loan_desc", direction: "asc" });
@@ -95,6 +116,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         ss_id_list: Array.isArray(formSelectedSslabs) && formSelectedSslabs.length > 0
           ? formSelectedSslabs.map((s) => s.code)
           : Array.isArray(formData.ss_id_list) ? formData.ss_id_list : [],
+        purpose_id_list: formSelectedPurposes.map(p => p.code),
       };
 
       if (isEditing && formData.id) {
@@ -167,6 +189,24 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
 
     setIsEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+
+    // Preselect purposes
+    const purposeIds = Array.isArray(loan.purpose_id_list)
+      ? loan.purpose_id_list
+      : loan.purpose_id
+      ? [loan.purpose_id]
+      : [];
+
+    const preselectedPurposes = purposeIds
+      .map(pid => {
+        const p = loanPurposes.find(lp => lp.id === pid);
+        return p ? { name: p.purpose_name, code: p.id } : null;
+      })
+      .filter(Boolean);
+
+    setFormSelectedPurposes(preselectedPurposes);
+
   };
 
   const handleDelete = async (id, desc) => {
@@ -209,7 +249,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       max_loan_term_months: "",
       process_fees: "",
       min_repay_percentage_for_next_loan: "",
-      effect_date: "",
+      effect_date: new Date().toISOString().split("T")[0],
       end_date: "",
       ss_id_list: []    // required
     });
@@ -350,6 +390,30 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                     className="w-full md:w-20rem"
                   />
               </div>
+            </div>
+            <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Loan Purpose(s)
+                </label>
+                <div className="card flex justify-content-center">
+                <MultiSelect
+                  value={formSelectedPurposes}
+                  onChange={(e) => {
+                    setFormSelectedPurposes(e.value);
+                    setFormData({
+                      ...formData,
+                      purpose_id_list: e.value.map(p => p.code),
+                    });
+                  }}
+                  options={loanPurposeOptions}
+                  optionLabel="name"
+                  filter
+                  placeholder="Select Purpose(s)"
+                  display="chip"
+                  maxSelectedLabels={3}
+                  className="w-full md:w-20rem"
+                />
+                </div>
             </div>
 
             {[
