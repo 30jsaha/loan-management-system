@@ -201,7 +201,7 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
 
   const loanAmount = loan.loan_amount_applied ?? loan.elegible_amount ?? "";
   const noOfFNs = loan.tenure_fortnight ?? "";
-  const purpose = (loan.purpose || "").toString();
+  const purpose = (loan.purpose?.purpose_name || "").toString();
   const clientStatus = loan.client_status ?? (customer.client_status ?? null); // 1 => existing
   const payrollNumber = customer.payroll_number ?? "";
   const firstName = customer.first_name ?? "";

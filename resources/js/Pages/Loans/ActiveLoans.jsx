@@ -644,7 +644,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                             <strong>Type:</strong> {loan.loan_settings?.loan_desc || "-"}
                           </span>
                           <span>
-                            <strong>Purpose:</strong> {loan.purpose || "-"}
+                            <strong>Purpose:</strong> {loan.purpose?.purpose_name || "-"}
                           </span>
                         </div>
                       </td>

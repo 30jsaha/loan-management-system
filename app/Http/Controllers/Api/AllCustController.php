@@ -38,8 +38,8 @@ class AllCustController extends Controller
         }
 
         // SORTING
-        $sortKey = $request->sortKey ?? 'cust_name';
-        $sortDir = $request->sortDir ?? 'asc';
+        $sortKey = $request->sortKey ?? 'id';
+        $sortDir = $request->sortDir ?? 'desc';
         $query->orderBy($sortKey, $sortDir);
 
         // PAGINATION

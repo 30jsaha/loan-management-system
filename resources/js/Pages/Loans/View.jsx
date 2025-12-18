@@ -24,6 +24,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [rejectReasons, setRejectReasons] = useState(
         Array.isArray(rejectionReasons) ? rejectionReasons : []
     );
+    const [loanPurposes, setLoanPurposes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [allDocVerivied, setAllDocVerified] = useState(false);
@@ -58,6 +59,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectingDocId, setRejectingDocId] = useState(null);
     const [selectedRejectionReason, setSelectedRejectionReason] = useState("");
+    const [selectedLoanPurposeId, setSelectedLoanPurposeId] = useState("");
     // --- Re-upload Modal State ---
     const [showReuploadModal, setShowReuploadModal] = useState(false);
     const [reuploadDocData, setReuploadDocData] = useState(null); // Stores the doc object being replaced
@@ -71,13 +73,100 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [showSectorModal, setShowSectorModal] = useState(false);
     // ... existing states
 
-
-
     // video steaming
     const [isRecording, setIsRecording] = useState(false);
     const [mediaRecorder, setMediaRecorder] = useState(null);
     const [recordedChunks, setRecordedChunks] = useState([]);
     const videoRef = useRef(null);
+
+    axios.defaults.withCredentials = true;
+
+    // Helper logic
+    const orgSector = loan?.organisation?.sector_type;
+    const isHealth = orgSector === "Health";
+    const isEducation = orgSector === "Education";
+    const canPrintSector = isHealth || isEducation; // Render for both
+    const sectorDocTitle = isHealth ? "Health Declaration Form" : "Education Grant Form";
+
+    const [loanFormData, setLoanFormData] = useState({
+        id: loan ? loan.id : null,
+        loan_type: 0,
+        purpose: "",
+        purpose_id: 0,
+        other_purpose_text: "",
+        loan_amount_applied: loan?.loan_amount_applied || 0.00,
+        tenure_fortnight: 0,
+        interest_rate: 0.00,
+        processing_fee: 0.00,
+        emi_amount: "",
+        bank_name: "",
+        bank_branch: "",
+        bank_account_no: "",
+        remarks: "",
+    });
+
+    useEffect(() => {
+        if (loan && loan.length > 0) {
+            setLoanFormData((prev) => ({
+                ...prev,
+                id: loan.id,
+                loan_type: loan.loan_type,
+                purpose: loan.purpose?.purpose_name,
+                purpose_id : loan.purpose_id,
+                other_purpose_text: loan.other_purpose_text,
+                loan_amount_applied: loan.loan_amount_applied,
+                tenure_fortnight: loan.tenure_fortnight,
+                interest_rate: loan.interest_rate,
+                processing_fee: loan.processing_fee,
+                bank_name: loan.bank_name,
+                bank_branch: loan.bank_branch,
+                bank_account_no: loan.bank_account_no,
+                remarks: loan.remarks
+            }));
+            if (loan.is_sent_for_approval == 1) {
+                setIsSentApproval(true);
+            } else {
+                setIsSentApproval(false);
+            }
+        }
+        axios
+            .get(`/api/loans/${loanId}`)
+            .then((res) => {
+                setLoan(res.data);
+                setLoading(false);
+                console.log(res.data);
+                if (res.data) {
+                    setLoanFormData((prev) => ({
+                        ...prev,
+                        id: res.data.id,
+                        loan_type: res.data.loan_type,
+                        purpose: res.data.purpose?.purpose_name,
+                        purpose_id : res.data.purpose_id,
+                        other_purpose_text: res.data.other_purpose_text,
+                        loan_amount_applied: res.data.loan_amount_applied,
+                        tenure_fortnight: res.data.tenure_fortnight,
+                        interest_rate: res.data.interest_rate,
+                        processing_fee: res.data.processing_fee,
+                        bank_name: res.data.bank_name,
+                        bank_branch: res.data.bank_branch,
+                        bank_account_no: res.data.bank_account_no,
+                        remarks: res.data.remarks,
+                    }));
+                    if (res.data.purpose) {
+                        setLoanPurposes(
+                            Array.isArray(res.data.purpose)
+                                ? res.data.purpose
+                                : [res.data.purpose]
+                        );
+                    }
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+                setMessage("");
+                setLoading(false);
+            });
+    }, [loanId]);
 
     const rejectReasonOptions = rejectReasons
         .filter(r => r.reason_type === 1)
@@ -86,6 +175,15 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             label: r.reason_desc,
             canReapply: r.do_allow_reapply === 1
         }));
+    const loanPurposeOptions = Array.isArray(loanPurposes)
+    ? loanPurposes
+        .filter(p => Number(p.status) === 1)
+        .map(p => ({
+            value: p.id,
+            label: p.purpose_name
+        }))
+    : [];
+
 
     const startRecording = async () => {
         try {
@@ -240,28 +338,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const handlePrint = () => {
         window.print();
     };
-    // Helper logic
-    const orgSector = loan?.organisation?.sector_type;
-    const isHealth = orgSector === "Health";
-    const isEducation = orgSector === "Education";
-    const canPrintSector = isHealth || isEducation; // Render for both
-    const sectorDocTitle = isHealth ? "Health Declaration Form" : "Education Grant Form";
-
-    const [loanFormData, setLoanFormData] = useState({
-        id: loan ? loan.id : null,
-        loan_type: 0,
-        purpose: "",
-        other_purpose_text: "",
-        loan_amount_applied: loan?.loan_amount_applied || 0.00,
-        tenure_fortnight: 0,
-        interest_rate: 0.00,
-        processing_fee: 0.00,
-        emi_amount: "",
-        bank_name: "",
-        bank_branch: "",
-        bank_account_no: "",
-        remarks: "",
-    });
+    
     const renderSectorForm = () => {
         if (!loan) return null;
 
@@ -312,62 +389,6 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         setShowVideoModal(false);
         setVideoSrc(null);
     };
-
-    axios.defaults.withCredentials = true;
-
-    useEffect(() => {
-        if (loan && loan.length > 0) {
-            setLoanFormData((prev) => ({
-                ...prev,
-                id: loan.id,
-                loan_type: loan.loan_type,
-                purpose: loan.purpose,
-                other_purpose_text: loan.other_purpose_text,
-                loan_amount_applied: loan.loan_amount_applied,
-                tenure_fortnight: loan.tenure_fortnight,
-                interest_rate: loan.interest_rate,
-                processing_fee: loan.processing_fee,
-                bank_name: loan.bank_name,
-                bank_branch: loan.bank_branch,
-                bank_account_no: loan.bank_account_no,
-                remarks: loan.remarks
-            }));
-            if (loan.is_sent_for_approval == 1) {
-                setIsSentApproval(true);
-            } else {
-                setIsSentApproval(false);
-            }
-        }
-        axios
-            .get(`/api/loans/${loanId}`)
-            .then((res) => {
-                setLoan(res.data);
-                setLoading(false);
-                console.log(res.data);
-                if (res.data) {
-                    setLoanFormData((prev) => ({
-                        ...prev,
-                        id: res.data.id,
-                        loan_type: res.data.loan_type,
-                        purpose: res.data.purpose,
-                        other_purpose_text: res.data.other_purpose_text,
-                        loan_amount_applied: res.data.loan_amount_applied,
-                        tenure_fortnight: res.data.tenure_fortnight,
-                        interest_rate: res.data.interest_rate,
-                        processing_fee: res.data.processing_fee,
-                        bank_name: res.data.bank_name,
-                        bank_branch: res.data.bank_branch,
-                        bank_account_no: res.data.bank_account_no,
-                        remarks: res.data.remarks,
-                    }));
-                }
-            })
-            .catch((error) => {
-                console.error(error);
-                setMessage("");
-                setLoading(false);
-            });
-    }, [loanId]);
 
     const checkAllDocsVerified = useCallback(() => {
         if (!loan || !loan.documents || loan.documents.length === 0) return false;
@@ -694,6 +715,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             loanFormData.tenure_fortnight = parseFloat(loanFormData.tenure_fortnight);
             // loanFormData.total_interest_amt = parseFloat(loanFormData.total_interest_amt);
             // loanFormData.total_repay_amt = parseFloat(loanFormData.total_repay_amt)
+            if (selectedLoanPurposeId) {
+                loanFormData.purpose_id=selectedLoanPurposeId;
+            }
 
             console.log("loanFormData before submit", loanFormData);
             console.log(typeof (loanFormData.loan_amount_applied));
@@ -713,7 +737,8 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                 customer_id: savedLoan.customer_id,
                 // organisation_id: savedLoan.organisation_id,
                 loan_type: savedLoan.loan_type,
-                purpose: savedLoan.purpose || "",
+                purpose: savedLoan.purpose?.purpose_name || "",
+                purpose_id : savedLoan.purpose_id  || 0,
                 other_purpose_text: savedLoan.other_purpose_text || "",
                 loan_amount_applied: savedLoan.loan_amount_applied || 0.00,
                 tenure_fortnight: savedLoan.tenure_fortnight || 0,
@@ -763,7 +788,8 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             setLoanFormData({
                 id: updatedLoan.id,
                 loan_type: updatedLoan.loan_type,
-                purpose: updatedLoan.purpose,
+                purpose: updatedLoan.purpose?.purpose_name,
+                purpose_id : updatedLoan.purpose_id,
                 other_purpose_text: updatedLoan.other_purpose_text,
                 loan_amount_applied: updatedLoan.loan_amount_applied,
                 tenure_fortnight: updatedLoan.tenure_fortnight,
@@ -1116,7 +1142,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                 <table className="w-full border-collapse border border-gray-300 text-sm">
                                                     <tbody>
                                                         <tr><td className="border p-2 font-semibold">Loan Type</td><td className="border p-2">{loan.loan_settings?.loan_desc || "-"}</td></tr>
-                                                        <tr><td className="border p-2 font-semibold">Purpose</td><td className="border p-2">{(loan.purpose) == "Other" ? loan.other_purpose_text : loan.purpose}</td></tr>
+                                                        <tr><td className="border p-2 font-semibold">Purpose</td><td className="border p-2">{(loan.purpose?.purpose_name) == "Other" ? loan.other_purpose_text : loan.purpose?.purpose_name}</td></tr>
                                                         <tr><td className="border p-2 font-semibold">Tenure (fortnight)</td><td className="border p-2">{loan.tenure_fortnight}</td></tr>
                                                         <tr><td className="border p-2 font-semibold">EMI Amount</td><td className="border p-2">{(loan.emi_amount != null) ? `${currencyPrefix} ${parseFloat(loan.emi_amount).toFixed(2)}` : 0.00}</td></tr>
                                                         <tr><td className="border p-2 font-semibold">Interest Rate</td><td className="border p-2">{loan.interest_rate}%</td></tr>
@@ -1297,7 +1323,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
                                                             <div className="col-md-4">
                                                                 <label className="form-label">Purpose</label>
-                                                                <select className={`form-select`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
+                                                                {/* <select className={`form-select`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
                                                                     <option value="">Select Purpose</option>
                                                                     <option>Tuition</option>
                                                                     <option>Living</option>
@@ -1307,10 +1333,35 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                     <option>Travel</option>
                                                                     <option>HomeImprovement</option>
                                                                     <option>Other</option>
-                                                                </select>
+                                                                </select> */}
+                                                                <Select
+                                                                    options={loanPurposeOptions}
+                                                                    value={loanPurposeOptions.find(o => o.value === selectedLoanPurposeId) || null}
+                                                                    onChange={(opt) => setSelectedLoanPurposeId(opt?.value || null)}
+                                                                    placeholder="Select Loan Purpose"
+                                                                    styles={{
+                                                                        container: (base) => ({
+                                                                            ...base,
+                                                                            width: "100%",
+                                                                        }),
+                                                                        control: (base) => ({
+                                                                            ...base,
+                                                                            minWidth: "100%",
+                                                                        }),
+                                                                        valueContainer: (base) => ({
+                                                                            ...base,
+                                                                            overflow: "hidden",
+                                                                        }),
+                                                                    }}
+                                                                    getOptionLabel={(opt) => (
+                                                                        <div className="flex justify-between items-center w-full">
+                                                                            <span className="truncate">{opt.label}</span>
+                                                                        </div>
+                                                                    )}
+                                                                />
                                                             </div>
 
-                                                            {loanFormData.purpose === "Other" && (
+                                                            {loanFormData.purpose?.purpose_name === "Other" && (
                                                                 <div className="col-md-4">
                                                                     <label className="form-label">Other Purpose</label>
                                                                     <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
@@ -3326,7 +3377,6 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                         </div>
                     )}
                     {/* Use height: 0 and overflow: hidden instead of display: none */}
-
                 </>
             )}
 

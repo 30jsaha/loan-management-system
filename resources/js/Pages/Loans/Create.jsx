@@ -19,8 +19,11 @@ import HealthF from "@/Components/HealthF";
 import EduF from "@/Components/EduF";
 import EduPrintFormat from "@/Components/EduPrintFormat";
 import toast, { Toaster } from "react-hot-toast";
+import Select from "react-select";
 
 export default function Create({ auth, loan_settings }) {
+    const [loanPurposes, setLoanPurposes] = useState([]);
+    const [selectedLoanPurposeId, setSelectedLoanPurposeId] = useState("");
     const [isEligible, setIsEligible] = useState(false);
     const [isCustSelectable, setCustSelectable] = useState(true);
     const [recProposedPvaAmt, setRecProposedPvaAmt] = useState(0);
@@ -83,6 +86,7 @@ export default function Create({ auth, loan_settings }) {
         // organisation_id: "",
         loan_type: 0,
         purpose: "",
+        purpose_id: 0,
         other_purpose_text: "",
         loan_amount_applied: 0.00,
         tenure_fortnight: 0,
@@ -117,6 +121,7 @@ export default function Create({ auth, loan_settings }) {
     const isEmpty = (obj) => Object.keys(obj).length === 0;
 
     useBeforeUnload(isFormDirty, formData);
+
     const fetchCustomers = async () => {
         try {
             const res = await axios.get('/api/customer-list', { withCredentials: true });
@@ -125,9 +130,18 @@ export default function Create({ auth, loan_settings }) {
             console.error('There was an error fetching the customers!', error);
         }
     };
+    const fetchLoanPurposes = async () => {
+        try {
+            const res = await axios.get('/api/loan-purposes-list', { withCredentials: true });
+            setLoanPurposes(res.data);
+        } catch (error) {
+            console.error('There was an error fetching the LoanPurposes!', error);
+        }
+    };
 
     useEffect(() => {
         fetchCustomers();
+        fetchLoanPurposes();
     }, []);
     const customerMap = useMemo(() => {
         const map = {};
@@ -429,7 +443,9 @@ export default function Create({ auth, loan_settings }) {
             loanFormData.tenure_fortnight = parseFloat(loanFormData.tenure_fortnight);
             // loanFormData.total_interest_amt = parseFloat(loanFormData.total_interest_amt);
             // loanFormData.total_repay_amt = parseFloat(loanFormData.total_repay_amt)
-
+            if (selectedLoanPurposeId) {
+                loanFormData.purpose_id=selectedLoanPurposeId;
+            }
             console.log("loanFormData before submit", loanFormData);
             console.log(typeof (loanFormData.loan_amount_applied));
 
@@ -508,6 +524,14 @@ export default function Create({ auth, loan_settings }) {
         }
 
     };
+    const loanPurposeOptions = Array.isArray(loanPurposes)
+    ? loanPurposes
+        .filter(p => Number(p.status) === 1)
+        .map(p => ({
+            value: p.id,
+            label: p.purpose_name
+        }))
+    : [];
     useEffect(() => {
         axios.get("/api/fetch-loan-temp-customer", { withCredentials: true })
 
@@ -595,7 +619,8 @@ export default function Create({ auth, loan_settings }) {
                 customer_id: savedLoan.customer_id,
                 // organisation_id: savedLoan.organisation_id,
                 loan_type: savedLoan.loan_type,
-                purpose: savedLoan.purpose || "",
+                purpose: savedLoan.purpose?.purpose_name || "",
+                purpose_id : savedLoan.purpose_id  || 0,
                 other_purpose_text: savedLoan.other_purpose_text || "",
                 loan_amount_applied: savedLoan.loan_amount_applied || 0.00,
                 tenure_fortnight: savedLoan.tenure_fortnight || 0,
@@ -1215,14 +1240,39 @@ export default function Create({ auth, loan_settings }) {
 
                                                     <div className="col-md-4">
                                                         <label className="form-label">Purpose</label>
-                                                        <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
+                                                        {/* <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
                                                             <option value="">Select Purpose</option>
                                                             <option value="School Fee">School Fee</option>
                                                             <option value="Personal Expenses">Personal Expenses</option>
                                                             <option value="Funeral Expenses">Funeral Expenses</option>
                                                             <option value="Refinancing">Refinancing</option>
                                                             <option value="Other">Other</option>
-                                                        </select>
+                                                        </select> */}
+                                                        <Select
+                                                            options={loanPurposeOptions}
+                                                            value={loanPurposeOptions.find(o => o.value === selectedLoanPurposeId) || null}
+                                                            onChange={(opt) => setSelectedLoanPurposeId(opt?.value || null)}
+                                                            placeholder="Select Loan Purpose"
+                                                            styles={{
+                                                                container: (base) => ({
+                                                                    ...base,
+                                                                    width: "100%",
+                                                                }),
+                                                                control: (base) => ({
+                                                                    ...base,
+                                                                    minWidth: "100%",
+                                                                }),
+                                                                valueContainer: (base) => ({
+                                                                    ...base,
+                                                                    overflow: "hidden",
+                                                                }),
+                                                            }}
+                                                            getOptionLabel={(opt) => (
+                                                                <div className="flex justify-between items-center w-full">
+                                                                    <span className="truncate">{opt.label}</span>
+                                                                </div>
+                                                            )}
+                                                        />
                                                     </div>
 
                                                     {loanFormData.purpose === "Other" && (
