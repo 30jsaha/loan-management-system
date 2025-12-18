@@ -27,7 +27,7 @@ export default function PurposeIndex({ auth, loanPurpose }) {
 
   const fetchPurposes = async () => {
     try {
-      const res = await axios.get("/api/loan-purposes");
+      const res = await axios.get("/api/loan-purposes-list");
       setPurposes(res.data);
     } catch {
       toast.error("Failed to load loan purposes");
