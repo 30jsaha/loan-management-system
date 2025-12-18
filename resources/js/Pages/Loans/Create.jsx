@@ -1257,23 +1257,42 @@ export default function Create({ auth, loan_settings }) {
                                                         </select> */}
                                                         <Select
                                                             options={loanPurposeOptions}
-                                                            value={loanPurposeOptions.find(o => o.value === selectedLoanPurposeId) || null}
+                                                            value={
+                                                                loanPurposeOptions.find(
+                                                                    (o) => o.value === selectedLoanPurposeId
+                                                                ) || null
+                                                            }
                                                             onChange={(opt) => setSelectedLoanPurposeId(opt?.value || null)}
                                                             placeholder="Select Loan Purpose"
+
+                                                            /* 🔒 Disable when not eligible */
+                                                            isDisabled={!isEligible}
+
                                                             styles={{
                                                                 container: (base) => ({
                                                                     ...base,
                                                                     width: "100%",
                                                                 }),
-                                                                control: (base) => ({
+
+                                                                control: (base, state) => ({
                                                                     ...base,
                                                                     minWidth: "100%",
+                                                                    cursor: !isEligible ? "not-allowed" : "default",
+                                                                    opacity: !isEligible ? 0.5 : 1,
+                                                                    backgroundColor: !isEligible ? "#f3f4f6" : "white", // gray-100
                                                                 }),
+
                                                                 valueContainer: (base) => ({
                                                                     ...base,
                                                                     overflow: "hidden",
                                                                 }),
+
+                                                                singleValue: (base) => ({
+                                                                    ...base,
+                                                                    opacity: !isEligible ? 0.8 : 1,
+                                                                }),
                                                             }}
+
                                                             getOptionLabel={(opt) => (
                                                                 <div className="flex justify-between items-center w-full">
                                                                     <span className="truncate">{opt.label}</span>

@@ -10,6 +10,7 @@ use App\Http\Controllers\RejectionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 /*
@@ -183,6 +184,16 @@ Route::middleware(['auth', 'verified'])
 Route::middleware(['auth', 'verified'])
     ->get('/loan-purpose', [LoansController::class, 'purpose_index'])
     ->name('loan.purpose');
+
+Route::get('/test-mail', function () {
+    Mail::raw('Test mail', function ($msg) {
+        $msg->to('jsaha.adzguru@gmail.com')
+            ->subject('Test Mail');
+    });
+
+    return 'Mail sent';
+});
+
 
 
 require __DIR__.'/auth.php';

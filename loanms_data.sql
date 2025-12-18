@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 18, 2025 at 11:56 AM
+-- Generation Time: Dec 18, 2025 at 02:12 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -81,7 +81,8 @@ INSERT INTO `all_cust_master` (`id`, `cust_name`, `emp_code`, `phone`, `email`, 
 (33, 'Gorgom, Pamela', '12717681', NULL, NULL, 0, 1, 1413.24, 0, '2025-11-28 05:13:41', '2025-11-28 05:13:41'),
 (34, 'Maim, Molly', '12961454', NULL, NULL, 0, 1, 1266.52, 0, '2025-11-28 05:13:41', '2025-11-28 05:13:41'),
 (35, 'Lalamo, Michael Gim', '13005455', NULL, NULL, 0, 1, 1302.94, 0, '2025-11-28 05:13:41', '2025-11-28 05:13:41'),
-(36, 'Lowa, Karam Willie', '13829950', NULL, NULL, 0, 1, 1192.64, 0, '2025-11-28 05:13:41', '2025-11-28 05:13:41');
+(36, 'Lowa, Karam Willie', '13829950', NULL, NULL, 0, 1, 1192.64, 0, '2025-11-28 05:13:41', '2025-11-28 05:13:41'),
+(37, 'Aditya', 'Badmash420', '7539512368', 'aditya@email.com', 4, 0, 5500, 3000, '2025-12-18 06:43:12', '2025-12-18 06:45:45');
 
 -- --------------------------------------------------------
 
@@ -108,7 +109,9 @@ INSERT INTO `assigned_loans_under_org` (`id`, `org_id`, `loan_id`, `active`, `cr
 (7, 3, 1, 1, '2025-11-19 00:01:40', '2025-11-19 00:01:40'),
 (8, 3, 6, 1, '2025-11-19 00:01:40', '2025-11-19 00:01:40'),
 (10, 4, 6, 1, '2025-11-24 02:55:47', '2025-11-24 02:55:47'),
-(11, 4, 2, 1, '2025-11-24 02:55:47', '2025-11-24 02:55:47');
+(11, 4, 2, 1, '2025-11-24 02:55:47', '2025-11-24 02:55:47'),
+(21, 2, 1, 1, '2025-12-18 07:34:53', '2025-12-18 07:34:53'),
+(22, 2, 2, 1, '2025-12-18 07:34:53', '2025-12-18 07:34:53');
 
 -- --------------------------------------------------------
 
@@ -261,7 +264,8 @@ INSERT INTO `customers` (`id`, `user_id`, `company_id`, `organisation_id`, `firs
 (40, 2, 1, 1, 'Dauri', 'Wendy', 'Female', NULL, NULL, 4, '8548562940', 'dauri@email.com', '67877765', NULL, NULL, NULL, NULL, NULL, NULL, '13512563', 'Dept', NULL, NULL, NULL, NULL, NULL, 'Manager', NULL, NULL, 1266.52, 1200.00, 'demo', NULL, 'Active', '2025-12-15 05:23:26', '2025-12-18 05:19:49'),
 (41, 2, 1, 1, 'Tubai', 'Tupolam', NULL, NULL, NULL, 4, '9114569678', 'tubai@email.com', '678100765', NULL, NULL, NULL, NULL, NULL, NULL, '0060066A', 'Dept', NULL, NULL, NULL, NULL, NULL, 'Manager', 'Permanent', NULL, 1468.83, 1300.00, 'demo', NULL, 'Active', '2025-12-15 23:48:09', '2025-12-15 23:48:09'),
 (42, 2, 1, 1, 'GOGUSO', 'Gipson', NULL, NULL, NULL, 4, '9112753678', 'goguso@email.com', '67866765', NULL, NULL, NULL, NULL, NULL, NULL, '13477913', 'Deptuniq', NULL, NULL, NULL, NULL, NULL, 'Manager', 'Permanent', NULL, 1266.52, 1100.00, 'demo', NULL, 'Active', '2025-12-16 02:38:23', '2025-12-16 02:38:23'),
-(43, 2, 1, 1, 'Jimberi', 'Jacklyn', NULL, NULL, NULL, 4, '8548108940', 'jimberi@email.com', '6786576509', NULL, NULL, NULL, NULL, NULL, NULL, '12481532', 'Dept', NULL, NULL, NULL, NULL, NULL, 'Manager', 'Permanent', NULL, 1384.48, 1200.00, 'demo', NULL, 'Active', '2025-12-16 02:54:39', '2025-12-16 02:54:39');
+(43, 2, 1, 1, 'Jimberi', 'Jacklyn', NULL, NULL, NULL, 4, '8548108940', 'jimberi@email.com', '6786576509', NULL, NULL, NULL, NULL, NULL, NULL, '12481532', 'Dept', NULL, NULL, NULL, NULL, NULL, 'Manager', 'Permanent', NULL, 1384.48, 1200.00, 'demo', NULL, 'Active', '2025-12-16 02:54:39', '2025-12-16 02:54:39'),
+(44, 2, 1, 4, 'Aditya', 'Paul', 'Male', NULL, 'Divorced', 5, '7539512368', 'aditya@email.com', '6745869765', NULL, NULL, NULL, NULL, NULL, NULL, 'Badmash420', 'Dept', NULL, NULL, NULL, NULL, NULL, 'Sales Person', 'Permanent', NULL, 5500.00, 3000.00, 'Demo', NULL, 'Active', '2025-12-18 06:48:36', '2025-12-18 06:48:36');
 
 -- --------------------------------------------------------
 
@@ -402,7 +406,10 @@ INSERT INTO `customer_eligibility_history` (`id`, `customer_id`, `gross_salary_a
 (99, 24, 5000.00, 0.00, 0.00, 1000.00, 110.00, 3890.00, 4500.00, 0.00, 4500.00, -610.00, 1945.00, 2555.00, 410.00, 0.00, 2964.99, 2550.00, 1950.00, 414.99, 2, 1, '2025-12-17 08:52:17', '2025-12-17 08:52:17'),
 (100, 24, 5000.00, 0.00, 0.00, 1000.00, 110.00, 3890.00, 4500.00, 0.00, 4500.00, -610.00, 1945.00, 2555.00, 410.00, 0.00, 2964.99, 1500.00, 3000.00, 1464.99, 2, 1, '2025-12-18 01:29:46', '2025-12-18 01:29:46'),
 (101, 24, 5000.00, 0.00, 0.00, 1000.00, 110.00, 3890.00, 4500.00, 0.00, 4500.00, -610.00, 1945.00, 2555.00, 410.00, 0.00, 2964.99, 2000.00, 2500.00, 964.99, 2, 1, '2025-12-18 01:29:52', '2025-12-18 01:29:52'),
-(102, 24, 5000.00, 0.00, 0.00, 1000.00, 110.00, 3890.00, 4500.00, 0.00, 4500.00, -610.00, 1945.00, 2555.00, 410.00, 0.00, 2964.99, 2000.00, 2500.00, 964.99, 2, 1, '2025-12-18 01:32:29', '2025-12-18 01:32:29');
+(102, 24, 5000.00, 0.00, 0.00, 1000.00, 110.00, 3890.00, 4500.00, 0.00, 4500.00, -610.00, 1945.00, 2555.00, 410.00, 0.00, 2964.99, 2000.00, 2500.00, 964.99, 2, 1, '2025-12-18 01:32:29', '2025-12-18 01:32:29'),
+(103, 44, 5500.00, 0.00, 0.00, 988.00, 110.00, 4402.00, 3000.00, 0.00, 3000.00, 1402.00, 2201.00, 799.00, 410.00, 0.00, 1208.99, 1500.00, 1500.00, -291.01, 2, 0, '2025-12-18 06:49:01', '2025-12-18 06:49:01'),
+(104, 44, 5500.00, 0.00, 0.00, 988.00, 110.00, 4402.00, 3000.00, 0.00, 3000.00, 1402.00, 2201.00, 799.00, 410.00, 0.00, 1208.99, 1200.00, 1800.00, 8.99, 2, 1, '2025-12-18 06:49:06', '2025-12-18 06:49:06'),
+(105, 9, 5500.00, 0.00, 0.00, 899.00, 110.00, 4491.00, 4500.00, 0.00, 4500.00, -9.00, 2245.50, 2254.50, 410.00, 0.00, 2664.49, 2000.00, 2500.00, 664.49, 2, 1, '2025-12-18 07:35:04', '2025-12-18 07:35:04');
 
 -- --------------------------------------------------------
 
@@ -741,7 +748,14 @@ INSERT INTO `document_upload` (`id`, `loan_id`, `customer_id`, `doc_type`, `file
 (268, 58, 24, 'EmploymentLetter', 'eligibility_check_formula.pdf', 'uploads/documents/Lb1aYV4ziBRIulgrvIHCJbQPOUfzOUXIoOTzZvDR.pdf', 'Normal User', 2, '2025-12-18 07:04:01', 1, '2025-12-18 07:57:19', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 01:34:01', '2025-12-18 02:27:19'),
 (269, 58, 24, 'BankStatement', 'health_format.pdf', 'uploads/documents/I8nRJC7wAsRZN06KLILPqGPIIr2E5jXQICbVuQJD.pdf', 'Normal User', 2, '2025-12-18 07:04:02', 1, '2025-12-18 07:57:20', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 01:34:02', '2025-12-18 02:27:20'),
 (270, 58, 24, 'Payslip', 'Loan Management System.pdf', 'uploads/documents/DkEvIt5WSJwaRaUB8CGQBcpKKTT1oGZ6gi8iuody.pdf', 'Normal User', 2, '2025-12-18 07:04:02', 1, '2025-12-18 07:57:21', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 01:34:02', '2025-12-18 02:27:21'),
-(271, 58, 24, 'ID', 'loan-process-details.pdf', 'uploads/documents/l78QhUFNKqRDEmpda4TyYHfmhkDcfuMIXanHCq4H.pdf', 'Normal User', 2, '2025-12-18 07:04:03', 1, '2025-12-18 07:57:23', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 01:34:03', '2025-12-18 02:27:23');
+(271, 58, 24, 'ID', 'loan-process-details.pdf', 'uploads/documents/l78QhUFNKqRDEmpda4TyYHfmhkDcfuMIXanHCq4H.pdf', 'Normal User', 2, '2025-12-18 07:04:03', 1, '2025-12-18 07:57:23', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 01:34:03', '2025-12-18 02:27:23'),
+(272, 59, 44, 'LoanForm_Scanned', 'aaa_loan_application_form.pdf', 'uploads/documents/js7W02jidyQGdFtcvDYCY5UTXm66QE7V9ia5JV73.pdf', 'Normal User', 2, '2025-12-18 12:22:16', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 06:52:16', '2025-12-18 06:52:16'),
+(273, 59, 44, 'ISDA_Signed', 'Agro Advance Aben Ltd Company Profile (2).pdf', 'uploads/documents/ufCh60I1yS4Gy5tbShvCBjYRIQq0pTCS0FSizvPt.pdf', 'Normal User', 2, '2025-12-18 12:22:17', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 06:52:17', '2025-12-18 06:52:17'),
+(274, 59, 44, 'ResumptionSheet', 'education_format.pdf', 'uploads/documents/datU43Fx8XHlSc9YLiXmPpqbW967C9fxzG0HY9RY.pdf', 'Normal User', 2, '2025-12-18 12:22:18', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 06:52:18', '2025-12-18 06:52:18'),
+(275, 59, 44, 'EmploymentLetter', 'eligibility_check_formula.pdf', 'uploads/documents/v0pGG3D1IRFKJdEG2HiFGVYDGKuPH8PZYZCTt3IM.pdf', 'Normal User', 2, '2025-12-18 12:22:18', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 06:52:18', '2025-12-18 06:52:18'),
+(276, 59, 44, 'BankStatement', 'health_format.pdf', 'uploads/documents/LnHOlFqAMZJUeRgZBLA2guaXRSMgUZE6qr8Vykqi.pdf', 'Normal User', 2, '2025-12-18 12:22:19', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 06:52:19', '2025-12-18 06:52:19'),
+(277, 59, 44, 'Payslip', 'Loan Management System.pdf', 'uploads/documents/K6C0CkVJZca0fChuDHSFiLxSXyQ1vHsARz72zMHb.pdf', 'Normal User', 2, '2025-12-18 12:22:20', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 06:52:20', '2025-12-18 06:52:20'),
+(278, 59, 44, 'ID', 'loan-process-details.pdf', 'uploads/documents/g4cYvKCrkLydaeQFHT5zkWsMvL91ltlDTmSuHOOO.pdf', 'Normal User', 2, '2025-12-18 12:22:21', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-18 06:52:21', '2025-12-18 06:52:21');
 
 -- --------------------------------------------------------
 
@@ -990,7 +1004,8 @@ INSERT INTO `loan_applications` (`id`, `company_id`, `customer_id`, `organisatio
 (55, 1, 24, 1, 1, NULL, NULL, NULL, 2800, 0, 5, 625.8, 2.35, NULL, NULL, 2964.99, 0, 3129, 329, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, NULL, 1, 0, 0, 0, 1, '2025-12-17 08:39:26', '2025-12-17 08:39:26'),
 (56, 1, 24, 1, 1, NULL, NULL, NULL, 2550, 0, 25, 184.09, 2.35, NULL, NULL, 2964.99, 0, 4602.1625, 1703.1625, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, NULL, 1, 0, 0, 0, 1, '2025-12-17 08:42:00', '2025-12-17 08:42:00'),
 (57, 1, 24, 1, 1, 'School Fee', 1, NULL, 2550, 2550, 25, 161.93, 2.35, 25, '2026-01-01', 2964.99, 3238.5, 4048.125, 1498.125, 20, NULL, '2025-12-18', NULL, NULL, NULL, 'Approved', 'Jyotirmoy Saha', 1, '2025-12-18 08:02:26', NULL, 0, NULL, 0, NULL, '/storage/uploads/isda_signed/dLN4QXbJej2ZEwpJvbn4O83NOxU3PhF5lGOmxFED.pdf', '2025-12-18', 2, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, '/storage/uploads/isda_signed/aATKWeh1ePof4M8jA6TWtT09ub3ZIG2hP3xNtCXd.pdf', '2025-12-18', 2, 'movie.mp4', '/storage/uploads/video_consents/OJkgUPLwOa7FPypo3PBoihBSjFr1P8b9kzvNdzge.mp4', '2025-12-18', 2, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 1, '2025-12-18 02:31:43', 1, 0, 0, 0, 1, '2025-12-17 08:52:28', '2025-12-18 02:32:26'),
-(58, 1, 24, 1, 1, NULL, 2, NULL, 2000, 2000, 22, 137.91, 2.35, 22, '2026-01-01', 2964.99, 2427.2, 3034, 1034, 20, NULL, '2025-12-18', NULL, NULL, NULL, 'Approved', 'Jyotirmoy Saha', 1, '2025-12-18 07:59:33', NULL, 0, NULL, 0, NULL, '/storage/uploads/isda_signed/9sDQz3fM3U3wrIGWJVxJefD4HXBEiL9Rktr8unyM.pdf', '2025-12-18', 2, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, '/storage/uploads/isda_signed/GN2xRJCIFKMP2latZw1Kaug2XhAJdG26wyvyJTgY.pdf', '2025-12-18', 2, 'movie.mp4', '/storage/uploads/video_consents/6kKxHpZOdcxTQo0Sb8rHjahqGQCrgTOYWPoYScWD.mp4', '2025-12-18', 2, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 1, '2025-12-18 02:28:32', 1, 0, 0, 0, 1, '2025-12-18 01:32:38', '2025-12-18 02:29:33');
+(58, 1, 24, 1, 1, NULL, 2, NULL, 2000, 2000, 22, 137.91, 2.35, 22, '2026-01-01', 2964.99, 2427.2, 3034, 1034, 20, NULL, '2025-12-18', NULL, NULL, NULL, 'Approved', 'Jyotirmoy Saha', 1, '2025-12-18 07:59:33', NULL, 0, NULL, 0, NULL, '/storage/uploads/isda_signed/9sDQz3fM3U3wrIGWJVxJefD4HXBEiL9Rktr8unyM.pdf', '2025-12-18', 2, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, '/storage/uploads/isda_signed/GN2xRJCIFKMP2latZw1Kaug2XhAJdG26wyvyJTgY.pdf', '2025-12-18', 2, 'movie.mp4', '/storage/uploads/video_consents/6kKxHpZOdcxTQo0Sb8rHjahqGQCrgTOYWPoYScWD.mp4', '2025-12-18', 2, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 1, '2025-12-18 02:28:32', 1, 0, 0, 0, 1, '2025-12-18 01:32:38', '2025-12-18 02:29:33'),
+(59, 1, 44, 4, 2, NULL, 3, NULL, 1200, 0, 22, 78.55, 2, NULL, NULL, 1208.99, 0, 1728, 528, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, NULL, 1, 0, 0, 0, 1, '2025-12-18 06:51:17', '2025-12-18 06:51:17');
 
 -- --------------------------------------------------------
 
@@ -1249,7 +1264,7 @@ CREATE TABLE `organisation_master` (
 
 INSERT INTO `organisation_master` (`id`, `company_id`, `organisation_name`, `sector_type`, `department_code`, `location_code`, `address`, `province`, `contact_person`, `contact_no`, `email`, `status`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Central Government', 'Education', NULL, NULL, 'Waigani, Port Moresby', NULL, NULL, '+675-312-1000', 'contact@gov.pg', 'Active', NULL, NULL),
-(2, 1, 'National Bank PNG', 'Health', NULL, NULL, 'Banking Street, Lae', NULL, NULL, '+675-324-2000', 'admin@nbpng.pg', 'Active', NULL, NULL),
+(2, 1, 'National Bank PNG', 'Health', 'DPT502085', 'LOC753955', 'Banking Street, Lae', 'state', 'demo', '+675-324-2000', 'admin@nbpng.pg', 'Active', NULL, '2025-12-18 07:34:53'),
 (3, 1, 'Other Organization edit', 'Other', 'DPT502', '753955', 'demo', 'demo', 'demo person', '7533954680', 'demo@email.com', 'Active', '2025-11-18 23:58:37', '2025-11-19 00:01:22'),
 (4, 1, 'New Org', 'Education', 'DPT505', '755855', 'demo', 'demo', 'demo', '7533456680', 'demo@email.com', 'Active', '2025-11-24 01:58:29', '2025-11-24 01:58:29');
 
@@ -1529,13 +1544,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `all_cust_master`
 --
 ALTER TABLE `all_cust_master`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `assigned_loans_under_org`
 --
 ALTER TABLE `assigned_loans_under_org`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `assigned_slabs_under_loan`
@@ -1553,13 +1568,13 @@ ALTER TABLE `company_master`
 -- AUTO_INCREMENT for table `customers`
 --
 ALTER TABLE `customers`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT for table `customer_eligibility_history`
 --
 ALTER TABLE `customer_eligibility_history`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
 
 --
 -- AUTO_INCREMENT for table `document_types`
@@ -1571,7 +1586,7 @@ ALTER TABLE `document_types`
 -- AUTO_INCREMENT for table `document_upload`
 --
 ALTER TABLE `document_upload`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=272;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=279;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -1589,7 +1604,7 @@ ALTER TABLE `installment_details`
 -- AUTO_INCREMENT for table `loan_applications`
 --
 ALTER TABLE `loan_applications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `loan_purposes`
