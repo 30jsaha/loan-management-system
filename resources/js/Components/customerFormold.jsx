@@ -20,6 +20,7 @@ export default function CustomerForm({
   const ImportantField = () => <span className="text-danger">*</span>;
   const [empSearch, setEmpSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [isExistingFound, setIsExistingFound] = useState(false);
   const [empOptions, setEmpOptions] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -29,40 +30,9 @@ export default function CustomerForm({
   const [isDataSaving, setIsDataSaving] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
 
-  // Fetch employees
-  // const fetchEmployees = async (query = "", pageNum = 1) => {
-  //   try {
-  //     setIsSearching(true);
-
-  //     const res = await axios.get(`/api/all-dept-cust-list`, {
-  //       params: {
-  //         search: query,
-  //         page: pageNum,
-  //         perPage: 20
-  //       }
-  //     });
-
-  //     // Laravel pagination returns: res.data.data = array
-  //     const newData = res.data.data;  
-
-  //     if (pageNum === 1) {
-  //       setEmpOptions(newData);
-  //     } else {
-  //       setEmpOptions((prev) => [...prev, ...newData]);
-  //     }
-
-  //     // Set hasMore using pagination fields
-  //     setHasMore(res.data.next_page_url !== null);
-  //   } catch (err) {
-  //     console.error("Employee fetch failed:", err);
-  //   } finally {
-  //     setIsSearching(false);
-  //     setIsLoadingMore(false);
-  //   }
-  // };
+  // Fetch employees logic
   const fetchEmployees = async (query = "", pageNum = 1) => {
     try {
-      // 🔹 Only show searching indicator for FIRST page
       if (pageNum === 1) {
         setIsSearching(true);
       }
@@ -78,17 +48,13 @@ export default function CustomerForm({
       const newData = res.data.data || [];
 
       setEmpOptions((prev) => {
-        // 🔹 First page → replace list
         if (pageNum === 1) {
           return newData;
         }
-
-        // 🔹 Next pages → append SILENTLY
         const existingCodes = new Set(prev.map((e) => String(e.emp_code)));
         const filtered = newData.filter(
           (e) => !existingCodes.has(String(e.emp_code))
         );
-
         return [...prev, ...filtered];
       });
 
@@ -101,13 +67,13 @@ export default function CustomerForm({
     }
   };
 
-
-  // 🔍 On focus: load first 10 results
+  // On focus: load first results
   const handleFocus = () => {
     setPage(1);
     fetchEmployees("", 1);
     setDropdownOpen(true);
   };
+
   // Click outside to close dropdown
   useEffect(() => {
     function handleClickOutside(event) {
@@ -115,25 +81,19 @@ export default function CustomerForm({
         setDropdownOpen(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-
-  // 🔍 Debounced search effect
+  // Debounced search effect
   useEffect(() => {
     if (isSelecting) return;
-
     const delay = setTimeout(() => {
       setPage(1);
       fetchEmployees(empSearch, 1);
     }, 300);
-
     return () => clearTimeout(delay);
   }, [empSearch]);
-
-
 
   const handleChange = (e) => {
     setIsFormDirty(false);
@@ -149,44 +109,29 @@ export default function CustomerForm({
       let res, savedCustomer;
 
       if (formData.cus_id && formData.cus_id !== 0) {
-        // 🟢 Update existing customer
+        // Update existing customer
         res = await axios.post(
           `/api/edit-new-customer-for-new-loan/${formData.cus_id}`,
           formData
         );
         savedCustomer = res.data.customer;
-
         setMessage("✅ Customer updated successfully. Proceed to next step.");
         toast.success("Customer updated successfully!", {
-          position: "top-right",
-          duration: 3000,
-          style: {
-            borderRadius: "10px",
-            background: "#16a34a", // green success
-            color: "#fff",
-            fontWeight: "500",
-          },
+           id: "customer-save",
+           duration:3000,
+          style: { background: "#16a34a", color: "#fff" },
         });
       } else {
-        // 🆕 Create new customer
+        // Create new customer
         res = await axios.post("/api/save-new-customer-for-new-loan", formData);
         savedCustomer = res.data.customer;
-
         setFormData((prev) => ({
           ...prev,
           cus_id: savedCustomer.id,
         }));
-
         setMessage("✅ Customer saved successfully. Proceed to next step.");
         toast.success("Customer saved successfully!", {
-          position: "top-right",
-          duration: 3000,
-          style: {
-            borderRadius: "10px",
-            background: "#2563eb", // blue for create
-            color: "#fff",
-            fontWeight: "500",
-          },
+          style: { background: "#2563eb", color: "#fff" },
         });
       }
       setIsDataSaving(false);
@@ -194,94 +139,127 @@ export default function CustomerForm({
     } catch (error) {
       setIsDataSaving(false);
       console.error(error);
-
-      // 🔴 Laravel Validation Errors (422)
       if (error.response && error.response.status === 422) {
-        const validationErrors = error.response.data.errors;
-        let errorMessages = "";
+        setMessage("❌ Validation failed.");
+        console.log("update customer error", error);
+       toast.error(error.response.data.message, {
+        duration: 4000,
+        style: { background: "#dc2626", color: "#fff" },
+      });
 
-        if (validationErrors) {
-          for (const key in validationErrors) {
-            errorMessages += `${validationErrors[key].join(", ")}\n`;
-          }
-        }
-
-        setMessage("❌ Validation failed. Please check the fields.");
-        toast.error(errorMessages || "Validation error.", {
-          position: "top-right",
-          duration: 4000,
-          style: {
-            borderRadius: "10px",
-            background: "#dc2626", // red error
-            color: "#fff",
-            fontWeight: "500",
-          },
-        });
-      }
-      // 🔴 Duplicate Error (409)
-      else if (error.response && error.response.status === 409) {
-        const msg =
-          error.response.data.message ||
-          "Customer already exists with same email, phone, or employee number.";
+      } else if (error.response && error.response.status === 409) {
+        const msg = error.response.data.message || "Customer already exists.";
         setMessage(`❌ ${msg}`);
-        toast.error(msg, {
-          position: "top-right",
-          duration: 4000,
-          style: {
-            borderRadius: "10px",
-            background: "#dc2626",
-            color: "#fff",
-            fontWeight: "500",
-          },
-        });
+        toast.error(msg, { style: { id: "customer-error",
+                  duration: 4000,background: "#dc2626", color: "#fff" } });
+      } else {
+        setMessage("❌ Failed to save customer.");
+        toast.error("An unknown error occurred.", { style: { background: "#dc2626", color: "#fff" } });
       }
-      // 🔴 Generic Error
-      else {
-        setMessage(
-          `❌ Failed to save customer. ${error.message || "Please try again."}`
-        );
-        toast.error("An unknown error occurred. Please try again.", {
-          position: "top-right",
-          duration: 4000,
-          style: {
-            borderRadius: "10px",
-            background: "#dc2626",
-            color: "#fff",
-            fontWeight: "500",
-          },
-        });
+    }
+  };
+
+  // 🔹 FETCH FUNCTION FIXED: Added leading slash
+  const fetchCustomerByEmpCode = async (empCode) => {
+    try {
+      // FIX: Added leading slash "/" to ensure correct API routing
+      const res = await axios.get(`/api/customers/by-emp/${empCode}`);
+
+      if (!res.data.exists) {
+        setIsExistingFound(false);
+        return null;
       }
+      setIsExistingFound(true);
+      return res.data.customer;
+    } catch (err) {
+      console.error("Fetch customer failed", err);
+      return null;
     }
   };
 
   const custList = useMemo(() => {
     return Array.isArray(allCustMast) ? allCustMast : [];
   }, [allCustMast]);
-  // const cleanName = (name) => {
-  //   if (!name) return "";
-  //   return name.replace(/,$/, "").trim(); // remove ONLY trailing comma
-  // };
+
   const cleanName = (name) => {
     if (!name) return "";
     return name.replace(/,/g, "").replace(/\s+/g, " ").trim();
   };
-  const handleEmployeeChange = (e) => {
-    const val = e.target.value;
-    console.log("handleEmployeeChange called with:", val);
 
-    // First search inside API search results
-    let selectedEmp = empOptions.find(
-      (emp) => String(emp.emp_code) === String(val)
-    );
+  const handleEmployeeChange = async (e) => {
+    const empCode = e.target.value;
+    setIsSelecting(true);
 
-    // Fallback → search inside initial list
-    if (!selectedEmp) {
-      selectedEmp = custList.find(
-        (emp) => String(emp.emp_code) === String(val)
-      );
+    // 🔹 Step 1: Check customer table first
+    const existingCustomer = await fetchCustomerByEmpCode(empCode);
+
+    if (existingCustomer) {
+      // ✅ CUSTOMER EXISTS → Autofill EVERYTHING
+      // FIX: Added || "" to handle nulls from DB
+      // FIX: Added missing fields (no_of_dependents, spouse details)
+      setFormData((prev) => ({
+        ...prev,
+        cus_id: existingCustomer.id,
+        employee_no: existingCustomer.employee_no,
+
+        first_name: existingCustomer.first_name || "",
+        last_name: existingCustomer.last_name || "",
+        gender: existingCustomer.gender || "", // Handles null
+        dob: existingCustomer.dob || "", // Handles null
+        marital_status: existingCustomer.marital_status || "", // Handles null
+
+        // 🔹 ADDED MISSING FIELDS FROM JSON
+        no_of_dependents: existingCustomer.no_of_dependents || "",
+        spouse_full_name: existingCustomer.spouse_full_name || "",
+        spouse_contact: existingCustomer.spouse_contact || "",
+
+        phone: existingCustomer.phone || "",
+        email: existingCustomer.email || "",
+
+        home_province: existingCustomer.home_province || "",
+        district_village: existingCustomer.district_village || "",
+        present_address: existingCustomer.present_address || "",
+        permanent_address: existingCustomer.permanent_address || "",
+
+        payroll_number: existingCustomer.payroll_number || "",
+        employer_department: existingCustomer.employer_department || "",
+        designation: existingCustomer.designation || "",
+        employment_type: existingCustomer.employment_type || "",
+        date_joined: existingCustomer.date_joined || "",
+
+        monthly_salary: existingCustomer.monthly_salary || "",
+        net_salary: existingCustomer.net_salary || "",
+
+        immediate_supervisor: existingCustomer.immediate_supervisor || "",
+        years_at_current_employer: existingCustomer.years_at_current_employer || "",
+        work_district: existingCustomer.work_district || "",
+        work_province: existingCustomer.work_province || "",
+        employer_address: existingCustomer.employer_address || "",
+        work_location: existingCustomer.work_location || "",
+
+        organisation_id: existingCustomer.organisation_id || "",
+        company_id: existingCustomer.company_id || "",
+      }));
+
+      setOrgSelectable(false);
+      toast.success("Existing customer loaded",{
+        id: "existing-customer",
+        duration: 2000,
+      });
+      setIsSelecting(false);
+      return;
     }
 
-    console.log("Selected Employee:", selectedEmp);
+    // 🔹 Step 2: Fallback → API employee list (your existing logic)
+    let selectedEmp = empOptions.find(
+      (emp) => String(emp.emp_code) === String(empCode)
+    );
+
+    if (!selectedEmp) {
+      selectedEmp = custList.find(
+        (emp) => String(emp.emp_code) === String(empCode)
+      );
+    }
 
     if (selectedEmp) {
       const cleanFullName = cleanName(selectedEmp.cust_name);
@@ -289,6 +267,7 @@ export default function CustomerForm({
 
       setFormData((prev) => ({
         ...prev,
+        cus_id: null,
         employee_no: selectedEmp.emp_code,
         first_name: parts[0] || "",
         last_name: parts.slice(1).join(" ") || "",
@@ -296,20 +275,23 @@ export default function CustomerForm({
         email: selectedEmp.email || "",
         monthly_salary: selectedEmp.gross_pay || "",
         net_salary: selectedEmp.net_pay || "",
-        organisation_id: selectedEmp.organization_id || 1,
-        company_id: selectedEmp.company_id || 1,
+        organisation_id: selectedEmp.organization_id || "",
+        company_id: selectedEmp.company_id || "",
+        // Reset specific fields when loading fresh from employee list
+        no_of_dependents: "",
+        spouse_full_name: "",
+        spouse_contact: "",
       }));
 
       setOrgSelectable(false);
-    } else {
-      setFormData((prev) => ({ ...prev, employee_no: "" }));
     }
+
+    setIsSelecting(false);
   };
 
   return (
     <>
-      {/* Toast Container */}
-      <Toaster position="top-right" reverseOrder={false} />
+      {/* <Toaster position="top-right" reverseOrder={false} /> */}
 
       <form onSubmit={handleNext}>
         <Row>
@@ -342,7 +324,6 @@ export default function CustomerForm({
                     EMP Code <ImportantField />
                   </label>
 
-                  {/* Search Input */}
                   <input
                     type="text"
                     value={empSearch}
@@ -352,20 +333,17 @@ export default function CustomerForm({
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm px-3 py-2"
                   />
 
-                  {/* Dropdown List */}
                   {dropdownOpen && (
                     <div
                       ref={dropdownRef}
                       className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto"
-                      // onMouseLeave={() => setDropdownOpen(false)}
                       onBlur={() => {
                         setTimeout(() => setDropdownOpen(false), 150);
                       }}
-
                       onScroll={(e) => {
                         const bottom =
-                          e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
-
+                          e.target.scrollHeight - e.target.scrollTop ===
+                          e.target.clientHeight;
                         if (bottom && hasMore && !isLoadingMore) {
                           setIsLoadingMore(true);
                           const nextPage = page + 1;
@@ -373,25 +351,22 @@ export default function CustomerForm({
                           fetchEmployees(empSearch, nextPage);
                         }
                       }}
-
                     >
                       {isSearching ? (
-                        <div className="p-2 text-sm text-gray-500">Searching...</div>
+                        <div className="p-2 text-sm text-gray-500">
+                          Searching...
+                        </div>
                       ) : empOptions.length > 0 ? (
                         empOptions.map((emp, idx) => (
                           <div
                             key={`${emp.emp_code}-${idx}`}
                             onClick={(e) => {
-                              // ⭐ Call your existing handleEmployeeChange function
                               setIsSelecting(true);
-                              handleEmployeeChange({ target: { value: emp.emp_code } });
-
-                              // Fill text box with code + name
+                              handleEmployeeChange({
+                                target: { value: emp.emp_code },
+                              });
                               setEmpSearch(`${emp.emp_code} - ${emp.cust_name}`);
-
-                              // Close dropdown
                               setDropdownOpen(false);
-                              // Restore after update
                               setTimeout(() => setIsSelecting(false), 300);
                             }}
                             className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
@@ -400,13 +375,13 @@ export default function CustomerForm({
                           </div>
                         ))
                       ) : (
-                        <div className="p-2 text-sm text-gray-500">No results found</div>
+                        <div className="p-2 text-sm text-gray-500">
+                          No results found
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
-
-
 
                 <div>
                   <label className="block text-gray-700 font-medium">
@@ -418,7 +393,8 @@ export default function CustomerForm({
                     onChange={handleChange}
                     disabled={!isOrgSelectable}
                     aria-readonly={!isOrgSelectable}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && ("bg-gray-100 cursor-not-allowed")}`}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && "bg-gray-100 cursor-not-allowed"
+                      }`}
                     required
                   >
                     <option value="">-- Select Organisation --</option>
@@ -809,7 +785,8 @@ export default function CustomerForm({
             <button
               type="submit"
               disabled={isDataSaving}
-              className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""} bg-indigo-600 text-white px-4 py-2 mt-3 rounded hover:bg-indigo-700 transition-all`}
+              className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""
+                } bg-indigo-600 text-white px-4 py-2 mt-3 rounded hover:bg-indigo-700 transition-all`}
             >
               {isDataSaving ? (
                 <>
@@ -819,6 +796,8 @@ export default function CustomerForm({
                   ></span>
                   Saving...
                 </>
+              ) : isExistingFound ? (
+                "Update →"
               ) : (
                 "Save →"
               )}

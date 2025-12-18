@@ -117,6 +117,8 @@ export default function CustomerForm({
         savedCustomer = res.data.customer;
         setMessage("✅ Customer updated successfully. Proceed to next step.");
         toast.success("Customer updated successfully!", {
+           id: "customer-save",
+           duration:3000,
           style: { background: "#16a34a", color: "#fff" },
         });
       } else {
@@ -140,11 +142,16 @@ export default function CustomerForm({
       if (error.response && error.response.status === 422) {
         setMessage("❌ Validation failed.");
         console.log("update customer error", error);
-        toast.error(error.response.data.message, { style: { background: "#dc2626", color: "#fff" } });
+       toast.error(error.response.data.message, {
+        duration: 4000,
+        style: { background: "#dc2626", color: "#fff" },
+      });
+
       } else if (error.response && error.response.status === 409) {
         const msg = error.response.data.message || "Customer already exists.";
         setMessage(`❌ ${msg}`);
-        toast.error(msg, { style: { background: "#dc2626", color: "#fff" } });
+        toast.error(msg, { style: { id: "customer-error",
+                  duration: 4000,background: "#dc2626", color: "#fff" } });
       } else {
         setMessage("❌ Failed to save customer.");
         toast.error("An unknown error occurred.", { style: { background: "#dc2626", color: "#fff" } });
@@ -235,7 +242,10 @@ export default function CustomerForm({
       }));
 
       setOrgSelectable(false);
-      toast.success("Existing customer loaded");
+      toast.success("Existing customer loaded",{
+        id: "existing-customer",
+        duration: 2000,
+      });
       setIsSelecting(false);
       return;
     }
@@ -281,10 +291,10 @@ export default function CustomerForm({
 
   return (
     <>
-      <Toaster position="top-right" reverseOrder={false} />
+      {/* <Toaster position="top-right" reverseOrder={false} /> */}
 
       <form onSubmit={handleNext}>
-        <Row>
+        <Row className="align-items-stretch">
           {/* ========== IDENTIFICATION ========== */}
           <Col md={12}>
             <fieldset className="fldset mt-4">
@@ -398,10 +408,12 @@ export default function CustomerForm({
               </div>
             </fieldset>
           </Col>
-
+       
+          
           {/* ========== BASIC INFORMATION ========== */}
-          <Col className="mt-3">
-            <fieldset className="fldset mt-4">
+          <Col md={6}>
+          <div className="w-100 d-flex flex-column h-100">
+            <fieldset className="fldset mt-4 flex-grow-1">
               <legend className="legend">Basic Information</legend>
               <div className="grid grid-cols-2 gap-4 mt-3">
                 <div>
@@ -512,7 +524,7 @@ export default function CustomerForm({
             </fieldset>
 
             {/* ========== CONTACT INFORMATION ========== */}
-            <fieldset className="fldset mt-4">
+            <fieldset className="fldset mt-4 flex-grow-1">
               <legend className="legend">Contact Information</legend>
               <div className="grid grid-cols-2 gap-4 mt-3">
                 <div>
@@ -587,11 +599,12 @@ export default function CustomerForm({
                 </div>
               </div>
             </fieldset>
+          </div>
           </Col>
 
           {/* ========== EMPLOYMENT DETAILS ========== */}
-          <Col className="mt-3">
-            <fieldset className="fldset">
+          <Col  md={6}>
+            <fieldset className="fldset mt-4 w-100 h-100 pb-0">
               <legend className="legend">Employment Details</legend>
 
               <div className="grid grid-cols-2 gap-4 mt-3">
@@ -623,7 +636,7 @@ export default function CustomerForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="grid grid-cols-2 gap-4 mt-2">
                 <div>
                   <label>
                     Designation <ImportantField />
@@ -652,7 +665,7 @@ export default function CustomerForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="grid grid-cols-2 gap-4 mt-2">
                 <div>
                   <label>Date Joined</label>
                   <input
@@ -729,7 +742,7 @@ export default function CustomerForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="grid grid-cols-2 gap-4 mt-1">
                 <div>
                   <label>Work Province</label>
                   <input
@@ -751,7 +764,7 @@ export default function CustomerForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="grid mt-0">
                 <div>
                   <label>
                     Work Location <ImportantField />
@@ -767,6 +780,7 @@ export default function CustomerForm({
               </div>
             </fieldset>
           </Col>
+        <div/>
         </Row>
 
         {/* ========== SUBMIT BUTTON ========== */}

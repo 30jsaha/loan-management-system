@@ -190,6 +190,14 @@ export default function View({ auth, customerId }) {
                   setActiveTab={setActiveTab} 
                   icon={<FileText size={16} />} 
                 />
+                <TabButton
+                  id="emi-schedule"
+                  label="EMI Schedule"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  icon={<Wallet size={16} />}
+                />
+
 
               </div>
 
@@ -231,6 +239,12 @@ export default function View({ auth, customerId }) {
                     loans={loans}
                     collections={history.collections}
                     customer={customer}   
+                  />
+                )}
+                {activeTab === "emi-schedule" && (
+                  <EmiSchedulerTab
+                    loans={loans}
+                    collections={history.collections}
                   />
                 )}
 
@@ -645,8 +659,8 @@ const LoanDocumentSection = ({ loan, initiallyOpen = false }) => {
             <table className="w-full text-xs">
               <thead className="bg-gray-50 border-b text-gray-600">
                 <tr>
-                  <th className="px-4 py-2 text-left">Type</th>
-                  <th className="px-4 py-2 text-left">File</th>
+                  <th className="px-4 py-2 text-left ">Doc Type</th>
+                  {/* <th className="px-4 py-2 text-left">Doc Type</th> */}
                   <th className="px-4 py-2 text-left">Status</th>
                   <th className="px-4 py-2 text-center">Uploaded</th>
                   <th className="px-4 py-2 text-center">Actions</th>
@@ -658,7 +672,7 @@ const LoanDocumentSection = ({ loan, initiallyOpen = false }) => {
                   <tr key={d.id} className="hover:bg-gray-50">
                     <td className="px-4 py-2 font-medium text-gray-700">{d.doc_type}</td>
 
-                    <td className="px-4 py-2">
+                    {/* <td className="px-4 py-2">
                       <a
                         href={`/storage/${d.file_path}`}
                         target="_blank"
@@ -667,7 +681,7 @@ const LoanDocumentSection = ({ loan, initiallyOpen = false }) => {
                         <FileText size={14} />
                         {d.file_name}
                       </a>
-                    </td>
+                    </td> */}
 
                     <td className="px-4 py-2">
                       <span
@@ -1135,7 +1149,159 @@ const PersonalInfo = ({ customer }) => {
     </div>
   );
 };
+/* -----------------------------------
+      EMI Scheduler
+-------------------------------------- */
 
+const EmiSchedulerTab = ({ loans, collections }) => {
+  if (!loans.length) {
+    return (
+      <p className="text-sm text-gray-500">
+        No loan available for EMI schedule.
+      </p>
+    );
+  }
+
+  // Flatten collections
+  const flatCollections = Array.isArray(collections)
+    ? collections
+    : Object.values(collections || {}).flat();
+
+  return (
+    <div className="space-y-6">
+      {loans.map((loan, index) => (
+        <EmiScheduleCard
+          key={loan.id}
+          loan={loan}
+          collections={flatCollections}
+          defaultOpen={index === 0}
+        />
+      ))}
+    </div>
+  );
+};
+const EmiScheduleCard = ({ loan, collections, defaultOpen }) => {
+  const [open, setOpen] = useState(defaultOpen);
+
+  const tenure = Number(loan.tenure_fortnight || 0);
+  const emiAmount = Number(loan.emi_amount || 0);
+  const totalRepay = Number(loan.total_repay_amt || 0);
+
+  const paidMap = {};
+  collections
+    .filter((c) => c.loan_id === loan.id)
+    .forEach((c) => {
+      paidMap[c.installment_no] = c;
+    });
+
+  const startDate = new Date(
+    loan.first_due_date ||
+      loan.created_at ||
+      new Date()
+  );
+
+  let balance = totalRepay;
+  const frequency = Number(loan.installment_frequency_in_days || 14);
+
+  const schedule = Array.from({ length: tenure }, (_, i) => {
+    const instNo = i + 1;
+    const dueDate = new Date(startDate);
+    dueDate.setDate(dueDate.getDate() + i * frequency);
+
+
+    const paid = paidMap[instNo];
+    const status = paid
+      ? "Paid"
+      : new Date() > dueDate
+      ? "Overdue"
+      : "Upcoming";
+
+    if (paid) balance -= emiAmount;
+
+    return {
+      instNo,
+      dueDate,
+      paidOn: paid?.payment_date || "—",
+      amount: emiAmount,
+      balance: balance < 0 ? 0 : balance,
+      status,
+    };
+  });
+
+  return (
+    <div className="border rounded-xl shadow-sm bg-white overflow-hidden">
+      {/* HEADER */}
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full px-4 py-3 flex justify-between items-center ${
+          open ? "bg-indigo-50" : "hover:bg-gray-50"
+        }`}
+      >
+        <div>
+          <h4 className="font-semibold text-gray-800">
+            Loan #{loan.id} EMI Schedule
+          </h4>
+          <p className="text-xs text-gray-500">
+            EMI: PGK {emiAmount.toFixed(2)} | Tenure: {tenure} FN
+          </p>
+        </div>
+        {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </button>
+
+      {/* BODY */}
+      {open && (
+        <div className="border rounded-lg overflow-hidden">
+          <div className="max-h-[320px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
+            <table className="w-full text-sm border-collapse">
+              <thead className="bg-indigo-600 text-white sticky top-0 z-10">
+                <tr>
+                  <th className="px-3 py-2 border">EMI</th>
+                  <th className="px-3 py-2 border">Due Date</th>
+                  <th className="px-3 py-2 border">Paid On</th>
+                  <th className="px-3 py-2 border text-right">Amount</th>
+                  <th className="px-3 py-2 border text-right">Balance</th>
+                  <th className="px-3 py-2 border text-center">Status</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y">
+                {schedule.map((s) => (
+                  <tr key={s.instNo} className="h-[44px]">
+                    <td className="px-3 py-2 border">{s.instNo}</td>
+                    <td className="px-3 py-2 border">
+                      {s.dueDate.toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-2 border">{s.paidOn}</td>
+                    <td className="px-3 py-2 border text-right">
+                      PGK {s.amount.toFixed(2)}
+                    </td>
+                    <td className="px-3 py-2 border text-right">
+                      PGK {s.balance.toFixed(2)}
+                    </td>
+                    <td className="px-3 py-2 border text-center">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          s.status === "Paid"
+                            ? "bg-green-100 text-green-700"
+                            : s.status === "Overdue"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {s.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      )}
+    </div>
+  );
+};
 
 
 /* -----------------------------------

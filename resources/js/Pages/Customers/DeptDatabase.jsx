@@ -261,6 +261,7 @@ export default function DeptDatabase({ auth }) {
     { label: "Phone", key: "phone" },
     { label: "Email", key: "email" },
     { label: "Gross Pay", key: "gross_pay" },
+    { label: "Net Pay", key: "net_pay" },
     { label: "Organisation", key: "organization_id" },
   ];
 
@@ -287,7 +288,7 @@ export default function DeptDatabase({ auth }) {
             className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"
             onSubmit={handleSubmit}
           >
-            {["cust_name", "emp_code", "phone", "email", "gross_pay"].map(
+            {["cust_name", "emp_code", "phone", "email", "gross_pay","net_pay"].map(
               (field) => (
                 <div key={field} className="flex flex-col">
                   <label className="text-xs text-gray-600 mb-1 capitalize">
@@ -387,9 +388,9 @@ export default function DeptDatabase({ auth }) {
 
         {/* TABLE */}
         <div className="bg-white shadow-md rounded-lg border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-emerald-600 text-white">
+          <div className="relative max-h-[520px] overflow-auto">
+            <table className="w-full text-sm  border-collapse">
+              <thead className="sticky top-0 z-20 bg-emerald-600 text-white shadow-sm">
                 <tr>
                   <th className="px-4 py-3 w-12 text-center">#</th>
 
@@ -397,13 +398,13 @@ export default function DeptDatabase({ auth }) {
                     <th
                       key={col.key}
                       onClick={() => handleSort(col.key)}
-                      className={`px-4 py-3 cursor-pointer select-none whitespace-nowrap transition
-                        ${
-                          sortConfig.key === col.key
-                            ? "bg-emerald-800 text-white"   // ACTIVE COLUMN (highlight)
-                            : "bg-emerald-600 text-white"   // NORMAL HEADER
-                        }
-                      `}
+                      className={`px-4 py-3 border-r border-emerald-500/40 last:border-r-0 cursor-pointer select-none whitespace-nowrap
+                      text-xs font-semibold uppercase tracking-wide
+                      transition-colors duration-200
+                      ${sortConfig.key === col.key
+                        ? "bg-emerald-700"
+                        : "hover:bg-emerald-500"}
+                    `}
                     >
                       <div className="flex items-center gap-2">
                         <span>{col.label}</span>
@@ -427,7 +428,7 @@ export default function DeptDatabase({ auth }) {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-8">
+                    <td colSpan={8} className="text-center py- border-r border-emerald-500/40 last:border-r-0">
                       <div className="text-center py-5">
                           <Spinner animation="border" variant="primary" />
                           <p className="mt-2 text-gray-600">Loading Emp. Data...</p>
@@ -440,35 +441,38 @@ export default function DeptDatabase({ auth }) {
                     return (
                     <tr 
                       key={c.id} 
-                      className={`transition-all duration-300 ${isEditingRow
-                        ? "bg-amber-100 ring-2 ring-amber-200"
-                        : i % 2 === 0
-                            ? "bg-white"
-                            : "bg-emerald-50/40"
-                        } hover:bg-emerald-100/70`}
+                      className={`
+                        group transition-all duration-200 ease-in-out  border-r border-emerald-500/40 last:border-r-0
+                        ${isEditingRow
+                          ? "bg-amber-100 ring-2 ring-amber-200"
+                          : "hover:bg-emerald-50"}
+                      `}
+
                     >
-                      <td className="px-4 py-3 text-center text-gray-500">
+                      <td className="px-4 py-3 text-center text-gray-500 border border-gray-200">
                         {(currentPage - 1) * itemsPerPage + i + 1}
                       </td>
 
-                      <td className="px-4 py-3 font-medium text-gray-900">
+                      <td className="px-4 py-3 font-medium text-gray-900 border border-gray-200">
                         {c.cust_name}
                       </td>
-                      <td className="px-4 py-3 text-center">{c.emp_code}</td>
-                      <td className="px-4 py-3 text-center text-gray-500">
+                      <td className="px-4 py-3 text-center border border-gray-200">{c.emp_code}</td>
+                      <td className="px-4 py-3 text-center text-gray-500 border border-gray-200">
                         {c.phone || "-"}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{c.email}</td>
+                      <td className="px-4 py-3 text-gray-600 border border-gray-200">{c.email}</td>
 
-                      <td className="px-4 py-3 text-center font-mono">
+                      <td className="px-4 py-3 text-center font-mono border border-gray-200">
                         {currencyPrefix}&nbsp;{formatCurrency(c.gross_pay || 0)}
                       </td>
-
-                      <td className="px-4 py-3 text-center text-blue-600 font-medium">
+                      <td className="px-4 py-3 text-center font-mono border border-gray-200">
+                        {currencyPrefix}&nbsp;{formatCurrency(c.net_pay || 0)}
+                      </td>    
+                      <td className="px-4 py-3 text-center text-blue-600 font-medium border border-gray-200">
                         {getOrgName(c.organization_id)}
                       </td>
 
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center border border-gray-200">
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => handleEdit(c)}
@@ -519,7 +523,7 @@ export default function DeptDatabase({ auth }) {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                   disabled={currentPage === 1}
-                  className="p-2 border rounded-md bg-white hover:bg-gray-100 disabled:opacity-50"
+                  className="p-2 border rounded-md  hover:bg-gray-100 disabled:opacity-50"
                 >
                   <ChevronLeft size={16} />
                 </button>

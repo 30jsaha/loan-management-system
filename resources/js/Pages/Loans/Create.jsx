@@ -895,7 +895,12 @@ export default function Create({ auth, loan_settings }) {
             </pre>
             <p>max_loan_amount: {`${loan_settings.max_loan_amount}`}</p> */}
             <Head title="New Loan Application" />
-            <Toaster position="top-right" reverseOrder={false} />
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                duration: 3000,
+                }}
+            />
             <Alert key="primary" variant="primary">
                 Please go through the tabs to complete the loan application.
             </Alert>
@@ -982,6 +987,8 @@ export default function Create({ auth, loan_settings }) {
                                             setMessage={setMessage}
                                             setIsFormDirty={setIsFormDirty}
                                             onNext={(savedCustomer) => {
+                                                //toast.dismiss();
+                                                setStep(2);
                                                 const infoMsg = '✅ customer data saved. You can continue filling the loan application.';
                                                 setMessage(infoMsg);
                                                 // show same message in SweetAlert
