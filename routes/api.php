@@ -66,7 +66,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/{loanId}/mark-sent-approval', [LoanController::class, 'markSentApproval']);
     Route::post('/loans/send-completion-mail', [LoanController::class, 'sendCompletionMail']);
     Route::post('/loan-fn-range', [LoanController::class, 'getFnRangeByAmount']);
-    Route::get('/loan-purposes-list', [LoanController::class, 'getLoanPurposes']);
+    Route::get('/loan-purposes', [LoanController::class, 'getLoanPurposes']);
+    Route::post('/loan-purpose-create', [LoanController::class, 'createLoanPurposes']);
+    Route::put('/loan-purpose-update/{loanId}', [LoanController::class, 'updateLoanPurposes']);
+    Route::delete('/loan-purpose-delete/{loanId}', [LoanController::class, 'deleteLoanPurpose']);
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);

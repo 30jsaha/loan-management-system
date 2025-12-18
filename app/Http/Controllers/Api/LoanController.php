@@ -35,10 +35,99 @@ class LoanController extends Controller
     }
     public function getLoanPurposes()
     {
-        $loanPurpose = LoanPurpose::all();
+        $loanPurpose = LoanPurpose::orderBy('id', 'desc')->get();
 
         return response()->json($loanPurpose);
     }
+
+    public function createLoanPurposes(Request $request)
+    {
+        $validated = $request->validate([
+            'purpose_name' => 'required|string|max:255|unique:loan_purposes,purpose_name',
+            'status' => 'required|in:0,1',
+        ]);
+
+        try {
+            $purpose = LoanPurpose::create([
+                'purpose_name' => $validated['purpose_name'],
+                'status' => $validated['status'],
+            ]);
+
+            return response()->json([
+                'message' => 'Loan purpose created successfully.',
+                'data' => $purpose,
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Loan purpose creation failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to create loan purpose.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function updateLoanPurposes(Request $request, $loanId)
+    {
+        $validated = $request->validate([
+            'purpose_name' => 'required|string|max:255|unique:loan_purposes,purpose_name,' . $loanId,
+            'status' => 'required|in:0,1',
+        ]);
+
+        try {
+            $purpose = LoanPurpose::findOrFail($loanId);
+
+            $purpose->update([
+                'purpose_name' => $validated['purpose_name'],
+                'status' => $validated['status'],
+            ]);
+
+            return response()->json([
+                'message' => 'Loan purpose updated successfully.',
+                'data' => $purpose,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Loan purpose update failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to update loan purpose.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function deleteLoanPurpose($loanId)
+    {
+        try {
+            $purpose = LoanPurpose::findOrFail($loanId);
+
+            // 🔒 Safety check: prevent delete if already used
+            $isUsed = Loan::where('purpose_id', $loanId)->exists();
+
+            if ($isUsed) {
+                return response()->json([
+                    'message' => 'This loan purpose is already used in loan applications and cannot be deleted.'
+                ], 422);
+            }
+
+            $purpose->delete();
+
+            return response()->json([
+                'message' => 'Loan purpose deleted successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Loan purpose deletion failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to delete loan purpose.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
     public function create()
     {
         // return Loan::all();
