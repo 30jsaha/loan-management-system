@@ -11,7 +11,7 @@ export default function CustomerForm({
   allCustMast = [],
   onNext,
   setMessage,
-  setIsFormDirty,
+  setIsFormDirty, 
   onExistingCustomerLoaded, 
 }) {
   const dropdownRef = useRef(null);
@@ -254,7 +254,10 @@ export default function CustomerForm({
         duration: 2000,
       });
       setIsSelecting(false);
+      setIsExistingFound(true);
       return;
+    }else{
+      setIsExistingFound(false);
     }
 
     // 🔹 Step 2: Fallback → API employee list (your existing logic)
@@ -299,12 +302,30 @@ export default function CustomerForm({
   return (
     <>
       {/* <Toaster position="top-right" reverseOrder={false} /> */}
-
+      {/* Flash message for existing customer */}
+      {isExistingFound && (
+        <div className="mb-4 p-3 bg-green-100 border-l-4 border-blue-500 text-blue-700 shadow-sm rounded flex items-center justify-between ">
+          <div className="flex items-center">
+            <span className="mr-2 text-xl">👤</span>
+            <div>
+              <strong className="block">Existing Customer Profile Found</strong>
+              <small>Information has been automatically populated from our records.</small>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={() => setIsExistingFound(false)} 
+            className="text-blue-400 hover:text-blue-600 font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <form onSubmit={handleNext}>
         <Row className="align-items-stretch">
           {/* ========== IDENTIFICATION ========== */}
           <Col md={12}>
-            <fieldset className="fldset mt-4">
+            <fieldset className="fldset mt-2">
               <legend className="legend">Identification</legend>
               <div className="grid grid-cols-2 gap-4 mt-3">
                 <div style={{ display: "none" }}>
@@ -531,7 +552,188 @@ export default function CustomerForm({
             </fieldset>
 
             {/* ========== CONTACT INFORMATION ========== */}
-            <fieldset className="fldset mt-4 flex-grow-1">
+            
+          </div>
+          </Col>
+
+          {/* ========== EMPLOYMENT DETAILS ========== */}
+          <Col  md={6}>
+            <fieldset className="fldset mt-4">
+              <legend className="legend">Employment Details</legend>
+            <div className="fldScroll">
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <label>
+                    Payroll Number <ImportantField />
+                  </label>
+                  <input
+                    type="text"
+                    name="payroll_number"
+                    value={formData.payroll_number || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>
+                    Department <ImportantField />
+                  </label>
+                  <input
+                    type="text"
+                    name="employer_department"
+                    value={formData.employer_department || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label>
+                    Designation <ImportantField />
+                  </label>
+                  <input
+                    type="text"
+                    name="designation"
+                    value={formData.designation || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>Employment Type</label>
+                  <select
+                    name="employment_type"
+                    value={formData.employment_type || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  >
+                    <option value="">-- Select --</option>
+                    <option value="Permanent">Permanent</option>
+                    <option value="Contract">Contract</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label>Date Joined</label>
+                  <input
+                    type="date"
+                    name="date_joined"
+                    value={formData.date_joined || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>
+                    Gross Salary (PGK) <ImportantField />
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="monthly_salary"
+                    value={formData.monthly_salary || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <label>
+                    Net Salary (PGK) <ImportantField />
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="net_salary"
+                    value={formData.net_salary || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>Immediate Supervisor</label>
+                  <input
+                    type="text"
+                    name="immediate_supervisor"
+                    value={formData.immediate_supervisor || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <label>Years at Current Employer</label>
+                  <input
+                    type="text"
+                    name="years_at_current_employer"
+                    value={formData.years_at_current_employer || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>Work District</label>
+                  <input
+                    type="text"
+                    name="work_district"
+                    value={formData.work_district || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-1">
+                <div>
+                  <label>Work Province</label>
+                  <input
+                    type="text"
+                    name="work_province"
+                    value={formData.work_province || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>Employer Address</label>
+                  <textarea
+                    name="employer_address"
+                    value={formData.employer_address || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid mt-0">
+                <div>
+                  <label>
+                    Work Location <ImportantField />
+                  </label>
+                  <textarea
+                    name="work_location"
+                    value={formData.work_location || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+            </div>
+            </fieldset>
+          </Col>
+
+        </Row>
+         <Row className="mt-2">
+            <Col>
+            <fieldset className="fldset mt-4 ">
               <legend className="legend">Contact Information</legend>
               <div className="grid grid-cols-2 gap-4 mt-3">
                 <div>
@@ -606,189 +808,8 @@ export default function CustomerForm({
                 </div>
               </div>
             </fieldset>
-          </div>
-          </Col>
-
-          {/* ========== EMPLOYMENT DETAILS ========== */}
-          <Col  md={6}>
-            <fieldset className="fldset mt-4 w-100 h-100 pb-0">
-              <legend className="legend">Employment Details</legend>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>
-                    Payroll Number <ImportantField />
-                  </label>
-                  <input
-                    type="text"
-                    name="payroll_number"
-                    value={formData.payroll_number || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>
-                    Department <ImportantField />
-                  </label>
-                  <input
-                    type="text"
-                    name="employer_department"
-                    value={formData.employer_department || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                <div>
-                  <label>
-                    Designation <ImportantField />
-                  </label>
-                  <input
-                    type="text"
-                    name="designation"
-                    value={formData.designation || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>Employment Type</label>
-                  <select
-                    name="employment_type"
-                    value={formData.employment_type || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  >
-                    <option value="">-- Select --</option>
-                    <option value="Permanent">Permanent</option>
-                    <option value="Contract">Contract</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                <div>
-                  <label>Date Joined</label>
-                  <input
-                    type="date"
-                    name="date_joined"
-                    value={formData.date_joined || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>
-                    Gross Salary (PGK) <ImportantField />
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="monthly_salary"
-                    value={formData.monthly_salary || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>
-                    Net Salary (PGK) <ImportantField />
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="net_salary"
-                    value={formData.net_salary || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>Immediate Supervisor</label>
-                  <input
-                    type="text"
-                    name="immediate_supervisor"
-                    value={formData.immediate_supervisor || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>Years at Current Employer</label>
-                  <input
-                    type="text"
-                    name="years_at_current_employer"
-                    value={formData.years_at_current_employer || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>Work District</label>
-                  <input
-                    type="text"
-                    name="work_district"
-                    value={formData.work_district || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-1">
-                <div>
-                  <label>Work Province</label>
-                  <input
-                    type="text"
-                    name="work_province"
-                    value={formData.work_province || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>Employer Address</label>
-                  <textarea
-                    name="employer_address"
-                    value={formData.employer_address || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid mt-0">
-                <div>
-                  <label>
-                    Work Location <ImportantField />
-                  </label>
-                  <textarea
-                    name="work_location"
-                    value={formData.work_location || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-            </fieldset>
-          </Col>
-        <div/>
-        </Row>
+            </Col>
+          </Row>
 
         {/* ========== SUBMIT BUTTON ========== */}
         <Row className="mt-4 text-end">

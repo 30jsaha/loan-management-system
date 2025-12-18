@@ -531,6 +531,7 @@ export default function EditCustomer() {
                 </fieldset>
               </Col>
             </Row>
+           
             <Row className="mt-4 text-end">
               <Col>
                 <button
