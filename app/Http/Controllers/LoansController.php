@@ -27,7 +27,7 @@ class LoansController extends Controller
     }
     public function purpose_index()
     {
-        $loanPurpose = LoanPurpose::all();
+        $loanPurpose = LoanPurpose::orderBy('id', 'desc')->get();
         return inertia('Loans/PurposeIndex', [
             'loanPurpose'=>$loanPurpose
         ]);
