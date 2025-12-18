@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\LoanSetting;
 use App\Models\LoanTierRule;
 use App\Models\InstallmentDetail;
+use App\Models\LoanPurpose;
 use Illuminate\Support\Facades\Validator;
 //newly added -- edit document upload
 use App\Models\DocumentUpload;
@@ -29,8 +30,14 @@ class LoanController extends Controller
     {
         // return Loan::orderBy('id', 'desc')->alongwith('customer')->get();
         // return inertia('Loans/Index'); // points to resources/js/Pages/Loans/Index.jsx
-        return Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company'])
+        return Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company', 'purpose'])
             ->orderBy('id', 'desc')->get();
+    }
+    public function getLoanPurposes()
+    {
+        $loanPurpose = LoanPurpose::all();
+
+        return response()->json($loanPurpose);
     }
     public function create()
     {
@@ -50,10 +57,11 @@ class LoanController extends Controller
 
             // 'loan_type' => 'required|in:New,Consolidation,Rollover,Top-Up',
             'loan_type' => 'required|integer|min:0',
-            'purpose' => 'nullable|in:School Fee,Personal Expenses,Funeral Expenses,Refinancing,Other',
+            'purpose' => 'nullable|string',
             'other_purpose_text' => 'nullable|string|max:255',
 
             'loan_amount_applied' => 'required|numeric|min:0',
+            'purpose_id' => 'required|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
             'emi_amount' => 'nullable|numeric',
@@ -126,10 +134,11 @@ class LoanController extends Controller
 
             // 'loan_type' => 'required|in:New,Consolidation,Rollover,Top-Up',
             'loan_type' => 'nullable|integer|min:0',
-            'purpose' => 'nullable|in:Tuition,Living,Medical,Appliance,Car,Travel,HomeImprovement,Other',
+            'purpose' => 'nullable|string',
             'other_purpose_text' => 'nullable|string|max:255',
 
             'loan_amount_applied' => 'required|numeric|min:0',
+            'purpose_id' => 'required|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'integer',
             'emi_amount' => 'nullable|numeric',
@@ -198,9 +207,6 @@ class LoanController extends Controller
      */
     public function show(string $id)
     {
-        // $loan = Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company'])
-        //     ->orderBy('id', 'desc')->findOrFail($id);
-        // return response()->json($loan);
 
         $loan = Loan::with([
             'customer',
@@ -208,6 +214,7 @@ class LoanController extends Controller
             'installments',
             'loan_settings',
             'company',
+            'purpose',
             'documents' => function ($q) {
                 $q->leftJoin(
                     'document_types',
@@ -648,7 +655,8 @@ class LoanController extends Controller
             'documents',
             'installments',
             'loan_settings',
-            'company'
+            'company',
+            'purpose',
         ])
         ->where('status', 'Approved')
         ->orderBy('id', 'desc')
@@ -706,56 +714,6 @@ class LoanController extends Controller
 
         ], 200);
     }
-
-
-    //new code with collectionId
-    // public function collectEMI(Request $request)
-    // {
-    //     $validated = $request->validate([
-    //         'loan_ids' => 'required|array',
-    //         'loan_ids.*' => 'exists:loan_applications,id',
-    //         'emi_counter' => 'nullable|integer|min:1',
-    //     ]);
-
-    //     // Generate 6-7 character collection ID (timestamp + random)
-    //     $collectionUid = strtoupper(substr(md5(time() . rand()), 0, 7));
-
-    //     foreach ($validated['loan_ids'] as $loanId) {
-
-    //         $loan = Loan::findOrFail($loanId);
-
-    //         // EMI Frequency
-    //         $emiFreq = LoanSetting::where('id', $loan->loan_type)
-    //             ->value('installment_frequency_in_days');
-
-    //         $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? $emiFreq : 14;
-
-    //         // Calculate next installment_no
-    //         $installmentNo = InstallmentDetail::where('loan_id', $loanId)->count() + 1;
-
-    //         // Insert EMI record
-    //         InstallmentDetail::create([
-    //             'loan_id' => $loanId,
-    //             'collection_uid' => $collectionUid,
-    //             'installment_no' => $installmentNo,
-    //             'due_date' => now(),
-    //             'emi_amount' => $loan->emi_amount,
-    //             'payment_date' => now(),
-    //             'status' => 'Paid',
-    //             'emi_collected_by_id' => auth()->user()->id,
-    //             'emi_collected_date' => now(),
-    //         ]);
-
-    //         // Update loan next due date
-    //         $loan->next_due_date = now()->addDays($emiFreq)->toDateString();
-    //         $loan->save();
-    //     }
-
-    //     return response()->json([
-    //         'message' => 'EMI collection recorded successfully!',
-    //         'collection_uid' => $collectionUid
-    //     ]);
-    // }
 
     public function collectEMI(Request $request)
     {
@@ -834,6 +792,7 @@ class LoanController extends Controller
             'purpose' => 'nullable|string|max:255',
             'other_purpose_text' => 'nullable|string|max:255',
             'loan_amount_applied' => 'required|numeric|min:0',
+            'purpose_id' => 'required|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
             'interest_rate' => 'nullable|numeric|min:0|max:100',
@@ -1034,12 +993,13 @@ class LoanController extends Controller
         $validated = $request->validate([
             'id' => 'required|exists:loan_applications,id',
             'loan_type' => 'required|integer|min:0',
-            'purpose' => 'nullable|in:Tuition,Living,Medical,Appliance,Car,Travel,HomeImprovement,Other',
+            'purpose' => 'nullable|string',
             'other_purpose_text' => 'nullable|string|max:255',
 
             // 'loan_amount_applied' => 'required|numeric|min:0',
             // 'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
+            'purpose_id' => 'required|integer',
             'emi_amount' => 'nullable|numeric',
             'elegible_amount' => 'nullable|numeric',
             'total_repay_amt' => 'nullable|numeric',

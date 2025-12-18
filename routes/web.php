@@ -180,5 +180,9 @@ Route::middleware(['auth', 'verified'])
     ->get('/loan-rejections', [RejectionController::class, 'index'])
     ->name('loan.rejections');
 
+Route::middleware(['auth', 'verified'])
+    ->get('/loan-purpose', [LoansController::class, 'purpose_index'])
+    ->name('loan.purpose');
+
 
 require __DIR__.'/auth.php';

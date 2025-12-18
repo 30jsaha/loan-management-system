@@ -80,7 +80,8 @@ export default function Authenticated({ user, header, children }) {
                                         route().current('loan.income.slabs') ||
                                         route().current('orgs') ||
                                         route().current('loan.documents') ||
-                                        route().current('loan.rejections') 
+                                        route().current('loan.rejections') ||
+                                        route().current('loan.purpose') 
                                         ? 'dropdown-nav-active' // Active style
                                         : 'text-gray-500'
                                         }`}
@@ -115,6 +116,7 @@ export default function Authenticated({ user, header, children }) {
                                             <Dropdown.Link className={`${route().current('orgs') ? 'dropdown-nav-a-active' : ''}`} href={route('orgs')}>Organizations</Dropdown.Link>
                                             <Dropdown.Link className={`${route().current('loan.documents') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.documents')}>Document Types</Dropdown.Link>
                                             <Dropdown.Link className={`${route().current('loan.rejections') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.rejections')}> Rejection List</Dropdown.Link>
+                                            <Dropdown.Link className={`${route().current('loan.purpose') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.purpose')}> Loan Purposes</Dropdown.Link>
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>
