@@ -1045,9 +1045,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     //     !loan.isda_signed_upload_path ||
     //     !loan.org_signed_upload_path;
     const missingMandatoryUploads =
-    !loan.video_consent_path ||
-    !loan.isda_signed_upload_path ||
-    !loan.org_signed_upload_path;
+    !loan?.video_consent_path ||
+    !loan?.isda_signed_upload_path ||
+    !loan?.org_signed_upload_path;
 
     const isApproveDisabled =
         approvalBlockers.blocked || missingMandatoryUploads;
