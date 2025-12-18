@@ -1298,112 +1298,116 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                         <Col md={6}>
                                             <fieldset className="fldset mb-4">
                                                 <legend className="font-semibold mb-2">Application Details</legend>
-                                                <table className="w-full border-collapse border border-gray-300 text-sm">
-                                                    <tbody>
-                                                        <tr><td className="border p-2 font-semibold">Loan Type</td><td className="border p-2">{loan.loan_settings?.loan_desc || "-"}</td></tr>
-                                                        <tr><td className="border p-2 font-semibold">Purpose</td><td className="border p-2">{(loan.purpose?.purpose_name) == "Other" ? loan.other_purpose_text : loan.purpose?.purpose_name}</td></tr>
-                                                        <tr><td className="border p-2 font-semibold">Tenure (fortnight)</td><td className="border p-2">{loan.tenure_fortnight}</td></tr>
-                                                        <tr><td className="border p-2 font-semibold">EMI Amount</td><td className="border p-2">{(loan.emi_amount != null) ? `${currencyPrefix} ${parseFloat(loan.emi_amount).toFixed(2)}` : 0.00}</td></tr>
-                                                        <tr><td className="border p-2 font-semibold">Interest Rate</td><td className="border p-2">{loan.interest_rate}%</td></tr>
-                                                        <tr><td className="border p-2 font-semibold">Processing Fee</td><td className="border p-2">{(loan.processing_fee != null) ? currencyPrefix + " " + parseFloat(loan.processing_fee).toFixed(2) : 0.00}</td></tr>
-                                                        <tr>
-                                                            <td className="border p-2 font-semibold">Amount Details</td>
-                                                            <td className="border p-2">
-                                                                <strong>Applied Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.loan_amount_applied).toFixed(2)}<br />
-                                                                <strong>Elegible Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.elegible_amount).toFixed(2)}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="border p-2 font-semibold">Organisation Details</td>
-                                                            <td className="border p-2">
-                                                                <strong>Name: </strong>{loan.organisation.organisation_name} [{loan.organisation.sector_type}]<br />
-                                                                <strong>Contact: </strong>{loan.organisation.contact_no || "-"}<br />
-                                                                <strong>Email: </strong>{loan.organisation.email || "-"}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="border p-2 font-semibold">Bank Details</td>
-                                                            <td className="border p-2">
-                                                                {loan.bank_account_no == null && loan.bank_branch == null && loan.bank_name == null ? "N/A" : (
-                                                                    <>
-                                                                        <strong>Account No: </strong>{loan.bank_account_no || "-"}<br />
-                                                                        <strong>Branch: </strong>{loan.bank_branch || "-"}<br />
-                                                                        <strong>Bank Name: </strong>{loan.bank_name || "-"}
-                                                                    </>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                        <tr><td className="border p-2 font-semibold">Status</td><td className="border p-2">{loan.status} {(loan.video_consent_path == null) ? "[Video Consent Pending]" : ""}</td></tr>
-                                                        <tr><td className="border p-2 font-semibold">Remarks</td><td className="border p-2">{loan.remarks != null ? loan.remarks : "-"}</td></tr>
-                                                    </tbody>
-                                                </table>
+                                                <div className="fldScroll">
+                                                    <table className="w-full border-collapse border border-gray-300 text-sm">
+                                                        <tbody>
+                                                            <tr><td className="border p-2 font-semibold">Loan Type</td><td className="border p-2">{loan.loan_settings?.loan_desc || "-"}</td></tr>
+                                                            <tr><td className="border p-2 font-semibold">Purpose</td><td className="border p-2">{(loan.purpose?.purpose_name) == "Other" ? loan.other_purpose_text : loan.purpose?.purpose_name}</td></tr>
+                                                            <tr><td className="border p-2 font-semibold">Tenure (fortnight)</td><td className="border p-2">{loan.tenure_fortnight}</td></tr>
+                                                            <tr><td className="border p-2 font-semibold">EMI Amount</td><td className="border p-2">{(loan.emi_amount != null) ? `${currencyPrefix} ${parseFloat(loan.emi_amount).toFixed(2)}` : 0.00}</td></tr>
+                                                            <tr><td className="border p-2 font-semibold">Interest Rate</td><td className="border p-2">{loan.interest_rate}%</td></tr>
+                                                            <tr><td className="border p-2 font-semibold">Processing Fee</td><td className="border p-2">{(loan.processing_fee != null) ? currencyPrefix + " " + parseFloat(loan.processing_fee).toFixed(2) : 0.00}</td></tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">Amount Details</td>
+                                                                <td className="border p-2">
+                                                                    <strong>Applied Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.loan_amount_applied).toFixed(2)}<br />
+                                                                    <strong>Elegible Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.elegible_amount).toFixed(2)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">Organisation Details</td>
+                                                                <td className="border p-2">
+                                                                    <strong>Name: </strong>{loan.organisation.organisation_name} [{loan.organisation.sector_type}]<br />
+                                                                    <strong>Contact: </strong>{loan.organisation.contact_no || "-"}<br />
+                                                                    <strong>Email: </strong>{loan.organisation.email || "-"}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">Bank Details</td>
+                                                                <td className="border p-2">
+                                                                    {loan.bank_account_no == null && loan.bank_branch == null && loan.bank_name == null ? "N/A" : (
+                                                                        <>
+                                                                            <strong>Account No: </strong>{loan.bank_account_no || "-"}<br />
+                                                                            <strong>Branch: </strong>{loan.bank_branch || "-"}<br />
+                                                                            <strong>Bank Name: </strong>{loan.bank_name || "-"}
+                                                                        </>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                            <tr><td className="border p-2 font-semibold">Status</td><td className="border p-2">{loan.status} {(loan.video_consent_path == null) ? "[Video Consent Pending]" : ""}</td></tr>
+                                                            <tr><td className="border p-2 font-semibold">Remarks</td><td className="border p-2">{loan.remarks != null ? loan.remarks : "-"}</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </fieldset>
                                         </Col>
                                         <Col md={6}>
                                             <fieldset className="fldset mb-4">
                                                 <legend className="font-semibold mb-2">Customer Details</legend>
-                                                <table className="w-full border-collapse border border-gray-300 text-sm">
-                                                    <tbody>
-                                                        <tr><td className="border p-2 font-semibold">Name</td><td className="border p-2">{loan.customer.first_name} {loan.customer.last_name}</td></tr>
-                                                        <tr>
-                                                            <td className="border p-2 font-semibold">Details</td>
-                                                            <td className="border p-2">
-                                                                <strong>Employee No:</strong> {loan.customer.employee_no} <br />
-                                                                <strong>Employment Type:</strong> {loan.customer.employment_type} <br />
-                                                                <strong>Department:</strong> {loan.customer.employer_department} <br />
-                                                                <strong>Designation:</strong> {loan.customer.designation} <br />
-                                                                <strong>Immediate Supervisor:</strong> {loan.customer.immediate_supervisor} <br />
-                                                                <strong>Payroll Number:</strong> {loan.customer.payroll_number} <br />
-                                                                <strong>Joinning Date:</strong> {(loan.customer.date_joined != null) ? new Date(loan.customer.date_joined).toLocaleDateString() : ""}<br />
-                                                                <strong>Gross Salary:</strong> {(loan.customer.monthly_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.monthly_salary).toFixed(2)}` : ""}
-                                                                <br />
-                                                                <strong>Net Salary:</strong> {(loan.customer.net_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.net_salary).toFixed(2)}` : ""}
-                                                                <br />
-                                                                <strong>Work Location:</strong> {loan.customer.work_location}
-                                                                <br />
-                                                                <strong>Years at current employer:</strong> {(loan.customer.years_at_current_employer != null) ? parseFloat(loan.customer.years_at_current_employer) : "N/A"}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="border p-2 font-semibold">Contact Information</td>
-                                                            <td className="border p-2">
-                                                                Phone: {loan.customer.phone} <br />
-                                                                Email: {loan.customer.email}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="border p-2 font-semibold">Marital Info</td>
-                                                            <td className="border p-2">
-                                                                {loan.customer.marital_status == null && loan.customer.spouse_full_name == null && loan.customer.spouse_contact == null ? "N/A" : (
-                                                                    <>
-                                                                        {loan.customer.marital_status} <br />
-                                                                        <strong>Spouse: </strong> {loan.customer.spouse_full_name || "-"} <br />
-                                                                        <strong>Contact: </strong> {loan.customer.spouse_contact || "-"}
-                                                                    </>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="border p-2 font-semibold">Number of Dependents</td>
-                                                            <td className="border p-2">
-                                                                {loan.customer.no_of_dependents}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td className="border p-2 font-semibold">Address</td>
-                                                            <td className="border p-2">
-                                                                {loan.customer.home_province == null && loan.customer.district_village == null && loan.customer.present_address == null && loan.customer.permanent_address == null ? "N/A" : (
-                                                                    <>
-                                                                        Home Province: {loan.customer.home_province} <br />
-                                                                        District & Village: {loan.customer.district_village}<br />
-                                                                        Present Address: {loan.customer.present_address}<br />
-                                                                        Permanent Address: {loan.customer.permanent_address}
-                                                                    </>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
+                                                <div className="fldScroll">
+                                                    <table className="w-full border-collapse border border-gray-300 text-sm">
+                                                        <tbody>
+                                                            <tr><td className="border p-2 font-semibold">Name</td><td className="border p-2">{loan.customer.first_name} {loan.customer.last_name}</td></tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">Details</td>
+                                                                <td className="border p-2">
+                                                                    <strong>Employee No:</strong> {loan.customer.employee_no} <br />
+                                                                    <strong>Employment Type:</strong> {loan.customer.employment_type} <br />
+                                                                    <strong>Department:</strong> {loan.customer.employer_department} <br />
+                                                                    <strong>Designation:</strong> {loan.customer.designation} <br />
+                                                                    <strong>Immediate Supervisor:</strong> {loan.customer.immediate_supervisor} <br />
+                                                                    <strong>Payroll Number:</strong> {loan.customer.payroll_number} <br />
+                                                                    <strong>Joinning Date:</strong> {(loan.customer.date_joined != null) ? new Date(loan.customer.date_joined).toLocaleDateString() : ""}<br />
+                                                                    <strong>Gross Salary:</strong> {(loan.customer.monthly_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.monthly_salary).toFixed(2)}` : ""}
+                                                                    <br />
+                                                                    <strong>Net Salary:</strong> {(loan.customer.net_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.net_salary).toFixed(2)}` : ""}
+                                                                    <br />
+                                                                    <strong>Work Location:</strong> {loan.customer.work_location}
+                                                                    <br />
+                                                                    <strong>Years at current employer:</strong> {(loan.customer.years_at_current_employer != null) ? parseFloat(loan.customer.years_at_current_employer) : "N/A"}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">Contact Information</td>
+                                                                <td className="border p-2">
+                                                                    Phone: {loan.customer.phone} <br />
+                                                                    Email: {loan.customer.email}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">Marital Info</td>
+                                                                <td className="border p-2">
+                                                                    {loan.customer.marital_status == null && loan.customer.spouse_full_name == null && loan.customer.spouse_contact == null ? "N/A" : (
+                                                                        <>
+                                                                            {loan.customer.marital_status} <br />
+                                                                            <strong>Spouse: </strong> {loan.customer.spouse_full_name || "-"} <br />
+                                                                            <strong>Contact: </strong> {loan.customer.spouse_contact || "-"}
+                                                                        </>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">Number of Dependents</td>
+                                                                <td className="border p-2">
+                                                                    {loan.customer.no_of_dependents}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">Address</td>
+                                                                <td className="border p-2">
+                                                                    {loan.customer.home_province == null && loan.customer.district_village == null && loan.customer.present_address == null && loan.customer.permanent_address == null ? "N/A" : (
+                                                                        <>
+                                                                            Home Province: {loan.customer.home_province} <br />
+                                                                            District & Village: {loan.customer.district_village}<br />
+                                                                            Present Address: {loan.customer.present_address}<br />
+                                                                            Permanent Address: {loan.customer.permanent_address}
+                                                                        </>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </fieldset>
                                         </Col>
                                         {(loan?.higher_approved_by != null) && (

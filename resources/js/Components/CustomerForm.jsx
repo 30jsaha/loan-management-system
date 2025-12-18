@@ -419,10 +419,9 @@ export default function CustomerForm({
                     name="organisation_id"
                     value={formData.organisation_id || ""}
                     onChange={handleChange}
-                    disabled={!isOrgSelectable}
+                    disabled={!isOrgSelectable && formData.organisation_id != ""}
                     aria-readonly={!isOrgSelectable}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && "bg-gray-100 cursor-not-allowed"
-                      }`}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && formData.organisation_id != "" && "bg-gray-100 cursor-not-allowed"}`}
                     required
                   >
                     <option value="">-- Select Organisation --</option>
@@ -453,8 +452,9 @@ export default function CustomerForm({
                     name="first_name"
                     value={formData.first_name || ""}
                     onChange={handleChange}
+                    disabled={!isOrgSelectable && formData.first_name != ""}
                     required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && formData.first_name != "" && "bg-gray-100 cursor-not-allowed"}`}
                   />
                 </div>
                 <div>
@@ -467,7 +467,8 @@ export default function CustomerForm({
                     value={formData.last_name || ""}
                     onChange={handleChange}
                     required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                    disabled={!isOrgSelectable && formData.last_name != ""}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && formData.last_name != "" && "bg-gray-100 cursor-not-allowed"}`}
                   />
                 </div>
               </div>
@@ -479,7 +480,8 @@ export default function CustomerForm({
                     name="gender"
                     value={formData.gender || ""}
                     onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                    disabled={!isOrgSelectable && formData.gender != ""}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && formData.gender != "" && "bg-gray-100 cursor-not-allowed"}`}
                   >
                     <option value="">-- Select --</option>
                     <option value="Male">Male</option>
