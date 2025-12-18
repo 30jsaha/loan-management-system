@@ -12,6 +12,7 @@ export default function CustomerForm({
   onNext,
   setMessage,
   setIsFormDirty,
+  onExistingCustomerLoaded, 
 }) {
   const dropdownRef = useRef(null);
   const empAreaRef = useRef(null);
@@ -29,6 +30,9 @@ export default function CustomerForm({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isDataSaving, setIsDataSaving] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
+
+
+
 
   // Fetch employees logic
   const fetchEmployees = async (query = "", pageNum = 1) => {
@@ -240,7 +244,10 @@ export default function CustomerForm({
         organisation_id: existingCustomer.organisation_id || "",
         company_id: existingCustomer.company_id || "",
       }));
-
+      
+       if (onExistingCustomerLoaded) {
+          onExistingCustomerLoaded(existingCustomer);
+        }
       setOrgSelectable(false);
       toast.success("Existing customer loaded",{
         id: "existing-customer",

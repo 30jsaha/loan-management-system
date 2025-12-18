@@ -129,9 +129,9 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
         ...prev,
         [docType]: "✅ Uploaded successfully!",
       }));
-      toast.success(`${docType} uploaded successfully!`,{
-        duration:3000
-      });
+      // toast.success(`${docType} uploaded successfully!`,{
+      //   duration:3000
+      // });
     } catch (error) {
       console.error("Upload failed:", error);
       setMessage((prev) => ({
@@ -168,6 +168,10 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
     setUploadedFiles({});
 
     if (onUploadComplete) onUploadComplete();
+        toast.success("All documents uploaded successfully!", {
+      icon: "✅",
+    });
+
   };
 
   return (
@@ -175,7 +179,7 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
       <h4 className="fw-semibold text-dark mb-4 text-center text-lg sm:text-xl">
         📄 Upload Supporting Documents
       </h4>
-      <Toaster position="top-center" />
+   
 
       <form onSubmit={handleUploadAll}>
         {/* Responsive Grid: Stacks on mobile, 1 col, then 2, then 3 on huge screens */}

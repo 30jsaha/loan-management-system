@@ -1438,225 +1438,171 @@ export default function Create({ auth, loan_settings }) {
                                 </>
                             )}
                             {isCompleted && (
-                                <div className="p-8 text-center animate__animated animate__fadeIn">
+                                <div className="p-8 animate__animated animate__fadeIn">
+                                <div className="max-w-5xl mx-auto bg-white border border-green-200 rounded-xl shadow-sm">
 
-                                    <div className="max-w-6xl mx-auto bg-green-50 border border-green-200 rounded-lg p-6">
-                                        <h2 className="text-2xl font-bold text-green-700 mb-3 d-flex justify-center">
-                                            {/* <Check className='text-green-700' />  */}
-                                            Loan Application Successfully Completed
-                                        </h2>
-                                        {/* 📄 Downloads Section */}
-                                        <div className="max-w-4xl mx-auto mt-6">
-                                            <table className="w-full text-sm text-gray-700">
-                                                <tbody>
+                                    {/* HEADER */}
+                                    <div className="px-8 py-6 border-b bg-green-50 rounded-t-xl text-center">
+                                    <h2 className="text-2xl font-bold text-green-700 flex items-center justify-center gap-2">
+                                        <Check className="text-green-600" size={26} />
+                                        Loan Application Completed
+                                    </h2>
+                                    <p className="text-sm text-green-700 mt-1">
+                                        All required steps have been successfully completed
+                                    </p>
+                                    </div>
 
-                                                    {/* Acknowledgement */}
-                                                    <tr>
-                                                        <td className="py-3 font-medium">
-                                                            Application Form
-                                                        </td>
+                                    {/* CONTENT */}
+                                    <div className="px-8 py-6 space-y-8">
 
-                                                        <td className="py-3 text-center">
-                                                            <button
-                                                                onClick={() => setShowModal1(true)}
-                                                                className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                                                            >
-                                                                <Download size={18} />
-                                                                Download
-                                                            </button>
-                                                        </td>
-                                                    </tr>
+                                    {/* DOWNLOADS */}
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+                                        Available Documents
+                                        </h3>
 
-                                                    {/* Sector Form */}
-                                                    {(isHealth || isEducation) && (
-                                                        <tr>
-                                                            <td className="py-3 font-medium">
-                                                                {isHealth ? "Health Declaration Form" : "Education Grant Form"}
-                                                            </td>
-
-                                                            <td className="py-3 text-center">
-                                                                <button
-                                                                    onClick={() => setShowSectorModal(true)}
-                                                                    className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                                                                >
-                                                                    <Download size={18} />
-                                                                    Download
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-
-                                                </tbody>
-                                            </table>
+                                        <div className="divide-y rounded-lg border bg-gray-50">
+                                        {/* Application Form */}
+                                        <div className="flex items-center justify-between px-4 py-3">
+                                            <span className="font-medium text-gray-800">
+                                            Application Form
+                                            </span>
+                                            <button
+                                            onClick={() => setShowModal1(true)}
+                                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+                                            >
+                                            <Download size={16} />
+                                            Download
+                                            </button>
                                         </div>
 
-                                        <div className="flex justify-center gap-6 mb-6 flex-wrap d-none">
-
-                                            {/* ACKNOWLEDGEMENT */}
-                                            <div className="bg-white border border-green-300 rounded-lg shadow-sm p-4 w-72 text-center">
-                                                <h4 className="font-semibold text-green-700 mb-2">
-                                                    Acknowledgement
-                                                </h4>
-
-                                                <button
-                                                    onClick={() => {
-                                                        if (!showModal1) {
-                                                            setShowModal1(true);
-                                                            setTimeout(() => handlePrintAck(), 1000);
-                                                        } else {
-                                                            handlePrintAck();
-                                                        }
-                                                    }}
-                                                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md
-                                                            bg-green-600 text-white hover:bg-green-700 w-full"
-                                                >
-                                                    <Download size={18} />
-                                                    Download
-                                                </button>
+                                        {/* Sector Form */}
+                                        {(isHealth || isEducation) && (
+                                            <div className="flex items-center justify-between px-4 py-3">
+                                            <span className="font-medium text-gray-800">
+                                                {isHealth ? "Health Declaration Form" : "Education Grant Form"}
+                                            </span>
+                                            <button
+                                                onClick={() => setShowSectorModal(true)}
+                                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+                                            >
+                                                <Download size={16} />
+                                                Download
+                                            </button>
                                             </div>
-
-                                            {/* SECTOR FORM */}
-                                            {(isHealth || isEducation) && (
-                                                <div className="bg-white border border-blue-300 rounded-lg shadow-sm p-4 w-72 text-center">
-                                                    <h4 className="font-semibold text-blue-700 mb-2">
-                                                        {isHealth ? "Health Declaration Form" : "Education Grant Form"}
-                                                    </h4>
-
-                                                    <button
-                                                        onClick={() => {
-                                                            setShowSectorModal(true);
-                                                            setTimeout(() => handlePrintSectorForm(), 1000);
-                                                        }}
-                                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md
-                                                                bg-blue-600 text-white hover:bg-blue-700 w-full"
-                                                    >
-                                                        <Download size={18} />
-                                                        Download
-                                                    </button>
-                                                </div>
-                                            )}
+                                        )}
                                         </div>
+                                    </div>
 
+                                    {/* EMAIL BODY */}
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                                        Customer Notification Email
+                                        </h3>
 
+                                        <textarea
+                                        className="w-full border rounded-lg p-4 text-sm font-mono leading-relaxed
+                                                    focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                        rows={10}
+                                        value={mailBody}
+                                        onChange={(e) => setMailBody(e.target.value)}
+                                        />
+                                    </div>
 
-                                        <p className="text-gray-700 mb-6">
-                                            All required steps have been completed. You may now notify the customer.
-                                        </p>
-
-                                        {/* Mail Body */}
-                                        <div className="text-left mb-4">
-                                            <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                                Email Body
-                                            </label>
-                                            <textarea
-                                                className="w-full border rounded-md p-3 text-sm font-mono leading-relaxed
-                                                    focus:ring-2 focus:ring-green-500"
-                                                rows={10}
-                                                value={mailBody}
-                                                onChange={(e) => setMailBody(e.target.value)}
-                                            />
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div className="flex justify-center gap-3 mt-4">
-                                            <button
-                                                onClick={handleSendMail}
-                                                disabled={isSendingMail}
-                                                className={`px-5 py-2 rounded-md text-white ${isSendingMail
-                                                        ? "bg-gray-400 cursor-not-allowed"
-                                                        : "bg-green-600 hover:bg-green-700"
-                                                    }`}
-                                            >
-                                                {isSendingMail ? "Sending..." : "📧 Send Mail"}
-                                            </button>
-
-                                            <button
-                                                onClick={() => router.visit(route("loans"))}
-                                                className="px-5 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
-                                            >
-                                                Back to Loans
-                                            </button>
-                                        </div>
-                                        <Modal
-                                            show={showModal1}
-                                            onHide={() => setShowModal1(false)}
-                                            size="xl"
-                                            centered
-                                            contentClassName="bg-white"
-                                            enforceFocus={false}
-                                            restoreFocus={false}
+                                    {/* ACTIONS */}
+                                    <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4 border-t">
+                                        <button
+                                        onClick={handleSendMail}
+                                        disabled={isSendingMail}
+                                        className={`px-6 py-2 rounded-lg text-white font-medium transition
+                                            ${isSendingMail
+                                            ? "bg-gray-400 cursor-not-allowed"
+                                            : "bg-green-600 hover:bg-green-700"
+                                            }`}
                                         >
-                                            <Modal.Header closeButton className="no-print">
-                                                <Modal.Title>📄 Application Form View</Modal.Title>
-                                            </Modal.Header>
+                                        {isSendingMail ? "Sending..." : "📧 Send Email"}
+                                        </button>
 
-                                            <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
-                                                <div className="p-1 bg-gray-100 print-area text-black" ref={ackPrintRef}>
-                                                    {savedLoanData && <AppF loan={savedLoanData} auth={auth} />}
-                                                </div>
-                                            </Modal.Body>
-
-                                            <Modal.Footer className="no-print">
-                                                <Button variant="secondary" onClick={() => setShowModal1(false)}>Close</Button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        if (!showModal1) {
-                                                            setShowModal1(true);
-                                                            setTimeout(() => handlePrintAck(), 1000);
-                                                            // markAckDownloaded();
-                                                        } else {
-                                                            handlePrintAck();
-                                                            // markAckDownloaded();
-                                                        }
-                                                    }}
-                                                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
-                                                >
-                                                    <Printer size={14} /> Print Acknowledgement
-                                                </button>
-                                            </Modal.Footer>
-                                        </Modal>
-                                        <Modal
-                                            show={showSectorModal}
-                                            onHide={() => setShowSectorModal(false)}
-                                            size="xl"
-                                            centered
-                                            contentClassName="bg-white"
-                                            enforceFocus={false}
-                                            restoreFocus={false}
+                                        <button
+                                        onClick={() => router.visit(route("loans"))}
+                                        className="px-6 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium"
                                         >
-                                            <Modal.Header closeButton>
-                                                <Modal.Title>
-                                                    {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
-                                                </Modal.Title>
-                                            </Modal.Header>
-
-                                            <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh", display: "block" }}>
-                                                <div className="p-1 bg-gray-100 print-area text-black" ref={printRef}>
-                                                    {savedLoanData && renderSectorForm()}
-                                                </div>
-                                            </Modal.Body>
-
-                                            <Modal.Footer>
-                                                <Button variant="secondary" onClick={() => setShowSectorModal(false)}>Close</Button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        if (!showSectorModal) {
-                                                            setShowSectorModal(true);
-                                                            setTimeout(() => handlePrintSectorForm(), 1000);
-                                                        } else {
-                                                            handlePrintSectorForm();
-                                                        }
-                                                    }}
-                                                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
-                                                >
-                                                    <Printer size={14} /> Print
-                                                </button>
-                                            </Modal.Footer>
-                                        </Modal>
+                                        Back to Loans
+                                        </button>
+                                    </div>
                                     </div>
                                 </div>
+
+                                {/* ---------- MODALS (UNCHANGED LOGIC) ---------- */}
+
+                                <Modal
+                                    show={showModal1}
+                                    onHide={() => setShowModal1(false)}
+                                    size="xl"
+                                    centered
+                                    contentClassName="bg-white"
+                                    enforceFocus={false}
+                                    restoreFocus={false}
+                                >
+                                    <Modal.Header closeButton className="no-print">
+                                    <Modal.Title>📄 Application Form View</Modal.Title>
+                                    </Modal.Header>
+
+                                    <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh" }}>
+                                    <div className="p-1 bg-gray-100 print-area text-black" ref={ackPrintRef}>
+                                        {savedLoanData && <AppF loan={savedLoanData} auth={auth} />}
+                                    </div>
+                                    </Modal.Body>
+
+                                    <Modal.Footer className="no-print">
+                                    <Button variant="secondary" onClick={() => setShowModal1(false)}>
+                                        Close
+                                    </Button>
+                                    <button
+                                        onClick={() => handlePrintAck()}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-md flex items-center gap-1 text-sm"
+                                    >
+                                        <Printer size={14} /> Print
+                                    </button>
+                                    </Modal.Footer>
+                                </Modal>
+
+                                <Modal
+                                    show={showSectorModal}
+                                    onHide={() => setShowSectorModal(false)}
+                                    size="xl"
+                                    centered
+                                    contentClassName="bg-white"
+                                    enforceFocus={false}
+                                    restoreFocus={false}
+                                >
+                                    <Modal.Header closeButton>
+                                    <Modal.Title>
+                                        {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
+                                    </Modal.Title>
+                                    </Modal.Header>
+
+                                    <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh" }}>
+                                    <div className="p-1 bg-gray-100 print-area text-black" ref={printRef}>
+                                        {savedLoanData && renderSectorForm()}
+                                    </div>
+                                    </Modal.Body>
+
+                                    <Modal.Footer>
+                                    <Button variant="secondary" onClick={() => setShowSectorModal(false)}>
+                                        Close
+                                    </Button>
+                                    <button
+                                        onClick={() => handlePrintSectorForm()}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-md flex items-center gap-1 text-sm"
+                                    >
+                                        <Printer size={14} /> Print
+                                    </button>
+                                    </Modal.Footer>
+                                </Modal>
+                                </div>
+
+
                             )}
                         </div>
                     </div>
