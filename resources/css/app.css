@@ -18,7 +18,13 @@ a {
     padding: 10px;
     margin-top: 30px;
 }
-
+.fldset .fldScroll{
+  padding-top: 10px;
+  padding-bottom: 10px;
+  height: 450px;
+  overflow: hidden;
+  overflow-y: scroll;
+}
 .fldset legend {
     background-color: #22c55e;
     text-align: left;

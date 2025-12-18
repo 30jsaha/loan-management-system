@@ -1227,6 +1227,23 @@ class LoanController extends Controller
 
         return response()->json(['message' => 'Mail sent']);
     }
+    public function sendApprovalMail(Request $request)
+    {
+        $request->validate([
+            'loan_id' => 'required|exists:loan_applications,id',
+            'body' => 'required|string',
+        ]);
+
+        $loan = Loan::with('customer')->findOrFail($request->loan_id);
+
+        Mail::raw($request->body, function ($msg) use ($loan) {
+            // $msg->to($loan->customer->email)
+            $msg->to("jsaha.adzguru@gmail.com")
+                ->subject('Loan Application Completed');
+        });
+
+        return response()->json(['message' => 'Mail sent']);
+    }
     public function getFnRangeByAmount(Request $request)
     {
         $validated = $request->validate([
