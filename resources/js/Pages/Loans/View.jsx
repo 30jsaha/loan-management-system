@@ -11,12 +11,13 @@ import LoanDocumentsUpload from '@/Components/LoanDocumentsUpload';
 import { ArrowLeft, Download, Eye, Printer } from "lucide-react";
 import Swal from "sweetalert2";
 import { MultiSelect } from 'primereact/multiselect';
-import { currencyPrefix } from "@/config";
 import AppF from "@/Components/AppF";
 import HealthF from "@/Components/HealthF";
 import EduF from "@/Components/EduF";
 import EduPrintFormat from "@/Components/EduPrintFormat";
 import Select from "react-select";
+import {formatCurrency} from "@/Utils/formatters";
+import {currencyPrefix} from "@/config";
 
 export default function View({ auth, loans, loanId, rejectionReasons }) {
     // console.log("Initial rejectionReasons prop: ", rejectionReasons);
@@ -87,6 +88,11 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const isEducation = orgSector === "Education";
     const canPrintSector = isHealth || isEducation; // Render for both
     const sectorDocTitle = isHealth ? "Health Declaration Form" : "Education Grant Form";
+
+    const [showApprovalSuccess, setShowApprovalSuccess] = useState(false);
+    const [approvalMailBody, setApprovalMailBody] = useState("");
+    const [isSendingApprovalMail, setIsSendingApprovalMail] = useState(false);
+
 
     const [loanFormData, setLoanFormData] = useState({
         id: loan ? loan.id : null,
@@ -399,26 +405,50 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         setAllDocVerified(checkAllDocsVerified());
     }, [loan, checkAllDocsVerified]);
 
+    // const handleApprove = async () => {
+    //     try {
+    //         await axios.post(`/api/loans/${loanId}/approve`);
+    //         setMessage("✅ Loan approved successfully!");
+    //         Swal.fire({
+    //             title: "Success !",
+    //             text: "Loan approved successfully!",
+    //             icon: "success"
+    //         });
+    //         router.visit(route("loans"));
+    //     } catch (error) {
+    //         console.error(error);
+    //         setMessage("❌ Failed to approve loan.");
+    //         Swal.fire({
+    //             title: "Error !",
+    //             text: "Failed to approve loan!",
+    //             icon: "error"
+    //         });
+    //     }
+    // };
     const handleApprove = async () => {
         try {
-            await axios.post(`/api/loans/${loanId}/approve`);
-            setMessage("✅ Loan approved successfully!");
+            await axios.post(`/api/loans/${loan.id}/approve`);
+
+            const mailTemplate = buildApprovalMailBody(loan);
+            setApprovalMailBody(mailTemplate);
+
             Swal.fire({
-                title: "Success !",
-                text: "Loan approved successfully!",
+                title: "Approved!",
+                text: "Loan approved successfully.",
                 icon: "success"
             });
-            router.visit(route("loans"));
-        } catch (error) {
-            console.error(error);
-            setMessage("❌ Failed to approve loan.");
+
+            setShowApprovalSuccess(true); // 🔥 switch UI
+        } catch (err) {
+            console.error(err);
             Swal.fire({
-                title: "Error !",
-                text: "Failed to approve loan!",
+                title: "Error",
+                text: "Approval failed",
                 icon: "error"
             });
         }
     };
+
 
     const handleReject = () => {
         setShowLoanRejectModal(true); // Open modal instead of rejecting immediately
@@ -965,6 +995,47 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         }
     };
 
+    const buildApprovalMailBody = (loan) => {
+        const customer = loan.customer;
+
+        return `
+            Dear ${customer.first_name} ${customer.last_name},
+
+            We are pleased to inform you that your loan application has been **approved**.
+
+            📄 Loan Details:
+            • Loan ID: ${loan.id}
+            • Approved Amount: ${currencyPrefix} ${formatCurrency(loan.loan_amount_approved)}
+            • Interest Rate: ${loan.interest_rate}%
+            • Tenure: ${loan.tenure_fortnight} fortnights
+            • EMI Amount: ${currencyPrefix} ${formatCurrency(loan.emi_amount)}
+
+            🏦 Disbursement will be processed as per the agreed terms.
+
+            If you have any questions, please contact our support team.
+
+            Best regards,
+            ${loan.company?.company_name || "Loan Approval Team"}
+            `.trim();
+    };
+
+    const handleSendApprovalMail = async () => {
+        try {
+            setIsSendingApprovalMail(true);
+
+            await axios.post(`/api/loans/send-approval-mail`, {
+                loan_id: loanId,
+                body: approvalMailBody
+            });
+
+            Swal.fire("Sent!", "Approval email sent successfully.", "success");
+        } catch (e) {
+            Swal.fire("Error", "Failed to send email.", "error");
+        } finally {
+            setIsSendingApprovalMail(false);
+        }
+    };
+
     // const approvalBlockers = useMemo(() => {
     //     if (!loan?.documents?.length) return { blocked: true, reason: "No documents uploaded" };
 
@@ -1065,6 +1136,56 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                 <div className="text-center py-5">
                     <Spinner animation="border" variant="primary" />
                     <p className="mt-2 text-gray-600">Loading loan details...</p>
+                </div>
+            ) : showApprovalSuccess ? (
+                <div className="p-8 text-center animate__animated animate__fadeIn">
+
+                    <div className="max-w-6xl mx-auto bg-green-50 border border-green-200 rounded-lg p-6">
+
+                        <h2 className="text-2xl font-bold text-green-700 mb-3">
+                            ✅ Loan Approved Successfully
+                        </h2>
+
+                        <p className="text-gray-700 mb-6">
+                            The loan has been approved. You may now notify the customer.
+                        </p>
+
+                        {/* EMAIL BODY */}
+                        <div className="text-left mb-4">
+                            <label className="block text-sm font-semibold mb-1">
+                                Approval Email Body
+                            </label>
+                            <textarea
+                                rows={10}
+                                value={approvalMailBody}
+                                onChange={(e) => setApprovalMailBody(e.target.value)}
+                                className="w-full border rounded-md p-3 text-sm font-mono
+                                        focus:ring-2 focus:ring-green-500"
+                            />
+                        </div>
+
+                        {/* ACTIONS */}
+                        <div className="flex justify-center gap-3 mt-4">
+                            <button
+                                onClick={handleSendApprovalMail}
+                                disabled={isSendingApprovalMail}
+                                className={`px-5 py-2 rounded-md text-white ${
+                                    isSendingApprovalMail
+                                        ? "bg-gray-400 cursor-not-allowed"
+                                        : "bg-green-600 hover:bg-green-700"
+                                }`}
+                            >
+                                {isSendingApprovalMail ? "Sending..." : "📧 Send Email"}
+                            </button>
+
+                            <button
+                                onClick={() => router.visit(route("loans"))}
+                                className="px-5 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+                            >
+                                Back to Loans
+                            </button>
+                        </div>
+                    </div>
                 </div>
             ) : (
                 <>
