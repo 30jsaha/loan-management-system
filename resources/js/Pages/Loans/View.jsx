@@ -873,18 +873,6 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             setIsReuploading(false);
         }
     };
-    // if (loading) {
-    //     return (
-    //         <AuthenticatedLayout user={auth.user}>
-    //             {/* <div className="p-6 text-gray-700">Loading loan details...</div> */}
-    //             <div className="text-center py-5">
-    //                 <Spinner animation="border" variant="primary" />
-    //                 <p className="mt-2 text-gray-600">Loading loan details...</p>
-    //             </div>
-    //         </AuthenticatedLayout>
-    //     );
-    // }
-    //  console.log("LOAN DATA:", loan);
 
     const handleVerifyDoc = async (docId, status) => {
         if (status === "Rejected") {
@@ -977,46 +965,96 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         }
     };
 
+    // const approvalBlockers = useMemo(() => {
+    //     if (!loan?.documents?.length) return { blocked: true, reason: "No documents uploaded" };
+
+    //     // 1️⃣ Any pending docs
+    //     const hasPending = loan.documents.some(
+    //         doc => doc.verification_status === "Pending"
+    //     );
+
+    //     if (hasPending) {
+    //         return {
+    //             blocked: true,
+    //             reason: "Some documents are still pending verification"
+    //         };
+    //     }
+
+    //     // 2️⃣ Any REQUIRED document rejected
+    //     const rejectedRequiredDoc = loan.documents.find(
+    //         doc =>
+    //             doc.verification_status === "Rejected" &&
+    //             Number(doc.is_required) === 1
+    //     );
+
+    //     if (rejectedRequiredDoc) {
+    //         console.log("reason: ",`Required document rejected: ${rejectedRequiredDoc.doc_type}`);
+    //         return {
+    //             blocked: true,
+    //             canReject: true,
+    //             reason: `Required document rejected: ${rejectedRequiredDoc.doc_type}`
+    //         };
+    //     }
+
+    //     // ✅ All clear
+    //     return { blocked: false, canReject: false, reason: "" };
+    // }, [loan]);
     const approvalBlockers = useMemo(() => {
-        if (!loan?.documents?.length) return { blocked: true, reason: "No documents uploaded" };
+        if (!loan?.documents?.length) {
+            return { blocked: true, canReject: false, reason: "No documents uploaded" };
+        }
 
-        // 1️⃣ Any pending docs
-        const hasPending = loan.documents.some(
-            doc => doc.verification_status === "Pending"
-        );
-
-        if (hasPending) {
+        // 1️⃣ Pending docs block everything
+        if (loan.documents.some(d => d.verification_status === "Pending")) {
             return {
                 blocked: true,
+                canReject: false,
                 reason: "Some documents are still pending verification"
             };
         }
 
-        // 2️⃣ Any REQUIRED document rejected
-        const rejectedRequiredDoc = loan.documents.find(
-            doc =>
-                doc.verification_status === "Rejected" &&
-                Number(doc.is_required) === 1
+        // 2️⃣ Required doc rejected → allow Reject only
+        const rejectedRequired = loan.documents.find(
+            d =>
+                d.verification_status === "Rejected" &&
+                Number(d.is_required) === 1
         );
 
-        if (rejectedRequiredDoc) {
-            console.log("reason: ",`Required document rejected: ${rejectedRequiredDoc.doc_type}`);
+        if (rejectedRequired) {
             return {
                 blocked: true,
-                reason: `Required document rejected: ${rejectedRequiredDoc.doc_type}`
+                canReject: true,
+                reason: `Required document rejected: ${rejectedRequired.doc_type}`
             };
         }
 
-        // ✅ All clear
-        return { blocked: false, reason: "" };
-    }, [loan]);
+        // ✅ All good
+        return { blocked: false, canReject: true, reason: "" };
+    }, [loan?.documents]);
 
+
+    // const isApproveDisabled =
+    //     approvalBlockers.blocked ||
+    //     !loan.video_consent_path ||
+    //     !loan.isda_signed_upload_path ||
+    //     !loan.org_signed_upload_path;
+
+    // const isRejectDisabled =
+    //     (approvalBlockers.blocked && !approvalBlockers.canReject) ||
+    //     !loan.video_consent_path ||
+    //     !loan.isda_signed_upload_path ||
+    //     !loan.org_signed_upload_path;
+    const missingMandatoryUploads =
+    !loan.video_consent_path ||
+    !loan.isda_signed_upload_path ||
+    !loan.org_signed_upload_path;
 
     const isApproveDisabled =
-        approvalBlockers.blocked ||
-        !loan.video_consent_path ||
-        !loan.isda_signed_upload_path ||
-        !loan.org_signed_upload_path;
+        approvalBlockers.blocked || missingMandatoryUploads;
+
+    const isRejectDisabled =
+        (!approvalBlockers.canReject) || missingMandatoryUploads;
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -3191,9 +3229,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
                                                             <button
                                                                 onClick={handleReject}
-                                                                disabled={isApproveDisabled}
+                                                                disabled={isRejectDisabled}
                                                                 className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md
-                                                                ${isApproveDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                                ${isRejectDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
                                                             >
                                                                 Reject
                                                             </button>
