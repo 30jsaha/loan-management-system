@@ -19,7 +19,7 @@ class LoanApplication extends Model
 
     protected $fillable = [
         'company_id','customer_id','organisation_id',
-        'loan_type','purpose','other_purpose_text',
+        'loan_type','purpose', 'purpose_id', 'other_purpose_text',
         'loan_amount_applied','loan_amount_approved',
         'tenure_fortnight','emi_amount','interest_rate',
         'elegible_amount','total_repay_amt','total_interest_amt',
