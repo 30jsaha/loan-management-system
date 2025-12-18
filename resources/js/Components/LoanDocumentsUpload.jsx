@@ -51,7 +51,7 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
   //   ) {
   //     setMessage((prev) => ({
   //       ...prev,
-  //       [docType]: "❌ Only .pdf, .docx, or .txt files allowed.",
+  //       [docType]: "❌ Only .pdf, .docx, or .txt files allowed.",toast
   //     }));
   //     return;
   //   }
@@ -129,7 +129,9 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
         ...prev,
         [docType]: "✅ Uploaded successfully!",
       }));
-      toast.success(`${docType} uploaded successfully!`);
+      toast.success(`${docType} uploaded successfully!`,{
+        duration:3000
+      });
     } catch (error) {
       console.error("Upload failed:", error);
       setMessage((prev) => ({
