@@ -96,6 +96,28 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
     setIsEditing(false);
     setSelectedLoanTypes([]);
   };
+  const showValidationErrors = (errorResponse) => {
+    const errors = errorResponse?.data?.errors;
+
+    if (!errors) {
+      toast.error(errorResponse?.data?.message || "Something went wrong", {
+        duration: 4000,
+        style: { background: "#dc2626", color: "#fff" },
+      });
+      return;
+    }
+
+    // Flatten Laravel error object → array of messages
+    const messages = Object.values(errors).flat();
+
+    // Show each message as separate toast
+    messages.forEach((msg) => {
+      toast.error(msg, {
+        duration: 4000,
+        style: { background: "#dc2626", color: "#fff" },
+      });
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -111,9 +133,16 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
       loadOrganisationList();
     } catch (err) {
       console.error(err);
-      const errorMsg = err.response?.data?.message || err.message || "Error saving organisation";
-      toast.error(errorMsg);
-    }
+
+      if (err.response?.status === 422) {
+        showValidationErrors(err.response);
+      } else {
+        toast.error(err.response?.data?.message || "Error saving organisation", {
+          duration: 4000,
+          style: { background: "#dc2626", color: "#fff" },
+        });
+      }
+        }
   };
   
   const handleEdit = (org) => {
