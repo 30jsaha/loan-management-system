@@ -117,7 +117,7 @@ export default function View({ auth, customerId }) {
                     ["DOB", customer.dob ? new Date(customer.dob).toLocaleDateString() : "—"],
                     ["Dependents", customer.no_of_dependents ?? "—"],
                     ["Created", new Date(customer.created_at).toLocaleDateString()],
-                    ["Joined Date", new Date(customer.date_joined).toLocaleDateString()],
+                    ["Customer Since", new Date(customer.date_joined).toLocaleDateString()],
                   ]}
                 />
               </div>
