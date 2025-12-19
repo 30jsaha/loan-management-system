@@ -20,6 +20,9 @@ import EduF from "@/Components/EduF";
 import EduPrintFormat from "@/Components/EduPrintFormat";
 import toast, { Toaster } from "react-hot-toast";
 import Select from "react-select";
+import { UserCheck, Briefcase } from "lucide-react";
+
+
 
 export default function Create({ auth, loan_settings }) {
     const [loanPurposes, setLoanPurposes] = useState([]);
@@ -451,7 +454,7 @@ export default function Create({ auth, loan_settings }) {
 
             // return;
             const res = await axios.post('/api/loans', loanFormData);
-            setMessage('✅ Loan application data saved successfully!');
+            setMessage('Loan application data saved successfully!');
             Swal.fire({
                 title: "Success",
                 text: "Loan application data saved successfully!",
@@ -974,18 +977,25 @@ export default function Create({ auth, loan_settings }) {
                             </Col>
                         </Row>
                         <div className="p-6 pt-2 text-gray-900">
-                            {message && (
-                                <div className={`mb-4 p-3 rounded ${message.startsWith('✅')
-                                    ? 'bg-green-100 text-green-700'
-                                    : message.startsWith('ℹ️')
-                                        ? 'bg-sky-200 text-black-700'
-                                        : 'bg-red-100 text-red-700'
-                                    }`
-                                }>
+{message && (
+  <div className="mb-4 p-3 rounded flex items-center gap-2 bg-green-100 text-green-700">
+    
+    {/* 👤 Customer saved */}
+    {message.includes("customer data saved") && (
+      <UserCheck size={18} className="text-green-700" />
+    )}
 
-                                    {message}
-                                </div>
-                            )}
+    {/* 💼 Loan saved */}
+    {message.includes("Loan application data saved") && (
+      <Briefcase size={18} className="text-green-700" />
+    )}
+
+    <span className="text-sm">{message}</span>
+  </div>
+)}
+
+
+
                             {!isCompleted && (
                                 <>
                                     <div className="tabs">
@@ -1014,7 +1024,7 @@ export default function Create({ auth, loan_settings }) {
                                             onNext={(savedCustomer) => {
                                                 //toast.dismiss();
                                                 setStep(2);
-                                                const infoMsg = '✅ customer data saved. You can continue filling the loan application.';
+                                                const infoMsg = 'customer data saved. You can continue filling the loan application.';
                                                 setMessage(infoMsg);
                                                 // show same message in SweetAlert
                                                 // Swal.fire({
