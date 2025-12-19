@@ -46,8 +46,6 @@ export default function Create({ auth, loan_settings }) {
     const [savedLoanData, setSavedLoanData] = useState({});
     const [fnRange, setFnRange] = useState(null);
     const [isFetchingFn, setIsFetchingFn] = useState(false);
-    const [showRepayment, setShowRepayment] = useState(false);
-
     const [customerDisplayValue, setCustomerDisplayValue] = useState("");
     const [formData, setFormData] = useState({
         cus_id: 0,
@@ -123,90 +121,6 @@ export default function Create({ auth, loan_settings }) {
     const isEmpty = (obj) => Object.keys(obj).length === 0;
 
     useBeforeUnload(isFormDirty, formData);
-    const getMinTenureByAmount = (amount, loanSetting) => {
-        if (!loanSetting || !amount) return loanSetting?.min_loan_term_months || 0;
-        const amt = parseFloat(amount);
-        const tiers = [
-            {
-            min: loanSetting.tier1_min_amount,
-            max: loanSetting.tier1_max_amount,
-            termMin: loanSetting.tier1_min_term,
-            },
-            {
-            min: loanSetting.tier2_min_amount,
-            max: loanSetting.tier2_max_amount,
-            termMin: loanSetting.tier2_min_term,
-            },
-            {
-            min: loanSetting.tier3_min_amount,
-            max: loanSetting.tier3_max_amount,
-            termMin: loanSetting.tier3_min_term,
-            },
-            {
-            min: loanSetting.tier4_min_amount,
-            max: loanSetting.tier4_max_amount,
-            termMin: loanSetting.tier4_min_term,
-            },
-        ];
-        for (const tier of tiers) {
-            if (
-            tier.min != null &&
-            tier.max != null &&
-            amt >= tier.min &&
-            amt <= tier.max
-            ) {
-            return tier.termMin;
-            }
-        }
-        return loanSetting.min_loan_term_months;
-        };
-    useEffect(() => {
-    if (!loanFormData.loan_type || !loanFormData.loan_amount_applied) return;
-    if (!Array.isArray(loanSettings)) return;
-
-    const selectedLoanSetting = loanSettings.find(
-        (ls) => ls.id === Number(loanFormData.loan_type)
-    );
-
-    if (!selectedLoanSetting) return;
-
-    const minTenure = getMinTenureByAmount(
-        loanFormData.loan_amount_applied,
-        selectedLoanSetting
-    );
-
-    // ✅ Auto-fill only if empty or below minimum
-    setLoanFormData((prev) => ({
-        ...prev,
-        tenure_fortnight:
-        !prev.tenure_fortnight || prev.tenure_fortnight < minTenure
-            ? minTenure
-            : prev.tenure_fortnight,
-    }));
-
-    // 🔥 Also fetch FN range
-    fetchFnRange(loanFormData.loan_amount_applied);
-    //   setTimeout(() => {
-    //     calculateRepaymentDetails();
-    //   }, 0);
-
-    }, [loanFormData.loan_type, loanFormData.loan_amount_applied]);
-    useEffect(() => {
-    if (
-        loanFormData.loan_type &&
-        loanFormData.loan_amount_applied > 0 &&
-        loanFormData.tenure_fortnight > 0 &&
-        loanFormData.interest_rate > 0
-    ) {
-        calculateRepaymentDetails();
-    }
-    }, [
-    loanFormData.loan_type,           // 👈 loan type selection
-    loanFormData.loan_amount_applied, // 👈 already present
-    loanFormData.tenure_fortnight,    // 👈 auto-filled
-    loanFormData.interest_rate        // 👈 auto-filled
-    ]);
-
 
     const fetchCustomers = async () => {
         try {
@@ -666,8 +580,6 @@ export default function Create({ auth, loan_settings }) {
             total_repay_amt: parseFloat(totalRepay),
             emi_amount: parseFloat(repayPerFN),
         }));
-         // ✅ FORCE TABLE VISIBILITY
-            setShowRepayment(true);
     };
     // Recalculate repayment details whenever relevant fields change
     // useEffect(() => {
@@ -1281,45 +1193,49 @@ export default function Create({ auth, loan_settings }) {
                                                     <div className="col-md-4">
                                                         <label className="form-label">Loan Type</label>
                                                         <select
-  className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
-  name="loan_type"
-  value={loanFormData.loan_type}
-  onChange={(e) => {
-    loanHandleChange(e);
+                                                            className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                            name="loan_type" value={loanFormData.loan_type}
+                                                            onChange={(e) => {
+                                                                loanHandleChange(e);
+                                                        
+                                                                const selectedLoanTypeId = e.target.value;
 
-    const selectedLoanTypeId = e.target.value;
+                                                                if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+                                                                    // Find selected loan setting based on loan type
+                                                                    const selectedLoanSetting = loanSettings.find(
+                                                                        (ls) => ls.id === Number(selectedLoanTypeId)
+                                                                    );
 
-    if (Array.isArray(loanSettings) && loanSettings.length > 0) {
-      const selectedLoanSetting = loanSettings.find(
-        (ls) => ls.id === Number(selectedLoanTypeId)
-      );
+                                                                   
+                                                                    // return;
+                                                                    if (selectedLoanSetting) {
+                                                                        const {
+                                                                            process_fees,
+                                                                            interest_rate,
+                                                                        } = selectedLoanSetting;
 
-      if (selectedLoanSetting) {
-        const {
-          process_fees,
-          interest_rate,
-        } = selectedLoanSetting;
+                                                                        // Auto-fill processing fee and interest rate
+                                                                        setLoanFormData((prev) => ({
+                                                                            ...prev,
+                                                                            processing_fee: parseFloat(process_fees),
+                                                                            interest_rate: parseFloat(interest_rate)
+                                                                        }));
+                                                                        //make the form read-only and disabled for these two fields
+                                                                        document.querySelector('input[name="processing_fee"]').readOnly = true;
+                                                                        document.querySelector('input[name="interest_rate"]').readOnly = true;
+                                                                        document.querySelector('input[name="processing_fee"]').disabled = true;
+                                                                        document.querySelector('input[name="interest_rate"]').disabled = true;
 
-        setLoanFormData((prev) => ({
-          ...prev,
-          processing_fee: parseFloat(process_fees),
-          interest_rate: parseFloat(interest_rate)
-        }));
-
-        document.querySelector('input[name="processing_fee"]').readOnly = true;
-        document.querySelector('input[name="interest_rate"]').readOnly = true;
-        document.querySelector('input[name="processing_fee"]').disabled = true;
-        document.querySelector('input[name="interest_rate"]').disabled = true;
-
-        let val = parseFloat(loanFormData.loan_amount_applied);
-        if (!isNaN(val) && val > 0) {
-          fetchFnRange(val);
-        }
-      }
-    }
-  }}
->
-
+                                                                        let val = parseFloat(loanFormData.loan_amount_applied);
+                                                                        console.log("On select loan type amt applied val: ", val);
+                                                                        if (!isNaN(val) && val > 0) {
+                                                                            fetchFnRange(val); // 🔥 API call here
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }}
+                                                        // required
+                                                        >
                                                             (<option value="">Select Loan Type</option>
                                                             {loanTypes.map((lt) => (
                                                                 <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
@@ -1451,34 +1367,27 @@ export default function Create({ auth, loan_settings }) {
                                                     </div>
                                                 </div>
 
-{showRepayment && (
-  <div
-    className="row mb-3 p-4 animate__animated animate__fadeInDown"
-    id="repayDetailsDiv"
-  >
-    <fieldset className="fldset w-full">
-      <legend className="font-semibold">Repayment Details</legend>
-
-      <div className="row mt-3">
-        <div className="col-md-3">
-          <label className="form-label fw-bold">Total Interest (PGK)</label>
-          <div>{loanFormData.total_interest_amt.toFixed(2)}</div>
-        </div>
-
-        <div className="col-md-3">
-          <label className="form-label fw-bold">Total Repay (PGK)</label>
-          <div>{loanFormData.total_repay_amt.toFixed(2)}</div>
-        </div>
-
-        <div className="col-md-3">
-          <label className="form-label fw-bold">Repay per FN (PGK)</label>
-          <div>{loanFormData.emi_amount.toFixed(2)}</div>
-        </div>
-      </div>
-    </fieldset>
-  </div>
-)}
-
+                                                {(loanFormData.total_interest_amt) ? (
+                                                    <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id="repayDetailsDiv">
+                                                        <fieldset className="fldset w-full">
+                                                            <legend className="font-semibold">Repayment Details</legend>
+                                                            <div className="row mt-3">
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Total Interest (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
+                                                                </div>
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Total Repay (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
+                                                                </div>
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Repay per FN (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
+                                                                </div>
+                                                            </div>
+                                                        </fieldset>
+                                                    </div>
+                                                ) : null}
 
                                                 <div className="row mb-3">
                                                     <div className="col-md-4">

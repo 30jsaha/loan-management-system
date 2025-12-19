@@ -233,18 +233,21 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
   };
 
   // Helper component for Sortable Header (Centered)
-  const SortableHeader = ({ label, columnKey }) => (
-    <th 
-        className="border px-2 py-3 cursor-pointer hover:bg-emerald-700 transition-colors select-none text-center" 
-        onClick={() => handleSort(columnKey)}
-    >
-        {/* Changed justify-between to justify-center to center content */}
-        <div className="flex items-center justify-center gap-2"> 
-            <span>{label}</span>
-            {renderSortIcon(columnKey)}
-        </div>
-    </th>
-  );
+const SortableHeader = ({ label, columnKey }) => (
+  <th
+    className="border px-2 py-3 cursor-pointer
+               bg-green-500 text-white
+               hover:bg-emerald-700
+               transition-colors select-none text-center"
+    onClick={() => handleSort(columnKey)}
+  >
+    <div className="flex items-center justify-center gap-2">
+      <span>{label}</span>
+      {renderSortIcon(columnKey)}
+    </div>
+  </th>
+);
+
 
   return (
     <AuthenticatedLayout
@@ -392,7 +395,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
           <table className="w-full border-collapse text-sm">
             <thead className="bg-emerald-600 text-white">
               <tr>
-                <th className="border px-2 py-3 cursor-pointer text-center" onClick={() => handleSort(null)}>#</th>
+                <th className="border px-2 py-3 cursor-pointer text-center bg-green-500  hover:bg-emerald-700" onClick={() => handleSort(null)}>#</th>
                 <SortableHeader label="Organisation Name" columnKey="organisation_name" />
                 <SortableHeader label="Sector" columnKey="sector_type" />
                 <SortableHeader label="Dept Code" columnKey="department_code" />
@@ -403,7 +406,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                 <SortableHeader label="Contact No" columnKey="contact_no" />
                 <SortableHeader label="Email" columnKey="email" />
                 <SortableHeader label="Status" columnKey="status" />
-                <th className="border px-2 py-3 text-center">Actions</th>
+                <th className="border px-2 py-3 text-center bg-green-500  hover:bg-emerald-700">Actions</th>
               </tr>
             </thead>
 

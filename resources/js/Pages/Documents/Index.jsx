@@ -100,30 +100,39 @@ export default function DocumentTypesIndex({ auth }) {
     setIsEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-const handleDelete = (id) => {
-  Swal.fire({
-    title: "Are you sure?",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-  }).then(async (result) => {
-    if (result.isConfirmed) {
-      await axios.delete(`/api/document-type-remove/${id}`);
-      toast.success("Deleted successfully");
-      fetchDocs();
-    }
-  });
-};
-const generateDocKey = (name) => {
-  if (!name) return "";
-  return name
-    .replace(/[^a-zA-Z0-9 ]/g, "")
-    .split(" ")
-    .filter(Boolean)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join("");
-};
+  const handleDelete = (id) => {
+    Swal.fire({
+      title: "Are you sure?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await axios.delete(`/api/document-type-remove/${id}`);
+        toast.success("Deleted successfully");
+        fetchDocs();
+      }
+    });
+  };
+  const generateDocKey = (name) => {
+    if (!name) return "";
+    return name
+      .replace(/[^a-zA-Z0-9 ]/g, "")
+      .split(" ")
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join("");
+  };
 
+  const formatFileSize = (sizeKb) => {
+    if (!sizeKb && sizeKb !== 0) return "-";
+
+    if (sizeKb >= 1024) {
+      return `${(sizeKb / 1024).toFixed(2)} MB`;
+    }
+
+    return `${sizeKb} KB`;
+  };
 
 
   const fetchDocs = async () => {
@@ -301,8 +310,8 @@ const generateDocKey = (name) => {
                 {[
                   ["doc_key", "Doc Key"],
                   ["doc_name", "Document Name"],
-                  ["min_size_kb", "Min Size (KB)"],
-                  ["max_size_kb", "Max Size (KB)"],
+                  ["min_size_kb", "Min Size"],
+                  ["max_size_kb", "Max Size"],
                   ["is_required", "Required"],
                   ["active", "Status"],
                 ].map(([key, label]) => (
@@ -351,8 +360,8 @@ const generateDocKey = (name) => {
                     </td>
                     <td className="border px-2 py-2">{doc.doc_key}</td>
                     <td className="border px-2 py-2">{doc.doc_name}</td>
-                    <td className="border px-2 py-2 text-center">{doc.min_size_kb}</td>
-                    <td className="border px-2 py-2 text-center">{doc.max_size_kb}</td>
+                    <td className="border px-2 py-2 text-center">{formatFileSize(doc.min_size_kb)}</td>
+                    <td className="border px-2 py-2 text-center">{formatFileSize(doc.max_size_kb)}</td>
                     <td className="border px-2 py-2 text-center">
                       <span
                         className={`px-2 py-1 text-xs rounded ${
