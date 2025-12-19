@@ -109,6 +109,22 @@ export default function DeptDatabase({ auth }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const requiredFields = [
+    "cust_name",
+    "emp_code",
+    "phone",
+    "email",
+    "gross_pay",
+    "net_pay",
+    "organization_id",
+  ];
+
+    for (let field of requiredFields) {
+    if (!formData[field]) {
+      toast.error(`Please fill ${field.replace("_", " ")}`);
+      return;
+    }
+  }
     try {
       toast.dismiss();
       if (!formData.organization_id) {
@@ -206,6 +222,7 @@ export default function DeptDatabase({ auth }) {
                   name={field}
                   value={formData[field] || ""}
                   onChange={handleChange}
+                  required
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   placeholder={`Enter ${field.replace("_", " ")}`}
                 />
@@ -213,7 +230,7 @@ export default function DeptDatabase({ auth }) {
             ))}
             <div className="flex flex-col">
               <label className="text-xs text-gray-600 mb-1">Organisation</label>
-              <select name="organization_id" value={formData.organization_id} onChange={handleChange} className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+              <select name="organization_id" value={formData.organization_id} onChange={handleChange} required className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
                 <option value="">Select Organisation</option>
                 {organisations.map((o) => (<option key={o.id} value={o.id}>{o.organisation_name}</option>))}
               </select>
