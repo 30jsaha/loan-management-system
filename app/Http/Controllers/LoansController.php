@@ -93,11 +93,13 @@ class LoansController extends Controller
     public function loan_setting_index()
     {
         // return Loan::all();
-        $loan_settings = LoanSetting::all();
-        $salary_slabs = SalarySlab::all();
+        $loan_settings = LoanSetting::orderBy('id', 'desc')->get();
+        $salary_slabs = SalarySlab::orderBy('id', 'desc')->get();
+        $loanPurpose = LoanPurpose::orderBy('id', 'desc')->get();
         return inertia('Loans/LoanSettingMaster', [
             'loan_settings' => $loan_settings,
             'salary_slabs' => $salary_slabs,
+            'loanPurpose' => $loanPurpose
         ]);
     }
     public function loan_income_slab_index()

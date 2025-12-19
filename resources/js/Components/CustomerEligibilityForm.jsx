@@ -5,7 +5,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 
 export default function CustomerEligibilityForm({ customerId, grossSalary, netSalary, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, eleigibleAmount }) {
-
+  const [isChecking, setIsChecking] = useState(false);
   const [formData, setFormData] = useState({
     customer_id: customerId || 0,
     gross_salary_amt: 0,
@@ -113,6 +113,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
 
   const handleCheckEligibility = async (e) => {
     e.preventDefault();
+    setIsChecking(true);
     try {
       //implement validations to all fields
       // ✅ Smart validation
@@ -128,12 +129,38 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             title: "Warning!",
             text: msg,
             icon: "warning",
+            confirmButtonText: "OK",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              // 🎯 Focus the invalid field
+              field.ref?.current?.focus();
+            }
           });
-
-          // 🎯 Focus the invalid field
-          field.ref?.current?.focus();
-
+          setIsChecking(false);
           return; // ❌ stop execution
+        }
+        if (field.name == "current_net_pay_amt" && formData["current_net_pay_amt"] >= formData["gross_salary_amt"]) {
+          Swal.fire({
+            title: "Warning!",
+            text: `Net salary amt. cannot be ${formData["current_net_pay_amt"] == formData["gross_salary_amt"] ? "same as " : "greater than the"} gross salary amt.`,
+            icon: "warning",
+          });
+          setIsChecking(false);
+          return;
+        }
+        if (field.name == "proposed_pva_amt" && (value == 0 || value == null)) {
+          Swal.fire({
+            title: "Warning!",
+            text: `Proposed PVA amount cannot be zero`,
+            icon: "warning",
+            confirmButtonText: "OK",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              field.ref?.current?.focus();
+            }
+          });
+          setIsChecking(false);
+          return;
         }
       }
 
@@ -167,6 +194,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
       if (typeof eleigibleAmount === "function") {
         eleigibleAmount(parseFloat(res.data.data.max_allowable_pva_amt));
       }
+      setIsChecking(false);
     } catch (error) {
       console.error(error);
       setMessage("❌ Error calculating eligibility.");
@@ -349,8 +377,24 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
         </Col>
         <Col md={4} className="text-right">
           <div className="mt-4 text-end">
-            <Button variant="primary" type="button" onClick={handleCheckEligibility}>
-              Check Eligibility
+
+            <Button
+              variant="primary"
+              type="button"
+              onClick={handleCheckEligibility}
+              className={`${isChecking ? "cursor-not-allowed opacity-50" : ""}`}
+            >
+              {isChecking ? (
+                <>
+                  <span
+                    className={`inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2`}
+                    role="status"
+                  ></span>
+                  Checking...
+                </>
+              ) : (
+                "Check Eligibility →"
+              )}
             </Button>
           </div>
         </Col>
@@ -409,8 +453,8 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
           <div className="mt-4 text-center">
             <span
               className={`inline-block px-4 py-2 rounded text-sm font-semibold ${result.is_eligible_for_loan
-                  ? "bg-green-100 text-green-700 border border-green-300"
-                  : "bg-red-100 text-red-700 border border-red-300"
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-100 text-red-700 border border-red-300"
                 }`}
             >
               {result.is_eligible_for_loan ? "✅ Eligible for Loan" : "❌ Not Eligible"}

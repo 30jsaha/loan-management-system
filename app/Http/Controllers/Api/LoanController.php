@@ -533,8 +533,13 @@ class LoanController extends Controller
                 ->where('active', 1)
                 ->pluck('slab_id')
                 ->toArray();
-
-            $ls->ss_id_list = $slabs;   // 👈 add this
+            $loanPurpose = DB::table('assigned_purpose_under_loans')
+                ->where('loan_id', $ls->id)
+                ->where('active', 1)
+                ->pluck('purpose_id')
+                ->toArray();
+            $ls->ss_id_list = $slabs;
+            $ls->purpose_id_list = $loanPurpose;
         }
 
         return response()->json($loanSettings);
@@ -554,11 +559,13 @@ class LoanController extends Controller
             'process_fees' => 'required|numeric',
             'min_repay_percentage_for_next_loan' => 'nullable|numeric',
             'effect_date' => 'required|date',
-            'end_date' => 'required|date',
+            'end_date' => 'nullable|date',
             'user_id' => 'nullable|integer',
 
             'ss_id_list' => 'nullable|array',
             'ss_id_list.*' => 'integer',
+            'purpose_id_list' => 'nullable|array',
+            'purpose_id_list.*' => 'integer',
         ]);
 
         if ($validator->fails()) {
@@ -583,11 +590,27 @@ class LoanController extends Controller
                 ]);
             }
         }
+        // Insert purpose
+        if (!empty($data['purpose_id_list'])) {
+            foreach ($data['purpose_id_list'] as $pid) {
+                DB::table('assigned_purpose_under_loans')->insert([
+                    'loan_id'   => $loanSetting->id,
+                    'purpose_id'   => $pid,
+                    'active'    => 1,
+                    'created_at'=> now(),
+                    'updated_at'=> now()
+                ]);
+            }
+        }
 
         // ⭐ Fetch slabs and return it to frontend
         $loanSetting->ss_id_list = DB::table('assigned_slabs_under_loan')
             ->where('loan_id', $loanSetting->id)
             ->pluck('slab_id')
+            ->toArray();
+        $loanSetting->purpose_id_list = DB::table('assigned_purpose_under_loans')
+            ->where('loan_id', $loanSetting->id)
+            ->pluck('purpose_id')
             ->toArray();
 
         return response()->json([
@@ -595,52 +618,9 @@ class LoanController extends Controller
             'data' => $loanSetting
         ]);
     }
-
-
-
     /**
      * ✅ Modify an existing loan setting
      */
-    // public function modify_loan_setting(Request $request, $id)
-    // {
-    //     try {
-    //         $loanSetting = LoanSetting::findOrFail($id);
-
-    //         $validator = Validator::make($request->all(), [
-    //             'loan_desc' => 'required|string|max:255',
-    //             'org_id' => 'nullable|integer',
-    //             'min_loan_amount' => 'required|numeric',
-    //             'max_loan_amount' => 'required|numeric',
-    //             'interest_rate' => 'required|numeric',
-    //             'amt_multiplier' => 'required|numeric',
-    //             'min_loan_term_months' => 'required|integer',
-    //             'max_loan_term_months' => 'required|integer',
-    //             'process_fees' => 'required|numeric',
-    //             'min_repay_percentage_for_next_loan' => 'nullable|numeric',
-    //             'effect_date' => 'nullable|date',
-    //             'end_date' => 'nullable|date',
-    //             'user_id' => 'nullable|integer',
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             Log::error('LoanSetting validation failed', $validator->errors()->toArray());
-    //             return response()->json(['errors' => $validator->errors()], 422);
-    //         }
-
-    //         $loanSetting->update($validator->validated());
-
-    //         //need to delete the previous ids and update assigned_slabs_under_loan table as well
-            
-
-    //         return response()->json([
-    //             'message' => 'Loan setting updated successfully',
-    //             'data' => $loanSetting,
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         Log::error('LoanSetting update failed: ' . $e->getMessage());
-    //         return response()->json(['message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
-    //     }
-    // }
     public function modify_loan_setting(Request $request, $id)
     {
         try {
@@ -664,6 +644,8 @@ class LoanController extends Controller
                 // multiple slabs
                 'ss_id_list' => 'nullable|array',
                 'ss_id_list.*' => 'integer',
+                'purpose_id_list' => 'nullable|array',
+                'purpose_id_list.*' => 'integer',
             ]);
 
             if ($validator->fails()) {
@@ -689,6 +671,10 @@ class LoanController extends Controller
             DB::table('assigned_slabs_under_loan')
                 ->where('loan_id', $loanSetting->id)
                 ->delete();
+            // 1️⃣ Delete old purpose assignments
+            DB::table('assigned_purpose_under_loans')
+                ->where('loan_id', $loanSetting->id)
+                ->delete();
 
             // 2️⃣ Insert new slab assignments
             if (!empty($data['ss_id_list'])) {
@@ -702,11 +688,28 @@ class LoanController extends Controller
                     ]);
                 }
             }
+            // 2️⃣ Insert new purpose assignments
+            if (!empty($data['purpose_id_list'])) {
+                foreach ($data['purpose_id_list'] as $pId) {
+                    DB::table('assigned_purpose_under_loans')->insert([
+                        'loan_id'   => $loanSetting->id,
+                        'purpose_id'=> $pId,
+                        'active'    => 1,
+                        'created_at'=> now(),
+                        'updated_at'=> now(),
+                    ]);
+                }
+            }
 
             // 3️⃣ Return updated slab IDs with the response
             $loanSetting->ss_id_list = DB::table('assigned_slabs_under_loan')
                 ->where('loan_id', $loanSetting->id)
                 ->pluck('slab_id')
+                ->toArray();
+            // 3️⃣ Return updated purpose IDs with the response
+            $loanSetting->purpose_id_list = DB::table('assigned_purpose_under_loans')
+                ->where('loan_id', $loanSetting->id)
+                ->pluck('purpose_id')
                 ->toArray();
 
             return response()->json([

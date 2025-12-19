@@ -1353,7 +1353,11 @@ export default function Create({ auth, loan_settings }) {
                                                         />
                                                         {fnRange && (
                                                             <div className="text-sm text-blue-600 mt-1">
-                                                                <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b> – <b>{fnRange.max}</b>&nbsp;FN</small>
+                                                                {fnRange.min == fnRange.max ? (
+                                                                    <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b>&nbsp;FN</small>
+                                                                ) : (
+                                                                    <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b> – <b>{fnRange.max}</b>&nbsp;FN</small>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -1414,11 +1418,10 @@ export default function Create({ auth, loan_settings }) {
                                                 </div>
                                             </fieldset>
                                             <Row className="mt-4 text-end">
-                                                <Col>
+                                                <Col className='text-end '>
                                                     <button
                                                         type="submit"
-                                                        className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${!isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""
-                                                            }`}
+                                                        className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${!isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""}`}
                                                         disabled={!isEligible || isChecking}
                                                     >
                                                         {isChecking ? (

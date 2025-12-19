@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\AllCustMaster;
 use App\Models\Customer;
+use Illuminate\Validation\Rule;
 
 class AllCustController extends Controller
 {
@@ -114,30 +115,88 @@ class AllCustController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'cust_name' => 'required|string|max:200',
-            'emp_code' => 'nullable|string|max:50',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:100',
+        $rules = [
+            'cust_name' => [
+                'required',
+                'string',
+                'max:200',
+                'unique:all_cust_master,cust_name'
+            ],
+            'emp_code' => [
+                'nullable',
+                'string',
+                'max:50',
+                'unique:all_cust_master,emp_code'
+            ],
+            'phone' => [
+                'nullable',
+                'string',
+                'max:20',
+                'unique:all_cust_master,phone'
+            ],
+            'email' => [
+                'nullable',
+                'email',
+                'max:100',
+                'unique:all_cust_master,email'
+            ],
             'gross_pay' => 'nullable|numeric|min:0',
             'net_pay' => 'nullable|numeric|min:0',
             'organization_id' => 'required|numeric|exists:organisation_master,id',
-        ]);
+        ];
 
+        $messages = [
+            'cust_name.unique' => 'Customer name already exists.',
+            'emp_code.unique'  => 'Employee code already exists.',
+            'phone.unique'     => 'Phone number already exists.',
+            'email.unique'     => 'Email address already exists.',
+        ];
+
+        $validated = $request->validate($rules,$messages);
+        
         $cust = AllCustMaster::create($validated);
         return response()->json($cust, 201);
     }
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'cust_name' => 'required|string|max:200',
-            'emp_code' => 'nullable|string|max:50',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:100',
+        $rules = [
+            'cust_name' => [
+                'required',
+                'string',
+                'max:200',
+                Rule::unique('all_cust_master', 'cust_name')->ignore($id),
+            ],
+            'emp_code' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('all_cust_master', 'emp_code')->ignore($id),
+            ],
+            'phone' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('all_cust_master', 'phone')->ignore($id),
+            ],
+            'email' => [
+                'nullable',
+                'email',
+                'max:100',
+                Rule::unique('all_cust_master', 'email')->ignore($id),
+            ],
             'gross_pay' => 'nullable|numeric|min:0',
             'net_pay' => 'nullable|numeric|min:0',
             'organization_id' => 'required|numeric|exists:organisation_master,id',
-        ]);
+        ];
+
+        $messages = [
+            'cust_name.unique' => 'Customer name already exists.',
+            'emp_code.unique'  => 'Employee code already exists.',
+            'phone.unique'     => 'Phone number already exists.',
+            'email.unique'     => 'Email address already exists.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         $customer = AllCustMaster::findOrFail($id);
         $customer->update($validated);
