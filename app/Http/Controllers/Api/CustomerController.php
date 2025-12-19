@@ -91,7 +91,7 @@ class CustomerController extends Controller
         //     'net_salary' => 'nullable|numeric',
         // ]);
         $rules = [
-            'company_id' => 'required|integer|exists:company_master,id',
+            // 'company_id' => 'required|integer|exists:company_master,id',
             'user_id' => 'nullable|integer',
             'organisation_id' => 'required|integer|exists:organisation_master,id',
 
@@ -168,6 +168,7 @@ class CustomerController extends Controller
         $validated = $request->validate($rules, $messages);
 
         // ✅ Set user ID automatically
+        $validated['company_id'] = $validated['company_id'] ?? 1;
         $validated['user_id'] = $request->user()->id ?? 0;
 
         // ✅ Directly create customer without duplicate check

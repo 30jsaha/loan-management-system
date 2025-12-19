@@ -22,6 +22,7 @@ export default function CustomerForm({
   const [empSearch, setEmpSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isExistingFound, setIsExistingFound] = useState(false);
+  const [isAutoFilled, setIsAutoFilled] = useState(false);
   const [empOptions, setEmpOptions] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -102,6 +103,9 @@ export default function CustomerForm({
   const handleChange = (e) => {
     setIsFormDirty(false);
     const { name, value } = e.target;
+    if (isAutoFilled) {
+      setIsAutoFilled(false);
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -201,6 +205,7 @@ export default function CustomerForm({
       // ✅ CUSTOMER EXISTS → Autofill EVERYTHING
       // FIX: Added || "" to handle nulls from DB
       // FIX: Added missing fields (no_of_dependents, spouse details)
+      setIsAutoFilled(true);
       setFormData((prev) => ({
         ...prev,
         cus_id: existingCustomer.id,
@@ -258,6 +263,7 @@ export default function CustomerForm({
       return;
     }else{
       setIsExistingFound(false);
+      setIsAutoFilled(false);
     }
 
     // 🔹 Step 2: Fallback → API employee list (your existing logic)
@@ -419,9 +425,9 @@ export default function CustomerForm({
                     name="organisation_id"
                     value={formData.organisation_id || ""}
                     onChange={handleChange}
-                    disabled={!isOrgSelectable && formData.organisation_id != ""}
-                    aria-readonly={!isOrgSelectable}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && formData.organisation_id != "" && "bg-gray-100 cursor-not-allowed"}`}
+                    disabled={isExistingFound && isAutoFilled}
+                    aria-readonly={isExistingFound}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${isExistingFound && isAutoFilled && "bg-gray-100 cursor-not-allowed"}`}
                     required
                   >
                     <option value="">-- Select Organisation --</option>
@@ -452,9 +458,9 @@ export default function CustomerForm({
                     name="first_name"
                     value={formData.first_name || ""}
                     onChange={handleChange}
-                    disabled={!isOrgSelectable && formData.first_name != ""}
+                    disabled={isExistingFound && isAutoFilled}
                     required
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && formData.first_name != "" && "bg-gray-100 cursor-not-allowed"}`}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${isExistingFound && isAutoFilled && "bg-gray-100 cursor-not-allowed"}`}
                   />
                 </div>
                 <div>
@@ -467,8 +473,8 @@ export default function CustomerForm({
                     value={formData.last_name || ""}
                     onChange={handleChange}
                     required
-                    disabled={!isOrgSelectable && formData.last_name != ""}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && formData.last_name != "" && "bg-gray-100 cursor-not-allowed"}`}
+                    disabled={isExistingFound && isAutoFilled}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${isExistingFound && isAutoFilled && "bg-gray-100 cursor-not-allowed"}`}
                   />
                 </div>
               </div>
@@ -480,8 +486,8 @@ export default function CustomerForm({
                     name="gender"
                     value={formData.gender || ""}
                     onChange={handleChange}
-                    disabled={!isOrgSelectable && formData.gender != ""}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${!isOrgSelectable && formData.gender != "" && "bg-gray-100 cursor-not-allowed"}`}
+                    disabled={isExistingFound && isAutoFilled}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${isExistingFound && isAutoFilled && "bg-gray-100 cursor-not-allowed"}`}
                   >
                     <option value="">-- Select --</option>
                     <option value="Male">Male</option>
