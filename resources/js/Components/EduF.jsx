@@ -172,7 +172,7 @@ export default function EduF({ auth, loan }) {
               <div className="col-span-3 flex flex-col items-center">
                 <div className="text-xs">Description</div>
                 <div className="flex mt-1">
-                  <ChaarBox value={loan?.purpose} />
+                  <ChaarBox value={loan?.purpose?.purpose_name} />
                 </div>
               </div>
 

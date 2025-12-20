@@ -5,16 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class RejectionReson extends Model
+class assignedPurposeUnderLoans extends Model
 {
     use HasFactory;
 
-    protected $table = 'rejection_reasons';
+    protected $table = 'assigned_purpose_under_loans';
 
     protected $fillable = [
-        'reason_desc',
-        'do_allow_reapply',
-        'reason_type',
-        'created_by'
+        'loan_id',
+        'purpose_id',
+        'active',
     ];
 }

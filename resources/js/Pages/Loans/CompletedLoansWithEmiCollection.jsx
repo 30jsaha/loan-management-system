@@ -155,7 +155,8 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
             .filter(inst => inst.status?.toLowerCase() === "paid")
             .reduce((sum, inst) => sum + Number(inst.emi_amount || 0), 0);
     };
-
+    
+    let runningBalance = selectedLoan ? Number(selectedLoan.total_repay_amt || 0) : 0;
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -163,7 +164,7 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
         >
             <Head title="Completed Loans" />
 
-            <div className="p-6 bg-gray-100 min-h-screen">
+            <div className="p-6 bg-gray-100 min-h-screen max-w-7xl mx-auto">
 
                 {/* --- Background Card Wrapper --- */}
                 <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
@@ -479,34 +480,69 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                                 
                                 {selectedLoan.installments && selectedLoan.installments.length > 0 ? (
                                     <div className="table-responsive border rounded" style={{ maxHeight: "300px", overflowY: "auto" }}>
+                                       
+
                                         <table className="table table-striped table-hover mb-0 text-sm">
                                             <thead className="bg-light sticky-top" style={{ top: 0, zIndex: 1 }}>
-                                                <tr>
-                                                    <th className="py-2 text-center">#</th>
-                                                    <th className="py-2">Due Date</th>
-                                                    <th className="py-2">Payment Date</th>
-                                                    <th className="py-2 text-end">Amount</th>
-                                                    <th className="py-2 text-center">Status</th>
-                                                </tr>
+                                            <tr>
+                                                <th className="py-2 text-center">#</th>
+                                                <th className="py-2">Due Date</th>
+                                                <th className="py-2">Payment Date</th>
+                                                <th className="py-2 text-end">Amount</th>
+                                                <th className="py-2 text-end">Balance</th>
+                                                <th className="py-2 text-center">Status</th>
+                                                
+                                            </tr>
                                             </thead>
                                             <tbody>
-                                                {selectedLoan.installments.map((inst, index) => (
-                                                    <tr key={index}>
-                                                        <td className="text-center">{inst.installment_no}</td>
-                                                        <td>{inst.due_date ? new Date(inst.due_date).toLocaleDateString() : '-'}</td>
-                                                        <td>{inst.payment_date ? new Date(inst.payment_date).toLocaleDateString() : '-'}</td>
-                                                        <td className="text-end fw-bold">{formatCurrency(inst.emi_amount)}</td>
-                                                        <td className="text-center">
-                                                            <span className={`badge ${
-                                                                inst.status === 'Paid' ? 'bg-success' : 
-                                                                inst.status === 'Overdue' ? 'bg-danger' : 'bg-warning text-dark'
-                                                            }`}>
-                                                                {inst.status}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                            {selectedLoan.installments.map((inst, index) => {
+                                                const paidAmount =
+                                                inst.status === "Paid" ? Number(inst.emi_amount || 0) : 0;
+
+                                                runningBalance -= paidAmount;
+
+                                                return (
+                                                <tr key={index}>
+                                                    <td className="text-center">{inst.installment_no}</td>
+
+                                                    <td>
+                                                    {inst.due_date
+                                                        ? new Date(inst.due_date).toLocaleDateString()
+                                                        : "-"}
+                                                    </td>
+
+                                                    <td>
+                                                    {inst.payment_date
+                                                        ? new Date(inst.payment_date).toLocaleDateString()
+                                                        : "-"}
+                                                    </td>
+
+                                                    <td className="text-end fw-bold">
+                                                    {formatCurrency(inst.emi_amount)}
+                                                    </td>
+                                                    <td className="text-end fw-bold text-danger">
+                                                        {formatCurrency(runningBalance)}
+                                                    </td>
+                                                    <td className="text-center">
+                                                    <span
+                                                        className={`badge ${
+                                                        inst.status === "Paid"
+                                                            ? "bg-success"
+                                                            : inst.status === "Overdue"
+                                                            ? "bg-danger"
+                                                            : "bg-warning text-dark"
+                                                        }`}
+                                                    >
+                                                        {inst.status}
+                                                    </span>
+                                                    </td>
+
+
+                                                </tr>
+                                                );
+                                            })}
                                             </tbody>
+
                                         </table>
                                     </div>
                                 ) : (

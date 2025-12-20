@@ -10,7 +10,8 @@ use App\Models\allCustMaster;
 use App\Models\SalarySlab;
 use App\Models\OrganisationMaster as Org;
 use App\Models\InstallmentDetail;
-use App\Models\RejectionReson;
+use App\Models\RejectionReason;
+use App\Models\LoanPurpose;
 
 class LoansController extends Controller
 {
@@ -24,13 +25,44 @@ class LoansController extends Controller
             'salary_slabs'=>$salary_slabs
         ]);
     }
+    public function purpose_index()
+    {
+        $loanPurpose = LoanPurpose::orderBy('id', 'desc')->get();
+        return inertia('Loans/PurposeIndex', [
+            'loanPurpose'=>$loanPurpose
+        ]);
+    }
     public function loanDetailsView($id)
     {
-        $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
-        ->where('id',$id)
-        ->orderBy('created_at','desc')->get();
+        // $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        // ->where('id',$id)
+        // ->orderBy('created_at','desc')->get();
 
-        $rejectionReasons = RejectionReson::all();
+        $loans = Loan::with([
+            'customer',
+            'organisation',
+            'installments',
+            'loan_settings',
+            'company',
+            'purpose',
+            'documents' => function ($q) {
+                $q->leftJoin(
+                    'document_types',
+                    'document_types.doc_key',
+                    '=',
+                    'document_upload.doc_type'
+                )
+                ->select(
+                    'document_upload.*',
+                    'document_types.is_required',
+                    'document_types.doc_name'
+                );
+            }
+        ])->findOrFail($id);
+
+        // return response()->json($loan);
+
+        $rejectionReasons = RejectionReason::all();
 
         return inertia('Loans/View', [
             'loans' => $loans,
@@ -40,11 +72,11 @@ class LoansController extends Controller
     }
     public function loanPrintDetailsView($id)
     {
-        $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company', 'purpose'])
         ->where('id',$id)
         ->orderBy('created_at','desc')->get();
 
-        $rejectionReasons = RejectionReson::all();
+        $rejectionReasons = RejectionReason::all();
 
         return inertia('Loans/PrintFunc', [
             'loans' => $loans,
@@ -61,11 +93,13 @@ class LoansController extends Controller
     public function loan_setting_index()
     {
         // return Loan::all();
-        $loan_settings = LoanSetting::all();
-        $salary_slabs = SalarySlab::all();
+        $loan_settings = LoanSetting::orderBy('id', 'desc')->get();
+        $salary_slabs = SalarySlab::orderBy('id', 'desc')->get();
+        $loanPurpose = LoanPurpose::orderBy('id', 'desc')->get();
         return inertia('Loans/LoanSettingMaster', [
             'loan_settings' => $loan_settings,
             'salary_slabs' => $salary_slabs,
+            'loanPurpose' => $loanPurpose
         ]);
     }
     public function loan_income_slab_index()
@@ -88,7 +122,8 @@ class LoansController extends Controller
             'documents',
             'installments',
             'loan_settings',
-            'company'
+            'company',
+            'purpose'
         ])
         ->where('status', 'Approved')
         ->orderBy('id', 'desc')
@@ -135,7 +170,7 @@ class LoansController extends Controller
     {
         $perPage = (int) $request->get('per_page', 15);
 
-        $approvedLoans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        $approvedLoans = Loan::with(['customer','organisation','documents','installments','loan_settings','company','purpose'])
         ->where('status','Approved')
         ->where('id',$id)
         ->orderBy('approved_date','desc')->get();
@@ -162,7 +197,8 @@ class LoansController extends Controller
             'documents',
             'installments',
             'loan_settings',
-            'company'
+            'company',
+            'purpose'
         ])
             ->where('status', 'Approved')
             ->orderBy('approved_date', 'desc')
@@ -226,7 +262,8 @@ class LoansController extends Controller
             'documents',
             'installments',
             'loan_settings',
-            'company'
+            'company',
+            'purpose'
         ])
         ->where('status', 'Approved')
         ->orderBy('approved_date', 'desc')

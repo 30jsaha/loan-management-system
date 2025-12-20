@@ -255,7 +255,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
 
             <div className="min-h-screen bg-gray-100 p-6 space-y-6 ">
                 {/* Back Button */}
-                <div className="max-w-9xl mx-auto -mb-3 -mt-2 ">
+                <div className="max-w-7xl mx-auto -mb-3 -mt-2 ">
                     <Link
                         href={route("loans")}
                         className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
@@ -265,7 +265,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                 </div>
 
                 {/* Form */}
-                <div className="max-w-9xl mx-auto bg-white rounded-0xl shadow-lg p-6 border border-gray-100">
+                <div className="max-w-7xl mx-auto bg-white rounded-0xl shadow-lg p-6 border border-gray-100">
                     <h4 className="text-lg font-semibold text-gray-700 mb-4">{isEditing ? "Edit Slabs" : "Add Slab"}</h4>
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div>
@@ -314,7 +314,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                 </div>
 
                 {/* --- FILTER BAR --- */}
-                <div className="max-w-9xl mx-auto bg-white shadow-sm border border-gray-100  p-3 flex flex-wrap md:flex-nowrap items-center justify-between gap-2">
+                <div className="max-w-7xl mx-auto bg-white shadow-sm border border-gray-100  p-3 flex flex-wrap md:flex-nowrap items-center justify-between gap-2">
                     {/* Search */}
                     <div className="flex items-center bg-gray-50 rounded-md px-2.5 py-1.5 w-full md:w-1/2 focus-within:ring-2 focus-within:ring-emerald-500 transition-all duration-200 border border-gray-200">
                         <svg
@@ -395,7 +395,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
 
 
                 {/* Table - compact, no horizontal scroll */}
-                <div className="w-full bg-white shadow-lg border border-gray-700 overflow-hidden">
+                <div className="max-w-7xl mx-auto bg-white shadow-lg border border-gray-700 overflow-hidden overflow-x-auto">
                     <table className="w-full text-sm text-left border border-gray-700 border-collapse">
                         <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
                             <tr>
@@ -433,7 +433,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                         <tbody>
                             {paginatedData.map((slab, idx) => {
                                 const isEditingRow = formData.id === slab.id; // highlight current edit row
-                                return (
+                                return ( 
                                     <tr
                                         key={slab.id}
                                         className={`transition-all duration-300 ${isEditingRow

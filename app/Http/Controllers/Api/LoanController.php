@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\LoanSetting;
 use App\Models\LoanTierRule;
 use App\Models\InstallmentDetail;
+use App\Models\LoanPurpose;
 use Illuminate\Support\Facades\Validator;
 //newly added -- edit document upload
 use App\Models\DocumentUpload;
@@ -18,6 +19,7 @@ use App\Models\DocumentUpload;
 use Illuminate\Support\Facades\Log;
 use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class LoanController extends Controller
 {
@@ -28,9 +30,104 @@ class LoanController extends Controller
     {
         // return Loan::orderBy('id', 'desc')->alongwith('customer')->get();
         // return inertia('Loans/Index'); // points to resources/js/Pages/Loans/Index.jsx
-        return Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company'])
+        return Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company', 'purpose'])
             ->orderBy('id', 'desc')->get();
     }
+    public function getLoanPurposes()
+    {
+        $loanPurpose = LoanPurpose::orderBy('id', 'desc')->get();
+
+        return response()->json($loanPurpose);
+    }
+
+    public function createLoanPurposes(Request $request)
+    {
+        $validated = $request->validate([
+            'purpose_name' => 'required|string|max:255|unique:loan_purposes,purpose_name',
+            'status' => 'required|in:0,1',
+        ]);
+
+        try {
+            $purpose = LoanPurpose::create([
+                'purpose_name' => $validated['purpose_name'],
+                'status' => $validated['status'],
+            ]);
+
+            return response()->json([
+                'message' => 'Loan purpose created successfully.',
+                'data' => $purpose,
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Loan purpose creation failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to create loan purpose.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function updateLoanPurposes(Request $request, $loanId)
+    {
+        $validated = $request->validate([
+            'purpose_name' => 'required|string|max:255|unique:loan_purposes,purpose_name,' . $loanId,
+            'status' => 'required|in:0,1',
+        ]);
+
+        try {
+            $purpose = LoanPurpose::findOrFail($loanId);
+
+            $purpose->update([
+                'purpose_name' => $validated['purpose_name'],
+                'status' => $validated['status'],
+            ]);
+
+            return response()->json([
+                'message' => 'Loan purpose updated successfully.',
+                'data' => $purpose,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Loan purpose update failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to update loan purpose.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function deleteLoanPurpose($loanId)
+    {
+        try {
+            $purpose = LoanPurpose::findOrFail($loanId);
+
+            // 🔒 Safety check: prevent delete if already used
+            $isUsed = Loan::where('purpose_id', $loanId)->exists();
+
+            if ($isUsed) {
+                return response()->json([
+                    'message' => 'This loan purpose is already used in loan applications and cannot be deleted.'
+                ], 422);
+            }
+
+            $purpose->delete();
+
+            return response()->json([
+                'message' => 'Loan purpose deleted successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Loan purpose deletion failed: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to delete loan purpose.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
     public function create()
     {
         // return Loan::all();
@@ -49,10 +146,11 @@ class LoanController extends Controller
 
             // 'loan_type' => 'required|in:New,Consolidation,Rollover,Top-Up',
             'loan_type' => 'required|integer|min:0',
-            'purpose' => 'nullable|in:School Fee,Personal Expenses,Funeral Expenses,Refinancing,Other',
+            'purpose' => 'nullable|string',
             'other_purpose_text' => 'nullable|string|max:255',
 
             'loan_amount_applied' => 'required|numeric|min:0',
+            'purpose_id' => 'required|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
             'emi_amount' => 'nullable|numeric',
@@ -125,10 +223,11 @@ class LoanController extends Controller
 
             // 'loan_type' => 'required|in:New,Consolidation,Rollover,Top-Up',
             'loan_type' => 'nullable|integer|min:0',
-            'purpose' => 'nullable|in:Tuition,Living,Medical,Appliance,Car,Travel,HomeImprovement,Other',
+            'purpose' => 'nullable|string',
             'other_purpose_text' => 'nullable|string|max:255',
 
             'loan_amount_applied' => 'required|numeric|min:0',
+            'purpose_id' => 'required|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'integer',
             'emi_amount' => 'nullable|numeric',
@@ -197,11 +296,29 @@ class LoanController extends Controller
      */
     public function show(string $id)
     {
-        // $loan = Loan::findOrFail($id);
-        // return response()->json($loan);
 
-        $loan = Loan::with(['customer', 'organisation', 'documents', 'installments', 'loan_settings', 'company'])
-            ->orderBy('id', 'desc')->findOrFail($id);
+        $loan = Loan::with([
+            'customer',
+            'organisation',
+            'installments',
+            'loan_settings',
+            'company',
+            'purpose',
+            'documents' => function ($q) {
+                $q->leftJoin(
+                    'document_types',
+                    'document_types.doc_key',
+                    '=',
+                    'document_upload.doc_type'
+                )
+                ->select(
+                    'document_upload.*',
+                    'document_types.is_required',
+                    'document_types.doc_name'
+                );
+            }
+        ])->findOrFail($id);
+
         return response()->json($loan);
     }
 
@@ -416,8 +533,13 @@ class LoanController extends Controller
                 ->where('active', 1)
                 ->pluck('slab_id')
                 ->toArray();
-
-            $ls->ss_id_list = $slabs;   // 👈 add this
+            $loanPurpose = DB::table('assigned_purpose_under_loans')
+                ->where('loan_id', $ls->id)
+                ->where('active', 1)
+                ->pluck('purpose_id')
+                ->toArray();
+            $ls->ss_id_list = $slabs;
+            $ls->purpose_id_list = $loanPurpose;
         }
 
         return response()->json($loanSettings);
@@ -437,11 +559,13 @@ class LoanController extends Controller
             'process_fees' => 'required|numeric',
             'min_repay_percentage_for_next_loan' => 'nullable|numeric',
             'effect_date' => 'required|date',
-            'end_date' => 'required|date',
+            'end_date' => 'nullable|date',
             'user_id' => 'nullable|integer',
 
             'ss_id_list' => 'nullable|array',
             'ss_id_list.*' => 'integer',
+            'purpose_id_list' => 'nullable|array',
+            'purpose_id_list.*' => 'integer',
         ]);
 
         if ($validator->fails()) {
@@ -466,11 +590,27 @@ class LoanController extends Controller
                 ]);
             }
         }
+        // Insert purpose
+        if (!empty($data['purpose_id_list'])) {
+            foreach ($data['purpose_id_list'] as $pid) {
+                DB::table('assigned_purpose_under_loans')->insert([
+                    'loan_id'   => $loanSetting->id,
+                    'purpose_id'   => $pid,
+                    'active'    => 1,
+                    'created_at'=> now(),
+                    'updated_at'=> now()
+                ]);
+            }
+        }
 
         // ⭐ Fetch slabs and return it to frontend
         $loanSetting->ss_id_list = DB::table('assigned_slabs_under_loan')
             ->where('loan_id', $loanSetting->id)
             ->pluck('slab_id')
+            ->toArray();
+        $loanSetting->purpose_id_list = DB::table('assigned_purpose_under_loans')
+            ->where('loan_id', $loanSetting->id)
+            ->pluck('purpose_id')
             ->toArray();
 
         return response()->json([
@@ -478,52 +618,9 @@ class LoanController extends Controller
             'data' => $loanSetting
         ]);
     }
-
-
-
     /**
      * ✅ Modify an existing loan setting
      */
-    // public function modify_loan_setting(Request $request, $id)
-    // {
-    //     try {
-    //         $loanSetting = LoanSetting::findOrFail($id);
-
-    //         $validator = Validator::make($request->all(), [
-    //             'loan_desc' => 'required|string|max:255',
-    //             'org_id' => 'nullable|integer',
-    //             'min_loan_amount' => 'required|numeric',
-    //             'max_loan_amount' => 'required|numeric',
-    //             'interest_rate' => 'required|numeric',
-    //             'amt_multiplier' => 'required|numeric',
-    //             'min_loan_term_months' => 'required|integer',
-    //             'max_loan_term_months' => 'required|integer',
-    //             'process_fees' => 'required|numeric',
-    //             'min_repay_percentage_for_next_loan' => 'nullable|numeric',
-    //             'effect_date' => 'nullable|date',
-    //             'end_date' => 'nullable|date',
-    //             'user_id' => 'nullable|integer',
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             Log::error('LoanSetting validation failed', $validator->errors()->toArray());
-    //             return response()->json(['errors' => $validator->errors()], 422);
-    //         }
-
-    //         $loanSetting->update($validator->validated());
-
-    //         //need to delete the previous ids and update assigned_slabs_under_loan table as well
-            
-
-    //         return response()->json([
-    //             'message' => 'Loan setting updated successfully',
-    //             'data' => $loanSetting,
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         Log::error('LoanSetting update failed: ' . $e->getMessage());
-    //         return response()->json(['message' => 'Internal Server Error', 'error' => $e->getMessage()], 500);
-    //     }
-    // }
     public function modify_loan_setting(Request $request, $id)
     {
         try {
@@ -547,6 +644,8 @@ class LoanController extends Controller
                 // multiple slabs
                 'ss_id_list' => 'nullable|array',
                 'ss_id_list.*' => 'integer',
+                'purpose_id_list' => 'nullable|array',
+                'purpose_id_list.*' => 'integer',
             ]);
 
             if ($validator->fails()) {
@@ -572,6 +671,10 @@ class LoanController extends Controller
             DB::table('assigned_slabs_under_loan')
                 ->where('loan_id', $loanSetting->id)
                 ->delete();
+            // 1️⃣ Delete old purpose assignments
+            DB::table('assigned_purpose_under_loans')
+                ->where('loan_id', $loanSetting->id)
+                ->delete();
 
             // 2️⃣ Insert new slab assignments
             if (!empty($data['ss_id_list'])) {
@@ -585,11 +688,28 @@ class LoanController extends Controller
                     ]);
                 }
             }
+            // 2️⃣ Insert new purpose assignments
+            if (!empty($data['purpose_id_list'])) {
+                foreach ($data['purpose_id_list'] as $pId) {
+                    DB::table('assigned_purpose_under_loans')->insert([
+                        'loan_id'   => $loanSetting->id,
+                        'purpose_id'=> $pId,
+                        'active'    => 1,
+                        'created_at'=> now(),
+                        'updated_at'=> now(),
+                    ]);
+                }
+            }
 
             // 3️⃣ Return updated slab IDs with the response
             $loanSetting->ss_id_list = DB::table('assigned_slabs_under_loan')
                 ->where('loan_id', $loanSetting->id)
                 ->pluck('slab_id')
+                ->toArray();
+            // 3️⃣ Return updated purpose IDs with the response
+            $loanSetting->purpose_id_list = DB::table('assigned_purpose_under_loans')
+                ->where('loan_id', $loanSetting->id)
+                ->pluck('purpose_id')
                 ->toArray();
 
             return response()->json([
@@ -627,7 +747,8 @@ class LoanController extends Controller
             'documents',
             'installments',
             'loan_settings',
-            'company'
+            'company',
+            'purpose',
         ])
         ->where('status', 'Approved')
         ->orderBy('id', 'desc')
@@ -685,56 +806,6 @@ class LoanController extends Controller
 
         ], 200);
     }
-
-
-    //new code with collectionId
-    // public function collectEMI(Request $request)
-    // {
-    //     $validated = $request->validate([
-    //         'loan_ids' => 'required|array',
-    //         'loan_ids.*' => 'exists:loan_applications,id',
-    //         'emi_counter' => 'nullable|integer|min:1',
-    //     ]);
-
-    //     // Generate 6-7 character collection ID (timestamp + random)
-    //     $collectionUid = strtoupper(substr(md5(time() . rand()), 0, 7));
-
-    //     foreach ($validated['loan_ids'] as $loanId) {
-
-    //         $loan = Loan::findOrFail($loanId);
-
-    //         // EMI Frequency
-    //         $emiFreq = LoanSetting::where('id', $loan->loan_type)
-    //             ->value('installment_frequency_in_days');
-
-    //         $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? $emiFreq : 14;
-
-    //         // Calculate next installment_no
-    //         $installmentNo = InstallmentDetail::where('loan_id', $loanId)->count() + 1;
-
-    //         // Insert EMI record
-    //         InstallmentDetail::create([
-    //             'loan_id' => $loanId,
-    //             'collection_uid' => $collectionUid,
-    //             'installment_no' => $installmentNo,
-    //             'due_date' => now(),
-    //             'emi_amount' => $loan->emi_amount,
-    //             'payment_date' => now(),
-    //             'status' => 'Paid',
-    //             'emi_collected_by_id' => auth()->user()->id,
-    //             'emi_collected_date' => now(),
-    //         ]);
-
-    //         // Update loan next due date
-    //         $loan->next_due_date = now()->addDays($emiFreq)->toDateString();
-    //         $loan->save();
-    //     }
-
-    //     return response()->json([
-    //         'message' => 'EMI collection recorded successfully!',
-    //         'collection_uid' => $collectionUid
-    //     ]);
-    // }
 
     public function collectEMI(Request $request)
     {
@@ -813,6 +884,7 @@ class LoanController extends Controller
             'purpose' => 'nullable|string|max:255',
             'other_purpose_text' => 'nullable|string|max:255',
             'loan_amount_applied' => 'required|numeric|min:0',
+            'purpose_id' => 'required|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
             'interest_rate' => 'nullable|numeric|min:0|max:100',
@@ -1013,12 +1085,13 @@ class LoanController extends Controller
         $validated = $request->validate([
             'id' => 'required|exists:loan_applications,id',
             'loan_type' => 'required|integer|min:0',
-            'purpose' => 'nullable|in:Tuition,Living,Medical,Appliance,Car,Travel,HomeImprovement,Other',
+            'purpose' => 'nullable|string',
             'other_purpose_text' => 'nullable|string|max:255',
 
             // 'loan_amount_applied' => 'required|numeric|min:0',
             // 'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
+            'purpose_id' => 'required|integer',
             'emi_amount' => 'nullable|numeric',
             'elegible_amount' => 'nullable|numeric',
             'total_repay_amt' => 'nullable|numeric',
@@ -1138,6 +1211,70 @@ class LoanController extends Controller
         return response()->json([
             'success' => true,
             'is_sent_for_approval' => $loan->is_sent_for_approval,
+        ]);
+    }
+    public function sendCompletionMail(Request $request)
+    {
+        $request->validate([
+            'loan_id' => 'required|exists:loan_applications,id',
+            'body' => 'required|string',
+        ]);
+
+        $loan = Loan::with('customer')->findOrFail($request->loan_id);
+
+        Mail::raw($request->body, function ($msg) use ($loan) {
+            // $msg->to($loan->customer->email)
+            $msg->to("jsaha.adzguru@gmail.com")
+                ->subject('Loan Application Completed');
+        });
+
+        return response()->json(['message' => 'Mail sent']);
+    }
+    public function sendApprovalMail(Request $request)
+    {
+        $request->validate([
+            'loan_id' => 'required|exists:loan_applications,id',
+            'body' => 'required|string',
+        ]);
+
+        $loan = Loan::with('customer')->findOrFail($request->loan_id);
+
+        Mail::raw($request->body, function ($msg) use ($loan) {
+            // $msg->to($loan->customer->email)
+            $msg->to("jsaha.adzguru@gmail.com")
+                ->subject('Loan Application Completed');
+        });
+
+        return response()->json(['message' => 'Mail sent']);
+    }
+    public function getFnRangeByAmount(Request $request)
+    {
+        $validated = $request->validate([
+            'loan_setting_id' => 'required|exists:loan_settings,id',
+            'amount' => 'required|numeric|min:1',
+        ]);
+
+        $amount = (float) $validated['amount'];
+
+        $rule = LoanTierRule::where('loan_setting_id', $validated['loan_setting_id'])
+            ->where('min_amount', '<=', $amount)
+            ->where('max_amount', '>=', $amount)
+            ->orderBy('min_amount')
+            ->first();
+
+        if (!$rule) {
+            return response()->json([
+                'valid' => false,
+                'message' => 'No FN rule found for the given loan amount.',
+            ], 422);
+        }
+
+        return response()->json([
+            'valid' => true,
+            'tier'  => $rule->tier_type,
+            'fn_min' => (int) $rule->min_term_fortnight,
+            'fn_max' => (int) $rule->max_term_fortnight,
+            'rule_id' => $rule->id,
         ]);
     }
 

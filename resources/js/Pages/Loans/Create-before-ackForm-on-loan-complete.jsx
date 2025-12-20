@@ -1,29 +1,20 @@
-import { use, useCallback, useEffect, useState, props, useMemo, useRef } from 'react';
-import { useReactToPrint } from "react-to-print";
+import { use, useCallback, useEffect, useState, props, useMemo } from 'react';
 import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs, Modal } from "react-bootstrap";
+import { Card, Container, Row, Col, Alert, Form, Button, Tab, Tabs } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import useBeforeUnload from '@/Components/useBeforeUnload';
 import LoanDocumentsUpload from '@/Components/LoanDocumentsUpload';
 import CustomerEligibilityForm from '@/Components/CustomerEligibilityForm';
 import CustomerForm from '@/Components/CustomerForm';
 //icon pack
-import { ArrowLeft, LucideNavigation, Check, Download, Printer, Eye } from "lucide-react";
+import { ArrowLeft, LucideNavigation, Check, Download } from "lucide-react";
 import Swal from 'sweetalert2';
 import {formatCurrency} from "@/Utils/formatters";
 import {currencyPrefix} from "@/config";
-import AppF from "@/Components/AppF";
-import HealthF from "@/Components/HealthF";
-import EduF from "@/Components/EduF";
-import EduPrintFormat from "@/Components/EduPrintFormat";
-import toast, { Toaster } from "react-hot-toast";
-import Select from "react-select";
 
 export default function Create({ auth, loan_settings }) {
-    const [loanPurposes, setLoanPurposes] = useState([]);
-    const [selectedLoanPurposeId, setSelectedLoanPurposeId] = useState("");
     const [isEligible, setIsEligible] = useState(false);
     const [isCustSelectable, setCustSelectable] = useState(true);
     const [recProposedPvaAmt, setRecProposedPvaAmt] = useState(0);
@@ -43,11 +34,8 @@ export default function Create({ auth, loan_settings }) {
     const [mailBody, setMailBody] = useState("");
     const [isSendingMail, setIsSendingMail] = useState(false);
     const [savedCustomerData, setSavedCustomerData] = useState({});
-    const [savedLoanData, setSavedLoanData] = useState({});
     const [fnRange, setFnRange] = useState(null);
     const [isFetchingFn, setIsFetchingFn] = useState(false);
-    const [showRepayment, setShowRepayment] = useState(false);
-
     const [customerDisplayValue, setCustomerDisplayValue] = useState("");
     const [formData, setFormData] = useState({
         cus_id: 0,
@@ -88,7 +76,6 @@ export default function Create({ auth, loan_settings }) {
         // organisation_id: "",
         loan_type: 0,
         purpose: "",
-        purpose_id: 0,
         other_purpose_text: "",
         loan_amount_applied: 0.00,
         tenure_fortnight: 0,
@@ -123,91 +110,6 @@ export default function Create({ auth, loan_settings }) {
     const isEmpty = (obj) => Object.keys(obj).length === 0;
 
     useBeforeUnload(isFormDirty, formData);
-    const getMinTenureByAmount = (amount, loanSetting) => {
-        if (!loanSetting || !amount) return loanSetting?.min_loan_term_months || 0;
-        const amt = parseFloat(amount);
-        const tiers = [
-            {
-            min: loanSetting.tier1_min_amount,
-            max: loanSetting.tier1_max_amount,
-            termMin: loanSetting.tier1_min_term,
-            },
-            {
-            min: loanSetting.tier2_min_amount,
-            max: loanSetting.tier2_max_amount,
-            termMin: loanSetting.tier2_min_term,
-            },
-            {
-            min: loanSetting.tier3_min_amount,
-            max: loanSetting.tier3_max_amount,
-            termMin: loanSetting.tier3_min_term,
-            },
-            {
-            min: loanSetting.tier4_min_amount,
-            max: loanSetting.tier4_max_amount,
-            termMin: loanSetting.tier4_min_term,
-            },
-        ];
-        for (const tier of tiers) {
-            if (
-            tier.min != null &&
-            tier.max != null &&
-            amt >= tier.min &&
-            amt <= tier.max
-            ) {
-            return tier.termMin;
-            }
-        }
-        return loanSetting.min_loan_term_months;
-        };
-    useEffect(() => {
-    if (!loanFormData.loan_type || !loanFormData.loan_amount_applied) return;
-    if (!Array.isArray(loanSettings)) return;
-
-    const selectedLoanSetting = loanSettings.find(
-        (ls) => ls.id === Number(loanFormData.loan_type)
-    );
-
-    if (!selectedLoanSetting) return;
-
-    const minTenure = getMinTenureByAmount(
-        loanFormData.loan_amount_applied,
-        selectedLoanSetting
-    );
-
-    // ✅ Auto-fill only if empty or below minimum
-    setLoanFormData((prev) => ({
-        ...prev,
-        tenure_fortnight:
-        !prev.tenure_fortnight || prev.tenure_fortnight < minTenure
-            ? minTenure
-            : prev.tenure_fortnight,
-    }));
-
-    // 🔥 Also fetch FN range
-    fetchFnRange(loanFormData.loan_amount_applied);
-    //   setTimeout(() => {
-    //     calculateRepaymentDetails();
-    //   }, 0);
-
-    }, [loanFormData.loan_type, loanFormData.loan_amount_applied]);
-    useEffect(() => {
-    if (
-        loanFormData.loan_type &&
-        loanFormData.loan_amount_applied > 0 &&
-        loanFormData.tenure_fortnight > 0 &&
-        loanFormData.interest_rate > 0
-    ) {
-        calculateRepaymentDetails();
-    }
-    }, [
-    loanFormData.loan_type,           // 👈 loan type selection
-    loanFormData.loan_amount_applied, // 👈 already present
-    loanFormData.tenure_fortnight,    // 👈 auto-filled
-    loanFormData.interest_rate        // 👈 auto-filled
-    ]);
-
-
     const fetchCustomers = async () => {
         try {
             const res = await axios.get('/api/customer-list', { withCredentials: true });
@@ -216,18 +118,9 @@ export default function Create({ auth, loan_settings }) {
             console.error('There was an error fetching the customers!', error);
         }
     };
-    const fetchLoanPurposes = async () => {
-        try {
-            const res = await axios.get('/api/loan-purposes-list', { withCredentials: true });
-            setLoanPurposes(res.data);
-        } catch (error) {
-            console.error('There was an error fetching the LoanPurposes!', error);
-        }
-    };
 
     useEffect(() => {
         fetchCustomers();
-        fetchLoanPurposes();
     }, []);
     const customerMap = useMemo(() => {
         const map = {};
@@ -529,9 +422,7 @@ export default function Create({ auth, loan_settings }) {
             loanFormData.tenure_fortnight = parseFloat(loanFormData.tenure_fortnight);
             // loanFormData.total_interest_amt = parseFloat(loanFormData.total_interest_amt);
             // loanFormData.total_repay_amt = parseFloat(loanFormData.total_repay_amt)
-            if (selectedLoanPurposeId) {
-                loanFormData.purpose_id=selectedLoanPurposeId;
-            }
+
             console.log("loanFormData before submit", loanFormData);
             console.log(typeof (loanFormData.loan_amount_applied));
 
@@ -544,7 +435,6 @@ export default function Create({ auth, loan_settings }) {
                 icon: "success"
             });
             const savedLoan = res.data.loan;
-            setSavedLoanData(savedLoan);
             setLoanFormData({
                 id: savedLoan.id,
                 // company_id: savedLoan.company_id,
@@ -610,14 +500,6 @@ export default function Create({ auth, loan_settings }) {
         }
 
     };
-    const loanPurposeOptions = Array.isArray(loanPurposes)
-    ? loanPurposes
-        .filter(p => Number(p.status) === 1)
-        .map(p => ({
-            value: p.id,
-            label: p.purpose_name
-        }))
-    : [];
     useEffect(() => {
         axios.get("/api/fetch-loan-temp-customer", { withCredentials: true })
 
@@ -666,8 +548,6 @@ export default function Create({ auth, loan_settings }) {
             total_repay_amt: parseFloat(totalRepay),
             emi_amount: parseFloat(repayPerFN),
         }));
-         // ✅ FORCE TABLE VISIBILITY
-            setShowRepayment(true);
     };
     // Recalculate repayment details whenever relevant fields change
     // useEffect(() => {
@@ -707,8 +587,7 @@ export default function Create({ auth, loan_settings }) {
                 customer_id: savedLoan.customer_id,
                 // organisation_id: savedLoan.organisation_id,
                 loan_type: savedLoan.loan_type,
-                purpose: savedLoan.purpose?.purpose_name || "",
-                purpose_id : savedLoan.purpose_id  || 0,
+                purpose: savedLoan.purpose || "",
                 other_purpose_text: savedLoan.other_purpose_text || "",
                 loan_amount_applied: savedLoan.loan_amount_applied || 0.00,
                 tenure_fortnight: savedLoan.tenure_fortnight || 0,
@@ -871,182 +750,23 @@ export default function Create({ auth, loan_settings }) {
             setIsFetchingFn(false);
         }
     };
-    useEffect(() => {
-    if (!savedLoanData?.id) return;
-
-    axios
-        .get(`/api/loans/${savedLoanData.id}`)
-        .then((res) => {
-            setSavedLoanData(res.data);   // ✅ correct
-            // setLoading(false);
-        })
-        .catch((error) => {
-            console.error("Failed to fetch loan:", error);
-            // setLoading(false);
-        });
-    }, [savedLoanData?.id]);
     const pdfPath = "/storage/uploads/documents/Loan Application Form - loanms.pdf";
     const fileName = "Loan Application Form - loanms.pdf";
-    const ackPrintRef = useRef(null);
-    const printRef = useRef(null);
-    const [ackReady, setAckReady] = useState(false);
-    const [showModal1, setShowModal1] = useState(false);
-    const [selectedDoc, setSelectedDoc] = useState(null);
-    const [showSectorModal, setShowSectorModal] = useState(false);
-    // Helper logic
-    const orgSector = savedLoanData?.organisation?.sector_type;
-    const isHealth = orgSector === "Health";
-    const isEducation = orgSector === "Education";
-    const canPrintSector = isHealth || isEducation; // Render for both
-    const sectorDocTitle = isHealth ? "Health Declaration Form" : "Education Grant Form";
-
-    const handlePrintSectorForm = useReactToPrint({
-        content: () => {
-            // Debug: Check what we're trying to print
-            console.log("Print content ref:", printRef.current);
-
-            // Make sure we have content
-            if (!printRef.current || !printRef.current.innerHTML.trim()) {
-                console.error("No content to print!");
-
-                // Try to force a re-render
-                setTimeout(() => {
-                    handlePrintSectorForm();
-                }, 500);
-
-                return null;
-            }
-
-            return printRef.current;
-        },
-        contentRef: printRef,         // <-- NEW in v3.0+
-        documentTitle: `Education_Form_${savedLoanData?.id || "Form"}`,
-        onBeforeGetContent: async () => {
-            console.log("Starting print process...");
-
-            return new Promise((resolve) => {
-                // Ensure component is fully rendered
-                setTimeout(() => {
-                    console.log("Content ready for printing:", printRef.current);
-                    resolve();
-                }, 1000); // Increased timeout to ensure DOM is ready
-            });
-        },
-        onAfterPrint: () => {
-            console.log("Printed successfully!");
-            Swal.fire({
-                title: 'Success!',
-                text: 'Document printed successfully.',
-                icon: 'success',
-                timer: 2000
-            });
-        },
-        onPrintError: (err) => {
-            console.error("Print error:", err);
-            Swal.fire({
-                title: 'Print Failed',
-                text: 'Unable to print the document. Please try again.',
-                icon: 'error'
-            });
-        },
-        removeAfterPrint: false,
-        copyStyles: true,
-    });
-    const renderSectorForm = () => {
-        if (!savedLoanData) return null;
-
-        return savedLoanData.organisation?.sector_type === "Health"
-            ? <HealthF auth={auth} loan={savedLoanData} />
-            : <EduPrintFormat auth={auth} loan={savedLoanData} />;
-    };
-    const handlePrintAck = useReactToPrint({
-        content: () => {
-            console.log("ACK PRINT CONTENT:", ackPrintRef.current);
-
-            if (!ackPrintRef.current || !ackPrintRef.current.innerHTML.trim()) {
-                console.error("No ACKNOWLEDGEMENT content to print!");
-
-                // Try again after rendering
-                setTimeout(() => {
-                    handlePrintAck();
-                }, 500);
-
-                return null;
-            }
-
-            return ackPrintRef.current;
-        },
-        contentRef: ackPrintRef,
-        documentTitle: `Acknowledgement_${savedLoanData?.id || ""}`,
-        onBeforeGetContent: async () => {
-            return new Promise((resolve) => {
-                setAckReady(true);
-                setTimeout(() => {
-                    console.log("ACK PRINT READY");
-                    resolve();
-                }, 1000);
-            });
-        },
-        onAfterPrint: () => {
-            setAckReady(false);
-        },
-        onPrintError: (err) => {
-            console.error("Acknowledgement Print Error:", err);
-            Swal.fire("Error", "Unable to print acknowledgement.", "error");
-        },
-        removeAfterPrint: false,
-        copyStyles: true,
-    });
     return (
         <AuthenticatedLayout
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">New Loan Application</h2>}
         >
+
             {/*  map the loan_settings passed from controller for debugging */}
             {/* <pre>
                 {JSON.stringify(loan_settings, null, 2)}
             </pre>
             <p>max_loan_amount: {`${loan_settings.max_loan_amount}`}</p> */}
             <Head title="New Loan Application" />
-            <Toaster
-                position="top-right"
-                toastOptions={{
-                duration: 3000,
-                }}
-            />
             <Alert key="primary" variant="primary">
                 Please go through the tabs to complete the loan application.
             </Alert>
-            <div
-                ref={ackPrintRef}
-                style={{
-                    position: "absolute",
-                    left: "-9999px",
-                    top: 0,
-                    width: "210mm",
-                    padding: "20mm",
-                    background: "white"
-                }}
-            >
-                {ackReady && savedLoanData && <AppF loan={savedLoanData} auth={auth} />}
-            </div>
-            <div className="p-4 bg-gray-100 print-area text-black">
-                {showSectorModal && (
-                    <div
-                        ref={printRef}
-                        style={{
-                            position: "absolute",
-                            left: "-9999px",
-                            top: 0,
-                            width: "210mm",
-                            padding: "20mm"
-                        }}
-                    >
-                        {renderSectorForm()}
-                    </div>
-
-                )}
-            </div>
             <div className="py-2">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -1100,16 +820,14 @@ export default function Create({ auth, loan_settings }) {
                                             setMessage={setMessage}
                                             setIsFormDirty={setIsFormDirty}
                                             onNext={(savedCustomer) => {
-                                                //toast.dismiss();
-                                                setStep(2);
                                                 const infoMsg = '✅ customer data saved. You can continue filling the loan application.';
                                                 setMessage(infoMsg);
                                                 // show same message in SweetAlert
-                                                // Swal.fire({
-                                                //     title: "Success",
-                                                //     text: infoMsg,
-                                                //     icon: "success"
-                                                // });
+                                                Swal.fire({
+                                                    title: "Success",
+                                                    text: infoMsg,
+                                                    icon: "success"
+                                                });
                                                 const displayLabel = `${savedCustomer.employee_no} - ${savedCustomer.first_name} ${savedCustomer.last_name}`;
                                                 setCustomerDisplayValue(displayLabel);
                                                 console.log("savedCustomer data",savedCustomer);
@@ -1281,45 +999,51 @@ export default function Create({ auth, loan_settings }) {
                                                     <div className="col-md-4">
                                                         <label className="form-label">Loan Type</label>
                                                         <select
-  className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
-  name="loan_type"
-  value={loanFormData.loan_type}
-  onChange={(e) => {
-    loanHandleChange(e);
+                                                            className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                            name="loan_type" value={loanFormData.loan_type}
+                                                            onChange={(e) => {
+                                                                loanHandleChange(e);
+                                                                //fetch loan settings based on selected loan type
+                                                                const selectedLoanTypeId = e.target.value;
 
-    const selectedLoanTypeId = e.target.value;
+                                                                if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+                                                                    // Find selected loan setting based on loan type
+                                                                    const selectedLoanSetting = loanSettings.find(
+                                                                        (ls) => ls.id === Number(selectedLoanTypeId)
+                                                                    );
 
-    if (Array.isArray(loanSettings) && loanSettings.length > 0) {
-      const selectedLoanSetting = loanSettings.find(
-        (ls) => ls.id === Number(selectedLoanTypeId)
-      );
+                                                                    console.log("loanSettings:", loanSettings);
+                                                                    console.log("loanFormData.loan_type:", loanFormData.loan_type);
+                                                                    console.log("selectedLoanSetting:", selectedLoanSetting);
+                                                                    // return;
+                                                                    if (selectedLoanSetting) {
+                                                                        const {
+                                                                            process_fees,
+                                                                            interest_rate,
+                                                                        } = selectedLoanSetting;
 
-      if (selectedLoanSetting) {
-        const {
-          process_fees,
-          interest_rate,
-        } = selectedLoanSetting;
+                                                                        // Auto-fill processing fee and interest rate
+                                                                        setLoanFormData((prev) => ({
+                                                                            ...prev,
+                                                                            processing_fee: parseFloat(process_fees),
+                                                                            interest_rate: parseFloat(interest_rate)
+                                                                        }));
+                                                                        //make the form read-only and disabled for these two fields
+                                                                        document.querySelector('input[name="processing_fee"]').readOnly = true;
+                                                                        document.querySelector('input[name="interest_rate"]').readOnly = true;
+                                                                        document.querySelector('input[name="processing_fee"]').disabled = true;
+                                                                        document.querySelector('input[name="interest_rate"]').disabled = true;
 
-        setLoanFormData((prev) => ({
-          ...prev,
-          processing_fee: parseFloat(process_fees),
-          interest_rate: parseFloat(interest_rate)
-        }));
-
-        document.querySelector('input[name="processing_fee"]').readOnly = true;
-        document.querySelector('input[name="interest_rate"]').readOnly = true;
-        document.querySelector('input[name="processing_fee"]').disabled = true;
-        document.querySelector('input[name="interest_rate"]').disabled = true;
-
-        let val = parseFloat(loanFormData.loan_amount_applied);
-        if (!isNaN(val) && val > 0) {
-          fetchFnRange(val);
-        }
-      }
-    }
-  }}
->
-
+                                                                        let val = parseFloat(loanFormData.loan_amount_applied);
+                                                                        console.log("On select loan type amt applied val: ", val);
+                                                                        if (!isNaN(val) && val > 0) {
+                                                                            fetchFnRange(val); // 🔥 API call here
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }}
+                                                        // required
+                                                        >
                                                             (<option value="">Select Loan Type</option>
                                                             {loanTypes.map((lt) => (
                                                                 <option key={lt.id} value={lt.id}>{lt.loan_desc}</option>
@@ -1329,58 +1053,14 @@ export default function Create({ auth, loan_settings }) {
 
                                                     <div className="col-md-4">
                                                         <label className="form-label">Purpose</label>
-                                                        {/* <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
+                                                        <select className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`} name="purpose" value={loanFormData.purpose || ""} onChange={loanHandleChange}>
                                                             <option value="">Select Purpose</option>
                                                             <option value="School Fee">School Fee</option>
                                                             <option value="Personal Expenses">Personal Expenses</option>
                                                             <option value="Funeral Expenses">Funeral Expenses</option>
                                                             <option value="Refinancing">Refinancing</option>
                                                             <option value="Other">Other</option>
-                                                        </select> */}
-                                                        <Select
-                                                            options={loanPurposeOptions}
-                                                            value={
-                                                                loanPurposeOptions.find(
-                                                                    (o) => o.value === selectedLoanPurposeId
-                                                                ) || null
-                                                            }
-                                                            onChange={(opt) => setSelectedLoanPurposeId(opt?.value || null)}
-                                                            placeholder="Select Loan Purpose"
-
-                                                            /* 🔒 Disable when not eligible */
-                                                            isDisabled={!isEligible}
-
-                                                            styles={{
-                                                                container: (base) => ({
-                                                                    ...base,
-                                                                    width: "100%",
-                                                                }),
-
-                                                                control: (base, state) => ({
-                                                                    ...base,
-                                                                    minWidth: "100%",
-                                                                    cursor: !isEligible ? "not-allowed" : "default",
-                                                                    opacity: !isEligible ? 0.5 : 1,
-                                                                    backgroundColor: !isEligible ? "#f3f4f6" : "white", // gray-100
-                                                                }),
-
-                                                                valueContainer: (base) => ({
-                                                                    ...base,
-                                                                    overflow: "hidden",
-                                                                }),
-
-                                                                singleValue: (base) => ({
-                                                                    ...base,
-                                                                    opacity: !isEligible ? 0.8 : 1,
-                                                                }),
-                                                            }}
-
-                                                            getOptionLabel={(opt) => (
-                                                                <div className="flex justify-between items-center w-full">
-                                                                    <span className="truncate">{opt.label}</span>
-                                                                </div>
-                                                            )}
-                                                        />
+                                                        </select>
                                                     </div>
 
                                                     {loanFormData.purpose === "Other" && (
@@ -1435,11 +1115,7 @@ export default function Create({ auth, loan_settings }) {
                                                         />
                                                         {fnRange && (
                                                             <div className="text-sm text-blue-600 mt-1">
-                                                                {fnRange.min == fnRange.max ? (
-                                                                    <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b>&nbsp;FN</small>
-                                                                ) : (
-                                                                    <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b> – <b>{fnRange.max}</b>&nbsp;FN</small>
-                                                                )}
+                                                                <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b> – <b>{fnRange.max}</b>&nbsp;FN</small>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1455,34 +1131,27 @@ export default function Create({ auth, loan_settings }) {
                                                     </div>
                                                 </div>
 
-{showRepayment && (
-  <div
-    className="row mb-3 p-4 animate__animated animate__fadeInDown"
-    id="repayDetailsDiv"
-  >
-    <fieldset className="fldset w-full">
-      <legend className="font-semibold">Repayment Details</legend>
-
-      <div className="row mt-3">
-        <div className="col-md-3">
-          <label className="form-label fw-bold">Total Interest (PGK)</label>
-          <div>{loanFormData.total_interest_amt.toFixed(2)}</div>
-        </div>
-
-        <div className="col-md-3">
-          <label className="form-label fw-bold">Total Repay (PGK)</label>
-          <div>{loanFormData.total_repay_amt.toFixed(2)}</div>
-        </div>
-
-        <div className="col-md-3">
-          <label className="form-label fw-bold">Repay per FN (PGK)</label>
-          <div>{loanFormData.emi_amount.toFixed(2)}</div>
-        </div>
-      </div>
-    </fieldset>
-  </div>
-)}
-
+                                                {(loanFormData.total_interest_amt) ? (
+                                                    <div className="row mb-3 p-4 animate__animated animate__fadeInDown" id="repayDetailsDiv">
+                                                        <fieldset className="fldset w-full">
+                                                            <legend className="font-semibold">Repayment Details</legend>
+                                                            <div className="row mt-3">
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Total Interest (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.total_interest_amt).toFixed(2)}</div>
+                                                                </div>
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Total Repay (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.total_repay_amt).toFixed(2)}</div>
+                                                                </div>
+                                                                <div className="col-md-3">
+                                                                    <label className="form-label fw-bold">Repay per FN (PGK)</label>
+                                                                    <div>{parseFloat(loanFormData.emi_amount).toFixed(2)}</div>
+                                                                </div>
+                                                            </div>
+                                                        </fieldset>
+                                                    </div>
+                                                ) : null}
 
                                                 <div className="row mb-3">
                                                     <div className="col-md-4">
@@ -1507,10 +1176,11 @@ export default function Create({ auth, loan_settings }) {
                                                 </div>
                                             </fieldset>
                                             <Row className="mt-4 text-end">
-                                                <Col className='text-end '>
+                                                <Col>
                                                     <button
                                                         type="submit"
-                                                        className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${!isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""}`}
+                                                        className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${!isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""
+                                                            }`}
                                                         disabled={!isEligible || isChecking}
                                                     >
                                                         {isChecking ? (
@@ -1549,171 +1219,70 @@ export default function Create({ auth, loan_settings }) {
                                 </>
                             )}
                             {isCompleted && (
-                                <div className="p-8 animate__animated animate__fadeIn">
-                                <div className="max-w-5xl mx-auto bg-white border border-green-200 rounded-xl shadow-sm">
+                                <div className="p-8 text-center animate__animated animate__fadeIn">
 
-                                    {/* HEADER */}
-                                    <div className="px-8 py-6 border-b bg-green-50 rounded-t-xl text-center">
-                                    <h2 className="text-2xl font-bold text-green-700 flex items-center justify-center gap-2">
-                                        <Check className="text-green-600" size={26} />
-                                        Loan Application Completed
-                                    </h2>
-                                    <p className="text-sm text-green-700 mt-1">
-                                        All required steps have been successfully completed
-                                    </p>
-                                    </div>
-
-                                    {/* CONTENT */}
-                                    <div className="px-8 py-6 space-y-8">
-
-                                    {/* DOWNLOADS */}
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-                                        Available Documents
-                                        </h3>
-
-                                        <div className="divide-y rounded-lg border bg-gray-50">
-                                        {/* Application Form */}
-                                        <div className="flex items-center justify-between px-4 py-3">
-                                            <span className="font-medium text-gray-800">
-                                            Application Form
-                                            </span>
-                                            <button
-                                            onClick={() => setShowModal1(true)}
-                                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
-                                            >
-                                            <Download size={16} />
-                                            Download
-                                            </button>
+                                    <div className="max-w-6xl mx-auto bg-green-50 border border-green-200 rounded-lg p-6">
+                                        <h2 className="text-2xl font-bold text-green-700 mb-3 d-flex justify-center">
+                                            {/* <Check className='text-green-700' />  */}
+                                            Loan Application Successfully Completed
+                                        </h2>
+                                        {/* ✅ Acknowledgement Download */}
+                                        <div className="flex justify-center mb-6">
+                                        <a
+                                            href={pdfPath}
+                                            download
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 px-5 py-2 rounded-md
+                                                    bg-green-600 text-white hover:bg-green-700
+                                                    shadow-sm transition"
+                                        >
+                                            <Download size={18} className="shrink-0" />
+                                            Download Acknowledgement
+                                        </a>
                                         </div>
 
-                                        {/* Sector Form */}
-                                        {(isHealth || isEducation) && (
-                                            <div className="flex items-center justify-between px-4 py-3">
-                                            <span className="font-medium text-gray-800">
-                                                {isHealth ? "Health Declaration Form" : "Education Grant Form"}
-                                            </span>
+
+                                        <p className="text-gray-700 mb-6">
+                                            All required steps have been completed. You may now notify the customer.
+                                        </p>
+
+                                        {/* Mail Body */}
+                                        <div className="text-left mb-4">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                                Email Body
+                                            </label>
+                                            <textarea
+                                                className="w-full border rounded-md p-3 text-sm font-mono leading-relaxed
+                                                    focus:ring-2 focus:ring-green-500"
+                                                rows={10}
+                                                value={mailBody}
+                                                onChange={(e) => setMailBody(e.target.value)}
+                                            />
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex justify-center gap-3 mt-4">
                                             <button
-                                                onClick={() => setShowSectorModal(true)}
-                                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+                                                onClick={handleSendMail}
+                                                disabled={isSendingMail}
+                                                className={`px-5 py-2 rounded-md text-white ${isSendingMail
+                                                        ? "bg-gray-400 cursor-not-allowed"
+                                                        : "bg-green-600 hover:bg-green-700"
+                                                    }`}
                                             >
-                                                <Download size={16} />
-                                                Download
+                                                {isSendingMail ? "Sending..." : "📧 Send Mail"}
                                             </button>
-                                            </div>
-                                        )}
+
+                                            <button
+                                                onClick={() => router.visit(route("loans"))}
+                                                className="px-5 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+                                            >
+                                                Back to Loans
+                                            </button>
                                         </div>
                                     </div>
-
-                                    {/* EMAIL BODY */}
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                                        Customer Notification Email
-                                        </h3>
-
-                                        <textarea
-                                        className="w-full border rounded-lg p-4 text-sm font-mono leading-relaxed
-                                                    focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                        rows={10}
-                                        value={mailBody}
-                                        onChange={(e) => setMailBody(e.target.value)}
-                                        />
-                                    </div>
-
-                                    {/* ACTIONS */}
-                                    <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4 border-t">
-                                        <button
-                                        onClick={handleSendMail}
-                                        disabled={isSendingMail}
-                                        className={`px-6 py-2 rounded-lg text-white font-medium transition
-                                            ${isSendingMail
-                                            ? "bg-gray-400 cursor-not-allowed"
-                                            : "bg-green-600 hover:bg-green-700"
-                                            }`}
-                                        >
-                                        {isSendingMail ? "Sending..." : "📧 Send Email"}
-                                        </button>
-
-                                        <button
-                                        onClick={() => router.visit(route("loans"))}
-                                        className="px-6 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 font-medium"
-                                        >
-                                        Back to Loans
-                                        </button>
-                                    </div>
-                                    </div>
                                 </div>
-
-                                {/* ---------- MODALS (UNCHANGED LOGIC) ---------- */}
-
-                                <Modal
-                                    show={showModal1}
-                                    onHide={() => setShowModal1(false)}
-                                    size="xl"
-                                    centered
-                                    contentClassName="bg-white"
-                                    enforceFocus={false}
-                                    restoreFocus={false}
-                                >
-                                    <Modal.Header closeButton className="no-print">
-                                    <Modal.Title>📄 Application Form View</Modal.Title>
-                                    </Modal.Header>
-
-                                    <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh" }}>
-                                    <div className="p-1 bg-gray-100 print-area text-black" ref={ackPrintRef}>
-                                        {savedLoanData && <AppF loan={savedLoanData} auth={auth} />}
-                                    </div>
-                                    </Modal.Body>
-
-                                    <Modal.Footer className="no-print">
-                                    <Button variant="secondary" onClick={() => setShowModal1(false)}>
-                                        Close
-                                    </Button>
-                                    <button
-                                        onClick={() => handlePrintAck()}
-                                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-md flex items-center gap-1 text-sm"
-                                    >
-                                        <Printer size={14} /> Print
-                                    </button>
-                                    </Modal.Footer>
-                                </Modal>
-
-                                <Modal
-                                    show={showSectorModal}
-                                    onHide={() => setShowSectorModal(false)}
-                                    size="xl"
-                                    centered
-                                    contentClassName="bg-white"
-                                    enforceFocus={false}
-                                    restoreFocus={false}
-                                >
-                                    <Modal.Header closeButton>
-                                    <Modal.Title>
-                                        {isHealth ? "🏥 Health Form View" : "🎓 Education Form View"}
-                                    </Modal.Title>
-                                    </Modal.Header>
-
-                                    <Modal.Body className="p-0 overflow-auto" style={{ maxHeight: "80vh" }}>
-                                    <div className="p-1 bg-gray-100 print-area text-black" ref={printRef}>
-                                        {savedLoanData && renderSectorForm()}
-                                    </div>
-                                    </Modal.Body>
-
-                                    <Modal.Footer>
-                                    <Button variant="secondary" onClick={() => setShowSectorModal(false)}>
-                                        Close
-                                    </Button>
-                                    <button
-                                        onClick={() => handlePrintSectorForm()}
-                                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-1.5 rounded-md flex items-center gap-1 text-sm"
-                                    >
-                                        <Printer size={14} /> Print
-                                    </button>
-                                    </Modal.Footer>
-                                </Modal>
-                                </div>
-
-
                             )}
                         </div>
                     </div>

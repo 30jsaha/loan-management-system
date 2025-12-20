@@ -4,20 +4,21 @@ import axios from "axios";
 //swal
 import Swal from "sweetalert2";
 
-export default function CustomerEligibilityForm({ customerId, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, eleigibleAmount }) {
+export default function CustomerEligibilityForm({ customerId, grossSalary, netSalary, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, eleigibleAmount }) {
+  const [isChecking, setIsChecking] = useState(false);
   const [formData, setFormData] = useState({
     customer_id: customerId || 0,
-    gross_salary_amt: "",
-    temp_allowances_amt: "",
-    overtime_amt: "",
-    tax_amt: "",
-    superannuation_amt: "",
-    current_net_pay_amt: "",
-    bank_2_amt: "",
-    total_other_deductions_amt: "",
-    current_fincorp_deduction_amt: "",
-    other_deductions_amt: "",
-    proposed_pva_amt: "",
+    gross_salary_amt: 0,
+    temp_allowances_amt: 0,
+    overtime_amt: 0,
+    tax_amt: 0,
+    superannuation_amt: 0,
+    current_net_pay_amt: 0,
+    bank_2_amt: 0,
+    total_other_deductions_amt: 0,
+    current_fincorp_deduction_amt: 0,
+    other_deductions_amt: 0,
+    proposed_pva_amt: 0
   });
 
   // 🧠 Keep formData.customer_id in sync with the parent prop
@@ -29,9 +30,24 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
       }));
       console.log("✅ Updated customer_id in Eligibility Form:", customerId);
     }
-  }, [customerId]);
+    if (grossSalary && grossSalary !== formData.gross_salary_amt) {
+      setFormData((prev) => ({
+        ...prev,
+        gross_salary_amt: grossSalary,
+      }));
+      console.log("✅ Updated gross_salary_amt in Eligibility Form:", grossSalary);
+    }
+    if (netSalary && netSalary !== formData.current_net_pay_amt) {
+      setFormData((prev) => ({
+        ...prev,
+        current_net_pay_amt: netSalary,
+      }));
+      console.log("✅ Updated current_net_pay_amt in Eligibility Form:", netSalary);
+    }
+  }, [customerId, grossSalary, netSalary]);
 
   const grossSalaryRef = useRef(null);
+  const netSalaryRef = useRef(null);
   const tempAllowancesRef = useRef(null);
   const overtimeRef = useRef(null);
   const taxRef = useRef(null);
@@ -47,75 +63,107 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
+  const validationRules = [
+    {
+      name: "gross_salary_amt",
+      label: "Gross Salary",
+      ref: grossSalaryRef,
+    },
+    {
+      name: "current_net_pay_amt",
+      label: "Net Salary",
+      ref: netSalaryRef,
+    },
+    {
+      name: "temp_allowances_amt",
+      label: "Allowances",
+      ref: tempAllowancesRef,
+    },
+    {
+      name: "overtime_amt",
+      label: "Overtime",
+      ref: overtimeRef,
+    },
+    {
+      name: "tax_amt",
+      label: "Tax",
+      ref: taxRef,
+    },
+    {
+      name: "superannuation_amt",
+      label: "Superannuation",
+      ref: superannuationRef,
+    },
+    {
+      name: "other_deductions_amt",
+      label: "Other Deductions",
+      ref: otherDeductionsRef,
+    },
+    {
+      name: "current_fincorp_deduction_amt",
+      label: "Current Fincorp Deduction",
+      ref: currentFincorpDeductionRef,
+    },
+    {
+      name: "proposed_pva_amt",
+      label: "Proposed PVA",
+      ref: proposedPvaRef,
+    },
+  ];
 
   const handleCheckEligibility = async (e) => {
     e.preventDefault();
+    setIsChecking(true);
     try {
       //implement validations to all fields
-      if (formData.gross_salary_amt === "" || isNaN(formData.gross_salary_amt)) {
-        setMessage("⚠️ Please enter a valid Gross Salary amount.");
-        // formData.gross_salary_amt.focus();
-        if (grossSalaryRef.current) {
-          grossSalaryRef.current.focus();
+      // ✅ Smart validation
+      for (const field of validationRules) {
+        const value = formData[field.name];
+
+        if (value === "" || isNaN(value) || Number(value) < 0) {
+          const msg = `Please enter a valid ${field.label} amount.`;
+
+          setMessage(`⚠️ ${msg}`);
+
+          Swal.fire({
+            title: "Warning!",
+            text: msg,
+            icon: "warning",
+            confirmButtonText: "OK",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              // 🎯 Focus the invalid field
+              field.ref?.current?.focus();
+            }
+          });
+          setIsChecking(false);
+          return; // ❌ stop execution
         }
-        return;
-      }
-      if (formData.temp_allowances_amt === "" || isNaN(formData.temp_allowances_amt)) {
-        setMessage("⚠️ Please enter a valid allowances amount.");
-        // formData.temp_allowances_amt.focus();
-        if (tempAllowancesRef.current) {
-          tempAllowancesRef.current.focus();
+        if (field.name == "current_net_pay_amt" && formData["current_net_pay_amt"] >= formData["gross_salary_amt"]) {
+          Swal.fire({
+            title: "Warning!",
+            text: `Net salary amt. cannot be ${formData["current_net_pay_amt"] == formData["gross_salary_amt"] ? "same as " : "greater than the"} gross salary amt.`,
+            icon: "warning",
+          });
+          setIsChecking(false);
+          return;
         }
-        return;
-      }
-      if (formData.overtime_amt === "" || isNaN(formData.overtime_amt)) {
-        setMessage("⚠️ Please enter a valid overtime amount.");
-        // formData.overtime_amt.focus();
-        if (overtimeRef.current) {
-          overtimeRef.current.focus();
+        if (field.name == "proposed_pva_amt" && (value == 0 || value == null)) {
+          Swal.fire({
+            title: "Warning!",
+            text: `Proposed PVA amount cannot be zero`,
+            icon: "warning",
+            confirmButtonText: "OK",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              field.ref?.current?.focus();
+            }
+          });
+          setIsChecking(false);
+          return;
         }
-        return;
       }
-      if (formData.tax_amt === "" || isNaN(formData.tax_amt)) {
-        setMessage("⚠️ Please enter a valid tax amount.");
-        // formData.tax_amt.focus();
-        if (taxRef.current) {
-          taxRef.current.focus();
-        }
-        return;
-      }
-      if (formData.superannuation_amt === "" || isNaN(formData.superannuation_amt)) {
-        setMessage("⚠️ Please enter a valid superannuation amount.");
-        // formData.superannuation_amt.focus();
-        if (superannuationRef.current) {
-          superannuationRef.current.focus();
-        }
-        return;
-      }
-      if (formData.other_deductions_amt === "" || isNaN(formData.other_deductions_amt)) {
-        setMessage("⚠️ Please enter a valid other deductions amount.");
-        // formData.other_deductions_amt.focus();
-        if (otherDeductionsRef.current) {
-          otherDeductionsRef.current.focus();
-        }
-        return;
-      }
-      if (formData.current_fincorp_deduction_amt === "" || isNaN(formData.current_fincorp_deduction_amt)) {
-        setMessage("⚠️ Please enter a valid current fincorp deduction amount.");
-        // formData.current_fincorp_deduction_amt.focus();
-        if (currentFincorpDeductionRef.current) {
-          currentFincorpDeductionRef.current.focus();
-        }
-        return;
-      }
-      if (formData.proposed_pva_amt === "" || isNaN(formData.proposed_pva_amt)) {
-        setMessage("⚠️ Please enter a valid proposed PVA amount.");
-        // formData.proposed_pva_amt.focus();
-        if (proposedPvaRef.current) {
-          proposedPvaRef.current.focus();
-        }
-        return;
-      }
+
       const formDataToSend = { ...formData };
       // Convert all numeric fields to float
       Object.keys(formDataToSend).forEach((key) => {
@@ -129,8 +177,8 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
       });
       const res = await axios.post("/api/check-eligibility", formDatas);
       setResult(res.data.data); // expect backend to return calculated values
-      console.log("res.data: ",res.data);
-      console.log("is_eligible_for_loan: ",res.data.data.is_eligible_for_loan);
+      console.log("res.data: ", res.data);
+      console.log("is_eligible_for_loan: ", res.data.data.is_eligible_for_loan);
       setMessage("✅ Eligibility calculated successfully!");
       const isEligible = res.data.data.is_eligible_for_loan === 1 && formData.customer_id !== 0;
       const isTruelyEligible = res.data.data.is_eligible_for_loan === 1;
@@ -146,6 +194,7 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
       if (typeof eleigibleAmount === "function") {
         eleigibleAmount(parseFloat(res.data.data.max_allowable_pva_amt));
       }
+      setIsChecking(false);
     } catch (error) {
       console.error(error);
       setMessage("❌ Error calculating eligibility.");
@@ -174,12 +223,12 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
             ${message.startsWith("✅")
               ? "bg-green-100 text-green-700 border-green-300"
               : message.startsWith("❌")
-              ? "bg-red-100 text-red-700 border-red-300"
-              : message.startsWith("⚠️")
-              ? "bg-yellow-100 text-yellow-700 border-yellow-300"
-              : message.startsWith("ℹ️")
-              ? "bg-blue-100 text-blue-700 border-blue-300"
-              : "bg-gray-100 text-gray-700 border-gray-300"
+                ? "bg-red-100 text-red-700 border-red-300"
+                : message.startsWith("⚠️")
+                  ? "bg-yellow-100 text-yellow-700 border-yellow-300"
+                  : message.startsWith("ℹ️")
+                    ? "bg-blue-100 text-blue-700 border-blue-300"
+                    : "bg-gray-100 text-gray-700 border-gray-300"
             }`}
         >
           {message}
@@ -187,100 +236,107 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
       )}
 
 
-        <Row className="g-3">
-          <Col md={3}>
+      <Row className="g-3">
+        <Col md={3}>
+          <Form.Group>
+            <Form.Label>Gross Salary (PGK)</Form.Label>
+            <Form.Control
+              type="number"
+              ref={grossSalaryRef}
+              step="0.01"
+              name="gross_salary_amt"
+              value={formData.gross_salary_amt}
+              onChange={handleChange}
+            />
+          </Form.Group>
+        </Col>
+        <Col md={3}>
+          <Form.Group>
+            <Form.Label>Current Net Pay Amt. (PGK)</Form.Label>
+            <Form.Control
+              type="number"
+              ref={netSalaryRef}
+              step="0.01"
+              name="current_net_pay_amt"
+              value={formData.current_net_pay_amt}
+              onChange={handleChange}
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+      <fieldset className="fldset">
+        <legend className="legend">Deductions</legend>
+        <Row className="g-3 mt-2 p-3">
+          <Col md={4}>
             <Form.Group>
-              <Form.Label>Gross Salary (PGK)</Form.Label>
+              <Form.Label>Tax Amount (PGK)</Form.Label>
+              <Form.Control
+                type="number"
+                ref={taxRef}
+                step="0.01"
+                name="tax_amt"
+                value={formData.tax_amt}
+                onChange={handleChange}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>Superannuation (PGK)</Form.Label>
               <Form.Control
                 type="number"
                 step="0.01"
-                name="gross_salary_amt"
-                value={formData.gross_salary_amt}
+                ref={superannuationRef}
+                name="superannuation_amt"
+                value={formData.superannuation_amt}
+                onChange={handleChange}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group>
+              <Form.Label>Bank 2 Amt. (PGK)</Form.Label>
+              <Form.Control
+                type="number"
+                step="0.01"
+                name="bank_2_amt"
+                value={formData.bank_2_amt}
                 onChange={handleChange}
               />
             </Form.Group>
           </Col>
           <Col md={3}>
             <Form.Group>
-              <Form.Label>Current Net Pay Amt. (PGK)</Form.Label>
+              <Form.Label>Current Fincorp Deduction (PGK)</Form.Label>
               <Form.Control
                 type="number"
+                ref={currentFincorpDeductionRef}
                 step="0.01"
-                name="current_net_pay_amt"
-                value={formData.current_net_pay_amt}
+                name="current_fincorp_deduction_amt"
+                value={formData.current_fincorp_deduction_amt}
                 onChange={handleChange}
               />
             </Form.Group>
           </Col>
-        </Row>
-        <fieldset className="fldset">
-          <legend className="legend">Deductions</legend>
-          <Row className="g-3 mt-2 p-3">
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label>Tax Amount (PGK)</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  name="tax_amt"
-                  value={formData.tax_amt}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label>Superannuation (PGK)</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  name="superannuation_amt"
-                  value={formData.superannuation_amt}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label>Bank 2 Amt. (PGK)</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  name="bank_2_amt"
-                  value={formData.bank_2_amt}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label>Current Fincorp Deduction (PGK)</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  name="current_fincorp_deduction_amt"
-                  value={formData.current_fincorp_deduction_amt}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={3}>
-              <Form.Group>
-                <Form.Label>Other Deductions (PGK)</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  name="other_deductions_amt"
-                  value={formData.other_deductions_amt}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col> 
-            <Col md={3}>
+          <Col md={3}>
+            <Form.Group>
+              <Form.Label>Other Deductions (PGK)</Form.Label>
+              <Form.Control
+                type="number"
+                ref={otherDeductionsRef}
+                step="0.01"
+                name="other_deductions_amt"
+                value={formData.other_deductions_amt}
+                onChange={handleChange}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={3}>
             <Form.Group>
               <Form.Label>Temporary Allowances (PGK)</Form.Label>
               <Form.Control
                 type="number"
+                ref={tempAllowancesRef}
                 step="0.01"
                 name="temp_allowances_amt"
                 value={formData.temp_allowances_amt}
@@ -293,6 +349,7 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
               <Form.Label>Overtime (PGK)</Form.Label>
               <Form.Control
                 type="number"
+                ref={overtimeRef}
                 step="0.01"
                 name="overtime_amt"
                 value={formData.overtime_amt}
@@ -300,31 +357,48 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
               />
             </Form.Group>
           </Col>
-          </Row>
-        </fieldset>
-        <Row className="mt-3">
-          <Col md={8}>
-            <Form.Group>
-              <Form.Label>Proposed PVA (PGK)</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                name="proposed_pva_amt"
-                value={formData.proposed_pva_amt}
-                onChange={handleChange}
-                //border highlight
-                style={{border:"solid 2px green"}}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={4} className="text-right">
-            <div className="mt-4 text-end">
-              <Button variant="primary" type="button" onClick={handleCheckEligibility}>
-                Check Eligibility
-              </Button>
-            </div>
-          </Col>
         </Row>
+      </fieldset>
+      <Row className="mt-3">
+        <Col md={8}>
+          <Form.Group>
+            <Form.Label>Proposed PVA (PGK)</Form.Label>
+            <Form.Control
+              type="number"
+              ref={proposedPvaRef}
+              step="0.01"
+              name="proposed_pva_amt"
+              value={formData.proposed_pva_amt}
+              onChange={handleChange}
+              //border highlight
+              style={{ border: "solid 2px green" }}
+            />
+          </Form.Group>
+        </Col>
+        <Col md={4} className="text-right">
+          <div className="mt-4 text-end">
+
+            <Button
+              variant="primary"
+              type="button"
+              onClick={handleCheckEligibility}
+              className={`${isChecking ? "cursor-not-allowed opacity-50" : ""}`}
+            >
+              {isChecking ? (
+                <>
+                  <span
+                    className={`inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2`}
+                    role="status"
+                  ></span>
+                  Checking...
+                </>
+              ) : (
+                "Check Eligibility →"
+              )}
+            </Button>
+          </div>
+        </Col>
+      </Row>
 
       {result && (
         <div className="mt-6 border-t pt-4">
@@ -378,11 +452,10 @@ export default function CustomerEligibilityForm({ customerId, onEligibilityChang
 
           <div className="mt-4 text-center">
             <span
-              className={`inline-block px-4 py-2 rounded text-sm font-semibold ${
-                result.is_eligible_for_loan
-                  ? "bg-green-100 text-green-700 border border-green-300"
-                  : "bg-red-100 text-red-700 border border-red-300"
-              }`}
+              className={`inline-block px-4 py-2 rounded text-sm font-semibold ${result.is_eligible_for_loan
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-100 text-red-700 border border-red-300"
+                }`}
             >
               {result.is_eligible_for_loan ? "✅ Eligible for Loan" : "❌ Not Eligible"}
             </span>

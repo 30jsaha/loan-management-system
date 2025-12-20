@@ -2,12 +2,15 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LoansController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\Api\LoanController;
 use App\Http\Controllers\SalarySlabController;
 use App\Http\Controllers\OrganizationsController;
+use App\Http\Controllers\RejectionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
 /*
@@ -154,9 +157,14 @@ Route::middleware('auth')->get('/customers/{id}/edit', fn($id) =>
 Route::middleware(['auth', 'verified'])
     ->get('/loan-emi-collection', [LoansController::class, 'loanEmiCollectionPage'])
     ->name('loan.emi.collection');
+
 Route::middleware(['auth', 'verified'])
     ->get('/completed-loans', [LoansController::class, 'CompletedLoansWithEmiCollection'])
     ->name('loan.completed');
+
+    Route::middleware(['auth', 'verified'])
+    ->get('/document-types', [DocumentController::class, 'index'])
+    ->name('loan.documents');
 
 
 //     Route::get('/organizations', function () {
@@ -168,6 +176,24 @@ Route::middleware(['auth', 'verified'])
 Route::middleware(['auth', 'verified'])
     ->get('/organizations', [OrganizationsController::class, 'index'])
     ->name('orgs');
+
+Route::middleware(['auth', 'verified'])
+    ->get('/loan-rejections', [RejectionController::class, 'index'])
+    ->name('loan.rejections');
+
+Route::middleware(['auth', 'verified'])
+    ->get('/loan-purpose', [LoansController::class, 'purpose_index'])
+    ->name('loan.purpose');
+
+Route::get('/test-mail', function () {
+    Mail::raw('Test mail', function ($msg) {
+        $msg->to('jsaha.adzguru@gmail.com')
+            ->subject('Test Mail');
+    });
+
+    return 'Mail sent';
+});
+
 
 
 require __DIR__.'/auth.php';

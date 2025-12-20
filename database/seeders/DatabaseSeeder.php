@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             LoanTierRulesSeeder::class,
             SalarySlabSeeder::class,
             RejectionReasonSeeder::class,
+            DocumentTypesSeeder::class,
         ]);
     }
 }

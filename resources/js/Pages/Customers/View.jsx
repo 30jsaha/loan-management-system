@@ -2,7 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { router, Head, Link } from "@inertiajs/react";
 import axios from "axios";
-
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
 import {
@@ -19,6 +21,9 @@ import {
   ChevronUp,
   FolderOpen,
   Landmark,
+  Download, 
+  IdCard,
+  Briefcase,
 } from "lucide-react";
 
 axios.defaults.withCredentials = true;
@@ -99,7 +104,7 @@ export default function View({ auth, customerId }) {
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">{fullName}</h2>
                   <p className="text-gray-500 text-sm font-medium">
-                    {customer.company?.company_name || "—"}
+                    {customer.employee_no || "—"}
                   </p>
                 </div>
               </div>
@@ -112,6 +117,7 @@ export default function View({ auth, customerId }) {
                     ["DOB", customer.dob ? new Date(customer.dob).toLocaleDateString() : "—"],
                     ["Dependents", customer.no_of_dependents ?? "—"],
                     ["Created", new Date(customer.created_at).toLocaleDateString()],
+                    ["Customer Since", new Date(customer.date_joined).toLocaleDateString()],
                   ]}
                 />
               </div>
@@ -141,10 +147,17 @@ export default function View({ auth, customerId }) {
             <div className="lg:col-span-2 flex flex-col">
               
               {/* TABS HEADER */}
-              <div className="border-b px-6 py-4 bg-white flex flex-wrap gap-2 sticky top-0 z-10">
+              <div className="border-b px-4 py-4 bg-white flex flex-wrap gap-2 sticky top-0 z-10">
+                <TabButton 
+                  id="personalinfo" 
+                  label="Personal Information" 
+                  activeTab={activeTab} 
+                  setActiveTab={setActiveTab} 
+                  icon={<FileText size={16} />} 
+                />
                 <TabButton 
                   id="company" 
-                  label="Company" 
+                  label="Employment" 
                   activeTab={activeTab} 
                   setActiveTab={setActiveTab} 
                   icon={<Building size={16} />} 
@@ -170,6 +183,22 @@ export default function View({ auth, customerId }) {
                   setActiveTab={setActiveTab} 
                   icon={<Landmark size={16} />} 
                 />
+                <TabButton 
+                  id="statement" 
+                  label="Loan Statement" 
+                  activeTab={activeTab} 
+                  setActiveTab={setActiveTab} 
+                  icon={<FileText size={16} />} 
+                />
+                <TabButton
+                  id="emi-schedule"
+                  label="EMI Schedule"
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  icon={<Wallet size={16} />}
+                />
+
+
               </div>
 
               {/* TAB CONTENT */}
@@ -198,6 +227,28 @@ export default function View({ auth, customerId }) {
 
                   </div>
                 )}
+                {activeTab === "statement" && (
+                  <LoanStatementTab
+                    loans={loans}
+                    collections={history.collections}
+                    customer={customer}   
+                  />
+                )}
+                {activeTab === "personalinfo" && (
+                  <PersonalInfo
+                    loans={loans}
+                    collections={history.collections}
+                    customer={customer}   
+                  />
+                )}
+                {activeTab === "emi-schedule" && (
+                  <EmiSchedulerTab
+                    loans={loans}
+                    collections={history.collections}
+                  />
+                )}
+
+
               </div>
 
             </div>
@@ -255,25 +306,38 @@ const CompanyTab = ({ customer }) => {
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">Company & Organisation Details</h3>
+      <h3 className="text-lg font-semibold mb-4">
+        Employment Details
+      </h3>
 
       <InfoTable
         rows={[
+          // Organisation info (kept)
           ["Organisation Name", org.organisation_name || "—"],
           ["Sector", org.sector_type || "—"],
-          ["Department Code", org.department_code || "—"],
-          ["Location Code", org.location_code || "—"],
           ["Address", org.address || "—"],
-          ["Province", org.province || "—"],
-          ["Contact Person", org.contact_person || "—"],
           ["Contact Number", org.contact_no || "—"],
           ["Email", org.email || "—"],
           ["Status", org.status || "—"],
+
+          // Employment info (added)
+          ["Employee No", customer.employee_no || "—"],
+          ["Designation", customer.designation || "—"],
+          ["Employment Type", customer.employment_type || "—"],
+          ["Department", customer.employer_department || "—"],
+          ["Work Location", customer.work_location || "—"],
+          ["Work District", customer.work_district || "—"],
+          ["Work Province", customer.work_province || "—"],
+          ["Immediate Supervisor", customer.immediate_supervisor || "—"],
+          ["Date Joined", customer.date_joined || "—"],
+          ["Monthly Salary", customer.monthly_salary ? `PGK ${customer.monthly_salary}` : "—"],
+          ["Net Salary", customer.net_salary ? `PGK ${customer.net_salary}` : "—"],
         ]}
       />
     </div>
   );
 };
+
 
 /* -----------------------------------
         LOAN TAB
@@ -516,16 +580,10 @@ const InfoCard = ({ label, value, color }) => (
   </div>
 );
 
-/* -----------------------------------
-        DOCUMENT TAB
--------------------------------------- */
+
 
 /* -----------------------------------
-        DOCUMENT TAB (Grouped by Loan)
--------------------------------------- */
-
-/* -----------------------------------
-        DOCUMENT TAB (Enhanced UI)
+        DOCUMENT TAB 
 -------------------------------------- */
 
 const DocumentTab = ({ loans }) => {
@@ -601,8 +659,8 @@ const LoanDocumentSection = ({ loan, initiallyOpen = false }) => {
             <table className="w-full text-xs">
               <thead className="bg-gray-50 border-b text-gray-600">
                 <tr>
-                  <th className="px-4 py-2 text-left">Type</th>
-                  <th className="px-4 py-2 text-left">File</th>
+                  <th className="px-4 py-2 text-left ">Doc Type</th>
+                  {/* <th className="px-4 py-2 text-left">Doc Type</th> */}
                   <th className="px-4 py-2 text-left">Status</th>
                   <th className="px-4 py-2 text-center">Uploaded</th>
                   <th className="px-4 py-2 text-center">Actions</th>
@@ -614,7 +672,7 @@ const LoanDocumentSection = ({ loan, initiallyOpen = false }) => {
                   <tr key={d.id} className="hover:bg-gray-50">
                     <td className="px-4 py-2 font-medium text-gray-700">{d.doc_type}</td>
 
-                    <td className="px-4 py-2">
+                    {/* <td className="px-4 py-2">
                       <a
                         href={`/storage/${d.file_path}`}
                         target="_blank"
@@ -623,7 +681,7 @@ const LoanDocumentSection = ({ loan, initiallyOpen = false }) => {
                         <FileText size={14} />
                         {d.file_name}
                       </a>
-                    </td>
+                    </td> */}
 
                     <td className="px-4 py-2">
                       <span
@@ -699,6 +757,551 @@ const BankTab = ({ customer, loans }) => {
   );
 };
 
+
+/* -----------------------------------
+        Loan Statement PDF Export
+-------------------------------------- */
+const LoanStatementTab = ({ loans, collections, customer }) => {
+  if (!loans.length) {
+    return <p className="text-gray-500 text-sm">No loan data available.</p>;
+  }
+
+  // flatten collections once
+  const flatCollections = Array.isArray(collections)
+    ? collections
+    : Object.values(collections || {}).flat();
+
+  return (
+    <div className="space-y-6">
+      {loans.map((loan,index) => (
+        <LoanStatementCard
+          key={loan.id}
+          loan={loan}
+          customer={customer}
+          collections={flatCollections}
+          defaultOpen={index === 0}
+        />
+      ))}
+    </div>
+  );
+};
+
+const LoanStatementCard = ({
+  loan,
+  customer,
+  collections,
+  defaultOpen = false,
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+
+  const totalRepayable = Number(loan.total_repay_amt || 0);
+  const emiAmount = Number(loan.emi_amount || 0);
+  const tenure = Number(loan.tenure_fortnight || 0);
+
+  /* =============================
+     PAID INSTALLMENTS
+  ============================= */
+  const paidInstallments = collections
+    .filter(
+      (c) =>
+        c.loan_id === loan.id &&
+        c.status?.toLowerCase() === "paid"
+    )
+    .sort((a, b) => a.installment_no - b.installment_no);
+
+  const totalPaid = paidInstallments.reduce(
+    (sum, i) => sum + Number(i.emi_amount || 0),
+    0
+  );
+
+  const outstanding = totalRepayable - totalPaid;
+
+  let runningBalance = totalRepayable;
+
+  const rows = paidInstallments.map((i) => {
+    runningBalance -= Number(i.emi_amount || 0);
+    return [
+      i.installment_no,
+      i.due_date || "—",
+      i.payment_date || "—",
+      `PGK ${Number(i.emi_amount || 0).toFixed(2)}`,
+      `PGK ${runningBalance.toFixed(2)}`,
+    ];
+  });
+
+  /* =============================
+     DOWNLOAD PDF
+  ============================= */
+  const downloadStatement = () => {
+    const doc = new jsPDF();
+
+    /* ======================
+      DATE FORMATTER
+    ====================== */
+    const formatDate = (date) => {
+      if (!date) return "—";
+      return new Date(date).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    };
+
+    /* ======================
+      DERIVED DATES
+    ====================== */
+    const loanAppliedDate = formatDate(loan.created_at);
+    const loanApprovedDate = formatDate(loan.approved_date);
+    const emiStartDate = formatDate(
+      paidInstallments[0]?.due_date || loan.next_due_date
+    );
+
+    /* ======================
+      TITLE
+    ====================== */
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Loan Statement", 14, 15);
+
+    /* ======================
+      CUSTOMER DETAILS
+    ====================== */
+    doc.setFontSize(11);
+    doc.text(
+      `${customer?.first_name || ""} ${customer?.last_name || ""}`,
+      14,
+      25
+    );
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      customer?.company?.company_name ||
+        loan.organisation?.organisation_name ||
+        "—",
+      14,
+      31
+    );
+
+    doc.text(`Phone: ${customer?.phone || "—"}`, 14, 40);
+    doc.text(`Email: ${customer?.email || "—"}`, 14, 46);
+
+    /* ======================
+      LOAN SUMMARY
+    ====================== */
+    doc.setFont("helvetica", "bold");
+    doc.text("Loan Summary", 14, 58);
+
+    doc.setFont("helvetica", "normal");
+
+    // LEFT COLUMN
+    doc.text(`Loan ID: ${loan.id}`, 14, 65);
+    doc.text(`Loan Applied: ${loanAppliedDate}`, 14, 71);
+    doc.text(`Loan Approved: ${loanApprovedDate}`, 14, 77);
+    doc.text(`EMI Start Date: ${emiStartDate}`, 14, 83);
+
+    // RIGHT COLUMN
+    doc.text(`EMI Amount: PGK ${emiAmount.toFixed(2)}`, 110, 65);
+    doc.text(`Tenure: ${tenure} Fortnights`, 110, 71);
+    doc.text(
+      `Total Repayable: PGK ${totalRepayable.toFixed(2)}`,
+      110,
+      77
+    );
+    doc.text(
+      `Outstanding: PGK ${outstanding.toFixed(2)}`,
+      110,
+      83
+    );
+
+    /* ======================
+      INSTALLMENT TABLE
+    ====================== */
+    if (rows.length > 0) {
+      autoTable(doc, {
+        startY: 92,
+        head: [[
+          "EMI No",
+          "Due Date",
+          "Paid On",
+          "Amount (PGK)",
+          "Balance (PGK)",
+        ]],
+        body: rows,
+        styles: {
+          fontSize: 9,
+          halign: "center",
+          lineWidth: 0.3,
+          lineColor: [0, 0, 0],
+        },
+        headStyles: {
+          fillColor: [79, 70, 229],
+          textColor: 255,
+          fontStyle: "bold",
+          lineWidth: 0.5,
+        },
+        tableLineWidth: 0.3,
+      });
+    } else {
+      doc.setFontSize(11);
+      doc.text("No installments paid yet.", 14, 92);
+      doc.text(
+        `Outstanding Amount: PGK ${outstanding.toFixed(2)}`,
+        14,
+        100
+      );
+    }
+
+    /* ======================
+      FOOTER
+    ====================== */
+    const pageHeight = doc.internal.pageSize.height;
+    doc.setFontSize(8);
+    doc.text(
+      "Generated by Loan Management System",
+      14,
+      pageHeight - 10
+    );
+
+    doc.save(`loan-statement-${loan.id}.pdf`);
+  };
+
+  return (
+    <div className="border rounded-xl shadow-sm bg-white overflow-hidden">
+
+      {/* ================= HEADER ================= */}
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full flex justify-between items-center px-4 py-3 text-left ${
+          open ? "bg-indigo-50" : "hover:bg-gray-50"
+        }`}
+      >
+        <div>
+          <h4 className="font-semibold text-gray-800">
+            Loan #{loan.id}
+          </h4>
+          <p className="text-xs text-gray-500">
+            Total Repayable: PGK {totalRepayable.toFixed(2)}
+          </p>
+        </div>
+
+        {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </button>
+
+      {/* ================= BODY ================= */}
+      {open && (
+        <div className="p-4 space-y-4 animate-in fade-in">
+
+          {/* DOWNLOAD BUTTON */}
+          <div className="flex justify-end">
+            <button
+              onClick={downloadStatement}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            >
+              <Download size={14} />
+              Download Statement
+            </button>
+          </div>
+
+          {/* SUMMARY */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <InfoBox label="EMI" value={`PGK ${emiAmount.toFixed(2)}`} />
+            <InfoBox label="Tenure" value={`${tenure} FN`} />
+            <InfoBox
+              label="Paid"
+              value={`PGK ${totalPaid.toFixed(2)}`}
+              className="text-green-700"
+            />
+            <InfoBox
+              label="Outstanding"
+              value={`PGK ${outstanding.toFixed(2)}`}
+              className="text-red-600"
+            />
+          </div>
+
+          {/* TABLE OR MESSAGE */}
+          {rows.length > 0 ? (
+            <div className="overflow-y-auto max-h-[300px] border rounded">
+              <table className="w-full text-sm border-collapse">
+                <thead className="bg-indigo-600 text-white sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 border-r">EMI</th>
+                    <th className="px-3 py-2 border-r">Due</th>
+                    <th className="px-3 py-2 border-r">Paid</th>
+                    <th className="px-3 py-2 border-r text-right">Amount</th>
+                    <th className="px-3 py-2 text-right">Balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {rows.map((r, i) => (
+                    <tr key={i}>
+                      {r.map((c, j) => (
+                        <td
+                          key={j}
+                          className={`px-3 py-2 ${
+                            j < 4 ? "border-r" : ""
+                          } ${j >= 3 ? "text-right" : ""}`}
+                        >
+                          {c}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="font-semibold text-yellow-800">
+                No payments made yet
+              </p>
+              <p className="text-sm">
+                Outstanding: PGK {outstanding.toFixed(2)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const InfoBox = ({ label, value, valueClass = "" }) => (
+  <div className="border rounded-lg p-3 bg-gray-50">
+    <div className="text-xs text-gray-500 font-medium">{label}</div>
+    <div className={`text-sm font-semibold ${valueClass}`}>
+      {value}
+    </div>
+  </div>
+);
+
+
+/* -----------------------------------
+      Personal Info Tab
+-------------------------------------- */
+
+const InfoItem = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-2 px-2 py-1 rounded-md hover:bg-gray-50 transition">
+    <Icon size={14} className="text-indigo-500 mt-0.5" />
+    <div className="leading-tight">
+      <p className="text-[16px] text-gray-500">{label}</p>
+      <p className="text-s font-medium text-gray-800 truncate">
+        {value || "—"}
+      </p>
+    </div>
+  </div>
+);
+
+const PersonalInfo = ({ customer }) => {
+  if (!customer) return null;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      
+      {/* Header */}
+      <div className="px-4 py-3 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-white border-b">
+        <h5 className="text-sm font-semibold text-gray-800">
+          Personal Details
+        </h5>
+
+        <span className="text-[17px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+          {customer.status}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="p-1 text-sm space-y-4">
+
+        {/* PERSONAL INFO */}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <InfoItem label="Gender" value={customer.gender} icon={User} />
+            <InfoItem label="Date of Birth" value={customer.dob} icon={User} />
+            <InfoItem label="Marital Status" value={customer.marital_status} icon={User} />
+            <InfoItem label="No. of Dependents" value={customer.no_of_dependents} icon={User} />
+          </div>
+        </div>
+
+        <div className="border-t" />
+
+        {/* PAYROLL & FAMILY */}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <InfoItem label="Payroll Number" value={customer.payroll_number} icon={IdCard} />
+            <InfoItem label="Home Province" value={customer.home_province} icon={Building} />
+            <InfoItem label="District / Village" value={customer.district_village} icon={Building} />
+            <InfoItem label="Spouse Full Name" value={customer.spouse_full_name} icon={User} />
+            <InfoItem label="Spouse Contact" value={customer.spouse_contact} icon={Phone} />
+          </div>
+        </div>
+
+        <div className="border-t" />
+
+        {/* ADDRESS */}
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <InfoItem label="Present Address" value={customer.present_address} icon={Building} />
+            <InfoItem label="Permanent Address" value={customer.permanent_address} icon={Building} />
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+/* -----------------------------------
+      EMI Scheduler
+-------------------------------------- */
+
+const EmiSchedulerTab = ({ loans, collections }) => {
+  if (!loans.length) {
+    return (
+      <p className="text-sm text-gray-500">
+        No loan available for EMI schedule.
+      </p>
+    );
+  }
+
+  // Flatten collections
+  const flatCollections = Array.isArray(collections)
+    ? collections
+    : Object.values(collections || {}).flat();
+
+  return (
+    <div className="space-y-6">
+      {loans.map((loan, index) => (
+        <EmiScheduleCard
+          key={loan.id}
+          loan={loan}
+          collections={flatCollections}
+          defaultOpen={index === 0}
+        />
+      ))}
+    </div>
+  );
+};
+const EmiScheduleCard = ({ loan, collections, defaultOpen }) => {
+  const [open, setOpen] = useState(defaultOpen);
+
+  const tenure = Number(loan.tenure_fortnight || 0);
+  const emiAmount = Number(loan.emi_amount || 0);
+  const totalRepay = Number(loan.total_repay_amt || 0);
+
+  const paidMap = {};
+  collections
+    .filter((c) => c.loan_id === loan.id)
+    .forEach((c) => {
+      paidMap[c.installment_no] = c;
+    });
+
+  const startDate = new Date(
+    loan.first_due_date ||
+      loan.created_at ||
+      new Date()
+  );
+
+  let balance = totalRepay;
+  const frequency = Number(loan.installment_frequency_in_days || 14);
+
+  const schedule = Array.from({ length: tenure }, (_, i) => {
+    const instNo = i + 1;
+    const dueDate = new Date(startDate);
+    dueDate.setDate(dueDate.getDate() + i * frequency);
+
+
+    const paid = paidMap[instNo];
+    const status = paid
+      ? "Paid"
+      : new Date() > dueDate
+      ? "Overdue"
+      : "Upcoming";
+
+    if (paid) balance -= emiAmount;
+
+    return {
+      instNo,
+      dueDate,
+      paidOn: paid?.payment_date || "—",
+      amount: emiAmount,
+      balance: balance < 0 ? 0 : balance,
+      status,
+    };
+  });
+
+  return (
+    <div className="border rounded-xl shadow-sm bg-white overflow-hidden">
+      {/* HEADER */}
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full px-4 py-3 flex justify-between items-center ${
+          open ? "bg-indigo-50" : "hover:bg-gray-50"
+        }`}
+      >
+        <div>
+          <h4 className="font-semibold text-gray-800">
+            Loan #{loan.id} EMI Schedule
+          </h4>
+          <p className="text-xs text-gray-500">
+            EMI: PGK {emiAmount.toFixed(2)} | Tenure: {tenure} FN
+          </p>
+        </div>
+        {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </button>
+
+      {/* BODY */}
+      {open && (
+        <div className="border rounded-lg overflow-hidden">
+          <div className="max-h-[320px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
+            <table className="w-full text-sm border-collapse">
+              <thead className="bg-indigo-600 text-white sticky top-0 z-10">
+                <tr>
+                  <th className="px-3 py-2 border">EMI</th>
+                  <th className="px-3 py-2 border">Due Date</th>
+                  <th className="px-3 py-2 border">Paid On</th>
+                  <th className="px-3 py-2 border text-right">Amount</th>
+                  <th className="px-3 py-2 border text-right">Balance</th>
+                  <th className="px-3 py-2 border text-center">Status</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y">
+                {schedule.map((s) => (
+                  <tr key={s.instNo} className="h-[44px]">
+                    <td className="px-3 py-2 border">{s.instNo}</td>
+                    <td className="px-3 py-2 border">
+                      {s.dueDate.toLocaleDateString()}
+                    </td>
+                    <td className="px-3 py-2 border">{s.paidOn}</td>
+                    <td className="px-3 py-2 border text-right">
+                      PGK {s.amount.toFixed(2)}
+                    </td>
+                    <td className="px-3 py-2 border text-right">
+                      PGK {s.balance.toFixed(2)}
+                    </td>
+                    <td className="px-3 py-2 border text-center">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          s.status === "Paid"
+                            ? "bg-green-100 text-green-700"
+                            : s.status === "Overdue"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {s.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      )}
+    </div>
+  );
+};
 
 
 /* -----------------------------------

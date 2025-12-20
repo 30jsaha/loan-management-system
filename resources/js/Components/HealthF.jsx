@@ -24,7 +24,7 @@ export default function HealthF({ loan, auth, onBack }) {
   const amountPerPay = loan?.emi_amount || "0.00";
   const totalAmount = loan?.total_repay_amt || loan?.total_repayment || "0.00";
   const loanCode = loan?.loan_reference || loan?.loan_settings?.loan_desc || "LOAN";
-  const purposeText = loan?.purpose || "";
+  const purposeText = loan?.purpose?.purpose_name || "";
 
   const renderBoxedField = (length, text = "") => {
     const chars = String(text || "").toUpperCase().split("");
