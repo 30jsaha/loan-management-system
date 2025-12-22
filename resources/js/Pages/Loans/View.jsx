@@ -352,12 +352,11 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             ? <HealthF auth={auth} loan={loan} />
             : <EduPrintFormat auth={auth} loan={loan} />;
     };
-    const normalizeFilePath = (path) => {
-        if (!path) return "";
-
-        // Remove leading "/storage/" if present
-        return path.replace(/^\/?storage\//, "");
-    };
+const normalizeFilePath = (path) => {
+    if (!path) return "";
+    // Removes "public/", "/public/", "storage/", or "/storage/" from the start of the string
+    return path.replace(/^\/?(public\/|storage\/)/, "");
+};
 
     // Open modal with selected document
     const openDocModal = (doc) => {
@@ -1980,7 +1979,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                             id: loan.id,
                                                                                             doc_type: "ISDA Signed Document",
                                                                                             file_name: "ISDA_signed_document.pdf",
-                                                                                            file_path: loan.isda_signed_upload_path
+                                                                                            file_path: loan.isda_signed_upload_path.replace('public/', '')
                                                                                         })
                                                                                     }
                                                                                     className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
@@ -2124,7 +2123,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                             id: loan.id,
                                                                                             doc_type: "ISDA Signed Document",
                                                                                             file_name: "ISDA_signed_document.pdf",
-                                                                                            file_path: loan.isda_signed_upload_path
+                                                                                            file_path: loan.isda_signed_upload_path.replace('public/', '')
                                                                                         })
                                                                                     }
                                                                                     className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
@@ -2225,7 +2224,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                     <Modal.Body>
                                                         {selectedDoc?.file_path && selectedDoc.file_name.endsWith(".pdf") ? (
                                                             <iframe
-                                                                src={`/storage/${selectedDoc.file_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                src={`/storage/${normalizeFilePath(selectedDoc.file_path)}#toolbar=0&navpanes=0`}
                                                                 width="100%"
                                                                 height="600"
                                                                 className="rounded border shadow-sm"

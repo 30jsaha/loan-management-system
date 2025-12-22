@@ -1281,44 +1281,44 @@ export default function Create({ auth, loan_settings }) {
                                                     <div className="col-md-4">
                                                         <label className="form-label">Loan Type</label>
                                                         <select
-  className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
-  name="loan_type"
-  value={loanFormData.loan_type}
-  onChange={(e) => {
-    loanHandleChange(e);
+                                                            className={`form-select ${!isEligible ? "cursor-not-allowed opacity-50" : ""}`}
+                                                            name="loan_type"
+                                                            value={loanFormData.loan_type}
+                                                            onChange={(e) => {
+                                                                loanHandleChange(e);
 
-    const selectedLoanTypeId = e.target.value;
+                                                                const selectedLoanTypeId = e.target.value;
 
-    if (Array.isArray(loanSettings) && loanSettings.length > 0) {
-      const selectedLoanSetting = loanSettings.find(
-        (ls) => ls.id === Number(selectedLoanTypeId)
-      );
+                                                                if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+                                                                const selectedLoanSetting = loanSettings.find(
+                                                                    (ls) => ls.id === Number(selectedLoanTypeId)
+                                                                );
 
-      if (selectedLoanSetting) {
-        const {
-          process_fees,
-          interest_rate,
-        } = selectedLoanSetting;
+                                                                if (selectedLoanSetting) {
+                                                                    const {
+                                                                    process_fees,
+                                                                    interest_rate,
+                                                                    } = selectedLoanSetting;
 
-        setLoanFormData((prev) => ({
-          ...prev,
-          processing_fee: parseFloat(process_fees),
-          interest_rate: parseFloat(interest_rate)
-        }));
+                                                                    setLoanFormData((prev) => ({
+                                                                    ...prev,
+                                                                    processing_fee: parseFloat(process_fees),
+                                                                    interest_rate: parseFloat(interest_rate)
+                                                                    }));
 
-        document.querySelector('input[name="processing_fee"]').readOnly = true;
-        document.querySelector('input[name="interest_rate"]').readOnly = true;
-        document.querySelector('input[name="processing_fee"]').disabled = true;
-        document.querySelector('input[name="interest_rate"]').disabled = true;
+                                                                    document.querySelector('input[name="processing_fee"]').readOnly = true;
+                                                                    document.querySelector('input[name="interest_rate"]').readOnly = true;
+                                                                    document.querySelector('input[name="processing_fee"]').disabled = true;
+                                                                    document.querySelector('input[name="interest_rate"]').disabled = true;
 
-        let val = parseFloat(loanFormData.loan_amount_applied);
-        if (!isNaN(val) && val > 0) {
-          fetchFnRange(val);
-        }
-      }
-    }
-  }}
->
+                                                                    let val = parseFloat(loanFormData.loan_amount_applied);
+                                                                    if (!isNaN(val) && val > 0) {
+                                                                    fetchFnRange(val);
+                                                                    }
+                                                                }
+                                                                }
+                                                            }}
+                                                        >
 
                                                             (<option value="">Select Loan Type</option>
                                                             {loanTypes.map((lt) => (
@@ -1338,49 +1338,48 @@ export default function Create({ auth, loan_settings }) {
                                                             <option value="Other">Other</option>
                                                         </select> */}
                                                         <Select
-                                                            options={loanPurposeOptions}
-                                                            value={
-                                                                loanPurposeOptions.find(
-                                                                    (o) => o.value === selectedLoanPurposeId
-                                                                ) || null
-                                                            }
-                                                            onChange={(opt) => setSelectedLoanPurposeId(opt?.value || null)}
-                                                            placeholder="Select Loan Purpose"
+                                                        options={loanPurposeOptions}
+                                                        value={
+                                                            loanPurposeOptions.find(
+                                                            (o) => o.value === selectedLoanPurposeId
+                                                            ) || null
+                                                        }
+                                                        onChange={(opt) => setSelectedLoanPurposeId(opt?.value || null)}
+                                                        placeholder="Select Loan Purpose"
 
-                                                            /* 🔒 Disable when not eligible */
-                                                            isDisabled={!isEligible}
+                                                        /* 🔍 Enable search */
+                                                        isSearchable
 
-                                                            styles={{
-                                                                container: (base) => ({
-                                                                    ...base,
-                                                                    width: "100%",
-                                                                }),
+                                                        /* 🔒 Disable when not eligible */
+                                                        isDisabled={!isEligible}
 
-                                                                control: (base, state) => ({
-                                                                    ...base,
-                                                                    minWidth: "100%",
-                                                                    cursor: !isEligible ? "not-allowed" : "default",
-                                                                    opacity: !isEligible ? 0.5 : 1,
-                                                                    backgroundColor: !isEligible ? "#f3f4f6" : "white", // gray-100
-                                                                }),
+                                                        /* ✅ MUST return STRING */
+                                                        getOptionLabel={(opt) => opt.label}
 
-                                                                valueContainer: (base) => ({
-                                                                    ...base,
-                                                                    overflow: "hidden",
-                                                                }),
+                                                        /* ✅ JSX goes here */
+                                                        formatOptionLabel={(opt) => (
+                                                            <div className="flex justify-between items-center w-full">
+                                                            <span className="truncate">{opt.label}</span>
+                                                            </div>
+                                                        )}
 
-                                                                singleValue: (base) => ({
-                                                                    ...base,
-                                                                    opacity: !isEligible ? 0.8 : 1,
-                                                                }),
-                                                            }}
+                                                        styles={{
+                                                            container: (base) => ({
+                                                            ...base,
+                                                            width: "100%",
+                                                            }),
+                                                            control: (base) => ({
+                                                            ...base,
+                                                            minWidth: "100%",
+                                                            cursor: !isEligible ? "not-allowed" : "default",
+                                                            opacity: !isEligible ? 0.5 : 1,
+                                                            backgroundColor: !isEligible ? "#f3f4f6" : "white",
+                                                            }),
+                                                        }}
 
-                                                            getOptionLabel={(opt) => (
-                                                                <div className="flex justify-between items-center w-full">
-                                                                    <span className="truncate">{opt.label}</span>
-                                                                </div>
-                                                            )}
+                                                        noOptionsMessage={() => "No matching purpose found"}
                                                         />
+
                                                     </div>
 
                                                     {loanFormData.purpose === "Other" && (
@@ -1389,6 +1388,8 @@ export default function Create({ auth, loan_settings }) {
                                                             <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
                                                         </div>
                                                     )}
+
+
                                                 </div>
 
                                                 <div className="row mb-3">
@@ -1455,33 +1456,33 @@ export default function Create({ auth, loan_settings }) {
                                                     </div>
                                                 </div>
 
-{showRepayment && (
-  <div
-    className="row mb-3 p-4 animate__animated animate__fadeInDown"
-    id="repayDetailsDiv"
-  >
-    <fieldset className="fldset w-full">
-      <legend className="font-semibold">Repayment Details</legend>
+                                                {showRepayment && (
+                                                <div
+                                                    className="row mb-3 p-4 animate__animated animate__fadeInDown"
+                                                    id="repayDetailsDiv"
+                                                >
+                                                    <fieldset className="fldset w-full">
+                                                    <legend className="font-semibold">Repayment Details</legend>
 
-      <div className="row mt-3">
-        <div className="col-md-3">
-          <label className="form-label fw-bold">Total Interest (PGK)</label>
-          <div>{loanFormData.total_interest_amt.toFixed(2)}</div>
-        </div>
+                                                    <div className="row mt-3">
+                                                        <div className="col-md-3">
+                                                        <label className="form-label fw-bold">Total Interest (PGK)</label>
+                                                        <div>{loanFormData.total_interest_amt.toFixed(2)}</div>
+                                                        </div>
 
-        <div className="col-md-3">
-          <label className="form-label fw-bold">Total Repay (PGK)</label>
-          <div>{loanFormData.total_repay_amt.toFixed(2)}</div>
-        </div>
+                                                        <div className="col-md-3">
+                                                        <label className="form-label fw-bold">Total Repay (PGK)</label>
+                                                        <div>{loanFormData.total_repay_amt.toFixed(2)}</div>
+                                                        </div>
 
-        <div className="col-md-3">
-          <label className="form-label fw-bold">Repay per FN (PGK)</label>
-          <div>{loanFormData.emi_amount.toFixed(2)}</div>
-        </div>
-      </div>
-    </fieldset>
-  </div>
-)}
+                                                        <div className="col-md-3">
+                                                        <label className="form-label fw-bold">Repay per FN (PGK)</label>
+                                                        <div>{loanFormData.emi_amount.toFixed(2)}</div>
+                                                        </div>
+                                                    </div>
+                                                    </fieldset>
+                                                </div>
+                                                )}
 
 
                                                 <div className="row mb-3">

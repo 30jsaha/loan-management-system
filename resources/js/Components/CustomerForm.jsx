@@ -32,7 +32,79 @@ export default function CustomerForm({
   const [isDataSaving, setIsDataSaving] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
 
+  //Draft saved customer on mount
+  const handleSaveAndNext = async () => {
+    setMessage("");
+    setIsDataSaving(true);
 
+    try {
+      let res, savedCustomer;
+
+      if (formData.cus_id) {
+        // update
+        res = await axios.post(
+          `/api/edit-new-customer-for-new-loan/${formData.cus_id}`,
+          formData
+        );
+        savedCustomer = res.data.customer;
+      } else {
+        // create
+        res = await axios.post(
+          "/api/save-new-customer-for-new-loan",
+          formData
+        );
+        savedCustomer = res.data.customer;
+
+        setFormData((prev) => ({
+          ...prev,
+          cus_id: savedCustomer.id,
+        }));
+      }
+
+      toast.success("Saved successfully!", {
+        duration: 3000,
+      });
+
+      setIsDataSaving(false);
+
+      // 👉 move to list / next tab
+      onNext(savedCustomer);
+
+    } catch (error) {
+      setIsDataSaving(false);
+
+      if (error.response?.status === 422) {
+        const msg =
+          error.response.data.message ||
+          Object.values(error.response.data.errors || {}).flat().join(", ");
+        toast.error(msg);
+      } else {
+        toast.error("Failed to save data");
+      }
+    }
+  };
+
+  useEffect(() => {
+    const fetchSavedCustomer = async () => {
+      try {
+        const res = await axios.get("/api/customer/by-user");
+
+        if (res.data.customer) {
+          setFormData(res.data.customer);
+          setIsExistingFound(true);
+          setIsAutoFilled(true);
+
+          if (onExistingCustomerLoaded) {
+            onExistingCustomerLoaded(res.data.customer);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch saved customer", err);
+      }
+    };
+
+    fetchSavedCustomer();
+  }, []);
 
 
   // Fetch employees logic
@@ -820,30 +892,35 @@ export default function CustomerForm({
           </Row>
 
         {/* ========== SUBMIT BUTTON ========== */}
-        <Row className="mt-4 text-end">
-          <Col>
-            <button
-              type="submit"
-              disabled={isDataSaving}
-              className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""
-                } bg-indigo-600 text-white px-4 py-2 mt-3 rounded hover:bg-indigo-700 transition-all`}
-            >
-              {isDataSaving ? (
-                <>
-                  <span
-                    className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
-                    role="status"
-                  ></span>
-                  Saving...
-                </>
-              ) : isExistingFound ? (
-                "Update →"
-              ) : (
-                "Save →"
-              )}
-            </button>
-          </Col>
-        </Row>
+
+      <Row className="mt-4 text-end">
+        <Col className="flex justify-end gap-3">
+          {/* Save  draft*/}
+          <button
+            type="button"
+            disabled={isDataSaving}
+            onClick={() => handleSaveAndNext()}
+            className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""}
+              bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-all`}
+          >
+            Save & Exit
+          </button>
+          
+          {/* Save & Next Only */}
+          <button
+            type="submit"
+            disabled={isDataSaving}
+            className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""}
+              bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-all`}
+          >
+            {isDataSaving ? "Saving..." : isExistingFound ? "Update" : "Save & Next →"}
+          </button>
+
+          
+
+        </Col>
+      </Row>
+
       </form>
     </>
   );

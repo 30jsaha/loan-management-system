@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"; 
+import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Building2 } from "lucide-react"; 
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { currencyPrefix } from "@/config";
@@ -268,7 +268,7 @@ const SortableHeader = ({ label, columnKey }) => (
         </Link>
 
         {/* === FORM CARD === */}
-        <div className="bg-white shadow-md border p-6 rounded-lg mb-6">
+        <div className="bg-white shadow-md border p-6 rounded-lg mb-3">
           <h3 className="text-lg font-semibold mb-4">
             {isEditing ? "Edit Organisation" : "Add Organisation"}
           </h3>
@@ -379,16 +379,26 @@ const SortableHeader = ({ label, columnKey }) => (
             </button>
           </div>
         </div>
-
         {/* === FILTER BAR === */}
-        <div className="bg-white shadow-sm p-4 border mb-4 flex justify-between items-center">
-          <input
-            type="text"
-            placeholder="Search by Organisation Name"
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border px-3 py-2 rounded-md w-1/3"
-          />
+        <div className="bg-white shadow-sm p-2 border mb-2 flex justify-between items-center rounded-lg">
+
+          <div className="relative w-full md:w-1/3">
+            <Building2
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+
+            <input
+              type="text"
+              placeholder="Search by Organisation Name"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md
+                focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
         </div>
+
 
         {/* === TABLE === */}
         <div className="bg-white border shadow-md overflow-x-auto max-w-7xl mx-auto">

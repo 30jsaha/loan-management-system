@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { Link, Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Pencil, Eye, Trash2, Search, ArrowLeft } from "lucide-react";
+import { Pencil, Eye, Trash2, Search, ArrowLeft, Building2 } from "lucide-react";
 import { currencyPrefix } from "@/config";
 import Swal from "sweetalert2";
 import { Card, Container, Row, Col, Alert, Spinner } from "react-bootstrap";
@@ -17,8 +17,23 @@ export default function Index({ auth }) {
   const [searchName, setSearchName] = useState("");
   const [searchEmp, setSearchEmp] = useState("");
   const [searchOrg, setSearchOrg] = useState("");
+  const [organisations, setOrganisations] = useState([]);
 
   const itemsPerPage = 15; // Now shows 10 items per page
+const fetchOrganisations = async () => {
+  try {
+    const res = await axios.get("/api/organisation-list");
+    setOrganisations(res.data);
+  } catch (error) {
+    console.error("Failed to load organisations", error);
+  }
+};
+
+useEffect(() => {
+  fetchCustomers();
+  fetchOrganisations();
+}, []);
+
 
   useEffect(() => {
     fetchCustomers();
@@ -85,7 +100,7 @@ export default function Index({ auth }) {
     }
     setSortConfig({ key, direction });
   };
-
+ 
   const sortedData = useMemo(() => {
     let sorted = [...customers];
     sorted.sort((a, b) => {
@@ -98,14 +113,18 @@ export default function Index({ auth }) {
     return sorted;
   }, [customers, sortConfig]);
 
-  const filteredData = sortedData.filter((c) => {
+ const filteredData = useMemo(() => {
+  return sortedData.filter((c) => {
     const fullName = `${c.first_name} ${c.last_name}`.toLowerCase();
+
     return (
       fullName.includes(searchName.toLowerCase()) &&
       c.employee_no?.toLowerCase().includes(searchEmp.toLowerCase()) &&
-      c.organisation_name?.toLowerCase().includes(searchOrg.toLowerCase())
+      (searchOrg === "" || String(c.organisation_id) === String(searchOrg))
     );
   });
+}, [sortedData, searchName, searchEmp, searchOrg]);
+
 
   const paginatedCustomers = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -179,20 +198,27 @@ export default function Index({ auth }) {
             />
           </div>
 
-          {/* Search by Organisation */}
-          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
-            <Search size={18} className="text-gray-500 mr-2" />
-            <input
-              type="text"
-              placeholder="Search by Organisation"
-              value={searchOrg}
-              onChange={(e) => {
-                setSearchOrg(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
-            />
-          </div>
+        {/* Filter by Organisation */}
+        <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+          <Building2 size={18} className="text-gray-500 mr-2" />
+          <select
+            value={searchOrg}
+            onChange={(e) => {
+              setSearchOrg(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-transparent w-full outline-none text-gray-700 border-none focus:ring-0"
+          >
+            <option value="">All Organisations</option>
+            {organisations.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.organisation_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+
 
         </div>
 
