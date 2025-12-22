@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\AllCustController;
 use App\Http\Controllers\Api\FrontEndController;
 use App\Http\Controllers\Api\SalarySlabController;
 use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\CustomerDraftController;
 use App\Http\Controllers\RejectionController;
 use App\Models\LoanTempCustomer;
 /*
@@ -68,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/send-approval-mail', [LoanController::class, 'sendApprovalMail']);
     Route::post('/loan-fn-range', [LoanController::class, 'getFnRangeByAmount']);
     Route::get('/loan-purposes-list', [LoanController::class, 'getLoanPurposes']);
+    Route::get('/get-loan-purposes/{loanTypeId}', [LoanController::class, 'getLoanPurposesPerType']);
     Route::post('/loan-purpose-create', [LoanController::class, 'createLoanPurposes']); 
     Route::put('/loan-purpose-update/{loanId}', [LoanController::class, 'updateLoanPurposes']);
     Route::delete('/loan-purpose-delete/{loanId}', [LoanController::class, 'deleteLoanPurpose']);
@@ -105,6 +107,11 @@ Route::get('/customers/by-emp/{empCode}', [CustomerController::class, 'getByEmpC
 Route::get('/customers-history/{id}', [CustomerController::class, 'customerLoanHistory']);
 Route::post('/customers/{id}', [CustomerController::class, 'update']);
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
+
+Route::post('/customer-draft/save', [CustomerDraftController::class, 'saveDraft']);
+Route::get('/customer-draft/fetch', [CustomerDraftController::class, 'fetchDraft']);
+Route::delete('/customer-draft/clear', [CustomerDraftController::class, 'clearDraft']);
+
 
 Route::middleware('auth:sanctum')->get('/all-cust-list', [CustomerController::class, 'all_cust_list']);
 

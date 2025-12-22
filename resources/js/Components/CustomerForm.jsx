@@ -236,8 +236,8 @@ export default function CustomerForm({
         employment_type: existingCustomer.employment_type || "",
         date_joined: existingCustomer.date_joined || "",
 
-        monthly_salary: existingCustomer.monthly_salary || "",
-        net_salary: existingCustomer.net_salary || "",
+        monthly_salary: existingCustomer.monthly_salary || 0.00,
+        net_salary: existingCustomer.net_salary || 0.00,
 
         immediate_supervisor: existingCustomer.immediate_supervisor || "",
         years_at_current_employer: existingCustomer.years_at_current_employer || "",
@@ -246,8 +246,8 @@ export default function CustomerForm({
         employer_address: existingCustomer.employer_address || "",
         work_location: existingCustomer.work_location || "",
 
-        organisation_id: existingCustomer.organisation_id || "",
-        company_id: existingCustomer.company_id || "",
+        organisation_id: existingCustomer.organisation_id || 0,
+        company_id: existingCustomer.company_id || 0,
       }));
       
        if (onExistingCustomerLoaded) {

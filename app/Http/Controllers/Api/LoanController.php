@@ -39,6 +39,12 @@ class LoanController extends Controller
 
         return response()->json($loanPurpose);
     }
+    public function getLoanPurposesPerType($loanTypeId)
+    {
+        $loan = LoanSetting::with('purposes')->findOrFail($loanTypeId);
+        return response()->json($loan->purposes);
+    }
+
 
     public function createLoanPurposes(Request $request)
     {
