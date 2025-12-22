@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Row, Col } from "react-bootstrap";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import { router } from "@inertiajs/react";
+
 
 export default function CustomerForm({
   formData,
@@ -32,80 +34,115 @@ export default function CustomerForm({
   const [isDataSaving, setIsDataSaving] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
 
+const fetchCustomerDraft = async () => {
+  try {
+    const res = await axios.get("/api/customer-draft/fetch", { withCredentials: true });
+    console.log("customer-draft fetch res:", res);
+    const draft = res.data?.data;
+    const exists = res.data?.exists;
+
+    if (exists && draft) {
+      console.log("Customer draft response:", draft);
+      // Normalize numeric-like fields then replace form data so UI shows saved values
+      const toNumberOrEmpty = (v) => {
+        if (v === "" || v === null || v === undefined) return "";
+        const n = Number(v);
+        return Number.isFinite(n) ? n : v;
+      };
+
+      const normalized = {
+        ...draft,
+        monthly_salary: toNumberOrEmpty(draft.monthly_salary),
+        net_salary: toNumberOrEmpty(draft.net_salary),
+        no_of_dependents: toNumberOrEmpty(draft.no_of_dependents),
+        company_id: toNumberOrEmpty(draft.company_id),
+        organisation_id: toNumberOrEmpty(draft.organisation_id),
+        years_at_current_employer: toNumberOrEmpty(draft.years_at_current_employer),
+      };
+
+      setFormData(() => normalized);
+
+      // If draft represents an existing customer, set UI flags
+      if (draft.cus_id && draft.cus_id !== 0) {
+        setIsExistingFound(true);
+        setIsAutoFilled(true);
+        setOrgSelectable(false);
+        if (onExistingCustomerLoaded) onExistingCustomerLoaded(draft);
+      } else if (draft.employee_no) {
+        // If draft has an employee_no but not a cus_id, prefill the search input
+        setEmpSearch(`${draft.employee_no}${draft.first_name || draft.last_name ? ` - ${draft.first_name || ""} ${draft.last_name || ""}` : ""}`.trim());
+      }
+
+      toast.success("Draft loaded", { duration: 1500 });
+    }
+
+    console.log("Customer draft loaded");
+  } catch (error) {
+    // No draft exists – silently ignore
+    console.log("No customer draft found");
+  }
+};
+useEffect(() => {
+  fetchCustomerDraft();
+}, []);
+
+
+
+
+
+  const NUMERIC_FIELDS = [
+    "monthly_salary",
+    "net_salary",
+    "no_of_dependents",
+    "company_id",
+    "organisation_id",
+    "years_at_current_employer",
+  ];
+  const sanitizeFormData = (data) => {
+    const cleaned = { ...data };
+
+    NUMERIC_FIELDS.forEach((field) => {
+      const value = cleaned[field];
+
+      if (value === "" || value === null || value === undefined) {
+        cleaned[field] = 0;
+      } else {
+        cleaned[field] = Number(value);
+        if (isNaN(cleaned[field])) {
+          cleaned[field] = 0;
+        }
+      }
+    });
+
+    return cleaned;
+  };
+
+
   //Draft saved customer on mount
   const handleSaveAndNext = async () => {
-    setMessage("");
     setIsDataSaving(true);
 
     try {
-      let res, savedCustomer;
+      const payload = sanitizeFormData(formData);
 
-      if (formData.cus_id) {
-        // update
-        res = await axios.post(
-          `/api/edit-new-customer-for-new-loan/${formData.cus_id}`,
-          formData
-        );
-        savedCustomer = res.data.customer;
-      } else {
-        // create
-        res = await axios.post(
-          "/api/save-new-customer-for-new-loan",
-          formData
-        );
-        savedCustomer = res.data.customer;
+      await axios.post("/api/customer-draft/save", payload);
 
-        setFormData((prev) => ({
-          ...prev,
-          cus_id: savedCustomer.id,
-        }));
-      }
-
-      toast.success("Saved successfully!", {
+      toast.success("Draft saved successfully", {
         duration: 3000,
       });
 
-      setIsDataSaving(false);
-
-      // 👉 move to list / next tab
-      onNext(savedCustomer);
-
     } catch (error) {
+      toast.error("Failed to save draft");
       setIsDataSaving(false);
-
-      if (error.response?.status === 422) {
-        const msg =
-          error.response.data.message ||
-          Object.values(error.response.data.errors || {}).flat().join(", ");
-        toast.error(msg);
-      } else {
-        toast.error("Failed to save data");
-      }
+      return;
     }
+
+    setIsDataSaving(false);
+
+    // ✅ Navigate to loans list
+    router.visit("/loans");
   };
-
-  useEffect(() => {
-    const fetchSavedCustomer = async () => {
-      try {
-        const res = await axios.get("/api/customer/by-user");
-
-        if (res.data.customer) {
-          setFormData(res.data.customer);
-          setIsExistingFound(true);
-          setIsAutoFilled(true);
-
-          if (onExistingCustomerLoaded) {
-            onExistingCustomerLoaded(res.data.customer);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch saved customer", err);
-      }
-    };
-
-    fetchSavedCustomer();
-  }, []);
-
+  // Draft loading handled by `fetchCustomerDraft()` on mount above
 
   // Fetch employees logic
   const fetchEmployees = async (query = "", pageNum = 1) => {
@@ -213,6 +250,13 @@ export default function CustomerForm({
         toast.success("Customer saved successfully!", {
           style: { background: "#2563eb", color: "#fff" },
         });
+      } 
+      
+      // 🔥 Clear draft (non-blocking)
+      try {
+        await axios.delete("/api/customer-draft/clear");
+      } catch (err) {
+        console.warn("Draft clear failed", err);
       }
       setIsDataSaving(false);
       onNext(savedCustomer);
@@ -811,7 +855,7 @@ export default function CustomerForm({
           </Col>
 
         </Row>
-         <Row className="mt-2">
+        <Row className="mt-2">
             <Col>
             <fieldset className="fldset mt-4 ">
               <legend className="legend">Contact Information</legend>
@@ -889,7 +933,7 @@ export default function CustomerForm({
               </div>
             </fieldset>
             </Col>
-          </Row>
+        </Row>
 
         {/* ========== SUBMIT BUTTON ========== */}
 
@@ -905,7 +949,7 @@ export default function CustomerForm({
           >
             Save & Exit
           </button>
-          
+
           {/* Save & Next Only */}
           <button
             type="submit"
