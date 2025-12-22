@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 22, 2025 at 07:52 AM
+-- Generation Time: Dec 22, 2025 at 01:47 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -134,7 +134,9 @@ CREATE TABLE `assigned_purpose_under_loans` (
 
 INSERT INTO `assigned_purpose_under_loans` (`id`, `loan_id`, `purpose_id`, `active`, `created_at`, `updated_at`) VALUES
 (3, 9, 1, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38'),
-(4, 9, 2, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38');
+(4, 9, 2, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38'),
+(7, 1, 3, 1, '2025-12-22 05:03:35', '2025-12-22 05:03:35'),
+(8, 1, 2, 1, '2025-12-22 05:03:35', '2025-12-22 05:03:35');
 
 -- --------------------------------------------------------
 
@@ -160,14 +162,14 @@ INSERT INTO `assigned_slabs_under_loan` (`id`, `loan_id`, `slab_id`, `active`, `
 (2, 6, 3, 1, '2025-11-17 05:48:03', '2025-11-17 05:48:03'),
 (3, 7, 2, 1, '2025-11-24 01:54:33', '2025-11-24 01:54:33'),
 (4, 7, 3, 1, '2025-11-24 01:54:33', '2025-11-24 01:54:33'),
-(5, 1, 1, 1, '2025-11-28 06:31:05', '2025-11-28 06:31:05'),
-(6, 1, 2, 1, '2025-11-28 06:31:05', '2025-11-28 06:31:05'),
 (7, 2, 3, 1, '2025-11-28 06:31:14', '2025-11-28 06:31:14'),
 (8, 2, 2, 1, '2025-11-28 06:31:14', '2025-11-28 06:31:14'),
 (11, 8, 3, 1, '2025-12-12 01:55:22', '2025-12-12 01:55:22'),
 (12, 8, 2, 1, '2025-12-12 01:55:22', '2025-12-12 01:55:22'),
 (17, 9, 1, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38'),
-(18, 9, 2, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38');
+(18, 9, 2, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38'),
+(23, 1, 1, 1, '2025-12-22 05:03:35', '2025-12-22 05:03:35'),
+(24, 1, 2, 1, '2025-12-22 05:03:35', '2025-12-22 05:03:35');
 
 -- --------------------------------------------------------
 
@@ -291,6 +293,50 @@ INSERT INTO `customers` (`id`, `user_id`, `company_id`, `organisation_id`, `firs
 (42, 2, 1, 1, 'GOGUSO', 'Gipson', NULL, NULL, NULL, 4, '9112753678', 'goguso@email.com', '67866765', NULL, NULL, NULL, NULL, NULL, NULL, '13477913', 'Deptuniq', NULL, NULL, NULL, NULL, NULL, 'Manager', 'Permanent', NULL, 1266.52, 1100.00, 'demo', NULL, 'Active', '2025-12-16 02:38:23', '2025-12-16 02:38:23'),
 (43, 2, 1, 1, 'Jimberi', 'Jacklyn', NULL, NULL, NULL, 4, '8548108940', 'jimberi@email.com', '6786576509', NULL, NULL, NULL, NULL, NULL, NULL, '12481532', 'Dept', NULL, NULL, NULL, NULL, NULL, 'Manager', 'Permanent', NULL, 1384.48, 1200.00, 'demo', NULL, 'Active', '2025-12-16 02:54:39', '2025-12-16 02:54:39'),
 (44, 2, 1, 4, 'Aditya', 'Paul', 'Male', NULL, 'Divorced', 5, '7539512368', 'aditya@email.com', '6745869765', NULL, NULL, NULL, NULL, NULL, NULL, 'Badmash420', 'Dept', NULL, NULL, NULL, NULL, NULL, 'Sales Person', 'Permanent', NULL, 5500.00, 3000.00, 'Demo', NULL, 'Active', '2025-12-18 06:48:36', '2025-12-18 06:48:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `customer_drafts`
+--
+
+CREATE TABLE `customer_drafts` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `cus_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `employee_no` varchar(255) DEFAULT NULL,
+  `first_name` varchar(255) DEFAULT NULL,
+  `last_name` varchar(255) DEFAULT NULL,
+  `gender` varchar(255) DEFAULT NULL,
+  `dob` date DEFAULT NULL,
+  `marital_status` varchar(255) DEFAULT NULL,
+  `no_of_dependents` int(11) DEFAULT 0,
+  `spouse_full_name` varchar(255) DEFAULT NULL,
+  `spouse_contact` varchar(255) DEFAULT NULL,
+  `phone` varchar(255) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `home_province` varchar(255) DEFAULT NULL,
+  `district_village` varchar(255) DEFAULT NULL,
+  `present_address` text DEFAULT NULL,
+  `permanent_address` text DEFAULT NULL,
+  `payroll_number` varchar(255) DEFAULT NULL,
+  `employer_department` varchar(255) DEFAULT NULL,
+  `designation` varchar(255) DEFAULT NULL,
+  `employment_type` varchar(255) DEFAULT NULL,
+  `date_joined` date DEFAULT NULL,
+  `monthly_salary` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `net_salary` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `immediate_supervisor` varchar(255) DEFAULT NULL,
+  `years_at_current_employer` varchar(255) DEFAULT NULL,
+  `work_district` varchar(255) DEFAULT NULL,
+  `work_province` varchar(255) DEFAULT NULL,
+  `employer_address` text DEFAULT NULL,
+  `work_location` text DEFAULT NULL,
+  `organisation_id` bigint(20) UNSIGNED DEFAULT 0,
+  `company_id` bigint(20) UNSIGNED DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -449,7 +495,14 @@ INSERT INTO `customer_eligibility_history` (`id`, `customer_id`, `gross_salary_a
 (117, 24, 5000.00, 0.00, 0.00, 0.00, 0.00, 5000.00, 4500.00, 0.00, 4500.00, 500.00, 2500.00, 2000.00, 0.00, 0.00, 1999.99, 0.00, 4500.00, 1999.99, 2, 1, '2025-12-19 01:03:39', '2025-12-19 01:03:39'),
 (118, 24, 5000.00, 0.00, 0.00, 0.00, 0.00, 5000.00, 4500.00, 0.00, 4500.00, 500.00, 2500.00, 2000.00, 0.00, 0.00, 1999.99, 0.00, 4500.00, 1999.99, 2, 1, '2025-12-19 01:03:44', '2025-12-19 01:03:44'),
 (119, 24, 5000.00, 0.00, 0.00, 0.00, 0.00, 5000.00, 4500.00, 0.00, 4500.00, 500.00, 2500.00, 2000.00, 0.00, 0.00, 1999.99, 0.00, 4500.00, 1999.99, 2, 1, '2025-12-19 01:03:45', '2025-12-19 01:03:45'),
-(120, 24, 5000.00, 0.00, 0.00, 0.00, 0.00, 5000.00, 4500.00, 0.00, 4500.00, 500.00, 2500.00, 2000.00, 0.00, 0.00, 1999.99, 0.00, 4500.00, 1999.99, 2, 1, '2025-12-19 01:07:51', '2025-12-19 01:07:51');
+(120, 24, 5000.00, 0.00, 0.00, 0.00, 0.00, 5000.00, 4500.00, 0.00, 4500.00, 500.00, 2500.00, 2000.00, 0.00, 0.00, 1999.99, 0.00, 4500.00, 1999.99, 2, 1, '2025-12-19 01:07:51', '2025-12-19 01:07:51'),
+(121, 8, 1500.00, 0.00, 0.00, 990.00, 110.00, 400.00, 1450.00, 0.00, 1450.00, -1050.00, 200.00, 1250.00, 410.00, 0.00, 1659.99, 1700.00, -250.00, -40.01, 2, 0, '2025-12-22 02:10:19', '2025-12-22 02:10:19'),
+(122, 8, 1500.00, 0.00, 0.00, 990.00, 110.00, 400.00, 1450.00, 0.00, 1450.00, -1050.00, 200.00, 1250.00, 410.00, 0.00, 1659.99, 1600.00, -150.00, 59.99, 2, 1, '2025-12-22 02:10:24', '2025-12-22 02:10:24'),
+(123, 5, 1400.00, 0.00, 0.00, 990.00, 110.00, 300.00, 1300.00, 0.00, 1300.00, -1000.00, 150.00, 1150.00, 410.00, 0.00, 1559.99, 1500.00, -200.00, 59.99, 2, 1, '2025-12-22 03:35:49', '2025-12-22 03:35:49'),
+(124, 8, 1400.00, 0.00, 0.00, 990.00, 110.00, 300.00, 1300.00, 0.00, 1300.00, -1000.00, 150.00, 1150.00, 410.00, 0.00, 1559.99, 1500.00, -200.00, 59.99, 2, 1, '2025-12-22 03:38:50', '2025-12-22 03:38:50'),
+(125, 5, 1400.00, 0.00, 0.00, 998.00, 110.00, 292.00, 1350.00, 0.00, 1350.00, -1058.00, 146.00, 1204.00, 455.00, 0.00, 1658.99, 1800.00, -450.00, -141.01, 2, 0, '2025-12-22 05:02:06', '2025-12-22 05:02:06'),
+(126, 5, 1400.00, 0.00, 0.00, 998.00, 110.00, 292.00, 1350.00, 0.00, 1350.00, -1058.00, 146.00, 1204.00, 455.00, 0.00, 1658.99, 1600.00, -250.00, 58.99, 2, 1, '2025-12-22 05:02:12', '2025-12-22 05:02:12'),
+(127, 5, 1400.00, 0.00, 0.00, 1100.00, 110.00, 190.00, 1350.00, 0.00, 1350.00, -1160.00, 95.00, 1255.00, 455.00, 0.00, 1709.99, 1500.00, -150.00, 209.99, 2, 1, '2025-12-22 05:31:52', '2025-12-22 05:31:52');
 
 -- --------------------------------------------------------
 
@@ -698,8 +751,7 @@ INSERT INTO `document_upload` (`id`, `loan_id`, `customer_id`, `doc_type`, `file
 (179, 1, 8, 'ISDA_Signed', 'Loan Management System.pdf', 'uploads/documents/lNe4NZvjCo3hSAZszueNtf3EgxcwZ8StZXplCAzL.pdf', 'Normal User', 2, '2025-12-16 08:28:28', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-16 02:58:28', '2025-12-16 02:58:28'),
 (180, 1, 8, 'LoanForm_Scanned', 'loan-process-details.pdf', 'uploads/documents/a1G2NZC54nqtIS9JEyRhbFx9L2nwaRt5hL9L0W3i.pdf', 'Normal User', 2, '2025-12-16 08:28:29', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-16 02:58:29', '2025-12-16 02:58:29'),
 (181, 46, 31, 'ID', 'aaa_loan_application_form.pdf', 'uploads/documents/MqrjNplPcr19IorH2nxLBrua5hOlGEhOoMaSFh2F.pdf', 'Normal User', 2, '2025-12-17 07:28:22', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-17 01:58:22', '2025-12-17 01:58:22'),
-(182, 46, 31, 'Payslip', 'Agro Advance Aben Ltd Company Profile (2).pdf', 'uploads/documents/sJAiW6LWXGKAYTKW0PWjBXD4qotAAu2WuHIlPvDG.pdf', 'Normal User', 2, '2025-12-17 07:28:23', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-17 01:58:23', '2025-12-17 01:58:23');
-INSERT INTO `document_upload` (`id`, `loan_id`, `customer_id`, `doc_type`, `file_name`, `file_path`, `uploaded_by`, `uploaded_by_user_id`, `uploaded_on`, `verified_by`, `verified_on`, `verification_status`, `rejected_on`, `rejected_by_user_id`, `rejection_reason_id`, `has_reuploaded_after_rejection`, `reupload_date`, `reuploaded_by_id`, `notes`, `created_at`, `updated_at`) VALUES
+(182, 46, 31, 'Payslip', 'Agro Advance Aben Ltd Company Profile (2).pdf', 'uploads/documents/sJAiW6LWXGKAYTKW0PWjBXD4qotAAu2WuHIlPvDG.pdf', 'Normal User', 2, '2025-12-17 07:28:23', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-17 01:58:23', '2025-12-17 01:58:23'),
 (183, 46, 31, 'BankStatement', 'eligibility_check_formula.pdf', 'uploads/documents/mDnPesYouSTOQbcBKvIYQ1VjbTjB8dXsX7R1KLJf.pdf', 'Normal User', 2, '2025-12-17 07:28:24', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-17 01:58:24', '2025-12-17 01:58:24'),
 (184, 46, 31, 'EmploymentLetter', 'education_format.pdf', 'uploads/documents/dYWKFCVP9SB3iyrZxwKh0H6a4ssirZqExmPpVOwm.pdf', 'Normal User', 2, '2025-12-17 07:28:26', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-17 01:58:26', '2025-12-17 01:58:26'),
 (185, 46, 31, 'ResumptionSheet', 'health_format.pdf', 'uploads/documents/cw2padcumhd2YR0lZRCYtMc33SiZnT3bQ0jlMbqc.pdf', 'Normal User', 2, '2025-12-17 07:28:26', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-17 01:58:26', '2025-12-17 01:58:26'),
@@ -1279,7 +1331,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (60, '2025_11_14_085341_add_org_new_col_to_salary_slabs_table', 28),
 (61, '2025_12_02_080226_add_indexes_to_customer_tables', 46),
 (62, '2025_12_12_131707_modify_collection_uid_in_installment_details_table', 46),
-(63, '2025_12_19_065222_create_assigned_purpose_under_loans_table', 46);
+(63, '2025_12_19_065222_create_assigned_purpose_under_loans_table', 46),
+(64, '2025_12_22_104640_create_customer_drafts_table', 47);
 
 -- --------------------------------------------------------
 
@@ -1471,6 +1524,13 @@ ALTER TABLE `customers`
   ADD KEY `idx_customers_employeeno` (`employee_no`);
 
 --
+-- Indexes for table `customer_drafts`
+--
+ALTER TABLE `customer_drafts`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `customer_drafts_user_id_unique` (`user_id`);
+
+--
 -- Indexes for table `customer_eligibility_history`
 --
 ALTER TABLE `customer_eligibility_history`
@@ -1610,13 +1670,13 @@ ALTER TABLE `assigned_loans_under_org`
 -- AUTO_INCREMENT for table `assigned_purpose_under_loans`
 --
 ALTER TABLE `assigned_purpose_under_loans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `assigned_slabs_under_loan`
 --
 ALTER TABLE `assigned_slabs_under_loan`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `company_master`
@@ -1631,10 +1691,16 @@ ALTER TABLE `customers`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
+-- AUTO_INCREMENT for table `customer_drafts`
+--
+ALTER TABLE `customer_drafts`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `customer_eligibility_history`
 --
 ALTER TABLE `customer_eligibility_history`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=128;
 
 --
 -- AUTO_INCREMENT for table `document_types`
@@ -1694,7 +1760,7 @@ ALTER TABLE `loan_tier_rules`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
 
 --
 -- AUTO_INCREMENT for table `organisation_master`
