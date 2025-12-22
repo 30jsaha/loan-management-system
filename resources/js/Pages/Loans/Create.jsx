@@ -1392,12 +1392,15 @@ export default function Create({ auth, loan_settings }) {
                                                         </select> */}
                                                         <Select
                                                             options={loanPurposeOptions}
+
                                                             value={
-                                                                (loanPurposeOptions).find(
+                                                                loanPurposeOptions.find(
                                                                     (o) => o.value === selectedLoanPurposeId
                                                                 ) || null
                                                             }
+
                                                             onChange={(opt) => setSelectedLoanPurposeId(opt?.value || null)}
+
                                                             placeholder={
                                                                 isFetchingPurpose
                                                                     ? "Loading purposes..."
@@ -1407,8 +1410,20 @@ export default function Create({ auth, loan_settings }) {
                                                             /* 🔒 Disable when not eligible */
                                                             isDisabled={!isEligible || isFetchingPurpose}
 
+                                                            formatOptionLabel={(opt) => (
+                                                                <div className="flex justify-between items-center w-full">
+                                                                    <span className="truncate">{opt.label}</span>
+                                                                </div>
+                                                            )}
+
+                                                            styles={{
+                                                                container: (base) => ({
+                                                                    ...base,
+                                                                    width: "100%",
+                                                                }),
                                                                 control: (base) => ({
                                                                     ...base,
+                                                                    minWidth: "100%",
                                                                     cursor:
                                                                         !isEligible || isFetchingPurpose
                                                                             ? "not-allowed"
@@ -1420,29 +1435,9 @@ export default function Create({ auth, loan_settings }) {
                                                                             ? "#f3f4f6"
                                                                             : "white",
                                                                 }),
+                                                            }}
 
-                                                        
-                                                        formatOptionLabel={(opt) => (
-                                                            <div className="flex justify-between items-center w-full">
-                                                            <span className="truncate">{opt.label}</span>
-                                                            </div>
-                                                        )}
-
-                                                        styles={{
-                                                            container: (base) => ({
-                                                            ...base,
-                                                            width: "100%",
-                                                            }),
-                                                            control: (base) => ({
-                                                            ...base,
-                                                            minWidth: "100%",
-                                                            cursor: !isEligible ? "not-allowed" : "default",
-                                                            opacity: !isEligible ? 0.5 : 1,
-                                                            backgroundColor: !isEligible ? "#f3f4f6" : "white",
-                                                            }),
-                                                        }}
-
-                                                        noOptionsMessage={() => "No matching purpose found"}
+                                                            noOptionsMessage={() => "No matching purpose found"}
                                                         />
 
                                                     </div>
