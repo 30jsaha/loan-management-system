@@ -39,6 +39,7 @@ export default function Authenticated({ user, header, children }) {
                                     className={`ms-3 relative pt-3 ${route().current('customers') ||
                                         route().current('customer.create') ||
                                         route().current('customer.view') ||
+                                        route().current('customer.edit') ||
                                         route().current('customer.dept')
                                         ? 'dropdown-nav-active' // Active style
                                         : 'text-gray-500'
