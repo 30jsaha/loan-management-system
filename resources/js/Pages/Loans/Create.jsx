@@ -1407,12 +1407,6 @@ export default function Create({ auth, loan_settings }) {
                                                             /* 🔒 Disable when not eligible */
                                                             isDisabled={!isEligible || isFetchingPurpose}
 
-                                                            styles={{
-                                                                container: (base) => ({
-                                                                    ...base,
-                                                                    width: "100%",
-                                                                }),
-
                                                                 control: (base) => ({
                                                                     ...base,
                                                                     cursor:
@@ -1427,23 +1421,30 @@ export default function Create({ auth, loan_settings }) {
                                                                             : "white",
                                                                 }),
 
-                                                                valueContainer: (base) => ({
-                                                                    ...base,
-                                                                    overflow: "hidden",
-                                                                }),
+                                                        
+                                                        formatOptionLabel={(opt) => (
+                                                            <div className="flex justify-between items-center w-full">
+                                                            <span className="truncate">{opt.label}</span>
+                                                            </div>
+                                                        )}
 
-                                                                singleValue: (base) => ({
-                                                                    ...base,
-                                                                    opacity: !isEligible ? 0.8 : 1,
-                                                                }),
-                                                            }}
+                                                        styles={{
+                                                            container: (base) => ({
+                                                            ...base,
+                                                            width: "100%",
+                                                            }),
+                                                            control: (base) => ({
+                                                            ...base,
+                                                            minWidth: "100%",
+                                                            cursor: !isEligible ? "not-allowed" : "default",
+                                                            opacity: !isEligible ? 0.5 : 1,
+                                                            backgroundColor: !isEligible ? "#f3f4f6" : "white",
+                                                            }),
+                                                        }}
 
-                                                            getOptionLabel={(opt) => (
-                                                                <div className="flex justify-between items-center w-full">
-                                                                    <span className="truncate">{opt.label}</span>
-                                                                </div>
-                                                            )}
+                                                        noOptionsMessage={() => "No matching purpose found"}
                                                         />
+
                                                     </div>
 
                                                     {loanFormData.purpose === "Other" && (
@@ -1452,6 +1453,8 @@ export default function Create({ auth, loan_settings }) {
                                                             <input type="text" className="form-control" name="other_purpose_text" value={loanFormData.other_purpose_text} onChange={loanHandleChange} placeholder="Specify other purpose" />
                                                         </div>
                                                     )}
+
+
                                                 </div>
 
                                                 <div className="row mb-3">
@@ -1519,31 +1522,31 @@ export default function Create({ auth, loan_settings }) {
                                                 </div>
 
                                                 {showRepayment && (
-                                                    <div
-                                                        className="row mb-3 p-4 animate__animated animate__fadeInDown"
-                                                        id="repayDetailsDiv"
-                                                    >
-                                                        <fieldset className="fldset w-full">
-                                                            <legend className="font-semibold">Repayment Details</legend>
+                                                <div
+                                                    className="row mb-3 p-4 animate__animated animate__fadeInDown"
+                                                    id="repayDetailsDiv"
+                                                >
+                                                    <fieldset className="fldset w-full">
+                                                    <legend className="font-semibold">Repayment Details</legend>
 
-                                                            <div className="row mt-3">
-                                                                <div className="col-md-3">
-                                                                    <label className="form-label fw-bold">Total Interest (PGK)</label>
-                                                                    <div>{loanFormData.total_interest_amt.toFixed(2)}</div>
-                                                                </div>
+                                                    <div className="row mt-3">
+                                                        <div className="col-md-3">
+                                                        <label className="form-label fw-bold">Total Interest (PGK)</label>
+                                                        <div>{loanFormData.total_interest_amt.toFixed(2)}</div>
+                                                        </div>
 
-                                                                <div className="col-md-3">
-                                                                    <label className="form-label fw-bold">Total Repay (PGK)</label>
-                                                                    <div>{loanFormData.total_repay_amt.toFixed(2)}</div>
-                                                                </div>
+                                                        <div className="col-md-3">
+                                                        <label className="form-label fw-bold">Total Repay (PGK)</label>
+                                                        <div>{loanFormData.total_repay_amt.toFixed(2)}</div>
+                                                        </div>
 
-                                                                <div className="col-md-3">
-                                                                    <label className="form-label fw-bold">Repay per FN (PGK)</label>
-                                                                    <div>{loanFormData.emi_amount.toFixed(2)}</div>
-                                                                </div>
-                                                            </div>
-                                                        </fieldset>
+                                                        <div className="col-md-3">
+                                                        <label className="form-label fw-bold">Repay per FN (PGK)</label>
+                                                        <div>{loanFormData.emi_amount.toFixed(2)}</div>
+                                                        </div>
                                                     </div>
+                                                    </fieldset>
+                                                </div>
                                                 )}
 
 

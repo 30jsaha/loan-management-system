@@ -12,6 +12,7 @@ import {
   ChevronsUpDown,
   ChevronLeft,
   ChevronRight,
+  Building2,
 } from "lucide-react";
 import { Spinner } from "react-bootstrap";
 import { currencyPrefix } from "@/config";
@@ -33,7 +34,7 @@ export default function DeptDatabase({ auth }) {
   const [organisations, setOrganisations] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const [filterLoading, setFilterLoading] = useState(false);
   // --- FILTER & PAGINATION STATE ---
   const [searchName, setSearchName] = useState("");
   const [searchEmpCode, setSearchEmpCode] = useState("");
@@ -61,7 +62,13 @@ export default function DeptDatabase({ auth }) {
   // Main Fetch Logic
   const fetchCustomers = async () => {
     try {
-      setLoading(true);
+      // 👇 differentiate first load vs filter
+      if (customers.length === 0) {
+        setLoading(true);
+      } else {
+        setFilterLoading(true);
+      }
+
       const res = await axios.get("/api/all-dept-cust-list", {
         params: {
           search: searchName,
@@ -73,6 +80,7 @@ export default function DeptDatabase({ auth }) {
           page: currentPage,
         },
       });
+
       setCustomers(res.data.data);
       setTotal(res.data.total);
       setTotalPages(res.data.last_page);
@@ -80,8 +88,10 @@ export default function DeptDatabase({ auth }) {
       toast.error("Error loading data");
     } finally {
       setLoading(false);
+      setFilterLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchCustomers();
@@ -245,24 +255,83 @@ export default function DeptDatabase({ auth }) {
         </div>
 
         {/* FILTERS BAR */}
-        <div className="bg-white p-4 rounded-lg shadow-sm border flex flex-col md:flex-row gap-4 justify-between items-center">
-          <input type="text" placeholder="Search Name / Email..." className="border-gray-300 rounded-md px-3 py-2 w-full md:w-1/3" value={searchName} onChange={(e) => setSearchName(e.target.value)} />
-          <input type="text" placeholder="Search Employee ID..." className="border-gray-300 rounded-md px-3 py-2 w-full md:w-1/4" value={searchEmpCode} onChange={(e) => setSearchEmpCode(e.target.value)} />
-          <select className="border-gray-300 rounded-md px-3 py-2 w-full md:w-1/4" value={filterOrganizationId} onChange={(e) => setFilterOrganizationId(e.target.value)}>
-            <option value="all">All Organisations</option>
-            {organisations.map((o) => (<option key={o.id} value={o.id}>{o.organisation_name}</option>))}
-          </select>
-          <span className="text-sm text-gray-500">Total: {total}</span>
+        <div className="bg-white p-4 rounded-xl shadow-sm border flex flex-col md:flex-row gap-4 items-center">
+
+          {/* Search Customer */}
+          <div className="relative w-full md:w-1/3">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search customer..."
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+            />
+          </div>
+
+          {/* Search Employee ID */}
+          <div className="relative w-full md:w-1/4">
+            <input
+              type="text"
+              placeholder="Employee ID"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+              value={searchEmpCode}
+              onChange={(e) => setSearchEmpCode(e.target.value)}
+            />
+          </div>
+
+          {/* Organisation Filter */}
+<div className="relative w-full md:w-1/4">
+  {/* Building icon */}
+  <Building2
+    size={16}
+    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+  />
+
+  <select
+    className="w-full pl-9 pr-8 py-2 border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500"
+    value={filterOrganizationId}
+    onChange={(e) => setFilterOrganizationId(e.target.value)}
+  >
+    <option value="all">Filter by organisation</option>
+    {organisations.map((o) => (
+      <option key={o.id} value={o.id}>
+        {o.organisation_name}
+      </option>
+    ))}
+  </select>
+
+  {/* Dropdown arrow */}
+  <ChevronDown
+    size={16}
+    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+  />
+</div>
+
+
+          {/* Total Count */}
+          <div className="text-sm text-gray-500 whitespace-nowrap">
+            Total: <span className="font-medium text-gray-700">{total}</span>
+          </div>
         </div>
+
 
         {/* TABLE SECTION */}
         <div className="relative bg-white shadow-md rounded-lg border overflow-hidden">
           {/* Overlay Loader to prevent flickering jump */}
-          {loading && customers.length > 0 && (
+          {/* {loading && customers.length > 0 && (
             <div className="absolute inset-0 z-30 bg-white/40 backdrop-blur-[1px] flex items-center justify-center">
               <Spinner animation="border" variant="success" />
             </div>
-          )}
+          )} */}
 
           <div className="relative max-h-[520px] overflow-auto">
             <table className="w-full text-sm border-separate border-spacing-0 table-fixed ">

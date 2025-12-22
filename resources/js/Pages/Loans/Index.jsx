@@ -3,7 +3,7 @@ import axios from "axios";
 import { Link, Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import Swal from "sweetalert2";
-import { Pencil, Eye, Trash2, Search, ArrowUpDown, ArrowLeft } from "lucide-react";
+import { Pencil, Eye, Trash2, Search, ArrowUpDown, ArrowLeft, Building2 } from "lucide-react";
 import { currencyPrefix } from "@/config";
 
 export default function Index({ auth }) {
@@ -218,7 +218,7 @@ export default function Index({ auth }) {
 
             {/* Search by Organisation */}
             <div className="relative flex-1 w-full">
-              <Search size={16} className="absolute left-3 top-3 text-gray-400" />
+              <Building2 size={16} className="absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search by Organisation"

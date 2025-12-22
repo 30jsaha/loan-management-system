@@ -473,41 +473,56 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
         </div>
 
         {/* --- FILTER BAR --- */}
-        <div className="max-w-7xl mx-auto bg-white shadow-sm border border-gray-100 p-3 
-            flex flex-wrap md:flex-nowrap items-center justify-between ">
+      <div className="max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 
+          p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center">
 
-          {/* Search by Loan Name */}
-          <div className="flex items-center bg-gray-50 rounded-md px-3 py-1.5 
-              w-full md:w-1/3 border border-gray-200">
-            <input
-              type="text"
-              placeholder="Search by Loan Description"
-              onChange={(e) => {
-                setSearchTerm(e.target.value.toLowerCase());
-                setCurrentPage(1);
-              }}
-              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 
-                  text-sm"
+        {/* Search by Loan Description */}
+        <div className="relative w-full md:w-1/3 h-15">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"
             />
-          </div>
+          </svg>
 
-          {/* Income Slab Filter */}
-          <div className="flex flex-col w-full md:w-1/3 border border-gray-200 ">
-            <MultiSelect
-              value={filterSelectedSslabs}
-              onChange={(e) => {
-                setFilterSelectedSslabs(e.value);
-                setCurrentPage(1);
-              }}
-              options={salarySlabOptions}
-              optionLabel="name"
-              placeholder="Select Income Slab(s)"
-              display="chip"
-              className="w-full md:w-20rem"
-            />
-          </div>
-
+          <input
+            type="text"
+            placeholder="Search by Loan Description"
+            onChange={(e) => {
+              setSearchTerm(e.target.value.toLowerCase());
+              setCurrentPage(1);
+            }}
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg 
+                focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+          />
         </div>
+
+        {/* Income Slab Filter */}
+        <div className="relative w-full md:w-1/3 border rounded md:border-l-2 border-gray-500 pl-0 md:pl-2">
+          <MultiSelect
+            value={filterSelectedSslabs}
+            onChange={(e) => {
+              setFilterSelectedSslabs(e.value);
+              setCurrentPage(1);
+            }}
+            options={salarySlabOptions}
+            optionLabel="name"
+            placeholder="Select Income Slab(s)"
+            display="chip"
+            className="w-full rounded-lg"
+            panelClassName="rounded-lg"
+          />
+        </div>
+
+      </div>
+
 
         {/* Table - compact, no horizontal scroll */}
         <div className="max-w-7xl mx-auto overflow-x-auto bg-white shadow-lg border border-gray-700 overflow-hidden">
