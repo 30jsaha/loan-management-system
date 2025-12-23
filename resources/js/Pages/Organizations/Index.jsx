@@ -255,7 +255,6 @@ const SortableHeader = ({ label, columnKey }) => (
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Organisations</h2>}
     >
       <Head title="Organizations" />
-      <Toaster position="top-center" />
 
       <div className="p-6 max-w-7xl mx-auto">
 

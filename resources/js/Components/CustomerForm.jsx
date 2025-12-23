@@ -125,6 +125,9 @@ useEffect(() => {
     try {
       const payload = sanitizeFormData(formData);
 
+      // console.log("payload: ", payload);
+      // return;
+
       await axios.post("/api/customer-draft/save", payload);
 
       toast.success("Draft saved successfully", {
@@ -423,7 +426,6 @@ useEffect(() => {
 
   return (
     <>
-      {/* <Toaster position="top-right" reverseOrder={false} /> */}
       {/* Flash message for existing customer */}
       {isExistingFound && (
         <div className="mb-4 p-3 bg-green-100 border-l-4 border-blue-500 text-blue-700 shadow-sm rounded flex items-center justify-between ">
@@ -681,7 +683,7 @@ useEffect(() => {
           </Col>
 
           {/* ========== EMPLOYMENT DETAILS ========== */}
-          <Col  md={6}>
+          <Col md={6}>
             <fieldset className="fldset mt-4">
               <legend className="legend">Employment Details</legend>
             <div className="fldScroll">

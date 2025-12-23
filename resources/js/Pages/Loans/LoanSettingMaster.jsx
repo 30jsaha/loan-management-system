@@ -346,7 +346,6 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan Type</h2>}
     >
       <Head title="Loan Type" />
-      <Toaster position="top-center" />
 
       <div className="min-h-screen bg-gray-100 p-6 space-y-6 ">
         {/* Back Button */}

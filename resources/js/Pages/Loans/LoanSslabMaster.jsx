@@ -251,7 +251,6 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Income Slabs</h2>}
         >
             <Head title="Income Slabs" />
-            <Toaster position="top-center" />
 
             <div className="min-h-screen bg-gray-100 p-6 space-y-6 ">
                 {/* Back Button */}

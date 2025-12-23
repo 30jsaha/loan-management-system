@@ -217,7 +217,6 @@ export default function DeptDatabase({ auth }) {
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Department Employee Database</h2>}
     >
       <Head title="Department Employee Database" />
-      <Toaster position="top-center" />
 
       <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
         {/* FORM SECTION */}

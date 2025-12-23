@@ -169,8 +169,8 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
 
     if (onUploadComplete) onUploadComplete();
         toast.success("All documents uploaded successfully!", {
-      icon: "✅",
-    });
+          icon: "✅",
+        });
 
   };
 

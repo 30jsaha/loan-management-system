@@ -5,7 +5,7 @@ import { Head, Link } from "@inertiajs/react";
 import { Row, Col, Form, Button, ProgressBar } from "react-bootstrap";
 import { ArrowLeft, Upload, Eye } from "lucide-react";
 import Swal from "sweetalert2";
-import toast, { Toaster } from "react-hot-toast";
+import { toast,Toaster } from "react-hot-toast";
 import { router } from "@inertiajs/react"; 
 
 export default function Edit({ auth, loanId }) {
@@ -252,7 +252,6 @@ export default function Edit({ auth, loanId }) {
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Edit Loan</h2>}
     >
       <Head title="Edit Loan" />
-      <Toaster position="top-center" reverseOrder={false} />
 
       <div className="py-4 max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div className="bg-white shadow-sm sm:rounded-lg p-6">

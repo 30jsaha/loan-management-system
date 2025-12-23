@@ -542,10 +542,13 @@ export default function Create({ auth, loan_settings }) {
             // return;
             const res = await axios.post('/api/loans', loanFormData);
             setMessage('✅ Loan application data saved successfully!');
-            Swal.fire({
-                title: "Success",
-                text: "Loan application data saved successfully!",
-                icon: "success"
+            // Swal.fire({
+            //     title: "Success",
+            //     text: "Loan application data saved successfully!",
+            //     icon: "success"
+            // });
+            toast.success("Loan application data saved successfully!", {
+                icon: "✅",
             });
             const savedLoan = res.data.loan;
             setSavedLoanData(savedLoan);
@@ -1004,6 +1007,16 @@ export default function Create({ auth, loan_settings }) {
         removeAfterPrint: false,
         copyStyles: true,
     });
+    // 🔥 Marks ack as downloaded and refresh loan
+    const markAckDownloaded = async () => {
+        try {
+            await axios.post(`/api/loans/${savedLoanData?.id}/mark-ack-downloaded`);
+            const res = await axios.get(`/api/loans/${savedLoanData?.id}`);
+            setLoan(res.data);
+        } catch (err) {
+            console.error("Failed to update ack download status", err);
+        }
+    };
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -1015,12 +1028,6 @@ export default function Create({ auth, loan_settings }) {
             </pre>
             <p>max_loan_amount: {`${loan_settings.max_loan_amount}`}</p> */}
             <Head title="New Loan Application" />
-            <Toaster
-                position="top-right"
-                toastOptions={{
-                    duration: 3000,
-                }}
-            />
             <Alert key="primary" variant="primary">
                 Please go through the tabs to complete the loan application.
             </Alert>
@@ -1110,7 +1117,7 @@ export default function Create({ auth, loan_settings }) {
                                                 //toast.dismiss();
                                                 setStep(2);
                                                 const infoMsg = '✅ customer data saved. You can continue filling the loan application.';
-                                                setMessage(infoMsg);
+                                                // setMessage(infoMsg);
                                                 // show same message in SweetAlert
                                                 // Swal.fire({
                                                 //     title: "Success",
@@ -1617,10 +1624,10 @@ export default function Create({ auth, loan_settings }) {
                                         <div className="px-8 py-6 border-b bg-green-50 rounded-t-xl text-center">
                                             <h2 className="text-2xl font-bold text-green-700 flex items-center justify-center gap-2">
                                                 <Check className="text-green-600" size={26} />
-                                                Loan Application Completed
+                                                Loan Application Completed Successfully
                                             </h2>
                                             <p className="text-sm text-green-700 mt-1">
-                                                All required steps have been successfully completed
+                                                Application successfully submitted to verify and approve the application under 5-7 working days. You may now download the necessary documents and notify the customer.
                                             </p>
                                         </div>
 
@@ -1640,7 +1647,10 @@ export default function Create({ auth, loan_settings }) {
                                                             Application Form
                                                         </span>
                                                         <button
-                                                            onClick={() => setShowModal1(true)}
+                                                            onClick={() => {
+                                                                setShowModal1(true)
+                                                                markAckDownloaded();
+                                                            }}
                                                             className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
                                                         >
                                                             <Download size={16} />

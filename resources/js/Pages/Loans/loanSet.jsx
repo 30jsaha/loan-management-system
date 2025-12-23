@@ -64,7 +64,6 @@ export default function LoanSettingMaster({ auth, loan_settings }) {
       }
     >
       <Head title="Loan Settings" />
-      <Toaster position="top-center" />
 
       <div className="min-h-screen bg-gray-100 p-6 space-y-6">
         {/* Back Button */}
