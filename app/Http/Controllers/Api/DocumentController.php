@@ -19,17 +19,17 @@ class DocumentController extends Controller
                 ->get()
         );
     }
-
     /**
-     * GET : List all active document types
+     * GET : List all document types
      */
-    public function document_type_list()
+    public function getDocumentTypesAll()
     {
         return response()->json(
-            DocumentType::orderBy('id')->get(),
-            200
+            DocumentType::orderByDesc('id')->get()
         );
     }
+
+
 
     /**
      * POST : Create document type

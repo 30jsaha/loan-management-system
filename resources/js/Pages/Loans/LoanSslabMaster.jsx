@@ -108,7 +108,13 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        // Validate salary range: starting should be <= ending
+        const startVal = parseFloat(formData.starting_salary) || 0;
+        const endVal = parseFloat(formData.ending_salary) || 0;
+        if (startVal > endVal) {
+            toast.error("Starting Salary must be less than or equal to Ending Salary.");
+            return;
+        }
         try {
             // Ensure org_id is set — backend requires a non-null org_id
             const defaultOrgId = orgList?.[0]?.id ?? (organizations && organizations[0]?.id) ?? null;
@@ -285,7 +291,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                         </div>
 
                         {[
-                            ["starting_salary", `Staring Salary (${currencyPrefix})`],
+                            ["starting_salary", `Starting Salary (${currencyPrefix})`],
                             ["ending_salary", `Ending Salary (${currencyPrefix})`],
                         ].map(([key, label]) => (
                             <div key={key}>
@@ -430,7 +436,12 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                         </thead>
 
                         <tbody>
-                            {paginatedData.map((slab, idx) => {
+                            {paginatedData.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-2 py-4 text-center text-gray-600">No data found.</td>
+                                </tr>
+                            ) : (
+                                paginatedData.map((slab, idx) => {
                                 const isEditingRow = formData.id === slab.id; // highlight current edit row
                                 return ( 
                                     <tr
@@ -475,7 +486,7 @@ export default function LoanSslabMaster({ auth, salary_slabs, organizations }) {
                                         </td>
                                     </tr>
                                 );
-                            })}
+                            }) )}
                         </tbody>
                     </table>
                 </div>

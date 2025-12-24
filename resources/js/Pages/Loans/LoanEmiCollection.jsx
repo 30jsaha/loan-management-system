@@ -587,6 +587,7 @@ const handleCollectEMI = async () => {
                 <motion.div
                   key={loan.id}
                   whileHover={{ scale: 1.01 }}
+                  onClick={() => setSelectedLoan(loan)}
                   className={`border rounded-lg p-3 mb-2 shadow-sm cursor-pointer transition ${
                     selectedLoanIds.includes(loan.id)
                       ? 'border-green-500 bg-green-50'
@@ -598,6 +599,7 @@ const handleCollectEMI = async () => {
                       <input
                         type="checkbox"
                         checked={selectedLoanIds.includes(loan.id)}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={() => toggleLoanSelection(loan.id)}
                         disabled={!collectible}
                         className={`h-4 w-4 mt-0.5 ${
@@ -629,6 +631,21 @@ const handleCollectEMI = async () => {
                     </p>
                     <p><b>Total Repay:</b> {currencyPrefix} {loan.total_repay_amt}</p>
                     <p><b>Paid Amt:</b> {currencyPrefix} {getTotalPaidAmount(loan)}</p>
+                  </div>
+                   <div className="flex justify-end mt-1">
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation(); // prevent checkbox conflict
+                        setSelectedLoan(loan);
+                      }}
+                      className={`text-xs font-medium cursor-pointer select-none ${
+                        selectedLoan?.id === loan.id
+                          ? "text-blue-600"
+                          : "text-gray-500 hover:text-blue-500"
+                      }`}
+                    >
+                      View details →
+                    </span>
                   </div>
                 </motion.div>
               );
@@ -824,7 +841,9 @@ const handleCollectEMI = async () => {
               {/* Loan Overview */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 text-sm">
                 <div><b>Loan Type:</b> {selectedLoan.loan_settings?.loan_desc}</div>
-                <div><b>Purpose:</b> {selectedLoan.purpose}</div>
+                {/* <div><b>Purpose:</b> {selectedLoan.purpose}</div> */}
+                <div><b>Purpose:</b> {selectedLoan.purpose?.purpose_name || "N/A"}</div>
+
                 <div><b>Loan Amount:</b> {currencyPrefix}&nbsp;{selectedLoan.loan_amount_applied}</div>
                 <div><b>Tenure:</b> {selectedLoan.tenure_fortnight} fortnights</div>
                 <div><b>Interest Rate:</b> {selectedLoan.interest_rate}%</div>

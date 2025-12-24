@@ -211,10 +211,9 @@ export default function EditCustomer() {
                       <label>Gender</label>
                       <select
                         name="gender"
-                        disabled
                         value={formData.gender || ""}
                         onChange={handleChange}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                       >
                         <option value="">-- Select --</option>
                         <option value="Male">Male</option>

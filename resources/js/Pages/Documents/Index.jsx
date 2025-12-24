@@ -137,7 +137,7 @@ export default function DocumentTypesIndex({ auth }) {
 
   const fetchDocs = async () => {
     try {
-      const res = await axios.get("/api/document-types");
+      const res = await axios.get("/api/document-types-all");
       setDocs(res.data);
     } catch {
       toast.error("Failed to load document types");

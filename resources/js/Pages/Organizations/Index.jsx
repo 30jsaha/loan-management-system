@@ -276,30 +276,51 @@ const SortableHeader = ({ label, columnKey }) => (
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
-            {[
-              ["organisation_name", "Organisation Name"],
-              ["department_code", "Department Code"],
-              ["location_code", "Location Code"],
-              ["address", "Address"],
-              ["province", "Province"],
-              ["contact_person", "Contact Person"],
-              ["contact_no", "Contact Number"],
-              ["email", "Email"],
-            ].map(([key, label]) => (
-              <div key={key}>
-                <label className="block text-sm font-medium">{label}</label>
-                <input
-                  type={key === "email" ? "email" : "text"}
-                  name={key}
-                  value={formData[key]}
-                  onChange={handleChange}
-                  className="w-full border rounded-md px-3 py-2 mt-1"
-                />
-              </div>
-            ))}
+            {
+              // mark these fields as required
+              (() => {
+                const requiredFields = [
+                  "organisation_name",
+                  "contact_no",
+                  "email",
+                  "department_code",
+                  "location_code",
+                  "address",
+                  "province",
+                ];
+
+                return [
+                  ["organisation_name", "Organisation Name"],
+                  ["department_code", "Department Code"],
+                  ["location_code", "Location Code"],
+                  ["address", "Address"],
+                  ["province", "Province"],
+                  ["contact_person", "Contact Person"],
+                  ["contact_no", "Contact Number"],
+                  ["email", "Email"],
+                ].map(([key, label]) => (
+                  <div key={key}>
+                    <label className="block text-sm font-medium">
+                      {label}
+                      {requiredFields.includes(key) && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
+                    </label>
+                    <input
+                      type={key === "email" ? "email" : "text"}
+                      name={key}
+                      value={formData[key]}
+                      onChange={handleChange}
+                      required={requiredFields.includes(key)}
+                      className="w-full border rounded-md px-3 py-2 mt-1"
+                    />
+                  </div>
+                ));
+              })()
+            }
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Sector Type
+                Sector Type <span className="text-red-500 ml-1">*</span>
               </label>
               <select
                   name="sector_type"
@@ -318,7 +339,7 @@ const SortableHeader = ({ label, columnKey }) => (
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Select Loans to assign
+                Select Loans to assign <span className="text-red-500 ml-1">*</span>
               </label>
               <div className="card flex justify-content-center">
                   <MultiSelect 
@@ -343,7 +364,7 @@ const SortableHeader = ({ label, columnKey }) => (
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium">Status</label>
+              <label className="block text-sm font-medium">Status <span className="text-red-500 ml-1">*</span></label>
               <select
                 name="status"
                 value={formData.status}
