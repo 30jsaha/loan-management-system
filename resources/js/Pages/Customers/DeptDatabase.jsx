@@ -42,6 +42,8 @@ export default function DeptDatabase({ auth }) {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
+  const [errors, setErrors] = useState({});
+
   const itemsPerPage = 8;
 
   const [sortConfig, setSortConfig] = useState({
@@ -119,28 +121,9 @@ export default function DeptDatabase({ auth }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const requiredFields = [
-    "cust_name",
-    "emp_code",
-    "phone",
-    "email",
-    "gross_pay",
-    "net_pay",
-    "organization_id",
-  ];
+    toast.dismiss();
 
-    for (let field of requiredFields) {
-    if (!formData[field]) {
-      toast.error(`Please fill ${field.replace("_", " ")}`);
-      return;
-    }
-  }
     try {
-      toast.dismiss();
-      if (!formData.organization_id) {
-        toast.error("Please select an organisation!");
-        return;
-      }
       if (isEditing && formData.id) {
         await axios.put(`/api/all-dept-cust-update/${formData.id}`, formData);
         toast.success("Updated successfully!");
@@ -148,12 +131,41 @@ export default function DeptDatabase({ auth }) {
         await axios.post("/api/all-dept-cust-store", formData);
         toast.success("Added successfully!");
       }
+
       resetForm();
       fetchCustomers();
+
     } catch (error) {
-      toast.error("Failed to save!");
+      // ✅ Laravel validation error
+      if (error.response?.status === 422) {
+        const data = error.response.data;
+
+        // Case 1: Field-wise errors
+        if (data.errors) {
+          Object.values(data.errors).forEach((messages) => {
+            messages.forEach((msg) => toast.error(msg));
+          });
+        }
+        // Case 2: Single message
+        else if (data.message) {
+          toast.error(data.message);
+        }
+        else {
+          toast.error("Validation failed");
+        }
+      }
+      // ❌ Other server errors
+      else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      }
+      // ❌ Network / unknown error
+      else {
+        toast.error("Server error. Please try again.");
+      }
     }
   };
+
+
 
   const handleEdit = (c) => {
     setFormData(c);
@@ -225,7 +237,10 @@ export default function DeptDatabase({ auth }) {
           <form className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4" onSubmit={handleSubmit}>
             {["cust_name", "emp_code", "phone", "email", "gross_pay", "net_pay"].map((field) => (
               <div key={field} className="flex flex-col">
-                <label className="text-xs text-gray-600 mb-1 capitalize">{field.replace("_", " ")}</label>
+                <label className="text-xs text-gray-600 mb-1 capitalize">
+                  {field.replace("_", " ")}
+                  <span className="text-red-500">*</span>
+                </label>
                 <input
                   type={field === "email" ? "email" : "text"}
                   name={field}
@@ -238,7 +253,7 @@ export default function DeptDatabase({ auth }) {
               </div>
             ))}
             <div className="flex flex-col">
-              <label className="text-xs text-gray-600 mb-1">Organisation</label>
+              <label className="text-xs text-gray-600 mb-1">Organisation <span className="text-red-500">*</span></label>
               <select name="organization_id" value={formData.organization_id} onChange={handleChange} required className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
                 <option value="">Select Organisation</option>
                 {organisations.map((o) => (<option key={o.id} value={o.id}>{o.organisation_name}</option>))}

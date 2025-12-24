@@ -148,6 +148,7 @@ Route::middleware('auth:sanctum')->group(function () {
 //Document Type
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/document-types', [DocumentController::class, 'getDocumentTypes']);
+    Route::get('/document-types-all', [DocumentController::class, 'getDocumentTypesAll']);
     Route::post('/document-type-create', [DocumentController::class, 'create_document_type']); // CREATE
     Route::put('/document-type-modify/{id}', [DocumentController::class, 'modify_document_type']); // UPDATE
     Route::delete('/document-type-remove/{id}', [DocumentController::class, 'remove_document_type']); // DELETE

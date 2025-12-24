@@ -72,7 +72,7 @@ export default function EduPrintFormat({ auth, loan }) {
           >
             {/* Header */}
             <div style={{ maxWidth: "100px", margin: "0 auto" }}>
-              <MainLogo width="100px" />
+              <MainLogo width="80px" />
             </div>
 
 
