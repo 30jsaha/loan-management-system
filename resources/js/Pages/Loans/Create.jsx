@@ -785,6 +785,8 @@ export default function Create({ auth, loan_settings }) {
                 title: "Mail Sent",
                 text: "Customer notification email sent successfully.",
                 icon: "success",
+            }).then(() => {
+                router.visit(route("loans.show", loanFormData.id));
             });
         } catch (error) {
             console.error(error);
@@ -1029,7 +1031,7 @@ export default function Create({ auth, loan_settings }) {
             <p>max_loan_amount: {`${loan_settings.max_loan_amount}`}</p> */}
             <Head title="New Loan Application" />
             <Alert key="primary" variant="primary">
-                Please go through the tabs to complete the loan application.
+                Please go through the steps to complete the loan application.
             </Alert>
             <div
                 ref={ackPrintRef}
@@ -1044,7 +1046,7 @@ export default function Create({ auth, loan_settings }) {
             >
                 {ackReady && savedLoanData && <AppF loan={savedLoanData} auth={auth} />}
             </div>
-            <div className="p-4 bg-gray-100 print-area text-black">
+            <div className="px-4 bg-gray-100 print-area text-black">
                 {showSectorModal && (
                     <div
                         ref={printRef}
