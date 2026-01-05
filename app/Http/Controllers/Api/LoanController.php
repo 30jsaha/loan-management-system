@@ -156,7 +156,8 @@ class LoanController extends Controller
             'other_purpose_text' => 'nullable|string|max:255',
 
             'loan_amount_applied' => 'required|numeric|min:0',
-            'purpose_id' => 'required|integer',
+            // allow null on server and coerce invalid 0 -> null before insert
+            'purpose_id' => 'nullable|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
             'emi_amount' => 'nullable|numeric',
@@ -199,6 +200,16 @@ class LoanController extends Controller
             $validated['company_id'] = $customer->company_id;
             $validated['organisation_id'] = $customer->organisation_id;
 
+            // Normalize purpose_id: treat 0 or empty as null to avoid FK errors
+            if (array_key_exists('purpose_id', $validated) && ((int)$validated['purpose_id'] === 0)) {
+                $validated['purpose_id'] = null;
+            }
+
+            // If a non-null purpose_id is provided, ensure it exists
+            if (!is_null($validated['purpose_id']) && !LoanPurpose::where('id', $validated['purpose_id'])->exists()) {
+                return response()->json(['errors' => ['purpose_id' => ['Invalid purpose_id']]], 422);
+            }
+
             // Default values for unset fields
             $validated['status'] = $validated['status'] ?? 'Pending';
             $validated['emi_amount'] = number_format($validated['emi_amount'],2);
@@ -233,7 +244,8 @@ class LoanController extends Controller
             'other_purpose_text' => 'nullable|string|max:255',
 
             'loan_amount_applied' => 'required|numeric|min:0',
-            'purpose_id' => 'required|integer',
+            // allow null on server and coerce invalid 0 -> null before insert
+            'purpose_id' => 'nullable|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'integer',
             'emi_amount' => 'nullable|numeric',
@@ -276,6 +288,16 @@ class LoanController extends Controller
             $customer = Customer::find($validated['customer_id']);
             $validated['company_id'] = $customer->company_id;
             $validated['organisation_id'] = $customer->organisation_id;
+
+            // Normalize purpose_id: treat 0 or empty as null to avoid FK errors
+            if (array_key_exists('purpose_id', $validated) && ((int)$validated['purpose_id'] === 0)) {
+                $validated['purpose_id'] = null;
+            }
+
+            // If a non-null purpose_id is provided, ensure it exists
+            if (!is_null($validated['purpose_id']) && !LoanPurpose::where('id', $validated['purpose_id'])->exists()) {
+                return response()->json(['errors' => ['purpose_id' => ['Invalid purpose_id']]], 422);
+            }
 
             // Default values for unset fields
             $validated['status'] = $validated['status'] ?? 'HigherApproval';

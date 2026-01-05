@@ -49,7 +49,7 @@ const fetchCustomerDraft = async () => {
         const n = Number(v);
         return Number.isFinite(n) ? n : v;
       };
-
+ 
       const normalized = {
         ...draft,
         monthly_salary: toNumberOrEmpty(draft.monthly_salary),
@@ -325,49 +325,41 @@ useEffect(() => {
       // FIX: Added || "" to handle nulls from DB
       // FIX: Added missing fields (no_of_dependents, spouse details)
       setIsAutoFilled(true);
-      setFormData((prev) => ({
-        ...prev,
+      const baseCompany = formData?.company_id || 1;
+      const newObj = {
         cus_id: existingCustomer.id,
-        employee_no: existingCustomer.employee_no,
-
+        employee_no: existingCustomer.employee_no || "",
+        company_id: existingCustomer.company_id || baseCompany,
+        organisation_id: existingCustomer.organisation_id || "",
         first_name: existingCustomer.first_name || "",
         last_name: existingCustomer.last_name || "",
-        gender: existingCustomer.gender || "", // Handles null
-        dob: existingCustomer.dob || "", // Handles null
-        marital_status: existingCustomer.marital_status || "", // Handles null
-
-        // 🔹 ADDED MISSING FIELDS FROM JSON
+        gender: existingCustomer.gender || "",
+        dob: existingCustomer.dob || "",
+        marital_status: existingCustomer.marital_status || "",
         no_of_dependents: existingCustomer.no_of_dependents || "",
         spouse_full_name: existingCustomer.spouse_full_name || "",
         spouse_contact: existingCustomer.spouse_contact || "",
-
         phone: existingCustomer.phone || "",
         email: existingCustomer.email || "",
-
         home_province: existingCustomer.home_province || "",
         district_village: existingCustomer.district_village || "",
         present_address: existingCustomer.present_address || "",
         permanent_address: existingCustomer.permanent_address || "",
-
         payroll_number: existingCustomer.payroll_number || "",
         employer_department: existingCustomer.employer_department || "",
         designation: existingCustomer.designation || "",
         employment_type: existingCustomer.employment_type || "",
         date_joined: existingCustomer.date_joined || "",
-
         monthly_salary: existingCustomer.monthly_salary || 0.00,
         net_salary: existingCustomer.net_salary || 0.00,
-
         immediate_supervisor: existingCustomer.immediate_supervisor || "",
         years_at_current_employer: existingCustomer.years_at_current_employer || "",
         work_district: existingCustomer.work_district || "",
         work_province: existingCustomer.work_province || "",
         employer_address: existingCustomer.employer_address || "",
         work_location: existingCustomer.work_location || "",
-
-        organisation_id: existingCustomer.organisation_id || 0,
-        company_id: existingCustomer.company_id || 0,
-      }));
+      };
+      setFormData(newObj);
       
        if (onExistingCustomerLoaded) {
           onExistingCustomerLoaded(existingCustomer);
@@ -400,23 +392,42 @@ useEffect(() => {
       const cleanFullName = cleanName(selectedEmp.cust_name);
       const parts = cleanFullName.split(" ");
 
-      setFormData((prev) => ({
-        ...prev,
+      const baseCompany = formData?.company_id || 1;
+      const newObj = {
         cus_id: null,
-        employee_no: selectedEmp.emp_code,
+        employee_no: selectedEmp.emp_code || "",
+        company_id: selectedEmp.company_id || baseCompany,
+        organisation_id: selectedEmp.organization_id || "",
         first_name: parts[0] || "",
         last_name: parts.slice(1).join(" ") || "",
         phone: selectedEmp.phone || "",
         email: selectedEmp.email || "",
         monthly_salary: selectedEmp.gross_pay || "",
         net_salary: selectedEmp.net_pay || "",
-        organisation_id: selectedEmp.organization_id || "",
-        company_id: selectedEmp.company_id || "",
-        // Reset specific fields when loading fresh from employee list
         no_of_dependents: "",
         spouse_full_name: "",
         spouse_contact: "",
-      }));
+        gender: "",
+        dob: "",
+        marital_status: "",
+        home_province: "",
+        district_village: "",
+        present_address: "",
+        permanent_address: "",
+        payroll_number: "",
+        employer_department: "",
+        designation: "",
+        employment_type: "",
+        date_joined: "",
+        immediate_supervisor: "",
+        years_at_current_employer: "",
+        work_district: "",
+        work_province: "",
+        employer_address: "",
+        work_location: "",
+      };
+
+      setFormData(newObj);
 
       setOrgSelectable(false);
     }
@@ -599,13 +610,13 @@ useEffect(() => {
 
               <div className="grid grid-cols-3 gap-4 mt-3">
                 <div>
-                  <label>Gender</label>
+                  <label>Gender <ImportantField /></label>
                   <select
                     name="gender"
                     value={formData.gender || ""}
                     onChange={handleChange}
-                    disabled={isExistingFound && isAutoFilled}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${isExistingFound && isAutoFilled && "bg-gray-100 cursor-not-allowed"}`}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                   >
                     <option value="">-- Select --</option>
                     <option value="Male">Male</option>
