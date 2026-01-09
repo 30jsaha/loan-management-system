@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 24, 2025 at 12:55 PM
+-- Generation Time: Jan 09, 2026 at 12:35 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -82,7 +82,9 @@ INSERT INTO `all_cust_master` (`id`, `cust_name`, `emp_code`, `phone`, `email`, 
 (34, 'Maim, Molly', '12961454', NULL, NULL, 0, 1, 1266.52, 0, '2025-11-28 05:13:41', '2025-11-28 05:13:41'),
 (35, 'Lalamo, Michael Gim', '13005455', NULL, NULL, 0, 1, 1302.94, 0, '2025-11-28 05:13:41', '2025-11-28 05:13:41'),
 (36, 'Lowa, Karam Willie', '13829950', NULL, NULL, 0, 1, 1192.64, 0, '2025-11-28 05:13:41', '2025-11-28 05:13:41'),
-(37, 'Aditya', 'Badmash420', '7539512368', 'aditya@email.com', 4, 0, 5500, 3000, '2025-12-18 06:43:12', '2025-12-18 06:45:45');
+(37, 'Aditya', 'Badmash420', '7539512368', 'aditya@email.com', 4, 0, 5500, 3000, '2025-12-18 06:43:12', '2025-12-18 06:45:45'),
+(38, 'demo surname', 'demo1001', '85201365', 'demo1001@gmail.com', 2, 0, 6000, 5000, '2026-01-09 01:10:14', '2026-01-09 01:11:59'),
+(39, 'Alice Fernandez1', 'emp9001', '75395456', 'demo9001@email.com', 4, 0, 5500, 5000, '2026-01-09 02:34:53', '2026-01-09 02:35:17');
 
 -- --------------------------------------------------------
 
@@ -293,7 +295,9 @@ INSERT INTO `customers` (`id`, `user_id`, `company_id`, `organisation_id`, `firs
 (42, 2, 1, 1, 'GOGUSO', 'Gipson', NULL, NULL, NULL, 4, '9112753678', 'goguso@email.com', '67866765', NULL, NULL, NULL, NULL, NULL, NULL, '13477913', 'Deptuniq', NULL, NULL, NULL, NULL, NULL, 'Manager', 'Permanent', NULL, 1266.52, 1100.00, 'demo', NULL, 'Active', '2025-12-16 02:38:23', '2025-12-16 02:38:23'),
 (43, 2, 1, 1, 'Jimberi', 'Jacklyn', NULL, NULL, NULL, 4, '8548108940', 'jimberi@email.com', '6786576509', NULL, NULL, NULL, NULL, NULL, NULL, '12481532', 'Dept', NULL, NULL, NULL, NULL, NULL, 'Manager', 'Permanent', NULL, 1384.48, 1200.00, 'demo', NULL, 'Active', '2025-12-16 02:54:39', '2025-12-16 02:54:39'),
 (44, 2, 1, 4, 'Aditya', 'Paul', 'Male', NULL, 'Divorced', 5, '7539512368', 'aditya@email.com', '6745869765', NULL, NULL, NULL, NULL, NULL, NULL, 'Badmash420', 'Dept', NULL, NULL, NULL, NULL, NULL, 'Sales Person', 'Permanent', NULL, 5500.00, 3000.00, 'Demo', NULL, 'Active', '2025-12-18 06:48:36', '2025-12-18 06:48:36'),
-(45, 2, 1, 4, 'Nega', 'Salagowato', NULL, NULL, NULL, 4, '9752345670', 'naganew@email.com', '6759069765', NULL, NULL, NULL, NULL, NULL, NULL, '10321646', 'Dept', NULL, NULL, NULL, NULL, NULL, 'manager', 'Permanent', NULL, 1507.42, 1450.00, 'demo', NULL, 'Active', '2025-12-23 02:21:47', '2025-12-23 02:21:47');
+(45, 2, 1, 4, 'Nega', 'Salagowato', NULL, NULL, NULL, 4, '9752345670', 'naganew@email.com', '6759069765', NULL, NULL, NULL, NULL, NULL, NULL, '10321646', 'Dept', NULL, NULL, NULL, NULL, NULL, 'manager', 'Permanent', NULL, 1507.42, 1450.00, 'demo', NULL, 'Active', '2025-12-23 02:21:47', '2025-12-23 02:21:47'),
+(46, 2, 1, 2, 'demo', 'surname', 'Male', NULL, NULL, 4, '85201365', 'demo1001@gmail.com', '100001', NULL, NULL, NULL, NULL, NULL, NULL, 'demo1001', 'dept1001', NULL, NULL, NULL, NULL, 0, 'desig1001', 'Permanent', '2026-01-09', 6000.00, 5000.00, 'demo', NULL, 'Active', '2026-01-09 01:13:32', '2026-01-09 01:13:32'),
+(47, 2, 1, 4, 'Alice', 'Fernandez1', 'Male', NULL, NULL, 4, '75395456', 'demo9001@email.com', '6869765', NULL, NULL, NULL, NULL, NULL, NULL, 'emp9001', 'dept9001', NULL, NULL, NULL, NULL, 0, 'Manager', 'Permanent', NULL, 5500.00, 5000.00, 'demo9001', NULL, 'Active', '2026-01-09 02:53:28', '2026-01-09 02:53:28');
 
 -- --------------------------------------------------------
 
@@ -505,7 +509,13 @@ INSERT INTO `customer_eligibility_history` (`id`, `customer_id`, `gross_salary_a
 (126, 5, 1400.00, 0.00, 0.00, 998.00, 110.00, 292.00, 1350.00, 0.00, 1350.00, -1058.00, 146.00, 1204.00, 455.00, 0.00, 1658.99, 1600.00, -250.00, 58.99, 2, 1, '2025-12-22 05:02:12', '2025-12-22 05:02:12'),
 (127, 5, 1400.00, 0.00, 0.00, 1100.00, 110.00, 190.00, 1350.00, 0.00, 1350.00, -1160.00, 95.00, 1255.00, 455.00, 0.00, 1709.99, 1500.00, -150.00, 209.99, 2, 1, '2025-12-22 05:31:52', '2025-12-22 05:31:52'),
 (128, 44, 5500.00, 0.00, 0.00, 1000.00, 110.00, 4390.00, 3000.00, 0.00, 3000.00, 1390.00, 2195.00, 805.00, 410.00, 0.00, 1214.99, 1500.00, 1500.00, -285.01, 2, 0, '2025-12-23 04:45:23', '2025-12-23 04:45:23'),
-(129, 44, 5500.00, 0.00, 0.00, 1000.00, 110.00, 4390.00, 3000.00, 0.00, 3000.00, 1390.00, 2195.00, 805.00, 410.00, 0.00, 1214.99, 1200.00, 1800.00, 14.99, 2, 1, '2025-12-23 04:45:27', '2025-12-23 04:45:27');
+(129, 44, 5500.00, 0.00, 0.00, 1000.00, 110.00, 4390.00, 3000.00, 0.00, 3000.00, 1390.00, 2195.00, 805.00, 410.00, 0.00, 1214.99, 1200.00, 1800.00, 14.99, 2, 1, '2025-12-23 04:45:27', '2025-12-23 04:45:27'),
+(130, 44, 5500.00, 0.00, 0.00, 1000.00, 110.00, 4390.00, 3000.00, 0.00, 3000.00, 1390.00, 2195.00, 805.00, 410.00, 0.00, 1214.99, 2500.00, 500.00, -1285.01, 2, 0, '2026-01-05 05:56:22', '2026-01-05 05:56:22'),
+(131, 46, 6000.00, 0.00, 0.00, 1000.00, 110.00, 4890.00, 5000.00, 0.00, 5000.00, -110.00, 2445.00, 2555.00, 410.00, 0.00, 2964.99, 1200.00, 3800.00, 1764.99, 2, 1, '2026-01-09 01:13:55', '2026-01-09 01:13:55'),
+(132, 46, 6000.00, 0.00, 0.00, 1000.00, 110.00, 4890.00, 5000.00, 0.00, 5000.00, -110.00, 2445.00, 2555.00, 410.00, 0.00, 2964.99, 2500.00, 2500.00, 464.99, 2, 1, '2026-01-09 01:14:02', '2026-01-09 01:14:02'),
+(133, 46, 6000.00, 0.00, 0.00, 1000.00, 110.00, 4890.00, 5000.00, 0.00, 5000.00, -110.00, 2445.00, 2555.00, 410.00, 0.00, 2964.99, 3000.00, 2000.00, -35.01, 2, 0, '2026-01-09 01:14:18', '2026-01-09 01:14:18'),
+(134, 46, 6000.00, 0.00, 0.00, 1000.00, 110.00, 4890.00, 5000.00, 0.00, 5000.00, -110.00, 2445.00, 2555.00, 410.00, 0.00, 2964.99, 2500.00, 2500.00, 464.99, 2, 1, '2026-01-09 01:14:25', '2026-01-09 01:14:25'),
+(135, 47, 5500.00, 0.00, 0.00, 1000.00, 110.00, 4390.00, 5000.00, 0.00, 5000.00, -610.00, 2195.00, 2805.00, 410.00, 0.00, 3214.99, 2500.00, 2500.00, 714.99, 2, 1, '2026-01-09 02:53:53', '2026-01-09 02:53:53');
 
 -- --------------------------------------------------------
 
@@ -536,7 +546,8 @@ INSERT INTO `document_types` (`id`, `doc_key`, `doc_name`, `min_size_kb`, `max_s
 (4, 'EmploymentLetter', 'Employment Letter', 10, 20480, 1, 1, NULL, NULL),
 (5, 'ResumptionSheet', 'Resumption Sheet', 10, 20480, 0, 1, NULL, NULL),
 (6, 'ISDA_Signed', 'ISDA Signed', 10, 20480, 1, 1, NULL, NULL),
-(7, 'LoanForm_Scanned', 'Loan Form (Scanned)', 10, 20480, 1, 1, NULL, NULL);
+(7, 'LoanForm_Scanned', 'Loan Form (Scanned)', 10, 20480, 1, 1, NULL, NULL),
+(10, 'Signature', 'Signature', 20, 200, 1, 1, '2026-01-09 02:38:24', '2026-01-09 02:38:24');
 
 -- --------------------------------------------------------
 
@@ -858,7 +869,22 @@ INSERT INTO `document_upload` (`id`, `loan_id`, `customer_id`, `doc_type`, `file
 (282, 60, 44, 'EmploymentLetter', 'eligibility_check_formula.pdf', 'uploads/documents/Umu0dc6pWHh4tn87PklAsf0Vm2U2g3l3RHg5w1Mi.pdf', 'Normal User', 2, '2025-12-23 10:21:08', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-23 04:51:08', '2025-12-23 04:51:08'),
 (283, 60, 44, 'BankStatement', 'health_format.pdf', 'uploads/documents/GQHDSGkFSsYPp7QUkWenq46LGUZRbILf6YT48aRk.pdf', 'Normal User', 2, '2025-12-23 10:21:09', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-23 04:51:09', '2025-12-23 04:51:09'),
 (284, 60, 44, 'Payslip', 'Loan Management System.pdf', 'uploads/documents/gXvKGN0EXF0a1cWplQ0hQfpSzIIwlgkWjFrK7HcJ.pdf', 'Normal User', 2, '2025-12-23 10:21:10', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-23 04:51:10', '2025-12-23 04:51:10'),
-(285, 60, 44, 'ID', 'loan-process-details.pdf', 'uploads/documents/xSskbqAUbgAf6fpX9453rfEUn7yWuRg5PpFa1gm7.pdf', 'Normal User', 2, '2025-12-23 10:21:11', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-23 04:51:11', '2025-12-23 04:51:11');
+(285, 60, 44, 'ID', 'loan-process-details.pdf', 'uploads/documents/xSskbqAUbgAf6fpX9453rfEUn7yWuRg5PpFa1gm7.pdf', 'Normal User', 2, '2025-12-23 10:21:11', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, '2025-12-23 04:51:11', '2025-12-23 04:51:11'),
+(286, 62, 46, 'LoanForm_Scanned', 'aaa_loan_application_form.pdf', 'uploads/documents/zOu8MpwQXnGyL3oYEyZIkf76g9b8lVSOgVVdn5x3.pdf', 'Normal User', 2, '2026-01-09 06:46:16', 1, '2026-01-09 06:55:49', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 01:16:16', '2026-01-09 01:25:49'),
+(287, 62, 46, 'ISDA_Signed', 'Agro Advance Aben Ltd Company Profile (2).pdf', 'uploads/documents/ODGaemfwprGSqpd9zVuLqlPEDjyGenCluUe8iqgw.pdf', 'Normal User', 2, '2026-01-09 06:46:17', 0, NULL, 'Rejected', '2026-01-09 01:26:08', 1, 1, 0, NULL, 0, NULL, '2026-01-09 01:16:17', '2026-01-09 01:26:08'),
+(288, 62, 46, 'ResumptionSheet', 'education_format.pdf', 'uploads/documents/uEJPvobtJMgeAqgpw0RjH48a3iseP0JszJq8YsAW.pdf', 'Normal User', 2, '2026-01-09 06:46:18', 1, '2026-01-09 06:55:52', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 01:16:18', '2026-01-09 01:25:52'),
+(289, 62, 46, 'EmploymentLetter', 'eligibility_check_formula.pdf', 'uploads/documents/6J5UvXhCkM25YfQ9IiQYVYGlWdOx7MSnpcXvqLaq.pdf', 'Normal User', 2, '2026-01-09 06:46:19', 1, '2026-01-09 06:55:56', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 01:16:19', '2026-01-09 01:25:56'),
+(290, 62, 46, 'BankStatement', 'health_format.pdf', 'uploads/documents/PDSs1zDHXoQTEcrOVAMIssQEbHdRWazwj6Rczs6X.pdf', 'Normal User', 2, '2026-01-09 06:46:20', 1, '2026-01-09 06:55:57', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 01:16:20', '2026-01-09 01:25:57'),
+(291, 62, 46, 'Payslip', 'Loan Management System.pdf', 'uploads/documents/gM78L3Y778ZRXY61LlBoGR5cOMWn3WyGj097PHcA.pdf', 'Normal User', 2, '2026-01-09 06:46:21', 1, '2026-01-09 06:55:59', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 01:16:21', '2026-01-09 01:25:59'),
+(292, 62, 46, 'ID', 'loan-process-details.pdf', 'uploads/documents/n4gu8hNBrtgrvdJzn2HW08QqkBAKtxa9PHSNv5U0.pdf', 'Normal User', 2, '2026-01-09 06:46:22', 1, '2026-01-09 06:56:00', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 01:16:22', '2026-01-09 01:26:00'),
+(293, 63, 47, 'LoanForm_Scanned', 'aaa_loan_application_form.pdf', 'uploads/documents/EVusd22xAyPrJ5mPrPgJ5ONDWlYpK9iQ6d4sLnLr.pdf', 'Normal User', 2, '2026-01-09 08:29:57', 1, '2026-01-09 08:42:37', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 02:59:57', '2026-01-09 03:12:37'),
+(294, 63, 47, 'Signature', 'jsaha_cv.pdf', 'uploads/documents/zsSJgUWpF0J9KdKP9hXCexFh8rM1WzJe1DoBQW0r.pdf', 'Normal User', 2, '2026-01-09 08:29:58', 1, '2026-01-09 08:42:35', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 02:59:58', '2026-01-09 03:12:35'),
+(295, 63, 47, 'ISDA_Signed', 'Agro Advance Aben Ltd Company Profile (2).pdf', 'uploads/documents/gox3Z4BPQP0CdCJjPB6BI1dVmhslyfKAqsSaTBiP.pdf', 'Normal User', 2, '2026-01-09 08:29:59', 0, NULL, 'Rejected', '2026-01-09 03:13:16', 1, 1, 0, NULL, 0, NULL, '2026-01-09 02:59:59', '2026-01-09 03:13:16'),
+(296, 63, 47, 'ResumptionSheet', 'health_format.pdf', 'uploads/documents/VTBjoqCoNHrSGolL6wYAEQ2CyZHdG6EVQAnVlZfG.pdf', 'Normal User', 2, '2026-01-09 08:30:00', 1, '2026-01-09 08:42:38', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 03:00:00', '2026-01-09 03:12:38'),
+(297, 63, 47, 'EmploymentLetter', 'health_format.pdf', 'uploads/documents/RrVK3suY7NV6zNUdZ2AyDR0UViQgYEQPk5KEkQqv.pdf', 'Normal User', 2, '2026-01-09 08:30:01', 1, '2026-01-09 08:42:27', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 03:00:01', '2026-01-09 03:12:27'),
+(298, 63, 47, 'BankStatement', 'Agro Advance Aben Ltd Company Profile (2).pdf', 'uploads/documents/H2pJgncos85HV7xd7awVKMPrk2husi1N0kmHSb19.pdf', 'Normal User', 2, '2026-01-09 08:30:02', 1, '2026-01-09 08:42:28', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 03:00:02', '2026-01-09 03:12:28'),
+(299, 63, 47, 'Payslip', 'Loan Management System.pdf', 'uploads/documents/Vi5w0YY3haNY16txGu6BIlOTMcitTh26Jb01oRtU.pdf', 'Normal User', 2, '2026-01-09 08:30:03', 1, '2026-01-09 08:42:30', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 03:00:03', '2026-01-09 03:12:30'),
+(300, 63, 47, 'ID', 'education_format.pdf', 'uploads/documents/VTJEv2pBkD4hVkIuS4DgGC0JvdqfHLdruLjNE4It.pdf', 'Normal User', 2, '2026-01-09 08:30:04', 1, '2026-01-09 08:42:31', 'Verified', NULL, 0, 0, 0, NULL, 0, NULL, '2026-01-09 03:00:04', '2026-01-09 03:12:31');
 
 -- --------------------------------------------------------
 
@@ -1134,7 +1160,9 @@ INSERT INTO `loan_applications` (`id`, `company_id`, `customer_id`, `organisatio
 (57, 1, 24, 1, 1, 'School Fee', 1, NULL, 2550, 2550, 25, 161.93, 2.35, 25, '2026-01-01', 2964.99, 3238.5, 4048.125, 1498.125, 20, NULL, '2025-12-18', NULL, NULL, NULL, 'Approved', 'Jyotirmoy Saha', 1, '2025-12-18 08:02:26', NULL, 0, NULL, 0, NULL, '/storage/uploads/isda_signed/dLN4QXbJej2ZEwpJvbn4O83NOxU3PhF5lGOmxFED.pdf', '2025-12-18', 2, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, '/storage/uploads/isda_signed/aATKWeh1ePof4M8jA6TWtT09ub3ZIG2hP3xNtCXd.pdf', '2025-12-18', 2, 'movie.mp4', '/storage/uploads/video_consents/OJkgUPLwOa7FPypo3PBoihBSjFr1P8b9kzvNdzge.mp4', '2025-12-18', 2, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 1, '2025-12-18 02:31:43', 1, 0, 0, 0, 1, '2025-12-17 08:52:28', '2025-12-18 02:32:26'),
 (58, 1, 24, 1, 1, NULL, 2, NULL, 2000, 2000, 22, 137.91, 2.35, 22, '2026-01-01', 2964.99, 2427.2, 3034, 1034, 20, NULL, '2025-12-18', NULL, NULL, NULL, 'Approved', 'Jyotirmoy Saha', 1, '2025-12-18 07:59:33', NULL, 0, NULL, 0, NULL, '/storage/uploads/isda_signed/9sDQz3fM3U3wrIGWJVxJefD4HXBEiL9Rktr8unyM.pdf', '2025-12-18', 2, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, '/storage/uploads/isda_signed/GN2xRJCIFKMP2latZw1Kaug2XhAJdG26wyvyJTgY.pdf', '2025-12-18', 2, 'movie.mp4', '/storage/uploads/video_consents/6kKxHpZOdcxTQo0Sb8rHjahqGQCrgTOYWPoYScWD.mp4', '2025-12-18', 2, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 1, '2025-12-18 02:28:32', 1, 0, 0, 0, 1, '2025-12-18 01:32:38', '2025-12-18 02:29:33'),
 (59, 1, 44, 4, 2, NULL, 3, NULL, 1200, 0, 22, 78.55, 2, NULL, NULL, 1208.99, 0, 1728, 528, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, NULL, 1, 0, 0, 0, 1, '2025-12-18 06:51:17', '2025-12-18 06:51:17'),
-(60, 1, 44, 4, 2, NULL, 4, NULL, 1200, 0, 25, 72, 2, NULL, NULL, 1214.99, 0, 1800, 600, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 0, '2025-12-23 04:54:37', 1, 0, 0, 0, 1, '2025-12-23 04:45:49', '2025-12-23 04:54:37');
+(60, 1, 44, 4, 2, NULL, 4, NULL, 1200, 0, 25, 72, 2, NULL, NULL, 1214.99, 0, 1800, 600, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 0, '2025-12-23 04:54:37', 1, 0, 0, 0, 1, '2025-12-23 04:45:49', '2025-12-23 04:54:37'),
+(62, 1, 46, 2, 1, NULL, 2, NULL, 2500, 0, 15, 225.42, 2.35, NULL, NULL, 2964.99, 0, 3381.25, 881.25, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 0, '2026-01-09 01:16:46', 1, 0, 0, 0, 1, '2026-01-09 01:15:13', '2026-01-09 01:16:46'),
+(63, 1, 47, 4, 2, NULL, 4, NULL, 2500, 0, 20, 175, 2, NULL, NULL, 3214.99, 0, 3500, 1000, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 0, '2026-01-09 03:00:29', 1, 0, 0, 0, 1, '2026-01-09 02:56:09', '2026-01-09 03:00:29');
 
 -- --------------------------------------------------------
 
@@ -1159,7 +1187,8 @@ INSERT INTO `loan_purposes` (`id`, `purpose_name`, `status`, `created_at`, `upda
 (2, 'Personal Expenses', 1, '2025-12-17 22:56:55', '2025-12-17 22:56:55'),
 (3, 'Funeral Expenses', 1, '2025-12-17 22:56:55', '2025-12-17 22:56:55'),
 (4, 'Refinancing', 1, '2025-12-17 22:56:55', '2025-12-17 22:56:55'),
-(5, 'Other', 1, '2025-12-17 22:56:55', '2025-12-17 22:56:55');
+(5, 'Other', 1, '2025-12-17 22:56:55', '2025-12-17 22:56:55'),
+(8, 'new purpose', 1, '2026-01-09 02:39:56', '2026-01-09 02:39:56');
 
 -- --------------------------------------------------------
 
@@ -1486,7 +1515,8 @@ INSERT INTO `salary_slabs` (`id`, `org_id`, `slab_desc`, `starting_salary`, `end
 (1, 1, 'Entry Level', 0.00, 5000.00, 1, '2025-11-13 04:24:38', '2025-11-13 04:24:38'),
 (2, 1, 'Mid Level', 5000.00, 15000.00, 1, '2025-11-13 04:24:38', '2025-11-19 02:01:06'),
 (3, 1, 'Senior Level', 15000.00, 50000.00, 1, '2025-11-13 04:24:38', '2025-11-21 00:42:20'),
-(7, 4, 'New Slab', 20000.00, 100000.00, 1, '2025-12-12 07:32:43', '2025-12-12 07:33:35');
+(7, 4, 'New Slab', 20000.00, 100000.00, 1, '2025-12-12 07:32:43', '2025-12-12 07:33:35'),
+(8, 4, 'new slab', 30000.00, 50000.00, 1, '2026-01-09 02:36:06', '2026-01-09 02:36:06');
 
 -- --------------------------------------------------------
 
@@ -1511,7 +1541,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `is_admin`, `remember_token`, `created_at`, `updated_at`) VALUES
-(1, 'Jyotirmoy Saha', 'jsaha.adzguru@gmail.com', NULL, '$2y$12$UNPMbfzj8fXh4G0C0AGAWed5wBan6fM2D.2I2iSNBaJ3jjTeHCTLi', 1, 'XSWt4OTowvNj5nq3vxHjP09HXwcggsJCrWFFhs7t5gFzQEL7F6WgA72jERdJ', '2025-10-14 07:11:33', '2025-10-14 07:11:33'),
+(1, 'Jyotirmoy Saha', 'jsaha.adzguru@gmail.com', NULL, '$2y$12$UNPMbfzj8fXh4G0C0AGAWed5wBan6fM2D.2I2iSNBaJ3jjTeHCTLi', 1, 'prSu5YNZzzkL2VpW9L76QrRyhb06CJx7OrFnkemQiDOYqhKBYPKoKHB6cdrz', '2025-10-14 07:11:33', '2025-10-14 07:11:33'),
 (2, 'Normal User', 'user@email.com', NULL, '$2y$12$kMuJMhShl93leEdBLLsJ/eb9Dmn/Jq438R2fTY/t7hTuKTkzoQVc2', 0, NULL, '2025-11-19 01:50:47', '2025-11-28 05:49:09');
 
 --
@@ -1695,7 +1725,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `all_cust_master`
 --
 ALTER TABLE `all_cust_master`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `assigned_loans_under_org`
@@ -1725,31 +1755,31 @@ ALTER TABLE `company_master`
 -- AUTO_INCREMENT for table `customers`
 --
 ALTER TABLE `customers`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `customer_drafts`
 --
 ALTER TABLE `customer_drafts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `customer_eligibility_history`
 --
 ALTER TABLE `customer_eligibility_history`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=136;
 
 --
 -- AUTO_INCREMENT for table `document_types`
 --
 ALTER TABLE `document_types`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `document_upload`
 --
 ALTER TABLE `document_upload`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=286;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=301;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -1767,13 +1797,13 @@ ALTER TABLE `installment_details`
 -- AUTO_INCREMENT for table `loan_applications`
 --
 ALTER TABLE `loan_applications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
 
 --
 -- AUTO_INCREMENT for table `loan_purposes`
 --
 ALTER TABLE `loan_purposes`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `loan_settings`
@@ -1821,7 +1851,7 @@ ALTER TABLE `rejection_reasons`
 -- AUTO_INCREMENT for table `salary_slabs`
 --
 ALTER TABLE `salary_slabs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `users`

@@ -1675,6 +1675,7 @@ const normalizeFilePath = (path) => {
                                                                 <th className="border p-2">Uploaded By</th>
                                                                 <th className="border p-2">View</th>
                                                                 <th className="border p-2">Download</th>
+                                                                <th className="border p-2">Mandatory</th>
                                                                 {(auth.user.is_admin == 1) ? (
                                                                     <th className="border p-2">Verify</th>
                                                                 ) : (
@@ -1725,6 +1726,17 @@ const normalizeFilePath = (path) => {
                                                                         >
                                                                             Download <Download size={16} />
                                                                         </a>
+                                                                    </td>
+                                                                    <td className="border p-2">
+                                                                        <span
+                                                                            className={`px-2 py-1 text-xs rounded ${
+                                                                            doc.is_required
+                                                                                ? "bg-red-100 text-red-700"
+                                                                                : "bg-gray-100 text-gray-700"
+                                                                            }`}
+                                                                        >
+                                                                            {doc.is_required ? "Mandatory" : "Optional"}
+                                                                        </span>
                                                                     </td>
 
                                                                     {/* Verify / Reject Column */}

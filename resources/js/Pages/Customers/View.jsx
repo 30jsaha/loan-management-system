@@ -107,7 +107,7 @@ export default function View({ auth, customerId }) {
             {/* ================= LEFT SIDEBAR (Customer Info) ================ */}
             <div className="p-8 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200">
               <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-white rounded-full border shadow-sm">
+                <div className="p-3 bg-white rounded-full border shadow-sm" style={{marginTop: "-20px"}}>
                   <User size={32} className="text-indigo-600" />
                 </div>
                 <div>
