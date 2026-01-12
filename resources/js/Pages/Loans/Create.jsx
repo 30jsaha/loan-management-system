@@ -1285,7 +1285,7 @@ export default function Create({ auth, loan_settings }) {
                                                     <Row>
                                                         <Col md={12} className='text-center'>
                                                             <Button variant="primary" type="button" onClick={handleNotElegibleSubmit}>
-                                                                Make Elegible
+                                                                Make Eligible
                                                             </Button>
                                                         </Col>
                                                     </Row>
