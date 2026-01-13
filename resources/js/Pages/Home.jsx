@@ -1087,8 +1087,9 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               </div>
 
               <div className="col-md-4 text-md-center">
-                <p className="text-uppercase small mb-1" style={{ color: '#E8F5E9' }}>Contact Us Now!</p>
-                <h4 className="fw-bold" style={{ color: '#4CAF50' }}>+675 7211 5122</h4>
+                <p className="text-uppercase fw-bold mb-2" style={{ color: '#69F0AE' }}>Contact Us Now!</p>
+                <h4 className="small mb-0" style={{ color: '#E8F5E9' }}>+675 7211 5122</h4>
+                <h4 className="small mb-0" style={{ color: '#E8F5E9' }}>+675 7211 5122</h4>
               </div>
 
               <div className="col-md-3 text-md-end">
