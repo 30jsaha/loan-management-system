@@ -121,7 +121,8 @@ export default function EditCustomer() {
       <Head title="Edit Customer" />
 
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="mb-4">
+        
+        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding"><div className="mb-4">
           <Link
             href={route("customers")}
             className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
@@ -129,410 +130,420 @@ export default function EditCustomer() {
             <ArrowLeft size={16} className="me-2" /> Back to Customers
           </Link>
         </div>
+          <form onSubmit={handleSubmit}>
+            <Row>
+              {/* Identification */}
+              <Col md={12}>
+                <fieldset className="fldset mt-1">
+                  <legend className="legend">Identification</legend>
+                  <div className="grid grid-cols-2 gap-4 mt-3">
+                    <div>
+                      <label className="block text-gray-700 font-medium">
+                        EMP Code <ImportantField />
+                      </label>
+                      <input
+                        type="text"
+                        name="employee_no"
+                        value={formData.employee_no || ""}
+                        disabled
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                      />
+                    </div>
 
-        <form onSubmit={handleSubmit}>
-          <Row>
-            {/* Identification */}
-            <Col md={12}>
-              <fieldset className="fldset mt-1">
-                <legend className="legend">Identification</legend>
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label className="block text-gray-700 font-medium">
-                      EMP Code <ImportantField />
-                    </label>
-                    <input
-                      type="text"
-                      name="employee_no"
-                      value={formData.employee_no || ""}
-                      disabled
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
-                    />
+                    <div>
+                      <label className="block text-gray-700 font-medium">
+                        Organisation <ImportantField />
+                      </label>
+                      <select
+                        name="organisation_id"
+                        value={formData.organisation_id || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                        required
+                        disabled
+                      >
+                        <option value="">-- Select Organisation --</option>
+                        {organisations.map((org) => (
+                          <option key={org.id} value={org.id}>
+                            {org.organisation_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+                </fieldset>
+              </Col>
 
-                  <div>
-                    <label className="block text-gray-700 font-medium">
-                      Organisation <ImportantField />
-                    </label>
-                    <select
-                      name="organisation_id"
-                      value={formData.organisation_id || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    >
-                      <option value="">-- Select Organisation --</option>
-                      {organisations.map((org) => (
-                        <option key={org.id} value={org.id}>
-                          {org.organisation_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </fieldset>
-            </Col>
-
-            {/* Basic Info and Employment Side-by-Side */}
-            <Col md={6}>
-              <fieldset className="fldset mt-4">
-                <legend className="legend">Basic Information</legend>
-
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>First Name <ImportantField /></label>
-                    <input
-                      type="text"
-                      name="first_name"
-                      value={formData.first_name || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label>Last Name <ImportantField /></label>
-                    <input
-                      type="text"
-                      name="last_name"
-                      value={formData.last_name || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 mt-3">
-                  <div>
-                    <label>Gender</label>
-                    <select
-                      name="gender"
-                      value={formData.gender || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    >
-                      <option value="">-- Select --</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
+              {/* Basic Info and Employment Side-by-Side */}
+              <Col md={6}>
+                <fieldset className="fldset mt-4">
+                  <legend className="legend">Basic Information</legend>
+                  <div className="fldScroll">
+                  <div className="grid grid-cols-2 gap-4 mt-3">
+                    <div>
+                      <label>First Name <ImportantField /></label>
+                      <input
+                        type="text"
+                        name="first_name"
+                        value={formData.first_name || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                        required
+                        disabled
+                      />
+                    </div>
+                    <div>
+                      <label>Last Name <ImportantField /></label>
+                      <input
+                        type="text"
+                        name="last_name"
+                        value={formData.last_name || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                        required
+                        disabled
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label>Date of Birth</label>
-                    <input
-                      type="date"
-                      name="dob"
-                      value={formData.dob || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
+                  <div className="grid grid-cols-3 gap-4 mt-3">
+                    <div>
+                      <label>Gender</label>
+                      <select
+                        name="gender"
+                        value={formData.gender || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label>Date of Birth</label>
+                      <input
+                        type="date"
+                        name="dob"
+                        value={formData.dob || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label>Marital Status</label>
+                      <select
+                        name="marital_status"
+                        value={formData.marital_status || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Divorced">Divorced</option>
+                        <option value="Widowed">Widowed</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div>
-                    <label>Marital Status</label>
-                    <select
-                      name="marital_status"
-                      value={formData.marital_status || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    >
-                      <option value="">-- Select --</option>
-                      <option value="Single">Single</option>
-                      <option value="Married">Married</option>
-                      <option value="Divorced">Divorced</option>
-                      <option value="Widowed">Widowed</option>
-                    </select>
+                  <div className="grid grid-cols-3 gap-4 mt-3">
+                    <div>
+                      <label>Number of Dependents <ImportantField /></label>
+                      <input
+                        type="number"
+                        name="no_of_dependents"
+                        value={formData.no_of_dependents || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label>Spouse Full Name</label>
+                      <input
+                        type="text"
+                        name="spouse_full_name"
+                        value={formData.spouse_full_name || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    <div>
+                      <label>Spouse Contact</label>
+                      <input
+                        type="text"
+                        name="spouse_contact"
+                        value={formData.spouse_contact || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
                   </div>
-                </div>
+                  </div>
+                </fieldset>
+              </Col>
 
-                <div className="grid grid-cols-3 gap-4 mt-3">
-                  <div>
-                    <label>Number of Dependents <ImportantField /></label>
-                    <input
-                      type="number"
-                      name="no_of_dependents"
-                      value={formData.no_of_dependents || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label>Spouse Full Name</label>
-                    <input
-                      type="text"
-                      name="spouse_full_name"
-                      value={formData.spouse_full_name || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label>Spouse Contact</label>
-                    <input
-                      type="text"
-                      name="spouse_contact"
-                      value={formData.spouse_contact || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                </div>
-              </fieldset>
+              {/* Employment Details */}
+              <Col md={6}>
+                <fieldset className="fldset mt-4">
+                  <legend className="legend">Employment Details</legend>
+                  <div className="fldScroll">
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <label>Payroll Number <ImportantField /></label>
+                        <input
+                          type="text"
+                          name="payroll_number"
+                          value={formData.payroll_number || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label>Department <ImportantField /></label>
+                        <input
+                          type="text"
+                          name="employer_department"
+                          value={formData.employer_department || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          required
+                        />
+                      </div>
+                    </div>
 
-              <fieldset className="fldset mt-4">
-                <legend className="legend">Contact Information</legend>
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Phone <ImportantField /></label>
-                    <input
-                      type="text"
-                      name="phone"
-                      value={formData.phone || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label>Email <ImportantField /></label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <label>Designation <ImportantField /></label>
+                        <input
+                          type="text"
+                          name="designation"
+                          value={formData.designation || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label>Employment Type</label>
+                        <select
+                          name="employment_type"
+                          value={formData.employment_type || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        >
+                          <option value="">-- Select --</option>
+                          <option value="Permanent">Permanent</option>
+                          <option value="Contract">Contract</option>
+                        </select>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Home Province</label>
-                    <input
-                      type="text"
-                      name="home_province"
-                      value={formData.home_province || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label>District & Village</label>
-                    <input
-                      type="text"
-                      name="district_village"
-                      value={formData.district_village || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <label>Date Joined</label>
+                        <input
+                          type="date"
+                          name="date_joined"
+                          value={formData.date_joined || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        />
+                      </div>
+                      <div>
+                        <label>Gross Salary (PGK) <ImportantField /></label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          name="monthly_salary"
+                          value={formData.monthly_salary || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Present Address</label>
-                    <textarea
-                      name="present_address"
-                      value={formData.present_address || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label>Permanent Address</label>
-                    <textarea
-                      name="permanent_address"
-                      value={formData.permanent_address || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                </div>
-              </fieldset>
-            </Col>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <label>Net Salary (PGK) <ImportantField /></label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          name="net_salary"
+                          value={formData.net_salary || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label>Immediate Supervisor</label>
+                        <input
+                          type="text"
+                          name="immediate_supervisor"
+                          value={formData.immediate_supervisor || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        />
+                      </div>
+                    </div>
 
-            {/* Employment Details */}
-            <Col md={6}>
-              <fieldset className="fldset mt-4">
-                <legend className="legend">Employment Details</legend>
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Payroll Number <ImportantField /></label>
-                    <input
-                      type="text"
-                      name="payroll_number"
-                      value={formData.payroll_number || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label>Department <ImportantField /></label>
-                    <input
-                      type="text"
-                      name="employer_department"
-                      value={formData.employer_department || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <label>Years at Current Employer</label>
+                        <input
+                          type="text"
+                          name="years_at_current_employer"
+                          value={formData.years_at_current_employer || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        />
+                      </div>
+                      <div>
+                        <label>Work District</label>
+                        <input
+                          type="text"
+                          name="work_district"
+                          value={formData.work_district || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Designation <ImportantField /></label>
-                    <input
-                      type="text"
-                      name="designation"
-                      value={formData.designation || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label>Employment Type</label>
-                    <select
-                      name="employment_type"
-                      value={formData.employment_type || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    >
-                      <option value="">-- Select --</option>
-                      <option value="Permanent">Permanent</option>
-                      <option value="Contract">Contract</option>
-                    </select>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <label>Work Province</label>
+                        <input
+                          type="text"
+                          name="work_province"
+                          value={formData.work_province || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        />
+                      </div>
+                      <div>
+                        <label>Employer Address</label>
+                        <textarea
+                          name="employer_address"
+                          value={formData.employer_address || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Date Joined</label>
-                    <input
-                      type="date"
-                      name="date_joined"
-                      value={formData.date_joined || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                      <div>
+                        <label>Work Location <ImportantField /></label>
+                        <textarea
+                          name="work_location"
+                          value={formData.work_location || ""}
+                          onChange={handleChange}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label>Gross Salary (PGK) <ImportantField /></label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      name="monthly_salary"
-                      value={formData.monthly_salary || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
+                </fieldset>
+              </Col>
+            </Row>
+            <Row className="mt-4">
+              <Col>
+                <fieldset className="fldset mt-4">
+                  <legend className="legend">Contact Information</legend>
+                  <div className="grid grid-cols-2 gap-4 mt-3">
+                    <div>
+                      <label>Phone <ImportantField /></label>
+                      <input
+                        type="text"
+                        name="phone"
+                        value={formData.phone || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label>Email <ImportantField /></label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Net Salary (PGK) <ImportantField /></label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      name="net_salary"
-                      value={formData.net_salary || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-4 mt-3">
+                    <div>
+                      <label>Home Province</label>
+                      <input
+                        type="text"
+                        name="home_province"
+                        value={formData.home_province || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    <div>
+                      <label>District & Village</label>
+                      <input
+                        type="text"
+                        name="district_village"
+                        value={formData.district_village || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label>Immediate Supervisor</label>
-                    <input
-                      type="text"
-                      name="immediate_supervisor"
-                      value={formData.immediate_supervisor || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Years at Current Employer</label>
-                    <input
-                      type="text"
-                      name="years_at_current_employer"
-                      value={formData.years_at_current_employer || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
+                  <div className="grid grid-cols-2 gap-4 mt-3">
+                    <div>
+                      <label>Present Address</label>
+                      <textarea
+                        name="present_address"
+                        value={formData.present_address || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    <div>
+                      <label>Permanent Address</label>
+                      <textarea
+                        name="permanent_address"
+                        value={formData.permanent_address || ""}
+                        onChange={handleChange}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label>Work District</label>
-                    <input
-                      type="text"
-                      name="work_district"
-                      value={formData.work_district || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                </div>
+                </fieldset>
+              </Col>
+            </Row>
+           
+            <Row className="mt-4 text-end">
+              <Col>
+                <button
+                  type="submit"
+                  className="bg-indigo-600 text-white px-4 py-2 mt-3 rounded"
+                >
+                  Update →
+                </button>
+              </Col>
+            </Row>
+          </form>
+        </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Work Province</label>
-                    <input
-                      type="text"
-                      name="work_province"
-                      value={formData.work_province || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label>Employer Address</label>
-                    <textarea
-                      name="employer_address"
-                      value={formData.employer_address || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <label>Work Location <ImportantField /></label>
-                    <textarea
-                      name="work_location"
-                      value={formData.work_location || ""}
-                      onChange={handleChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                      required
-                    />
-                  </div>
-                </div>
-              </fieldset>
-            </Col>
-          </Row>
-
-          <Row className="mt-4 text-end">
-            <Col>
-              <button
-                type="submit"
-                className="bg-indigo-600 text-white px-4 py-2 mt-3 rounded"
-              >
-                Update →
-              </button>
-            </Col>
-          </Row>
-        </form>
       </div>
     </AuthenticatedLayout>
   );

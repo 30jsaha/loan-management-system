@@ -1,27 +1,199 @@
 import React from "react";
 import MainLogo from "@/Components/MainLogo";
+import { useEffect, useState } from "react";
 import { Row, Col } from "react-bootstrap";
 
 // All your print CSS
 const printStyles = `
-  .no-print { display:none !important; }
+  /* Hide page 2 header on screen */
+  .print-only {
+    display: none;
+  }
+
   @media print {
-    body * { visibility: hidden; }
-    #printable-area, #printable-area * { visibility: visible; }
-    #printable-area { position:absolute; left:0; top:0; width: 100%; }
-    .print-only { display:block !important; }
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
+
+    /* Reset Body and HTML to ensure full height and no scroll blocking */
+    html, body {
+      height: 100vh;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+    }
+
+    /* HIDING STRATEGY: 
+      We use visibility: hidden on body so we don't destroy the layout flow
+      of the React root, but we hide the visual elements.
+    */
+    body * {
+      visibility: hidden;
+    }
+
+    /* Hiding specific wrappers to remove their whitespace if possible */
+    .no-print, nav, header, footer {
+      display: none !important;
+    }
+
+    /* SHOWING STRATEGY:
+      Target the printable area, make it visible, and force it to 
+      the top-left of the browser window (Viewport).
+    */
+    #printable-area, #printable-area * {
+      visibility: visible !important;
+    }
+
+    #printable-area {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      
+      /* Crucial for "Blank Page" issues: */
+      z-index: 9999 !important; /* Sit on top of everything */
+      background-color: white !important; /* Ensure background isn't transparent */
+      color: black !important; /* Force text to black */
+      
+      /* Reset any shadow or borders from the Card component */
+      box-shadow: none !important;
+      border: none !important;
+    }
+
+    /* --- Typography & Spacing adjustments (Keep your existing fine-tuning) --- */
+    #printable-area {
+      font-size: 8pt !important;
+      line-height: 1.2 !important;
+    }
+
+    #printable-area h3 {
+      font-size: 11pt !important;
+      margin: 2px 0 !important;
+    }
+
+    #printable-area table {
+      font-size: 7.5pt !important;
+      width: 100% !important;
+    }
+
+    #printable-area .section-title {
+      font-size: 9pt !important;
+      margin: 3px 0 !important;
+    }
+
+    #printable-area ol, #printable-area ul {
+      margin: 0 !important;
+      padding-left: 14px !important;
+    }
+
+    #printable-area li {
+      margin-bottom: 2px !important;
+      line-height: 1.15 !important;
+    }
+
+    #printable-area p {
+      margin: 2px 0 !important;
+      line-height: 1.15 !important;
+    }
+
+    /* Padding Utilities overrides */
+    #printable-area .p-4 { padding: 4px !important; }
+    #printable-area .p-2 { padding: 2px !important; }
+    #printable-area .mb-3 { margin-bottom: 4px !important; }
+    #printable-area .mb-2 { margin-bottom: 2px !important; }
+    #printable-area .mt-1 { margin-top: 2px !important; }
+
+    #printable-area hr {
+      margin: 4px 0 !important;
+      border-top: 1px solid #000 !important;
+    }
+
+    #printable-area table td,
+    #printable-area table th {
+      padding: 2px 3px !important;
+      vertical-align: middle !important;
+    }
+
+    /* Input Styling */
+    input, textarea {
+      border: none !important;
+      box-shadow: none !important;
+      background-color: transparent !important;
+      font-size: 8pt !important;
+      color: black !important;
+    }
     
-    /* Ensure modal contents are not scrollable/clipped when printing */
-    .modal { position: absolute; left: 0; top: 0; margin: 0; padding: 0; overflow: visible!important; }
-    .modal-dialog { margin: 0; padding: 0; overflow: visible!important; }
-    .modal-body { overflow: visible!important; }
+    input.underline-field, 
+    input.underline-input, 
+    input.inline-date, 
+    input.input-box,
+    input[type="text"],
+    input[type="date"] {
+      border-bottom: 1px solid #000 !important;
+      border-radius: 0;
+      height: auto !important;
+      padding: 0 2px !important;
+    }
+
+    .stamp-box {
+      border: 1px solid #000 !important;
+      height: 40px !important;
+    }
+
+    .form-check-input,
+    input[type="checkbox"] {
+      border: 1px solid #000 !important;
+      width: 10px !important;
+      height: 10px !important;
+    }
+
+    /* Page Breaks */
+    .page-break-before {
+      page-break-before: always !important;
+      margin-top: 20px !important;
+      display: block !important;
+    }
     
-    /* Force page break */
-    .page-break-before { page-break-before: always; }
+    .print-only {
+        display: block !important;
+    }
+
+    /* Layout specific fixes */
+    .official-use-container {
+      width: 45% !important;
+    }
+
+    /* Logo Sizing */
+    .logo-container svg, .logo-container img {
+        width: 80px !important;
+        height: auto !important;
+    }
   }
 `;
 
-export default function AppF({ loan = {}, auth = {} }) {
+const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
+  const [loan, setLoan] = useState(initialLoan);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!initialLoan?.id) return;
+
+    axios
+      .get(`/api/loans/${initialLoan.id}`)
+      .then((res) => {
+        setLoan(res.data);   // ✅ correct
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch loan:", error);
+        setLoading(false);
+      });
+  }, [initialLoan?.id]);
+
+  console.log("Loan Data in AppF",loan);
   // safe shortcuts / fallbacks
   const customer = loan.customer || {};
   const company = loan.company || {};
@@ -29,7 +201,7 @@ export default function AppF({ loan = {}, auth = {} }) {
 
   const loanAmount = loan.loan_amount_applied ?? loan.elegible_amount ?? "";
   const noOfFNs = loan.tenure_fortnight ?? "";
-  const purpose = (loan.purpose || "").toString();
+  const purpose = (loan.purpose?.purpose_name || "").toString();
   const clientStatus = loan.client_status ?? (customer.client_status ?? null); // 1 => existing
   const payrollNumber = customer.payroll_number ?? "";
   const firstName = customer.first_name ?? "";
@@ -54,13 +226,22 @@ export default function AppF({ loan = {}, auth = {} }) {
   const streetName = ""; // per confirmation keep blank
   const suburb = ""; // per confirmation keep blank
 
+  if (loading || !loan) {
+    return (
+      <div ref={ref} className="p-4 text-center">
+        Loading data...
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Inject print styles */}
-      <style>{printStyles}</style>
+     
+
 
       {/* The ID "printable-area" is crucial for your CSS to work. */}
-      <div id="printable-area" className="p-4 bg-white text-black">
+      <div id="printable-area" ref={ref} className="p-4 bg-white text-black">
 
         {/* LOGO */}
         <div className="logo-container" style={{ maxWidth: "100px", margin: "0 auto" }}>
@@ -68,8 +249,8 @@ export default function AppF({ loan = {}, auth = {} }) {
         </div>
 
         {/* GREEN TITLE */}
-        <div className="p-2">
-          <div className="p-2">
+        <div className="p-1">
+          <div className="p-1">
             <div
               style={{
                 backgroundColor: "green",
@@ -86,7 +267,7 @@ export default function AppF({ loan = {}, auth = {} }) {
           </div>
 
           {/* Loan amount row */}
-          <div className="loan-section mb-2">
+          <div className="loan-section mb-1">
             <div className="d-flex justify-content-between align-items-center flex-wrap">
               {/* Left */}
               <div className="d-flex align-items-center">
@@ -101,7 +282,7 @@ export default function AppF({ loan = {}, auth = {} }) {
                 >
                   LOAN REQUEST AMOUNT:
                 </label>
-                <span style={{ marginRight: "4px" }}>{company.currency_symbol ?? "K"}</span>
+                <span style={{ marginRight: "4px" }}>{ "PGK"}</span>
                 <input
                   type="text"
                   className="underline-field"
@@ -176,6 +357,9 @@ export default function AppF({ loan = {}, auth = {} }) {
                 })}
               </div>
             </div>
+
+
+            
           </div>
 
           <hr style={{ margin: "5px 0" }} />
@@ -847,13 +1031,11 @@ export default function AppF({ loan = {}, auth = {} }) {
           
           {/* --- FIXED: Re-added page break and Page 2 Header --- */}
           <div className="page-break-before" style={{ marginTop: "10px" }}>
-            
-            {/* Page 2 Header (matches page 1) - ONLY SHOWS ON PRINT */}
-            <div className="page-2-header print-only">
-                <div className="logo-container" style={{ maxWidth: "100px", margin: "0 auto" }}>
-                  <MainLogo width="100px" />
-                </div>
-            </div>
+              <div className="page-2-header print-only">
+                  {/* <div className="logo-container" style={{ maxWidth: "100px", margin: "0 auto" }}>
+                      <MainLogo width="100px" />
+                  </div> */}
+              </div>
 
             {/* TERMS & CONDITIONS SECTION */}
             <table
@@ -1307,4 +1489,11 @@ export default function AppF({ loan = {}, auth = {} }) {
       </div>
     </>
   );
-}
+});
+ AppF.displayName = 'AppF';
+ export default AppF;
+
+// --- IGNORE ---
+
+
+

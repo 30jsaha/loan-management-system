@@ -198,7 +198,7 @@ class OrganisationController extends Controller
     }
      public function index()
     {
-        return Organisation::select(
+        return OrganisationMaster::select(
             'id',
             'company_id',
             'organisation_name',

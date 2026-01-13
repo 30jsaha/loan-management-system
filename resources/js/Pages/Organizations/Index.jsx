@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"; 
+import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Building2 } from "lucide-react"; 
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { currencyPrefix } from "@/config";
@@ -96,6 +96,28 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
     setIsEditing(false);
     setSelectedLoanTypes([]);
   };
+  const showValidationErrors = (errorResponse) => {
+    const errors = errorResponse?.data?.errors;
+
+    if (!errors) {
+      toast.error(errorResponse?.data?.message || "Something went wrong", {
+        duration: 4000,
+        style: { background: "#dc2626", color: "#fff" },
+      });
+      return;
+    }
+
+    // Flatten Laravel error object → array of messages
+    const messages = Object.values(errors).flat();
+
+    // Show each message as separate toast
+    messages.forEach((msg) => {
+      toast.error(msg, {
+        duration: 4000,
+        style: { background: "#dc2626", color: "#fff" },
+      });
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -111,9 +133,16 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
       loadOrganisationList();
     } catch (err) {
       console.error(err);
-      const errorMsg = err.response?.data?.message || err.message || "Error saving organisation";
-      toast.error(errorMsg);
-    }
+
+      if (err.response?.status === 422) {
+        showValidationErrors(err.response);
+      } else {
+        toast.error(err.response?.data?.message || "Error saving organisation", {
+          duration: 4000,
+          style: { background: "#dc2626", color: "#fff" },
+        });
+      }
+        }
   };
   
   const handleEdit = (org) => {
@@ -204,18 +233,21 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
   };
 
   // Helper component for Sortable Header (Centered)
-  const SortableHeader = ({ label, columnKey }) => (
-    <th 
-        className="border px-2 py-3 cursor-pointer hover:bg-emerald-700 transition-colors select-none text-center" 
-        onClick={() => handleSort(columnKey)}
-    >
-        {/* Changed justify-between to justify-center to center content */}
-        <div className="flex items-center justify-center gap-2"> 
-            <span>{label}</span>
-            {renderSortIcon(columnKey)}
-        </div>
-    </th>
-  );
+const SortableHeader = ({ label, columnKey }) => (
+  <th
+    className="border px-2 py-3 cursor-pointer
+               bg-green-500 text-white
+               hover:bg-emerald-700
+               transition-colors select-none text-center"
+    onClick={() => handleSort(columnKey)}
+  >
+    <div className="flex items-center justify-center gap-2">
+      <span>{label}</span>
+      {renderSortIcon(columnKey)}
+    </div>
+  </th>
+);
+
 
   return (
     <AuthenticatedLayout
@@ -223,9 +255,8 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Organisations</h2>}
     >
       <Head title="Organizations" />
-      <Toaster position="top-center" />
 
-      <div className="p-6">
+      <div className="p-6 max-w-7xl mx-auto">
 
         {/* === BACK BUTTON === */}
         <Link
@@ -236,7 +267,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
         </Link>
 
         {/* === FORM CARD === */}
-        <div className="bg-white shadow-md border p-6 rounded-lg mb-6">
+        <div className="bg-white shadow-md border p-6 rounded-lg mb-3">
           <h3 className="text-lg font-semibold mb-4">
             {isEditing ? "Edit Organisation" : "Add Organisation"}
           </h3>
@@ -245,30 +276,51 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
-            {[
-              ["organisation_name", "Organisation Name"],
-              ["department_code", "Department Code"],
-              ["location_code", "Location Code"],
-              ["address", "Address"],
-              ["province", "Province"],
-              ["contact_person", "Contact Person"],
-              ["contact_no", "Contact Number"],
-              ["email", "Email"],
-            ].map(([key, label]) => (
-              <div key={key}>
-                <label className="block text-sm font-medium">{label}</label>
-                <input
-                  type={key === "email" ? "email" : "text"}
-                  name={key}
-                  value={formData[key]}
-                  onChange={handleChange}
-                  className="w-full border rounded-md px-3 py-2 mt-1"
-                />
-              </div>
-            ))}
+            {
+              // mark these fields as required
+              (() => {
+                const requiredFields = [
+                  "organisation_name",
+                  "contact_no",
+                  "email",
+                  "department_code",
+                  "location_code",
+                  "address",
+                  "province",
+                ];
+
+                return [
+                  ["organisation_name", "Organisation Name"],
+                  ["department_code", "Department Code"],
+                  ["location_code", "Location Code"],
+                  ["address", "Address"],
+                  ["province", "Province"],
+                  ["contact_person", "Contact Person"],
+                  ["contact_no", "Contact Number"],
+                  ["email", "Email"],
+                ].map(([key, label]) => (
+                  <div key={key}>
+                    <label className="block text-sm font-medium">
+                      {label}
+                      {requiredFields.includes(key) && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
+                    </label>
+                    <input
+                      type={key === "email" ? "email" : "text"}
+                      name={key}
+                      value={formData[key]}
+                      onChange={handleChange}
+                      required={requiredFields.includes(key)}
+                      className="w-full border rounded-md px-3 py-2 mt-1"
+                    />
+                  </div>
+                ));
+              })()
+            }
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Sector Type
+                Sector Type <span className="text-red-500 ml-1">*</span>
               </label>
               <select
                   name="sector_type"
@@ -287,7 +339,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Select Loans to assign
+                Select Loans to assign <span className="text-red-500 ml-1">*</span>
               </label>
               <div className="card flex justify-content-center">
                   <MultiSelect 
@@ -312,7 +364,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium">Status</label>
+              <label className="block text-sm font-medium">Status <span className="text-red-500 ml-1">*</span></label>
               <select
                 name="status"
                 value={formData.status}
@@ -347,23 +399,33 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
             </button>
           </div>
         </div>
-
         {/* === FILTER BAR === */}
-        <div className="bg-white shadow-sm p-4 border mb-4 flex justify-between items-center">
-          <input
-            type="text"
-            placeholder="Search by Organisation Name"
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border px-3 py-2 rounded-md w-1/3"
-          />
+        <div className="bg-white shadow-sm p-2 border mb-2 flex justify-between items-center rounded-lg">
+
+          <div className="relative w-full md:w-1/3">
+            <Building2
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+
+            <input
+              type="text"
+              placeholder="Search by Organisation Name"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md
+                focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
         </div>
 
+
         {/* === TABLE === */}
-        <div className="bg-white border shadow-md overflow-x-auto">
+        <div className="bg-white border shadow-md overflow-x-auto max-w-7xl mx-auto">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-emerald-600 text-white">
               <tr>
-                <th className="border px-2 py-3 cursor-pointer text-center" onClick={() => handleSort(null)}>#</th>
+                <th className="border px-2 py-3 cursor-pointer text-center bg-green-500  hover:bg-emerald-700" onClick={() => handleSort(null)}>#</th>
                 <SortableHeader label="Organisation Name" columnKey="organisation_name" />
                 <SortableHeader label="Sector" columnKey="sector_type" />
                 <SortableHeader label="Dept Code" columnKey="department_code" />
@@ -374,7 +436,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                 <SortableHeader label="Contact No" columnKey="contact_no" />
                 <SortableHeader label="Email" columnKey="email" />
                 <SortableHeader label="Status" columnKey="status" />
-                <th className="border px-2 py-3 text-center">Actions</th>
+                <th className="border px-2 py-3 text-center bg-green-500  hover:bg-emerald-700">Actions</th>
               </tr>
             </thead>
 
@@ -392,8 +454,18 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                   </td>
                 </tr>
               ) : (
-                paginatedData.map((org, idx) => (
-                  <tr key={org.id} className="hover:bg-gray-50">
+                paginatedData.map((org, idx) => {
+                  const isEditingRow = formData.id === org.id;
+                  return (
+                  <tr 
+                    key={org.id} 
+                    className={`transition-all duration-300 ${isEditingRow
+                        ? "bg-amber-100 ring-2 ring-amber-200"
+                        : idx % 2 === 0
+                            ? "bg-white"
+                            : "bg-emerald-50/40"
+                    } hover:bg-emerald-100/70`}
+                  >
                     <td className="border px-2 py-2 text-center">
                       {(currentPage - 1) * itemsPerPage + idx + 1}
                     </td>
@@ -440,7 +512,7 @@ export default function OrganisationIndex({ auth, salary_slabs, loan_types }) {
                       </div>
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>

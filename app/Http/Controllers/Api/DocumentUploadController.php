@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use App\Models\DocumentUpload;
 use App\Models\LoanApplication;
 
@@ -18,7 +19,11 @@ class DocumentUploadController extends Controller
         $validated = $request->validate([
             'loan_id' => 'nullable|exists:loan_applications,id',
             'customer_id' => 'nullable|exists:customers,id',
-            'doc_type' => 'required|in:ID,Payslip,BankStatement,EmploymentLetter,ResumptionSheet,ISDA_Signed,LoanForm_Scanned,ConsentVideo,Other',
+            // 'doc_type' => 'required|in:ID,Payslip,BankStatement,EmploymentLetter,ResumptionSheet,ISDA_Signed,LoanForm_Scanned,ConsentVideo,Other',
+            'doc_type' => [
+                'required',
+                Rule::exists('document_types', 'doc_key')->where('active', 1),
+            ],
             'file' => 'required|file|mimes:pdf|max:5120', // max 5MB, only PDF
             'notes' => 'nullable|string|max:500'
         ]);
@@ -46,7 +51,6 @@ class DocumentUploadController extends Controller
                 'message' => '✅ Document uploaded successfully.',
                 'document' => $document
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => '❌ Failed to upload document.',
@@ -101,7 +105,6 @@ class DocumentUploadController extends Controller
                 'message' => '✅ Document re-uploaded successfully.',
                 'document' => $document
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'message' => '❌ Failed to re-upload document.',

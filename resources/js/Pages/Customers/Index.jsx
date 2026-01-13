@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { Link, Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Pencil, Eye, Trash2, Search, ArrowLeft } from "lucide-react";
+import { Pencil, Eye, Trash2, Search, ArrowLeft, Building2 } from "lucide-react";
 import { currencyPrefix } from "@/config";
 import Swal from "sweetalert2";
 import { Card, Container, Row, Col, Alert, Spinner } from "react-bootstrap";
@@ -17,8 +17,23 @@ export default function Index({ auth }) {
   const [searchName, setSearchName] = useState("");
   const [searchEmp, setSearchEmp] = useState("");
   const [searchOrg, setSearchOrg] = useState("");
+  const [organisations, setOrganisations] = useState([]);
 
   const itemsPerPage = 15; // Now shows 10 items per page
+const fetchOrganisations = async () => {
+  try {
+    const res = await axios.get("/api/organisation-list");
+    setOrganisations(res.data);
+  } catch (error) {
+    console.error("Failed to load organisations", error);
+  }
+};
+
+useEffect(() => {
+  fetchCustomers();
+  fetchOrganisations();
+}, []);
+
 
   useEffect(() => {
     fetchCustomers();
@@ -85,7 +100,7 @@ export default function Index({ auth }) {
     }
     setSortConfig({ key, direction });
   };
-
+ 
   const sortedData = useMemo(() => {
     let sorted = [...customers];
     sorted.sort((a, b) => {
@@ -98,14 +113,18 @@ export default function Index({ auth }) {
     return sorted;
   }, [customers, sortConfig]);
 
-  const filteredData = sortedData.filter((c) => {
+ const filteredData = useMemo(() => {
+  return sortedData.filter((c) => {
     const fullName = `${c.first_name} ${c.last_name}`.toLowerCase();
+
     return (
       fullName.includes(searchName.toLowerCase()) &&
       c.employee_no?.toLowerCase().includes(searchEmp.toLowerCase()) &&
-      c.organisation_name?.toLowerCase().includes(searchOrg.toLowerCase())
+      (searchOrg === "" || String(c.organisation_id) === String(searchOrg))
     );
   });
+}, [sortedData, searchName, searchEmp, searchOrg]);
+
 
   const paginatedCustomers = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -124,7 +143,7 @@ export default function Index({ auth }) {
       <Head title="Customer Records" />
 
       <div className="py-8 w-full max-w-[95vw] mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
-        <div className="max-w-9xl mx-auto -mt-4 ">
+        <div className="max-w-9xl mx-auto -mt-4">
           <Link
             href={route("dashboard")}
             className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
@@ -179,20 +198,27 @@ export default function Index({ auth }) {
             />
           </div>
 
-          {/* Search by Organisation */}
-          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
-            <Search size={18} className="text-gray-500 mr-2" />
-            <input
-              type="text"
-              placeholder="Search by Organisation"
-              value={searchOrg}
-              onChange={(e) => {
-                setSearchOrg(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
-            />
-          </div>
+        {/* Filter by Organisation */}
+        <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+          <Building2 size={18} className="text-gray-500 mr-2" />
+          <select
+            value={searchOrg}
+            onChange={(e) => {
+              setSearchOrg(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-transparent w-full outline-none text-gray-700 border-none focus:ring-0"
+          >
+            <option value="">All Organisations</option>
+            {organisations.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.organisation_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+
 
         </div>
 
@@ -214,15 +240,10 @@ export default function Index({ auth }) {
                         ["Name", "first_name"],
                         ["Emp No", "employee_no"],
                         ["Organisation", "organisation_name"],
-                        ["Gender", "gender"],
                         ["Contact Info", "contact_info"],
                         ["Payroll No", "payroll_number"],
-                        ["Type", "employment_type"],
-                        ["Designation", "designation"],
                         ["Salary Info", "salary_info"],
-                        ["Location", "work_location"],
-                        ["Created", "created_at"],
-                        ["Actions", "actions"],
+                        ["Actions", "actions"]
                       ].map(([label, key]) => (
                         <th
                            key={key}
@@ -265,7 +286,6 @@ export default function Index({ auth }) {
                         </td>
                         <td className="px-2 py-2 text-center border border-gray-700">{cust.employee_no}</td>
                         <td className="px-2 py-2 text-center border border-gray-700">{cust.organisation_name}</td>
-                        <td className="px-2 py-2 text-center border border-gray-700">{cust.gender}</td>
 
                         <td className="px-2 py-2 text-center text-gray-800 border border-gray-700 align-middle">
                           <div className="flex flex-col items-center text-center break-words whitespace-normal">
@@ -282,8 +302,6 @@ export default function Index({ auth }) {
 
 
                         <td className="px-2 py-2 text-center border border-gray-700">{cust.payroll_number}</td>
-                        <td className="px-2 py-2 text-center border border-gray-700">{cust.employment_type}</td>
-                        <td className="px-2 py-2 text-center border border-gray-700">{cust.designation}</td>
 
                         <td className="px-2 py-2 text-center text-emerald-700 font-semibold border border-gray-700">
                           <div className="flex flex-col items-center">
@@ -296,11 +314,6 @@ export default function Index({ auth }) {
                               {parseFloat(cust.net_salary || 0).toLocaleString()}
                             </span>
                           </div>
-                        </td>
-
-                        <td className="px-2 py-2 text-center border border-gray-700">{cust.work_location}</td>
-                        <td className="px-2 py-2 text-center text-gray-600 whitespace-nowrap border border-gray-700">
-                          {new Date(cust.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-2 py-2 text-center border border-gray-700">
                           <div className="flex justify-center gap-1 sm:gap-2">

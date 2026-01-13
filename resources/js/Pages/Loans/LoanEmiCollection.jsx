@@ -44,9 +44,10 @@ function DocumentViewerModal({ isOpen, onClose, documentUrl }) {
   );
 }
 
-export default function LoanEmiCollection({ auth, approved_loans }) {
+export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   const [selectAll, setSelectAll] = useState(false);
   console.log("approved_loans: ", approved_loans);
+  console.log("summary: ", summary);
 
   // FIX: ensure loans is always an array
   const [loans, setLoans] = useState(Array.isArray(approved_loans) ? approved_loans : []);
@@ -61,6 +62,54 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
   const [orgTypeFilter, setOrgTypeFilter] = useState("");
   const [selectedOrgs, setSelectedOrgs] = useState([]);
   const [filterLoading, setFilterLoading] = useState(false);
+  const [totalPendingAmount, setTotalPendingAmount] = useState(0);
+  const [totalCollectedAmount, setTotalCollectedAmount] = useState(0);
+
+  // Generate once and keep fixed for entire page session
+  const collectionUniqueIdRef = React.useRef(`COL${Date.now()}`);
+  //const collectionUniqueIdRef = React.useRef(`COL${Date.now().toString().slice(-6)}`);
+
+  const collectionUniqueId = collectionUniqueIdRef.current;
+
+  
+  // counter
+  const [emiCounter, setEmiCounter] = useState({});
+  const [collectionId, setCollectionId] = useState(collectionUniqueId);
+  const [emiPayDate, setEmiPayDate] = useState({});
+  useEffect(() => {
+    // initialize emiPayDate as YYYY-MM-DD string (date input value)
+    const today = new Date().toISOString().split("T")[0];
+    setEmiPayDate(today);
+  }, []);
+  const [selectedSummary, setSelectedSummary] = useState({
+    total: 0,
+    pending: 0,
+    collected: 0,
+  });
+
+  
+  const increaseCounter = (loan) => {
+    setEmiCounter((prev) => {
+      const baseRemaining = loan.tenure_fortnight - (loan.installments.length || 0);
+      const current = prev[loan.id] ?? 1;
+
+      if (current + 1 > baseRemaining) return prev;
+
+      return { ...prev, [loan.id]: current + 1 };
+    });
+  };
+
+  const decreaseCounter = (loan) => {
+    setEmiCounter((prev) => {
+      const current = prev[loan.id] ?? 1;
+
+      // never go below 1
+      if (current <= 1) return prev;
+
+      return { ...prev, [loan.id]: current - 1 };
+    });
+  };
+
 
 
   // 🔍 Filtered loans (guard loans with Array.isArray)
@@ -68,25 +117,96 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
     if (!Array.isArray(loans)) return [];
 
     return loans.filter((loan) => {
-      const fullName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""
-        }`
+      const fullName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`
         .toLowerCase()
         .trim();
 
-      const matchesName = fullName.includes(searchQuery.toLowerCase());
+      const searchLower = searchQuery.toLowerCase();
+
+      // Search name
+      const matchesName = fullName.includes(searchLower);
+
+      // Search loan ID
+      const matchesLoanId = loan.id.toString().includes(searchLower);
+
+      // Search employee ID
+      const empNo = loan.customer?.employee_no
+        ? loan.customer.employee_no.toString().toLowerCase()
+        : "";
+      const matchesEmployeeNo = empNo.includes(searchLower);
+
+      // Combine all 3
+      const matchesSearch =
+        matchesName || matchesLoanId || matchesEmployeeNo;
+
       const matchesDate =
         dateFilter && loan.created_at
           ? loan.created_at.startsWith(dateFilter)
           : true;
 
-      // Organisation filter
       const orgId = loan.organisation?.id;
       const matchesOrg =
         selectedOrgs.length === 0 || selectedOrgs.includes(orgId);
 
-      return matchesName && matchesDate && matchesOrg;
+      return matchesSearch && matchesDate && matchesOrg;
     });
   }, [loans, searchQuery, dateFilter, selectedOrgs]);
+
+  // --- Selected loans summary (must be after filteredLoans) ---
+const updateSelectedSummary = () => {
+  const selectedLoans = filteredLoans.filter((loan) =>
+    selectedLoanIds.includes(loan.id)
+  );
+
+  let pending = 0;
+  let collected = 0;
+
+  selectedLoans.forEach((loan) => {
+    const paid = parseFloat(getTotalPaidAmount(loan)) || 0;
+    const repay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+    collected += paid;
+    pending += Math.max(repay - paid, 0);
+  });
+
+  setSelectedSummary({
+    total: selectedLoans.length,
+    pending: pending.toFixed(2),
+    collected: collected.toFixed(2),
+  });
+};
+
+useEffect(() => {
+  if (selectedLoanIds.length === 0) {
+    setSelectedSummary({
+      total: 0,
+      pending: 0,
+      collected: 0,
+    });
+    return;
+  }
+  updateSelectedSummary();
+}, [selectedLoanIds, filteredLoans]);
+  // --- Total collected and pending amounts (for all filtered loans) ---
+
+  useEffect(() => {
+      if (!Array.isArray(filteredLoans)) return;
+
+      let collected = 0;
+      let pending = 0;
+
+      filteredLoans.forEach(loan => {
+          const paid = getTotalPaidAmount(loan) || 0;
+          const repay = parseFloat(loan.total_repay_amt) || 0;
+
+          collected += paid;
+          pending += Math.max(repay - paid, 0);
+      });
+
+      setTotalCollectedAmount(collected.toFixed(2));
+      setTotalPendingAmount(pending.toFixed(2));
+
+  }, [filteredLoans]);
+
 
 
   // 📦 Handle checkbox toggle
@@ -126,7 +246,10 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
   const getTotalPaidAmount = (loan) => {
     if (!loan) return 0;
 
-    const basePaid = loan.total_emi_paid_amount || 0;
+
+    // const basePaid = loan.total_emi_paid_amount || 0;
+    const basePaid = loan.emi_amount || 0;
+
 
     if (!Array.isArray(loan.installments)) return basePaid;
 
@@ -134,7 +257,7 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
       .filter((i) => i.status?.toLowerCase() === "paid")
       .reduce((sum, i) => sum + (Number(i.emi_amount) || 0), 0);
 
-    return basePaid + extraPaidSum;
+    return basePaid;
   };
 
   const isCollectible = (loan) => {
@@ -160,44 +283,68 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
   };
 
   // 💳 Collect EMI API call
-  const handleCollectEMI = async () => {
-    try {
-      if (selectedLoanIds.length === 0) {
-        Swal.fire("No Loans Selected", "Please select at least one loan.", "warning");
-        return;
-      }
-      setLoading(true);
-
-      const response = await axios.post("/api/loans/collect-emi", {
-        loan_ids: selectedLoanIds,
-      });
-
-      Swal.fire("✅ Success", response.data.message || "EMI collected successfully!", "success");
-      // Refresh the loan list after successful collection
-      const res = await axios.get("/api/loans/emi-collection-list");
-
-      // clear selection and filters
-      setSelectedLoanIds([]);
-      setSelectedLoan(null);
-      setSearchQuery("");
-      setDateFilter("");
-
-      // update your loan list state if API returned an array (keep original behavior)
-      if (Array.isArray(res.data)) {
-        // original code attempted to set res.data.approved_loans but only when res.data was an array;
-        // keep expected behavior but be safe:
-        setLoans(Array.isArray(res.data) ? res.data : (res.data.approved_loans || []));
-      } else {
-        // if backend returns wrapped payload, try to use approved_loans
-        setLoans(res.data?.approved_loans ?? []);
-      }
-    } catch (error) {
-      console.error(error);
-      Swal.fire("❌ Error", "Failed to collect EMI. Try again later.", "error");
-    } finally {
-      setLoading(false);
+// 💳 Collect EMI API call
+const handleCollectEMI = async () => {
+  try {
+    if (selectedLoanIds.length === 0) {
+      Swal.fire("No Loans Selected", "Please select at least one loan.", "warning");
+      return;
     }
-  };
+
+    setLoading(true);
+
+    // ✅ Ensure emi_counter always contains a value for all selected loans
+    const finalCounter = {};
+    selectedLoanIds.forEach(id => {
+      finalCounter[id] = emiCounter[id] ?? 1; // Use existing counter or fallback to 1
+    });
+    let data = {
+      loan_ids: selectedLoanIds,
+      emi_counter: finalCounter,
+      collection_uid: collectionId,
+      payment_date: emiPayDate,
+    };
+    console.log("Submitting EMI Collection Data:", data);
+    // return;
+    // 📌 API request
+    const response = await axios.post("/api/loans/collect-emi", {
+      loan_ids: selectedLoanIds,
+      emi_counter: finalCounter,       // <-- FIXED
+      collection_uid: collectionId,
+      payment_date: emiPayDate,
+    });
+
+    Swal.fire("✅ Success", response.data.message || "EMI collected successfully!", "success");
+
+    // 🔄 Refresh the loan list after successful collection
+    const res = await axios.get("/api/loans/emi-collection-list");
+
+    // 🧹 Clear selection and filters
+    setSelectedLoanIds([]);
+    setSelectedLoan(null);
+    setSearchQuery("");
+    setDateFilter("");
+
+    // Update loan list safely
+    if (Array.isArray(res.data)) {
+      setLoans(res.data);
+    } else {
+      setLoans(res.data?.approved_loans ?? []);
+    }
+
+  } catch (error) {
+    console.log("422 ERROR DETAILS:", error.response?.data);
+
+    Swal.fire(
+      "❌ Error",
+      JSON.stringify(error.response?.data, null, 2),
+      "error"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // ✅ Keep Select All state in sync with filteredLoans
   useEffect(() => {
@@ -228,14 +375,83 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
       value: o.id
     }));
   }, [orgs]);
+  useEffect(() => {
+    // Auto-select if only one loan exists AND it's collectible
+    if (filteredLoans.length === 1) {
+      const loan = filteredLoans[0];
+      if (isCollectible(loan)) {
+        setSelectedLoanIds([loan.id]);
+        setSelectedLoan(loan);
+      }
+    }
+  }, [filteredLoans]);
 
   useEffect(() => {
     setFilterLoading(true);
     const t = setTimeout(() => setFilterLoading(false), 250);
     return () => clearTimeout(t);
+
   }, [searchQuery, dateFilter, selectedOrgs, loans]);
 
+  const selectedLoanRows = useMemo(() => {
+    return filteredLoans
+      .filter((loan) => selectedLoanIds.includes(loan.id))
+      .map((loan) => {
+        const baseRemaining =
+          loan.tenure_fortnight - (loan.installments?.length || 0);
 
+        const counter = emiCounter[loan.id] ?? 1;
+
+        const emiAmount = parseFloat(loan.emi_amount) || 0;
+        const collectEmi = emiAmount * counter;
+
+        const totalRepay =
+          parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+
+        const totalPaidBefore = parseFloat(getTotalPaidAmount(loan)) || 0;
+
+        const totalPaid = totalPaidBefore + collectEmi;
+
+        const finalRemaining = Math.max(baseRemaining - counter, 0);
+
+        const remainingBalance = Math.max(totalRepay - totalPaid, 0);
+
+        return {
+          loan,
+          counter,
+          collectEmi,
+          totalPaid,
+          finalRemaining,
+          remainingBalance,
+        };
+      });
+  }, [filteredLoans, selectedLoanIds, emiCounter]);
+
+  const summaryData = React.useMemo(() => {
+    let totalCount = 0;
+    let totalPendingAfterPayment = 0; 
+    let totalCollected = 0;
+
+    filteredLoans.forEach((loan) => {
+      if (selectedLoanIds.includes(loan.id)) {
+        totalCount++;
+        const counter = emiCounter[loan.id] ?? 1;
+        const emiAmount = parseFloat(loan.emi_amount) || 0;
+        const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+        const previouslyPaid = parseFloat(getTotalPaidAmount(loan)) || 0;
+
+        // Current collection based on counter
+        const currentCollection = emiAmount * counter;
+        totalCollected += currentCollection;
+
+        // Pending balance decreases as you collect more
+        const projectedBalance = Math.max(totalRepay - (previouslyPaid + currentCollection), 0);
+        totalPendingAfterPayment += projectedBalance;
+      }
+    });
+
+    return { totalCount, totalPendingAfterPayment, totalCollected };
+  }, [selectedLoanIds, emiCounter, filteredLoans]);
   return (
     <AuthenticatedLayout
       user={auth.user}
@@ -245,221 +461,203 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
 
       <div className="min-h-screen bg-gray-100 py-6 px-4 flex gap-4 transition-all duration-300">
 
-        {/* LEFT PANEL */}
-        <div className="w-1/3 bg-white rounded-lg shadow-md p-4 overflow-y-auto h-[85vh] font-[Times_New_Roman]">
-          {/* Header */}
-          <div className="flex items-center mb-3">
-            <Link href={route("loan.emi")}><ArrowLeft size={16} className="mr-2 text-gray-600" /></Link>
-            <span className="font-semibold text-lg text-gray-800">Loan EMI Collection</span>
-          </div>
+      {/* LEFT PANEL */}
+      <div
+        className="
+          w-full 
+          md:w-1/2 
+          lg:w-1/3 
+          bg-white rounded-lg shadow-md p-4 
+          flex flex-col h-[85vh]
+          font-[Times_New_Roman]
+        "
+      >
+        {/* Header */}
+        <div className="flex items-center mb-3 shrink-0">
+          <Link href={route('loan.emi')}>
+            <ArrowLeft size={16} className="mr-2 text-gray-600" />
+          </Link>
+          <span className="font-semibold text-lg text-gray-800">Collectible EMIs</span>
+        </div>
+
+        {/* SUMMARY + FILTERS SECTION */}
+        <div className="shrink-0 space-y-3">
+
           {/* Summary */}
-          <div className="grid grid-cols-3 text-center border border-gray-200 rounded-lg overflow-hidden mb-3">
-            <div className="py-3">
-              <div className="text-sm text-gray-500">Total</div>
-              <div className="text-xl font-bold">{filteredLoans.length}</div>
-            </div>
-            <div className="py-3 border-x border-gray-200">
-              <div className="text-sm text-gray-500">Pending</div>
-              <div className="text-xl font-bold">
-                {currencyPrefix}&nbsp;{loans[0]?.total_outstanding_amount_all_loan ?? 0}
-              </div>
-            </div>
-            <div className="py-3">
-              <div className="text-sm text-gray-500">Collected</div>
-              <div className="text-xl font-bold">
-                {currencyPrefix}&nbsp;{loans[0]?.total_paid_amount_all_loan ?? 0}
-              </div>
-            </div>
-          </div>
-          {/* Top Action Buttons */}
-          <div className="flex gap-2 mb-4 d-none">
-            <button
-              onClick={handleCollectEMI}
-              disabled={loading || selectedLoanIds.length === 0}
-              className={`flex-1 bg-green-600 text-white py-2 rounded-md flex items-center justify-center gap-2 ${loading || selectedLoanIds.length === 0
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-green-700"
-                }`}
-            >
-              {loading ? <Loader2 className="animate-spin" size={18} /> : "💰 Collect EMI"}
-            </button>
-            <button
-              disabled={!selectedLoan}
-              className={`flex-1 bg-blue-600 text-white py-2 rounded-md ${selectedLoan ? "hover:bg-blue-700" : "opacity-50 cursor-not-allowed"
-                }`}
-              onClick={() => setSelectedLoan(selectedLoan)}
-            >
-              🔍 View Details
-            </button>
-          </div>
-
-          {/* Filters */}
-          <div className="space-y-3 mb-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search by name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm focus:ring-1 focus:ring-green-400 focus:border-green-400"
-              />
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-            </div>
-
-            {/* Select Organisation */}
-            <div className="relative">
-              <div className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm focus:ring-1 focus:ring-green-400 focus:border-green-400">
-                <label className="text-sm font-semibold text-gray-600">Organisation</label>
-                <MultiSelect
-                  value={selectedOrgs}
-                  options={organisationOptions}
-                  onChange={(e) => setSelectedOrgs(e.value)}
-                  placeholder="Filter organisations"
-                  display="chip"
-                  className="w-full"
-                />
+          <div className="grid grid-cols-3 text-center border border-gray-200 rounded-lg overflow-hidden py-2">
+            <div>
+              <div className="text-xs text-gray-500">Total</div>
+              <div className="text-lg font-bold">
+                {selectedLoanIds.length > 0 ? summaryData.totalCount : filteredLoans.length}
               </div>
             </div>
 
-            <div className="d-none">
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-green-400 focus:border-green-400"
-              />
-              <p className="text-xs text-gray-500 mt-1">Filter by created date</p>
+            <div className="border-x border-gray-200">
+              <div className="text-xs text-gray-500">Pending</div>
+              <div className="text-lg font-bold">
+                {currencyPrefix}&nbsp;
+                {selectedLoanIds.length > 0
+                  ? summaryData.totalPendingAfterPayment.toFixed(2)
+                  : totalPendingAmount}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs text-gray-500">Collected</div>
+              <div className="text-lg font-bold">
+                {currencyPrefix}&nbsp;
+                {selectedLoanIds.length > 0
+                  ? summaryData.totalCollected.toFixed(2)
+                  : totalCollectedAmount}
+              </div>
             </div>
           </div>
-          {/* Select All Checkbox */}
-          <div className="flex items-center justify-between mb-3 px-1">
-            <label className="flex items-center space-x-2 text-sm text-gray-700">
+
+          {/* Search */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-1.5 text-sm"
+            />
+            <Search className="absolute left-3 top-2 text-gray-400" size={14} />
+          </div>
+
+          {/* Organisation Filter */}
+          <div className="border border-gray-300 rounded-md py-1 px-2">
+            <MultiSelect
+              value={selectedOrgs}
+              options={organisationOptions}
+              onChange={(e) => setSelectedOrgs(e.value)}
+              placeholder="Filter organisations"
+              display="chip"
+              className="w-full"
+            />
+          </div>
+
+          {/* Select All + Clear */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center space-x-2 text-xs text-gray-700">
               <input
                 type="checkbox"
                 checked={selectAll}
                 onChange={
                   filteredLoans.filter(isCollectible).length === 0
-                    ? () => { }   // <-- FIX: prevents React warning
+                    ? () => {}
                     : toggleSelectAll
                 }
-                className={`form-check-input ${filteredLoans.filter(isCollectible).length === 0
-                  ? "opacity-50 cursor-not-allowed pointer-events-none"
-                  : "cursor-pointer"
-                  }`}
-                title={
-                  filteredLoans.filter(isCollectible).length === 0
-                    ? "No collectible loans available"
-                    : "Select to collect EMI"
-                }
+                className="h-3 w-3"
               />
-
-
               <span>Select All Collectible Loans</span>
             </label>
-            {selectedLoanIds.length > 0 && (
-              <span className="text-xs text-gray-500">
-                Selected: {selectedLoanIds.length}
-              </span>
-            )}
-          <button
-            onClick={() => {
-              setSelectedOrgs([]);
-              setSearchQuery("");
-              setDateFilter("");
-            }}
-            className="ml-2 px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm"
-          >
-            Clear Filters
-          </button>
+
+            <button
+              onClick={() => {
+                setSelectedOrgs([]);
+                setSearchQuery('');
+                setDateFilter('');
+              }}
+              className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs"
+            >
+              Clear Filters
+            </button>
           </div>
-          {/* Loan List */}
-          {filterLoading ? (
-            <div className="text-center py-6">
-              <div className="text-gray-500">Filtering...</div>
-            </div>
-          ) : (
-            <>
-              {filteredLoans.length > 0 ? (
-                filteredLoans.map((loan) => {
-                  const cust = loan.customer || {};
-                  const fullName = `${cust.first_name || ""} ${cust.last_name || ""}`.trim();
-                  const collectible = isCollectible(loan);
-
-                  return (
-                    <motion.div
-                      key={loan.id}
-                      whileHover={{ scale: 1.01 }}
-                      className={`transition-all duration-150 cursor-pointer border rounded-lg p-3 mb-2 shadow-sm hover:shadow-md ${selectedLoanIds.includes(loan.id)
-                          ? "border-green-500 bg-green-50"
-                          : "border-gray-200 bg-white"
-                        }`}
-                    >
-                      <div className="flex items-start justify-between mb-1">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={selectedLoanIds.includes(loan.id)}
-                            onChange={() => toggleLoanSelection(loan.id)}
-                            disabled={!collectible}
-                            className={`h-4 w-4 mt-0.5 ${!collectible ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                              }`}
-                            title={
-                              !collectible
-                                ? (() => {
-                                  const today = new Date().toISOString().split("T")[0];
-                                  if (loan.next_due_date > today)
-                                    return `Not due until ${new Date(loan.next_due_date).toLocaleDateString()}`;
-                                  return "Not collectible";
-                                })()
-                                : "Select to collect EMI"
-                            }
-                          />
-
-                          <div>
-                            <h4 className="font-semibold text-gray-800 text-sm leading-tight">
-                              {fullName || "Unknown"}
-                            </h4>
-                            <p className="text-xs text-gray-500">Loan ID: #{loan.id}</p>
-                          </div>
-                        </div>
-                          <span className="inline-block bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-1 rounded-full">
-                            {loan.organisation?.organisation_name}
-                          </span>
-                          <button
-                            onClick={() => setSelectedLoan(loan)}
-                            disabled={selectedLoanIds.length > 1}
-                            className={`text-xs underline ${selectedLoanIds.length > 1
-                                ? "text-gray-400 cursor-not-allowed"
-                                : "text-indigo-600 hover:text-indigo-700"
-                              }`}
-                          >
-                            View Details
-                          </button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-gray-600 mt-1">
-                        <p><b>Next Due:</b> {loan.next_due_date || "N/A"}</p>
-                        <p>
-                          <b>EMI:</b>{" "}
-                          <span className="text-green-700 font-medium">
-                            {currencyPrefix} {loan.emi_amount || 0}
-                          </span>
-                        </p>
-                        <p><b>Total Repay:</b> {currencyPrefix} {loan.total_repay_amt || 0}</p>
-                        <p><b>Paid Amt:</b> {currencyPrefix} {getTotalPaidAmount(loan)}</p>
-                      </div>
-                    </motion.div>
-                  );
-                })
-              ) : (
-                <div className="text-center text-gray-500 py-6 text-sm">
-                  No matching loans found.
-                </div>
-              )}
-            </>
-          )}
 
         </div>
+
+        {/* SCROLLABLE LOAN CARD LIST */}
+        <div
+          className="flex-1 overflow-y-auto mt-3"
+          style={{ maxHeight: '350px' }} // one-card visible height (adjust if needed)
+        >
+          {filterLoading ? (
+            <div className="text-center py-6 text-gray-500">Filtering...</div>
+          ) : filteredLoans.length > 0 ? (
+            filteredLoans.map((loan) => {
+              const remainingFn = loan.tenure_fortnight - (loan.installments.length || 0);
+              if (remainingFn <= 0) return null;
+
+              const cust = loan.customer || {};
+              const fullName = `${cust.first_name || ''} ${cust.last_name || ''}`.trim();
+              const collectible = isCollectible(loan);
+
+              return (
+                <motion.div
+                  key={loan.id}
+                  whileHover={{ scale: 1.01 }}
+                  onClick={() => setSelectedLoan(loan)}
+                  className={`border rounded-lg p-3 mb-2 shadow-sm cursor-pointer transition ${
+                    selectedLoanIds.includes(loan.id)
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedLoanIds.includes(loan.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => toggleLoanSelection(loan.id)}
+                        disabled={!collectible}
+                        className={`h-4 w-4 mt-0.5 ${
+                          !collectible ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                        }`}
+                      />
+
+                      <div>
+                        <h4 className="font-semibold text-gray-800 text-sm leading-tight">
+                          {fullName || 'Unknown'}
+                          {loan.customer?.employee_no ? ` (${loan.customer.employee_no})` : ''}
+                        </h4>
+                        <p className="text-xs text-gray-500">Loan ID: #{loan.id}</p>
+                      </div>
+                    </div>
+
+                    <span className="inline-block bg-indigo-100 text-indigo-800 text-xs font-semibold px-2 py-1 rounded-full">
+                      {loan.organisation?.organisation_name}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs text-gray-600 mt-1">
+                    <p><b>Next Due:</b> {loan.next_due_date || 'N/A'}</p>
+                    <p>
+                      <b>EMI:</b>{' '}
+                      <span className="text-green-700 font-medium">
+                        {currencyPrefix} {parseFloat(loan.emi_amount).toFixed(2)}
+                      </span>
+                    </p>
+                    <p><b>Total Repay:</b> {currencyPrefix} {loan.total_repay_amt}</p>
+                    <p><b>Paid Amt:</b> {currencyPrefix} {getTotalPaidAmount(loan)}</p>
+                  </div>
+                   <div className="flex justify-end mt-1">
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation(); // prevent checkbox conflict
+                        setSelectedLoan(loan);
+                      }}
+                      className={`text-xs font-medium cursor-pointer select-none ${
+                        selectedLoan?.id === loan.id
+                          ? "text-blue-600"
+                          : "text-gray-500 hover:text-blue-500"
+                      }`}
+                    >
+                      View details →
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })
+          ) : (
+            <div className="text-center text-gray-500 py-6 text-sm">
+              No matching loans found.
+            </div>
+          )}
+        </div>
+      </div>
+
 
         {/* RIGHT PANEL */}
         <motion.div
@@ -479,6 +677,35 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                   <h4 className="font-semibold text-lg text-gray-800">
                     Selected Loans ({selectedLoanIds.length})
                   </h4>
+                   {/* MIDDLE: NEW INPUT FIELDS */}
+                    <div className="flex items-center gap-3">
+                      {/* DATE INPUT */}
+                      <div className="flex flex-col text-xs">
+                        <label className="font-semibold text-gray-600">Payment Date</label>
+                        <input
+                          type="date"
+                          name="payment_date"
+                          className="border border-gray-300 rounded px-2 py-1 text-sm"
+                          value={new Date().toISOString().split("T")[0]} // Default to today
+                          onChange={(e)=>setEmiPayDate(e.target.value)}
+                        />
+                      </div>
+
+                      {/* ID INPUT */}
+                      <div className="flex flex-col text-xs">
+                        <label className="font-semibold text-gray-600">Collection ID</label>
+                        <input
+                          type="text"
+                          placeholder="E.g., COL12345"
+                          name="collection_uid"
+                          className="border border-gray-300 rounded px-2 py-1 text-sm cursor-not-allowed bg-gray-100"
+                          readOnly={true}
+                          value={collectionUniqueId} // Example: auto-generate ID
+                          onChange={(e)=>setCollectionId(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
                   <button
                     onClick={handleCollectEMI}
                     className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md shadow-sm"
@@ -488,67 +715,107 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
                 </div>
 
                 {/* Selected Loans Summary */}
-                <div className="max-h-[70vh] overflow-y-auto border rounded-lg shadow-sm relative">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-green-700 text-white sticky top-0 z-20">
-                      <tr>
-                        <th className="p-2 text-left">Customer</th>
-                        <th className="p-2 text-left">Loan ID</th>
-                        <th className="p-2 text-left">Next Due</th>
-                        <th className="p-2 text-left">EMI Amount</th>
-                        <th className="p-2 text-left">Total Repay</th>
-                        <th className="p-2 text-left">Paid Amount</th>
-                        <th className="p-2 text-left">Remaining F/N</th>
-                        <th className="p-2 text-left">Status</th>
-                      </tr>
-                    </thead>
+              <div className="max-h-[70vh] overflow-y-auto border border-gray-300 rounded-lg shadow-sm relative">
+                <table className="min-w-full text-sm border-collapse">
+                  <colgroup>
+                    <col className="w-16" /> {/* Remove */}
+                    <col className="w-20" /> {/* Loan ID */}
+                    <col className="w-48" /> {/* Customer */}
+                    <col className="w-32" /> {/* Next Due */}
+                    <col className="w-32" /> {/* EMI Amount */}
+                    <col className="w-40" /> {/* Total Repayable */}
+                    <col className="w-32" /> {/* Total Paid */}
+                    <col className="w-28" /> {/* Remaining F/N */}
+                    <col className="w-36" /> {/* Remaining Balance */}
+                    <col className="w-32" /> {/* Counter */}
+                    <col className="w-24" /> {/* Status */}
+                  </colgroup>
 
-                    <tbody className="divide-y divide-gray-200 bg-green-50">
-                      {filteredLoans
-                        .filter((loan) => selectedLoanIds.includes(loan.id))
-                        .map((loan) => {
-                          const cust = loan.customer || {};
+                  {/* ---------- STICKY HEADER ---------- */}
+                  <thead className="bg-green-700 text-white sticky top-0 z-20">
+                    <tr>
+                      <th className="p-2 border-r border-green-600 text-left">Remove</th>
+                      <th className="p-2 border-r border-green-600 text-left">Loan ID</th>
+                      <th className="p-2 border-r border-green-600 text-left">Customer</th>
+                      <th className="p-2 border-r border-green-600 text-left">Next Due</th>
+                      <th className="p-2 border-r border-green-600 text-left">EMI Amount</th>
+                      <th className="p-2 border-r border-green-600 text-left">Total Repayable</th>
+                      <th className="p-2 border-r border-green-600 text-left">Total Paid</th>
+                      <th className="p-2 border-r border-green-600 text-left">Remaining F/N</th>
+                      <th className="p-2 border-r border-green-600 text-left">Remaining Balance</th>
+                      <th className="p-2 border-r border-green-600 text-left">Counter</th>
+                      <th className="p-2 text-left">Status</th>
+                    </tr>
+                  </thead>
 
-                          return (
-                            <tr
-                              key={loan.id}
-                              className="hover:bg-green-100 transition-all"
-                            >
-                              <td className="p-2 font-medium text-gray-800">
-                                {cust.first_name} {cust.last_name}
-                              </td>
+                  {/* ---------- BODY ---------- */}
+                  <tbody className="divide-y divide-gray-200 bg-green-50">
+                    {filteredLoans
+                      .filter((loan) => selectedLoanIds.includes(loan.id))
+                      .map((loan) => {
+                        const cust = loan.customer || {};
+                        const baseRemaining = loan.tenure_fortnight - (loan.installments.length || 0);
+                        const counter = emiCounter[loan.id] ?? 1;
+                        const collectEmi = parseFloat(loan.emi_amount) * counter;
+                        const totalRepay = parseFloat(String(loan.total_repay_amt).replace(/,/g, "")) || 0;
+                        const totalPaidBefore = parseFloat(getTotalPaidAmount(loan)) || 0;
+                        const totalPaid = totalPaidBefore + collectEmi;
+                        const finalRemaining = Math.max(baseRemaining - counter, 0);
+                        const remainingBalance = Math.max(totalRepay - totalPaid, 0);
 
-                              <td className="p-2">#{loan.id}</td>
-
-                              <td className="p-2">
-                                {loan.next_due_date || "N/A"}
-                              </td>
-
-                              <td className="p-2 font-semibold text-green-700">
-                                {currencyPrefix} {loan.emi_amount}
-                              </td>
-
-                              <td className="p-2">
-                                {currencyPrefix} {loan.total_repay_amt}
-                              </td>
-
-                              <td className="p-2">
-                                {currencyPrefix} {loan.total_emi_paid_amount}
-                              </td>
-
-                              <td className="p-2">
-                                {loan.tenure_fortnight - (loan.total_emi_paid_count || 0)}
-                              </td>
-
-                              <td className="p-2">
-                                <span className="text-green-700 font-semibold">Ready</span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
+                        return (
+                          <tr key={loan.id} className="hover:bg-green-100 transition">
+                            <td className="p-2 text-center border-r border-gray-300">
+                              <input
+                                type="checkbox"
+                                checked={selectedLoanIds.includes(loan.id)}
+                                onChange={() => toggleLoanSelection(loan.id)}
+                                className="h-4 w-4 cursor-pointer"
+                              />
+                            </td>
+                            <td className="p-2 border-r border-gray-300 font-semibold">#{loan.id}</td>
+                            <td className="p-2 border-r border-gray-300 font-medium">
+                              {cust.first_name} {cust.last_name} ({cust.employee_no || "N/A"})
+                            </td>
+                            <td className="p-2 border-r border-gray-300">{loan.next_due_date || "N/A"}</td>
+                            <td className="p-2 border-r border-gray-300 font-semibold text-green-700">
+                              {currencyPrefix} {collectEmi.toFixed(2)}
+                            </td>
+                            <td className="p-2 border-r border-gray-300">
+                              {currencyPrefix} {totalRepay.toFixed(2)}
+                            </td>
+                            <td className="p-2 border-r border-gray-300">
+                              {currencyPrefix} {totalPaid.toFixed(2)}
+                            </td>
+                            <td className="p-2 border-r border-gray-300">{finalRemaining}</td>
+                            <td className="p-2 border-r border-gray-300">{currencyPrefix} {remainingBalance.toFixed(2)}</td>
+                            <td className="p-2 border-r border-gray-300">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => decreaseCounter(loan)}
+                                  className="px-2 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                                >
+                                  -
+                                </button>
+                                <span className="font-semibold">{counter}</span>
+                                <button
+                                  onClick={() => increaseCounter(loan)}
+                                  className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                  disabled={counter >= baseRemaining}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </td>
+                            <td className="p-2">
+                              <span className="text-green-700 font-semibold">Ready</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
 
               </>
             ) : (
@@ -574,7 +841,9 @@ export default function LoanEmiCollection({ auth, approved_loans }) {
               {/* Loan Overview */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2 text-sm">
                 <div><b>Loan Type:</b> {selectedLoan.loan_settings?.loan_desc}</div>
-                <div><b>Purpose:</b> {selectedLoan.purpose}</div>
+                {/* <div><b>Purpose:</b> {selectedLoan.purpose}</div> */}
+                <div><b>Purpose:</b> {selectedLoan.purpose?.purpose_name || "N/A"}</div>
+
                 <div><b>Loan Amount:</b> {currencyPrefix}&nbsp;{selectedLoan.loan_amount_applied}</div>
                 <div><b>Tenure:</b> {selectedLoan.tenure_fortnight} fortnights</div>
                 <div><b>Interest Rate:</b> {selectedLoan.interest_rate}%</div>

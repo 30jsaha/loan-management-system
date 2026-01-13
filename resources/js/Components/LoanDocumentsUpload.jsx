@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { X, Upload, Eye } from "lucide-react";
 import { Button, ProgressBar, Modal } from "react-bootstrap";
@@ -14,7 +14,7 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
     "ISDA_Signed",
     "LoanForm_Scanned",
   ];
-
+  const [docTypes, setDocTypes] = useState([]);
   const [files, setFiles] = useState({});
   const [progress, setProgress] = useState({});
   const [uploading, setUploading] = useState(false);
@@ -27,40 +27,80 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
   const loanId = loanFormData?.id || "";
   const customerId = loanFormData?.customer_id || "";
 
+  useEffect(() => {
+    axios.get("/api/document-types").then(res => {
+      setDocTypes(res.data);
+    });
+  }, []);
+
   const handleViewDocument = (doc) => {
     setSelectedDoc(doc);
     setShowModal(true);
   };
 
-  const handleFileSelect = (e, docType) => {
+  // const handleFileSelect = (e, docType) => {
+  //   const file = e.target.files[0];
+  //   if (!file) return;
+
+  //   if (
+  //     ![
+  //       "application/pdf",
+  //       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  //       "text/plain",
+  //     ].includes(file.type)
+  //   ) {
+  //     setMessage((prev) => ({
+  //       ...prev,
+  //       [docType]: "❌ Only .pdf, .docx, or .txt files allowed.",toast
+  //     }));
+  //     return;
+  //   }
+
+  //   if (file.size > 20 * 1024 * 1024) {
+  //     setMessage((prev) => ({
+  //       ...prev,
+  //       [docType]: "⚠️ File exceeds 20MB limit.",
+  //     }));
+  //     return;
+  //   }
+
+  //   setFiles((prev) => ({ ...prev, [docType]: file }));
+  //   setProgress((prev) => ({ ...prev, [docType]: 0 }));
+  //   setMessage((prev) => ({ ...prev, [docType]: "" }));
+  // };
+  const handleFileSelect = (e, doc) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (
-      ![
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "text/plain",
-      ].includes(file.type)
-    ) {
-      setMessage((prev) => ({
+    const minSize = doc.min_size_kb * 1024;
+    const maxSize = doc.max_size_kb * 1024;
+
+    if (file.size < minSize) {
+      setMessage(prev => ({
         ...prev,
-        [docType]: "❌ Only .pdf, .docx, or .txt files allowed.",
+        [doc.doc_key]: `⚠️ File too small (min ${doc.min_size_kb} KB)`
       }));
       return;
     }
 
-    if (file.size > 20 * 1024 * 1024) {
-      setMessage((prev) => ({
+    if (file.size > maxSize) {
+      setMessage(prev => ({
         ...prev,
-        [docType]: "⚠️ File exceeds 20MB limit.",
+        [doc.doc_key]: `⚠️ Max allowed ${doc.max_size_kb / 1024} MB`
       }));
       return;
     }
+    setMessage(prev => ({
+    ...prev,
+    [doc.doc_key]: ""
+  }));
 
-    setFiles((prev) => ({ ...prev, [docType]: file }));
-    setProgress((prev) => ({ ...prev, [docType]: 0 }));
-    setMessage((prev) => ({ ...prev, [docType]: "" }));
+  setFiles(prev => ({
+    ...prev,
+    [doc.doc_key]: file
+  }));
+
+    setFiles(prev => ({ ...prev, [doc.doc_key]: file }));
   };
 
   const handleUpload = async (docType) => {
@@ -89,7 +129,9 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
         ...prev,
         [docType]: "✅ Uploaded successfully!",
       }));
-      toast.success(`${docType} uploaded successfully!`);
+      // toast.success(`${docType} uploaded successfully!`,{
+      //   duration:3000
+      // });
     } catch (error) {
       console.error("Upload failed:", error);
       setMessage((prev) => ({
@@ -103,20 +145,33 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
 
   const handleUploadAll = async (e) => {
     e.preventDefault();
+
     if (Object.keys(files).length === 0) {
       toast.error("Please select files first!");
       return;
     }
+
     setUploading(true);
+
     for (const docType of Object.keys(files)) {
+      // Skip files already uploaded
+      if (uploadedFiles[docType]) continue;
+
       await handleUpload(docType);
     }
+
     setUploading(false);
+
+    // Clear only NEWLY uploaded files, not all
     setFiles({});
     setProgress({});
     setUploadedFiles({});
-    // ✅ Call parent refresh ONLY after "Upload All" is clicked
+
     if (onUploadComplete) onUploadComplete();
+        toast.success("All documents uploaded successfully!", {
+          icon: "✅",
+        });
+
   };
 
   return (
@@ -124,206 +179,161 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
       <h4 className="fw-semibold text-dark mb-4 text-center text-lg sm:text-xl">
         📄 Upload Supporting Documents
       </h4>
-      <Toaster position="top-center" />
+   
 
       <form onSubmit={handleUploadAll}>
         {/* Responsive Grid: Stacks on mobile, 1 col, then 2, then 3 on huge screens */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 justify-items-center mb-3">
-          {allowedDocs.map((doc) => (
-            <div
-              key={doc}
-              className="bg-white rounded-4 shadow-sm border border-gray-200 p-3 w-full max-w-[530px] transition-all duration-300 transform hover:shadow-lg hover:-translate-y-1"
-            >
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <h6 className="fw-semibold mb-0 text-gray-700">
-                  {doc.replace(/_/g, " ")}
-                </h6>
-                {files[doc] && (
-                  <X
-                    className="text-muted cursor-pointer"
-                    size={18}
-                    onClick={() => {
-                      const updated = { ...files };
-                      delete updated[doc];
-                      setFiles(updated);
-                      setProgress((prev) => ({ ...prev, [doc]: 0 }));
-                      setUploadedFiles((prev) => {
-                        const newState = { ...prev };
-                        delete newState[doc];
-                        return newState;
-                      });
-                    }}
-                  />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+          {docTypes.map((doc) => {
+            const file = files[doc.doc_key];
+
+            return (
+              <div
+                 key={doc.id}
+                className="
+                  relative
+                  bg-white/80 backdrop-blur-md
+                  rounded-1xl
+                  border border-gray-200
+                  p-3
+                  shadow-sm
+                  hover:shadow-lg
+                  transition-all duration-300
+                "
+              >
+                <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-400" />
+                {/* HEADER */}
+                <div className="flex justify-between items-start mb-2">
+                  <h6 className="font-semibold text-gray-800">
+                    {doc.doc_name}
+                    {doc.is_required === 1 && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </h6>
+
+                  {file && (
+                    <X
+                      size={18}
+                      className="text-gray-400 hover:text-red-500 cursor-pointer"
+                      onClick={() => {
+                        const updated = { ...files };
+                        delete updated[doc.doc_key];
+                        setFiles(updated);
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* SIZE INFO */}
+                <p className="text-xs text-gray-500 mb-3">
+                  Min {doc.min_size_kb} KB · Max {doc.max_size_kb / 1024} MB
+                </p>
+
+                {/* UPLOAD AREA */}
+                {!file ? (
+                  /* UPLOAD AREA */
+                  <label className="
+                      group
+                      flex flex-col items-center justify-center
+                      h-44
+                      rounded-xl
+                      border-2 border-dashed border-gray-300
+                      bg-gradient-to-br from-gray-50 to-white
+                      cursor-pointer
+                      hover:border-indigo-400
+                      hover:bg-indigo-50/40
+                      transition-all duration-300
+                    ">
+                    <Upload  size={42}
+                    className="text-gray-400 mb-2 group-hover:text-indigo-500 group-hover:scale-110 transition" />
+                    <p className="text-sm font-medium text-gray-700">
+                      Click or drag file
+                    </p>
+                    <p className="text-xs text-gray-500">PDF / DOCX / TXT</p>
+
+                    <input
+                      type="file"
+                      accept=".pdf,.docx,.txt"
+                      className="hidden"
+                      onChange={(e) => handleFileSelect(e, doc)}
+                    />
+                  </label>
+                ) : (
+                  <>
+                {/* PREVIEW BOX */}
+              <div className="h-40 rounded-xl border bg-gray-50 overflow-hidden relative">
+                {file.type === "application/pdf" ? (
+                  <>
+                    <embed
+                      src={URL.createObjectURL(file)}
+                      type="application/pdf"
+                      className="w-full h-full"
+                    />
+
+                    {/* Overlay info */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-white/80 backdrop-blur px-2 py-1 text-[11px] flex justify-between">
+                      <span className="truncate">{file.name}</span>
+                      <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-3">
+                    <div className="h-10 w-10 mb-2 flex items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-500 text-white text-xs font-semibold shadow">
+                      {file.name.split(".").pop()?.toUpperCase()}
+                    </div>
+
+                    <p className="text-xs font-medium text-gray-800 truncate w-full">
+                      {file.name}
+                    </p>
+                    <p className="text-[11px] text-gray-500">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
                 )}
               </div>
 
-              {!files[doc] ? (
-                <div
-                  className="border border-2 border-dashed rounded-4 d-flex flex-column justify-content-center align-items-center py-6 bg-light hover:bg-gray-100 transition-all duration-300 transform hover:border-blue-400 position-relative w-full"
-                  style={{ minHeight: 220 }}
-                >
-                  <Upload size={48} className="text-secondary mb-3" />
-                  <p className="fw-semibold text-dark mb-1 text-center text-sm sm:text-base">
-                    Click to upload or drag and drop
-                  </p>
-                  <p className="text-muted small mb-0 text-center px-2">
-                    Upload .txt, .docx, or .pdf (MAX 20MB)
-                  </p>
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,.txt"
-                    onChange={(e) => handleFileSelect(e, doc)}
-                    className="position-absolute top-0 start-0 end-0 bottom-0 opacity-0"
-                    style={{ cursor: "pointer" }}
-                  />
-                </div>
-              ) : (
-                <div className="border rounded-4 p-2 bg-light w-full overflow-hidden">
-                  {files[doc].type === "application/pdf" ? (
-                    <div className="text-center w-full">
-                      <div className="position-relative w-full">
-                        <embed
-                          src={URL.createObjectURL(files[doc])}
-                          type="application/pdf"
-                          width="100%"
-                          height="200"
-                          className="border rounded shadow-sm w-full"
-                        />
-                        <div
-                          className="position-absolute bottom-0 start-0 w-100 d-flex align-items-center justify-content-center px-3 py-2 cursor-pointer"
-                          style={{
-                            background:
-                              "linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.6))",
-                            borderBottomLeftRadius: "0.375rem",
-                            borderBottomRightRadius: "0.375rem",
-                          }}
-                          onClick={() => handleViewDocument(files[doc])}
-                        >
-                          <div className="d-flex align-items-center gap-2">
-                            <Eye
-                              size={28}
-                              className="hover:scale-110 transition-transform text-blue"
-                            />
-                            <span className="font-bold text-black">View</span>
-                          </div>
+
+                    {/* ACTION BUTTONS – BELOW BOX */}
+                    <div className="flex justify-between items-center gap-2 mt-3">
+                      <Button
+                        size="sm"
+                        variant="outline-primary"
+                        className="flex items-center gap-1"
+                        onClick={() => handleViewDocument(file)}
+                      > 
+                       <div className="flex gap-2">
+                        <Eye size={14} className="mt-1" />
+                        View
                         </div>
-                      </div>
-                      <div className="mt-2">
-                        <div className="d-flex align-items-center justify-content-center gap-2 mb-1">
-                          <div
-                            className="fw-semibold text-dark small text-truncate w-full sm:w-4/5"
-                            title={files[doc].name}
-                          >
-                            {files[doc].name}
-                          </div>
-                        </div>
-                        <div className="text-muted small mb-2">
-                          {(files[doc].size / 1024 / 1024).toFixed(2)} MB
-                        </div>
-                        {(progress[doc] || 0) < 100 && (
-                          <ProgressBar
-                            now={progress[doc] || 0}
-                            label={`${progress[doc] || 0}%`}
-                            variant="success"
-                            animated
-                            style={{ height: "8px" }}
-                          />
-                        )}
-                      </div>
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline-danger"
+                        onClick={() => {
+                          const updated = { ...files };
+                          delete updated[doc.doc_key];
+                          setFiles(updated);
+                        }}
+                      >
+                        Remove
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="text-center p-3">
-                      <i className="bi bi-file-earmark-text text-secondary fs-2"></i>
-                      <div className="d-flex align-items-center justify-content-center gap-2">
-                        <div
-                          className="fw-semibold text-dark small mt-2 text-truncate w-full sm:w-4/5"
-                          title={files[doc].name}
-                        >
-                          {files[doc].name}
-                        </div>
-                        <Button
-                          variant="link"
-                          className="p-0 text-primary mt-2"
-                          onClick={() => handleViewDocument(files[doc])}
-                        >
-                          <Eye size={16} />
-                        </Button>
-                      </div>
-                      <div className="text-muted small mb-1">
-                        {(files[doc].size / 1024 / 1024).toFixed(2)} MB
-                      </div>
-                      {(progress[doc] || 0) < 100 && (
-                        <ProgressBar
-                          now={progress[doc] || 0}
-                          label={`${progress[doc] || 0}%`}
-                          variant="success"
-                          animated
-                          className="mt-2"
-                          style={{ height: "8px" }}
-                        />
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                  </>
+                )}
 
-              {message[doc] && !message[doc].startsWith("✅") && (
-                <div
-                  className={`mt-2 p-2 rounded text-center small ${
-                    message[doc].startsWith("⚠️")
-                      ? "bg-warning bg-opacity-10 text-warning"
-                      : "bg-danger bg-opacity-10 text-danger"
-                  }`}
-                >
-                  {message[doc]}
-                </div>
-              )}
 
-              {/* Stack buttons on very small screens, row on sm+ */}
-              <div className="flex flex-col sm:flex-row justify-between gap-2 mt-3">
-                <Button
-                  variant="outline-secondary"
-                  className="px-4 rounded-pill fw-medium w-full sm:w-1/2"
-                  onClick={() => {
-                    const updated = { ...files };
-                    delete updated[doc];
-                    setFiles(updated);
-                    setProgress((prev) => ({ ...prev, [doc]: 0 }));
-                    setUploadedFiles((prev) => {
-                      const newState = { ...prev };
-                      delete newState[doc];
-                      return newState;
-                    });
-                  }}
-                  disabled={uploading}
-                >
-                  Remove
-                </Button>
-
-                <Button
-                  className="px-3 sm:px-4 rounded-pill fw-medium w-full sm:w-1/2 text-white"
-                  onClick={() => handleUpload(doc)}
-                  disabled={uploading || !files[doc]}
-                  style={{
-                    backgroundColor: uploading
-                      ? "#38bdf8cc"
-                      : uploadedFiles[doc]
-                      ? "#22c55e"
-                      : "#38bdf8",
-                    border: "none",
-                  }}
-                >
-                  {uploading
-                    ? "Uploading..."
-                    : uploadedFiles[doc]
-                    ? "Uploaded"
-                    : "Upload"}
-                </Button>
+                {/* ERROR MESSAGE */}
+                {message[doc.doc_key] && (
+                  <p className="text-xs mt-2 text-red-600">
+                    {message[doc.doc_key]}
+                  </p>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-
+        
         <div className="text-center mt-5">
           <Button
             type="submit"

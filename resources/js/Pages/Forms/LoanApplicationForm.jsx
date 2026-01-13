@@ -15,64 +15,70 @@ const printStyles = `
   @media print {
     @page {
       size: A4 portrait;
-      margin: 8mm;
+      margin: 10mm;
     }
 
-    /* Hide everything by default */
+    /* Reset Body and HTML to ensure full height and no scroll blocking */
+    html, body {
+      height: 100vh;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+    }
+
+    /* HIDING STRATEGY: 
+      We use visibility: hidden on body so we don't destroy the layout flow
+      of the React root, but we hide the visual elements.
+    */
     body * {
       visibility: hidden;
     }
 
-    /* Hide the print button row and header */
-    .no-print {
+    /* Hiding specific wrappers to remove their whitespace if possible */
+    .no-print, nav, header, footer {
       display: none !important;
     }
-    
-    /* Show only the printable area */
+
+    /* SHOWING STRATEGY:
+      Target the printable area, make it visible, and force it to 
+      the top-left of the browser window (Viewport).
+    */
     #printable-area, #printable-area * {
-      visibility: visible;
-    }
-    
-    /* Show the page 2 header only on print */
-    .print-only {
-        display: block;
+      visibility: visible !important;
     }
 
-    /* Position the printable area to fill the page */
     #printable-area {
-      position: absolute;
-      left: 0;
-      top: 0;
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
-      width: 100%;
-      border: none !important;
+      
+      /* Crucial for "Blank Page" issues: */
+      z-index: 9999 !important; /* Sit on top of everything */
+      background-color: white !important; /* Ensure background isn't transparent */
+      color: black !important; /* Force text to black */
+      
+      /* Reset any shadow or borders from the Card component */
       box-shadow: none !important;
+      border: none !important;
     }
 
-    /* Remove screen padding from the main container */
-    .print-container {
-      padding: 0 !important;
-    }
-
-    /* Ensure colors and backgrounds print */
-    * {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-
-    /* --- Font & Spacing for two-page layout --- */
+    /* --- Typography & Spacing adjustments (Keep your existing fine-tuning) --- */
     #printable-area {
       font-size: 8pt !important;
+      line-height: 1.2 !important;
     }
 
     #printable-area h3 {
       font-size: 11pt !important;
-      margin: 1px 0 !important;
+      margin: 2px 0 !important;
     }
 
     #printable-area table {
       font-size: 7.5pt !important;
+      width: 100% !important;
     }
 
     #printable-area .section-title {
@@ -82,54 +88,46 @@ const printStyles = `
 
     #printable-area ol, #printable-area ul {
       margin: 0 !important;
-      padding-left: 12px !important;
+      padding-left: 14px !important;
     }
 
     #printable-area li {
-      margin-bottom: 1px !important;
-      line-height: 1.1 !important;
+      margin-bottom: 2px !important;
+      line-height: 1.15 !important;
     }
 
     #printable-area p {
       margin: 2px 0 !important;
-      line-height: 1.1 !important;
+      line-height: 1.15 !important;
     }
 
-    #printable-area .p-4 {
-      padding: 4px !important;
-    }
-     #printable-area .p-2 {
-      padding: 2px !important;
-    }
-
-    #printable-area .mb-3 {
-      margin-bottom: 4px !important;
-    }
-    #printable-area .mb-2 {
-      margin-bottom: 2px !important;
-    }
-
-    #printable-area .mt-1 {
-      margin-top: 2px !important;
-    }
+    /* Padding Utilities overrides */
+    #printable-area .p-4 { padding: 4px !important; }
+    #printable-area .p-2 { padding: 2px !important; }
+    #printable-area .mb-3 { margin-bottom: 4px !important; }
+    #printable-area .mb-2 { margin-bottom: 2px !important; }
+    #printable-area .mt-1 { margin-top: 2px !important; }
 
     #printable-area hr {
-      margin: 3px 0 !important;
+      margin: 4px 0 !important;
+      border-top: 1px solid #000 !important;
     }
 
     #printable-area table td,
     #printable-area table th {
-      padding: 1px 3px !important;
+      padding: 2px 3px !important;
+      vertical-align: middle !important;
     }
 
-    /* Style inputs for a cleaner print (black border, no background) */
+    /* Input Styling */
     input, textarea {
       border: none !important;
       box-shadow: none !important;
-      outline: none !important;
       background-color: transparent !important;
-      font-size: 7pt !important;
+      font-size: 8pt !important;
+      color: black !important;
     }
+    
     input.underline-field, 
     input.underline-input, 
     input.inline-date, 
@@ -138,90 +136,43 @@ const printStyles = `
     input[type="date"] {
       border-bottom: 1px solid #000 !important;
       border-radius: 0;
+      height: auto !important;
+      padding: 0 2px !important;
     }
+
     .stamp-box {
       border: 1px solid #000 !important;
       height: 40px !important;
     }
+
     .form-check-input,
     input[type="checkbox"] {
       border: 1px solid #000 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
+      width: 10px !important;
+      height: 10px !important;
     }
 
-    /* --- Force page break --- */
+    /* Page Breaks */
     .page-break-before {
       page-break-before: always !important;
-      margin-top: 0 !important;
+      margin-top: 20px !important;
+      display: block !important;
     }
     
-    .page-2-header {
-        margin-bottom: 10px; /* Space for printed header */
+    .print-only {
+        display: block !important;
     }
 
-    /* Prevent page breaks inside important sections */
-    .borrower-declaration,
-    .employer-acknowledgement,
-    .isda-table,
-    .terms-table {
-      page-break-inside: avoid !important;
+    /* Layout specific fixes */
+    .official-use-container {
+      width: 45% !important;
     }
 
-    /* Adjust logo size */
-    #printable-area .logo-container {
-      max-width: 80px !important;
+    /* Logo Sizing */
+    .logo-container svg, .logo-container img {
+        width: 80px !important;
+        height: auto !important;
     }
-
-    /* Reduce spacing */
-    #printable-area .card-body {
-      padding: 4px !important;
-    }
-
-    /* Table spacing */
-    .loan-details-print-table td {
-      padding: 1px 2px !important;
-    }
-    
- /* --- Control width of OFFICIAL USE ONLY table on print --- */
-.official-use-container {
-  width: 40% !important;
-  max-width: 40% !important;
-  display: inline-block !important;
-  vertical-align: top !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.official-use-table {
-  width: 100% !important;
-  table-layout: fixed !important;
-  font-size: 7.5pt !important;
-  border-collapse: collapse !important;
-}
-
-/* Keep table neat and compact */
-.official-use-table td,
-.official-use-table th {
-  border: 1px solid #000 !important;
-  padding: 2px 3px !important;
-  vertical-align: top !important;
-}
-
-/* Prevent scaling/stretching */
-.official-use-container,
-.official-use-table {
-  transform: scale(1) !important;
-  page-break-inside: avoid !important;
-  break-inside: avoid !important;
-}
-
-/* Optional: center or align left */
-.official-use-container {
-  margin-left: 0 !important; /* or set to auto to center: margin: 0 auto !important; */
-}
-
-
   }
 `;
 
@@ -305,7 +256,7 @@ export default function LoanApplicationForm({ auth }) {
                     >
                       LOAN REQUEST AMOUNT:
                     </label>
-                    <span style={{ marginRight: "4px" }}>K</span>
+                    <span style={{ marginRight: "4px" }}>PGK</span>
                     <input type="text" className="underline-field" style={{ width: "100px" }} />
                   </div>
 

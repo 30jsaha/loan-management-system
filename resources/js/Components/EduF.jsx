@@ -1,35 +1,39 @@
-import React, { forwardRef } from "react";
-import { Printer } from "lucide-react";
+import React from "react";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { Head, Link } from "@inertiajs/react";
+import { ArrowLeft, Printer } from "lucide-react";
 import MainLogo from "@/Components/MainLogo";
 
-/** Character Box */
+// Character box
 const CharBox = ({ value = "" }) => (
-  <div className="flex h-7 w-5 items-center justify-center border border-black text-sm font-semibold bg-white print:border-black">
+  <div className="flex h-7 w-5 items-center justify-center border border-black text-sm font-semibold bg-white">
     {value}
   </div>
 );
 
-/** Wide Character Box */
+// Wide character box
 const ChaarBox = ({ value = "" }) => (
-  <div className="flex h-7 w-[120px] items-center justify-center border border-black text-sm font-semibold bg-white print:border-black">
+  <div className="flex h-7 w-[120px] items-center justify-center border border-black text-sm font-semibold bg-white">
     {value}
   </div>
 );
 
-/** Underline Data Line */
+// Underlined field
 const DataLine = ({ className = "", children }) => (
-  <span className={`inline-block border-b border-black align-bottom px-1 ${className} print:border-black`}>
+  <span
+    className={`inline-block border-b border-black px-1 align-bottom ${className}`}
+  >
     {children || "\u00A0"}
   </span>
 );
 
-const EduF = forwardRef(({ loan, auth }, ref) => {
+export default function EduF({ auth, loan }) {
   const org = loan?.organisation || {};
   const customer = loan?.customer || {};
 
-  // Helper to render multiple character boxes
-  const renderCharBoxes = (count, text = "") => {
-    const chars = String(text || "").split("");
+  // Render character boxes with dynamic values
+  const renderCharBoxes = (count, value = "") => {
+    const chars = String(value || "").split("");
     return Array.from({ length: count }).map((_, i) => (
       <CharBox key={i} value={chars[i] || ""} />
     ));
@@ -38,36 +42,12 @@ const EduF = forwardRef(({ loan, auth }, ref) => {
   const handlePrint = () => window.print();
 
   return (
-    // 1. Ref attached to main div
-    // 2. Removed min-h-screen (causes blank pages on hidden elements)
-    // 3. Added specific width (210mm) to match A4 size
-    <div 
-      ref={ref} 
-      className="bg-white text-black mx-auto"
-      style={{ width: "210mm", minHeight: "297mm" }} // Explicit A4 dimensions
-    >
-      
-      {/* Print Styles */}
-      <style type="text/css" media="print">
-        {`
-          @page { 
-            size: A4 portrait; 
-            margin: 10mm; 
-          }
-          body { 
-            -webkit-print-color-adjust: exact !important; 
-            print-color-adjust: exact !important; 
-          }
-          .no-print { display: none !important; }
-          /* Ensure borders print clearly */
-          * { border-color: #000 !important; }
-        `}
-      </style>
-
-      <div className="p-8 bg-white h-full">
-
-        {/* PRINT BUTTON (Visible on screen, hidden on print) */}
-        <div className="mb-4 flex items-center gap-4 no-print">
+    <AuthenticatedLayout user={auth.user}>
+      {/* Main container */}
+      <div id="print-area">
+        
+        {/* Buttons */}
+        <div className="max-w-4xl mx-auto mb-4 flex items-center gap-4 no-print header-bar">
           <button
             onClick={handlePrint}
             className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium"
@@ -76,213 +56,274 @@ const EduF = forwardRef(({ loan, auth }, ref) => {
           </button>
         </div>
 
-        {/* LOGO SECTION */}
-        <div style={{ maxWidth: "150px", margin: "0 auto 20px auto" }}>
-          <MainLogo width="120px" />
-        </div>
-
-        {/* TOP SECTION: TO + ISSUED BY */}
-        <div className="flex flex-row gap-9 mb-2 text-sm">
-          
-          {/* TO BOX */}
-          <div className="w-2/4 border border-black p-2">
-            <span className="font-bold">TO:</span>
-            <div className="pl-4 text-sm leading-5 mt-1">
-              {org.organisation_name || "—"}<br />
-              {org.address || "—"}<br />
-              {org.province || ""}<br />
-              {org.email || ""}<br />
-              {org.contact_no || ""}
-            </div>
-          </div>
-
-          {/* ISSUED BY BOX */}
-          <div className="w-2/4 border border-black p-2 flex flex-col justify-between">
-            <div>Issued By:</div>
-            <div className="mt-2">
-              <DataLine className="w-3/4" />
-              <div className="text-xs">(Name)</div>
-            </div>
-            <div className="mt-2">
-              <span className="mr-2">Signature</span> 
-              <DataLine className="w-3/4" />
-            </div>
-          </div>
-        </div>
-
-        {/* DATE + LOCATION CODE */}
-        <div className="flex items-center mb-2 text-sm">
-          <span className="font-semibold mr-2">Date:</span>
-          <DataLine className="w-64"></DataLine>
-          <span className="font-semibold ml-6 mr-2">Location Code:</span>
-          <div className="flex gap-px">
-            {renderCharBoxes(8, org.location_code || "")}
-          </div>
-        </div>
-
-        {/* EMPLOYEE NUMBER */}
-        <div className="flex items-center mb-2 text-sm">
-          <span className="font-semibold w-28 shrink-0">Employee No.</span>
-          <div className="flex gap-px">
-            {renderCharBoxes(8, customer?.employee_no || "")}
-          </div>
-        </div>
-
-        {/* SURNAME */}
-        <div className="flex items-center mb-2 text-sm">
-          <span className="font-semibold w-28 shrink-0">Surname</span>
-          <div className="flex gap-px">
-            {renderCharBoxes(26, customer?.last_name || "")}
-          </div>
-        </div>
-
-        {/* FIRST NAME */}
-        <div className="flex items-center mb-2 text-sm">
-          <span className="font-semibold w-28 shrink-0">First Name</span>
-          <div className="flex gap-px">
-            {renderCharBoxes(26, customer?.first_name || "")}
-          </div>
-        </div>
-
-        {/* SCHOOL + PROVINCE */}
-        <div className="flex justify-between items-center gap-6 mb-4 text-sm mt-3">
-          <div className="flex items-center w-1/2">
-            <span className="font-semibold mr-2">School</span>
-            <DataLine className="w-full">{org.organisation_name || ""}</DataLine>
-          </div>
-          <div className="flex items-center w-1/2">
-            <span className="font-semibold mr-2">Province</span>
-            <DataLine className="w-full">{org.province || ""}</DataLine>
-          </div>
-        </div>
-
-        {/* DEDUCTION TABLE */}
-        <div className="grid grid-cols-12 gap-2 text-sm mb-6 mt-4">
-          <div className="col-span-3 flex flex-col items-center">
-            <div className="text-center text-xs font-bold mb-1">Deduction Code</div>
-            <div className="flex gap-px">
-              {renderCharBoxes(7, "")}
-            </div>
-          </div>
-          <div className="col-span-3 flex flex-col items-center">
-            <div className="text-xs font-bold mb-1">Description</div>
-            <div className="flex">
-              <ChaarBox value={loan?.purpose || ""} />
-            </div>
-          </div>
-          <div className="col-span-3 flex flex-col items-center">
-            <div className="text-xs font-bold mb-1">% or Amount Per Pay</div>
-            <div className="flex gap-px">
-              {renderCharBoxes(9, String(loan?.emi_amount || ""))}
-            </div>
-          </div>
-          <div className="col-span-3 flex flex-col items-center">
-            <div className="text-xs font-bold mb-1">Total Amount Required</div>
-            <div className="flex gap-px">
-              {renderCharBoxes(9, String(loan?.loan_amount_applied || ""))}
-            </div>
-          </div>
-        </div>
-
-        {/* AUTHORIZATION PARAGRAPH */}
-        <div className="text-sm leading-7 text-justify mb-6">
-          I hereby authorize you to deduct total sum of PGK
-          <DataLine className="w-32 text-center font-bold">{loan?.loan_amount_applied}</DataLine>
-          from my fortnightly salary at a rate of PGK
-          <DataLine className="w-32 text-center font-bold">{loan?.emi_amount}</DataLine>
-          per fortnight and remit cheque in favour of <b>Agro Advance Aben Ltd.</b> This deduction should commence from the next pay period and continue until the total amount is fully repaid.
-        </div>
-
-        {/* SIGNATURE + DATE */}
-        <div className="flex justify-between items-center my-8 text-sm px-5">
-          <div className="w-2/5 text-center">
-            <DataLine className="w-full" />
-            <div className="font-semibold mt-1">Signature</div>
-          </div>
-          <div className="w-2/5 text-center">
-            <DataLine className="w-full" />
-            <div className="font-semibold mt-1">Date</div>
-          </div>
-        </div>
-
-        {/* DEPARTMENT BLOCK */}
-        <div style={{ borderBottom: "8px solid #c70c0c", marginBottom: "8px" }} className="print:border-red-600"></div>
-        <div className="mb-1 font-bold">Education Department Use Only</div>
-
-        <div className="border border-black">
-          <div style={{ height: "8px" }} />
-          
-          <div className="flex p-2 text-[11px]">
-            
-            {/* PAY SECTION */}
-            <div style={{ flex: 1, borderRight: "1px solid #000", paddingRight: "12px" }}>
-              <div className="mb-3 font-bold underline">PAY SECTION</div>
-              <div className="flex items-center mb-3">
-                <div className="w-20">Received by</div>
-                <DataLine className="flex-1" />
-                <div className="w-10 ml-2">Date</div>
-                <DataLine className="w-20" />
-              </div>
-              <div className="text-center text-[10px] mb-3 italic">(Signature Over Printed Name)</div>
-              
-              <div className="flex items-center mb-3">
-                <div className="w-28">Commencement Date</div>
-                <DataLine className="flex-1" />
-              </div>
-
-              <div className="flex items-center mb-3">
-                <div className="w-20">Checked by</div>
-                <DataLine className="flex-1" />
-                <div className="w-10 ml-2">Date</div>
-                <DataLine className="w-20" />
-              </div>
-              <div className="flex items-center">
-                <div className="w-20">Approved by</div>
-                <DataLine className="flex-1" />
-                <div className="w-10 ml-2">Date</div>
-                <DataLine className="w-20" />
-              </div>
+        {/* Printable area */}
+        <div id="printable-area">
+          <div
+            className="max-w-4xl mx-auto bg-white p-4 shadow-lg font-arial text-black"
+            style={{ fontFamily: "Arial, sans-serif" }}
+          >
+            {/* HEADER LOGO */}
+            <div style={{ maxWidth: "150px", margin: "0 auto" }}>
+              <MainLogo width="120px" />
             </div>
 
-            {/* DATA ENTRY USE ONLY */}
-            <div style={{ flex: 1, paddingLeft: "12px" }}>
-              <div className="flex justify-between mb-3">
-                <div className="font-bold underline">DATA ENTRY USE ONLY</div>
-                <div className="flex items-center">
-                  PAY No. <DataLine className="w-24 ml-2" />
+            {/* TO + ISSUED BY */}
+            <div className="flex flex-row  gap-9 mb-2 text-sm">
+              {/* TO */}
+              <div className="w-2/4 border border-black p-2 leading-6">
+                <span className="font-bold">TO:</span>
+
+                <div className="pl-4 text-sm mt-1 space-y-1">
+
+                  {/* Organisation Name */}
+                  {org.organisation_name && (
+                    <div>{org.organisation_name}</div>
+                  )}
+
+                  {/* Address */}
+                  {org.address && (
+                    <div>{org.address}</div>
+                  )}
+
+                  {/* Province */}
+                  {org.province && (
+                    <div>{org.province}</div>
+                  )}
+
+                  {/* Email */}
+                  {org.email && (
+                    <div>{org.email}</div>
+                  )}
+
+                  {/* Contact No */}
+                  {org.contact_no && (
+                    <div>{org.contact_no}</div>
+                  )}
+
                 </div>
               </div>
-              <div className="flex items-center mb-3">
-                <div className="w-24">Date Entered:</div>
-                <DataLine className="flex-1" />
-              </div>
-              <div className="flex items-center">
-                <div className="w-24">Entered By:</div>
-                <DataLine className="flex-1" />
+              {/* ISSUED BY */}
+              <div className="w-2/4 border border-black p-2 flex flex-col">
+                <div>Issued By:</div>
+                <div className="mt-4 flex flex-col">
+                  <DataLine className="w-3/4" />
+                  (Name)
+                </div>
+                <div className="mt-4">
+                  Signature <DataLine className="w-3/4" />
+                </div>
               </div>
             </div>
 
+            {/* DATE + LOCATION */}
+            <div className="flex items-center mb-2 text-sm">
+              <span className="font-semibold mr-2">Date:</span>
+              <DataLine className="w-80" />
+              <span className="font-semibold mr-2 ml-4">Location Code:</span>
+              <div className="flex gap-px">{renderCharBoxes(8, org.location_code)}</div>
+            </div>
+
+            {/* EMPLOYEE NO */}
+            <div className="flex items-center mb-2 text-sm">
+              <span className="font-semibold w-28">Employee No.</span>
+              <div className="flex gap-px">
+                {renderCharBoxes(8, customer.employee_no)}
+              </div>
+            </div>
+
+            {/* SURNAME */}
+            <div className="flex items-center mb-2 text-sm">
+              <span className="font-semibold w-28">SurName</span>
+              <div className="flex gap-px">
+                {renderCharBoxes(26, customer.last_name)}
+              </div>
+            </div>
+
+            {/* FIRST NAME */}
+            <div className="flex items-center mb-2 text-sm">
+              <span className="font-semibold w-28">First Name</span>
+              <div className="flex gap-px">
+                {renderCharBoxes(26, customer.first_name)}
+              </div>
+            </div>
+
+            {/* SCHOOL / PROVINCE */}
+            <div className="flex justify-between items-center gap-6 mb-4 text-sm">
+              <div className="flex items-center w-1/2">
+                <span className="font-semibold mr-2">School</span>
+                <DataLine className="w-full">{org.organisation_name}</DataLine>
+              </div>
+
+              <div className="flex items-center w-1/2">
+                <span className="font-semibold mr-2">Province</span>
+                <DataLine className="w-full">{org.province}</DataLine>
+              </div>
+            </div>
+
+            {/* DEDUCTION TABLE */}
+            <div className="grid grid-cols-12 gap-2 text-sm mb-4">
+              <div className="col-span-3">
+                <div className="text-center text-xs">Deduction Code</div>
+                <div className="flex mt-1 px-7 gap-px">
+                  {renderCharBoxes(7, loan?.deduction_code)}
+                </div>
+              </div>
+
+              <div className="col-span-3 flex flex-col items-center">
+                <div className="text-xs">Description</div>
+                <div className="flex mt-1">
+                  <ChaarBox value={loan?.purpose?.purpose_name} />
+                </div>
+              </div>
+
+              <div className="col-span-3 flex flex-col items-center">
+                <div className="text-xs">% or Amount Per Pay</div>
+                <div className="flex mt-1 gap-px">
+                  {renderCharBoxes(9, loan?.emi_amount)}
+                </div>
+              </div>
+
+              <div className="col-span-3 flex flex-col items-center">
+                <div className="text-xs">Total Amount Required</div>
+                <div className="flex mt-1 gap-px">
+                  {renderCharBoxes(9, loan?.loan_amount_applied)}
+                </div>
+              </div>
+            </div>
+
+            {/* AUTH TEXT */}
+            <p className="text-sm leading-relaxed text-justify">
+              I hereby authorize you to deduct total sum of PGK
+              <DataLine className="w-40">{loan?.loan_amount_applied}</DataLine>
+              from my fortnightly salary at a rate of PGK
+              <DataLine className="w-40">{loan?.emi_amount}</DataLine>
+              per fortnight and remit cheque in favour of
+              <b> Agro Advance Aben Ltd.</b> …
+            </p>
+
+            {/* SIGNATURE + DATE */}
+            <div className="flex justify-between items-center my-8 text-sm px-5">
+              <div className="items-center w-2/5">
+                <DataLine className="w-full" />
+                <span className="font-semibold mr-2">Signature</span>
+              </div>
+              <div className="items-center w-2/5">
+                <DataLine className="w-full" />
+                <span className="font-semibold mr-2">Date</span>
+              </div>
+            </div>
+
+            {/* EDUCATION DEPT SECTION (unchanged, original UI) */}
+            <div className="mt-6">
+              <div style={{ borderBottom: "8px solid #c70c0cff", marginBottom: "8px" }} />
+              <div className="mb-1" style={{ fontWeight: "440" }}>
+                Education Department Use Only
+              </div>
+
+              <div style={{ border: "1px solid #000" }}>
+                <div style={{ height: "8px" }} />
+
+                <div className="d-flex p-2" style={{ fontSize: "11px" }}>
+                  
+                  {/* PAY SECTION */}
+                  <div className="flex-1 border-r border-black pr-4">
+                    <div className="font-bold mb-2">PAY SECTION</div>
+
+                    <div className="d-flex align-items-center mb-2">
+                      <div style={{ minWidth: "100px" }}>Received by</div>
+                      <DataLine className="flex-1" />
+                      <div style={{ minWidth: "40px", marginLeft: "12px" }}>
+                        Date
+                      </div>
+                      <DataLine className="w-28 ml-2" />
+                    </div>
+                  </div>
+
+                  {/* DATA ENTRY */}
+                  <div className="flex-1 pl-4">
+                    <div className="flex justify-between mb-2">
+                      <div className="font-bold">DATA ENTRY USE ONLY</div>
+                      <div className="flex items-center">
+                        PAY No. <DataLine className="w-24 ml-2" />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center mb-2">
+                      Date Entered: <DataLine className="flex-1 ml-2" />
+                    </div>
+
+                    <div className="flex items-center mb-1">
+                      Entered By: <DataLine className="flex-1 ml-2" />
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "9px",
+                  marginTop: "20px",
+                  paddingTop: "4px",
+                  borderTop: "1px solid #ccc",
+                }}
+              >
+                <div>
+                  <div className="font-bold mb-1">MADANG ADDRESS</div>
+                  <div>PO Box 50, Madang, PNG</div>
+                  <div>Section 33 Lot 9, Alamanda Street, Madang</div>
+                </div>
+
+                <div className="text-right">
+                  <div className="font-bold mb-1">PORT MORESBY ADDRESS</div>
+                  <div>P.O. Box 2113, Vision City, Waigani, PNG</div>
+                  <div>PH: +675 79280303 / +675 70921111</div>
+                  <div>Email: AAA@gmail.com</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* FOOTER */}
-        <div className="flex justify-between text-[9px] mt-8 pt-2 border-t border-gray-300">
-          <div>
-            <div className="font-bold mb-1">MADANG ADDRESS</div>
-            <div>PO Box 50, Madang, Madang Province, Papua New Guinea</div>
-            <div>Section 33 Lot 9, Alamanda Street, Madang, Papua New Guinea</div>
-          </div>
-          <div className="text-right">
-            <div className="font-bold mb-1">PORT MORESBY ADDRESS</div>
-            <div>P.O. Box 2113, Vision City, Waigani, NCD, Papua New Guinea</div>
-            <div>PH: +675 79280303 / +675 70921111</div>
-            <div>Email: AAA@gmail.com</div>
-          </div>
-        </div>
+        {/* PRINT STYLES */}
+        <style>
+          {`
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 10mm 12mm;
+              }
 
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100%;
+                height: 100%;
+              }
+
+              body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                background: white !important;
+              }
+
+              .no-print, .header-bar {
+                display: none !important;
+              }
+
+              #printable-area > div {
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+              }
+            }
+          `}
+        </style>
       </div>
-    </div>
+    </AuthenticatedLayout>
   );
-});
-
-export default EduF;
+}

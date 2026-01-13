@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\DocumentUploadController;
 use App\Http\Controllers\Api\AllCustController;
 use App\Http\Controllers\Api\FrontEndController;
 use App\Http\Controllers\Api\SalarySlabController;
+use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\CustomerDraftController;
+use App\Http\Controllers\RejectionController;
 use App\Models\LoanTempCustomer;
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +64,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/higher-approve/{loanId}', [LoanController::class, 'higherApproveLoan']);
     Route::post('/loans-update-after-higher-approval', [LoanController::class, 'loan_update_after_higher_approval']);
     Route::post('/loans/{loanId}/mark-ack-downloaded', [LoanController::class, 'markAckDownloaded']);
+    Route::post('/loans/{loanId}/mark-sent-approval', [LoanController::class, 'markSentApproval']);
+    Route::post('/loans/send-completion-mail', [LoanController::class, 'sendCompletionMail']);
+    Route::post('/loans/send-approval-mail', [LoanController::class, 'sendApprovalMail']);
+    Route::post('/loan-fn-range', [LoanController::class, 'getFnRangeByAmount']);
+    Route::get('/loan-purposes-list', [LoanController::class, 'getLoanPurposes']);
+    Route::get('/get-loan-purposes/{loanTypeId}', [LoanController::class, 'getLoanPurposesPerType']);
+    Route::post('/loan-purpose-create', [LoanController::class, 'createLoanPurposes']); 
+    Route::put('/loan-purpose-update/{loanId}', [LoanController::class, 'updateLoanPurposes']);
+    Route::delete('/loan-purpose-delete/{loanId}', [LoanController::class, 'deleteLoanPurpose']);
 });
 
 Route::middleware('auth:sanctum')->get('/customer-list', [CustomerController::class, 'customer_list']);
@@ -91,8 +103,15 @@ Route::post('/document-upload/verify/{id}', [DocumentUploadController::class, 'v
 Route::get('/customers', [CustomerController::class, 'index']);
 Route::post('/customers', [CustomerController::class, 'store']); //handled in save-new-customer-for-new-loan route above
 Route::get('/customers/{id}', [CustomerController::class, 'show']);
+Route::get('/customers/by-emp/{empCode}', [CustomerController::class, 'getByEmpCode']); // avoid 404
+Route::get('/customers-history/{id}', [CustomerController::class, 'customerLoanHistory']);
 Route::post('/customers/{id}', [CustomerController::class, 'update']);
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);
+
+Route::post('/customer-draft/save', [CustomerDraftController::class, 'saveDraft']);
+Route::get('/customer-draft/fetch', [CustomerDraftController::class, 'fetchDraft']);
+Route::delete('/customer-draft/clear', [CustomerDraftController::class, 'clearDraft']);
+
 
 Route::middleware('auth:sanctum')->get('/all-cust-list', [CustomerController::class, 'all_cust_list']);
 
@@ -124,3 +143,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/organisation-list', [OrganisationController::class, 'organisation_list']); // GET
 });
 
+
+
+//Document Type
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/document-types', [DocumentController::class, 'getDocumentTypes']);
+    Route::get('/document-types-all', [DocumentController::class, 'getDocumentTypesAll']);
+    Route::post('/document-type-create', [DocumentController::class, 'create_document_type']); // CREATE
+    Route::put('/document-type-modify/{id}', [DocumentController::class, 'modify_document_type']); // UPDATE
+    Route::delete('/document-type-remove/{id}', [DocumentController::class, 'remove_document_type']); // DELETE
+    // Route::get('/document-type-list', [DocumentController::class, 'document_type_list']); // GET
+    
+});
+// Rejection Reasons
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/rejection-reasons', [RejectionController::class, 'getRejectionReasons']);
+    Route::post('/rejection-reason-create', [RejectionController::class, 'create']);
+    Route::put('/rejection-reason-modify/{id}', [RejectionController::class, 'update']);
+    Route::delete('/rejection-reason-remove/{id}', [RejectionController::class, 'destroy']);
+});

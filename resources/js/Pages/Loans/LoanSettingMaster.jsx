@@ -11,14 +11,17 @@ import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { currencyPrefix } from "@/config";
+import { formatCurrency } from "@/Utils/formatters"
+const today = new Date().toISOString().split("T")[0];
 
-export default function LoanSettingMaster({ auth, salary_slabs }) {
+export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
   const [orgList, setOrgList] = useState([]);
   const [salarySlabList, setSalarySlabList] = useState(salary_slabs);
+  const [loanPurposeList, setLoanPurpose] = useState(loanPurpose);
   const [loanSettings, setLoanSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-
+  console.log("loanPurposeList: ",loanPurposeList);
   const [formData, setFormData] = useState({
     id: null,
     loan_desc: "",
@@ -31,15 +34,31 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     max_loan_term_months: "",
     process_fees: "",
     min_repay_percentage_for_next_loan: "",
-    effect_date: "",
+    effect_date: today,
     end_date: "",
     ss_id_list: [],
+    purpose_id_list: []
   });
+  const [loanPurposes, setLoanPurposes] = useState([]);
+  const [formSelectedPurposes, setFormSelectedPurposes] = useState([]);
+  useEffect(() => {
+    axios.get("/api/loan-purposes-list")
+      .then(res => {
+        // keep only active purposes
+        const active = res.data.filter(p => Number(p.status) === 1);
+        setLoanPurposes(active);
+      })
+      .catch(() => toast.error("Failed to load loan purposes"));
+  }, []);
+  const loanPurposeOptions = loanPurposes.map(p => ({
+    name: p.purpose_name,
+    code: p.id,
+  }));
 
   // Filters and Sorting
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "loan_desc", direction: "asc" });
-  
+
   // slabs selected in the form (create / edit)
   const [formSelectedSslabs, setFormSelectedSslabs] = useState([]);
   // slabs selected in the FILTER area — keep filter state separate from form state
@@ -94,6 +113,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         ss_id_list: Array.isArray(formSelectedSslabs) && formSelectedSslabs.length > 0
           ? formSelectedSslabs.map((s) => s.code)
           : Array.isArray(formData.ss_id_list) ? formData.ss_id_list : [],
+        purpose_id_list: formSelectedPurposes.map(p => p.code),
       };
 
       if (isEditing && formData.id) {
@@ -103,27 +123,29 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         setLoanSettings((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
         toast.success("Loan Type updated successfully!");
       } else {
+        console.log("Loan Type data before save: ", payload);
+        // return;
         const res = await axios.post("/api/loan-settings-create", payload);
         const created = res.data?.data ?? res.data;
-        setLoanSettings((prev) => [...prev, created]);
+        setLoanSettings((prev) => [created, ...prev]);
         toast.success("Loan Type added successfully!");
       }
       resetForm();
     } catch (error) {
       console.error("Error saving:", error);
-      
+
       // --- UPDATED ERROR HANDLING ---
       let errorMsg = "Failed to save loan setting";
-      
+
       if (error.response && error.response.data) {
         // Check for specific backend message
         if (error.response.data.message) {
           errorMsg = error.response.data.message;
-        } 
+        }
         // Check for validation errors (common in Laravel)
         else if (error.response.data.errors) {
-            // Join validation errors into a single string
-            errorMsg = Object.values(error.response.data.errors).flat().join(" ");
+          // Join validation errors into a single string
+          errorMsg = Object.values(error.response.data.errors).flat().join(" ");
         }
       } else if (error.message) {
         errorMsg = error.message;
@@ -139,8 +161,8 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
     const slabIds = Array.isArray(loan.ss_id_list)
       ? loan.ss_id_list                // multiple slabs
       : loan.slab_id
-      ? [loan.slab_id]                 // single slab
-      : [];
+        ? [loan.slab_id]                 // single slab
+        : [];
 
     // 2. Convert ID list to MultiSelect object format
     const preselect = slabIds
@@ -148,9 +170,9 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         const slab = salarySlabList.find((s) => s.id === sid);
         return slab
           ? {
-              name: `${slab.slab_desc} - [${slab.starting_salary} - ${slab.ending_salary}]`,
-              code: slab.id,
-            }
+            name: `${slab.slab_desc} - [${slab.starting_salary} - ${slab.ending_salary}]`,
+            code: slab.id,
+          }
           : null;
       })
       .filter(Boolean);
@@ -166,6 +188,24 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
 
     setIsEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+
+    // Preselect purposes
+    const purposeIds = Array.isArray(loan.purpose_id_list)
+      ? loan.purpose_id_list
+      : loan.purpose_id
+        ? [loan.purpose_id]
+        : [];
+
+    const preselectedPurposes = purposeIds
+      .map(pid => {
+        const p = loanPurposes.find(lp => lp.id === pid);
+        return p ? { name: p.purpose_name, code: p.id } : null;
+      })
+      .filter(Boolean);
+
+    setFormSelectedPurposes(preselectedPurposes);
+
   };
 
   const handleDelete = async (id, desc) => {
@@ -188,7 +228,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       toast.success('Deleted successfully!');
     } catch (error) {
       console.error('Error deleting:', error);
-      
+
       // --- UPDATED ERROR HANDLING ---
       const errorMsg = error.response?.data?.message || "Failed to delete record!";
       toast.error(errorMsg);
@@ -208,9 +248,10 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       max_loan_term_months: "",
       process_fees: "",
       min_repay_percentage_for_next_loan: "",
-      effect_date: "",
+      effect_date: new Date().toISOString().split("T")[0],
       end_date: "",
-      ss_id_list: []    // required
+      ss_id_list: [],    // required
+      purpose_id_list: []    // required
     });
 
     setFormSelectedSslabs([]);
@@ -248,40 +289,46 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
   // Filtered data (search + slab filter)
   const filteredData = useMemo(() => {
     return sortedData.filter((item) => {
-      // 1. Search Filter
+      // 1. SEARCH filter
       const matchesSearch =
         item.loan_desc?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // 2. Slab Filter
-      // If no slabs are selected in the filter, return true (show all)
-      if (filterSelectedSslabs.length === 0) return matchesSearch;
-
-      // Normalize selected filter IDs to Strings to ensure type safety
-      const selectedIds = filterSelectedSslabs.map((s) => String(s.code));
-
-      // Get the item's slab IDs, handling both single ID (legacy) and List (new)
-      const itemSingleSlabId = item.slab_id ? String(item.slab_id) : null;
-      
-      let itemSlabList = [];
-      if (Array.isArray(item.ss_id_list)) {
-        itemSlabList = item.ss_id_list.map(id => String(id));
-      } else if (item.ss_id_list && typeof item.ss_id_list === 'string') {
-         // Handle edge case where backend returns a JSON string instead of array
-         try { 
-            const parsed = JSON.parse(item.ss_id_list);
-            if(Array.isArray(parsed)) itemSlabList = parsed.map(id => String(id));
-         } catch(e) {}
+      // 2. If NO slab selected → allow all
+      if (filterSelectedSslabs.length === 0) {
+        return matchesSearch;
       }
 
-      // Check if the single slab matches
-      const singleMatch = itemSingleSlabId && selectedIds.includes(itemSingleSlabId);
-      
-      // Check if ANY of the loan's multiple slabs match the selected filter
-      const listMatch = itemSlabList.some(id => selectedIds.includes(id));
+      // Get selected slab IDs as strings
+      const selectedIds = filterSelectedSslabs.map(s => String(s.code));
 
-      return matchesSearch && (singleMatch || listMatch);
+      // Extract item slab IDs (handle ALL formats safely)
+      let itemSlabIds = [];
+
+      // Case A: brand new multi-slab array
+      if (Array.isArray(item.ss_id_list)) {
+        itemSlabIds = item.ss_id_list.map(id => String(id));
+      }
+      // Case B: ss_id_list returned as JSON string
+      else if (typeof item.ss_id_list === "string" && item.ss_id_list.trim() !== "") {
+        try {
+          const parsed = JSON.parse(item.ss_id_list);
+          if (Array.isArray(parsed)) {
+            itemSlabIds = parsed.map(id => String(id));
+          }
+        } catch (e) { }
+      }
+      // Case C: old system single slab_id
+      else if (item.slab_id) {
+        itemSlabIds = [String(item.slab_id)];
+      }
+
+      // Final slab match → check if ANY match
+      const slabMatch = itemSlabIds.some(id => selectedIds.includes(id));
+
+      return matchesSearch && slabMatch;
     });
   }, [sortedData, searchTerm, filterSelectedSslabs]);
+
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
@@ -299,11 +346,10 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan Type</h2>}
     >
       <Head title="Loan Type" />
-      <Toaster position="top-center" />
 
       <div className="min-h-screen bg-gray-100 p-6 space-y-6 ">
         {/* Back Button */}
-        <div className="max-w-9xl mx-auto -mb-3 -mt-2 ">
+        <div className="max-w-7xl mx-auto -mb-3 -mt-2 ">
           <Link
             href={route("loans")}
             className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
@@ -313,7 +359,7 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
         </div>
 
         {/* Form */}
-        <div className="max-w-9xl mx-auto bg-white rounded-0xl shadow-lg p-6 border border-gray-100">
+        <div className="max-w-7xl mx-auto bg-white rounded-0xl shadow-lg p-6 border border-gray-100">
           <h4 className="text-lg font-semibold text-gray-700 mb-4">{isEditing ? "Edit Loan Setting" : "Add Loan Type"}</h4>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
@@ -327,21 +373,47 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                 Income Slabs
               </label>
               <div className="card flex justify-content-center">
-                  <MultiSelect
-                    value={formSelectedSslabs}
-                    onChange={(e) => {
-                      setFormSelectedSslabs(e.value);
-                      setFormData({ ...formData, ss_id_list: e.value.map((s) => s.code) });
-                    }}
-                    options={salarySlabOptions}
-                    optionLabel="name"
-                    filter
-                    filterDelay={400}
-                    placeholder="Income Slab(s)"
-                    display="chip"
-                    maxSelectedLabels={3}
-                    className="w-full md:w-20rem"
-                  />
+                <MultiSelect
+                  value={formSelectedSslabs}
+                  onChange={(e) => {
+                    const values = e.value || [];
+                    setFormSelectedSslabs(e.value);
+                    setFormData({ ...formData, ss_id_list: e.value.map((s) => s.code) });
+                  }}
+                  options={salarySlabOptions}
+                  optionLabel="name"
+                  filter
+                  filterDelay={400}
+                  placeholder="Income Slab(s)"
+                  display="chip"
+                  showClear  
+                  maxSelectedLabels={3}
+                  className="w-full md:w-20rem"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Loan Purpose(s)
+              </label>
+              <div className="card flex justify-content-center">
+                <MultiSelect
+                  value={formSelectedPurposes}
+                  onChange={(e) => {
+                    setFormSelectedPurposes(e.value);
+                    setFormData({
+                      ...formData,
+                      purpose_id_list: e.value.map(p => p.code),
+                    });
+                  }}
+                  options={loanPurposeOptions}
+                  optionLabel="name"
+                  filter
+                  placeholder="Select Purpose(s)"
+                  display="chip"
+                  maxSelectedLabels={3}
+                  className="w-full md:w-20rem"
+                />
               </div>
             </div>
 
@@ -356,71 +428,107 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
               ["min_repay_percentage_for_next_loan", "Min Repay % for Next Loan"],
               ["effect_date", "Effect Date"],
               ["end_date", "End Date"],
-            ].map(([key, label]) => (
-              <div key={key}>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
-                <input
-                  type={key.includes("date") ? "date" : "number"}
-                  name={key}
-                  value={formData[key]}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                />
-              </div>
-            ))}
+            ].map(([key, label]) => {
+              const requiredKeys = [
+                "min_loan_amount",
+                "max_loan_amount",
+                "interest_rate",
+                "amt_multiplier",
+                "min_loan_term_months",
+                "max_loan_term_months",
+                "process_fees",
+                "effect_date",
+              ];
+              const isDate = key.includes("date");
+              return (
+                <div key={key}>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    {label} {requiredKeys.includes(key) && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type={isDate ? "date" : "number"}
+                    name={key}
+                    value={formData[key] ?? ""}
+                    onChange={handleChange}
+                    required={requiredKeys.includes(key)}
+                    min={isDate ? undefined : 0}
+                    step={isDate ? undefined : "any"}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  />
+                </div>
+              );
+            })}
           </form>
 
           <div className="mt-6 flex justify-end gap-3">
             {isEditing && (
               <button type="button" onClick={resetForm} className="bg-gray-400 hover:bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold shadow-md">Cancel</button>
             )}
-            <button type="submit" onClick={handleSubmit}
-              className={`${isEditing ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-600 hover:bg-emerald-700"} text-white px-6 py-2 rounded-lg font-semibold shadow-md`}>
+            <button type="submit"
+              className={`${isEditing ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-600 hover:bg-emerald-700"} text-white px-6 py-2 rounded-lg font-semibold shadow-md`}
+              onClick={handleSubmit}
+            >
               {isEditing ? "Update Loan Type" : "Save Loan Type"}
             </button>
           </div>
         </div>
 
         {/* --- FILTER BAR --- */}
-        <div className="max-w-9xl mx-auto bg-white shadow-sm border border-gray-100 p-3 
-            flex flex-wrap md:flex-nowrap items-center justify-between ">
+      <div className="max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 
+          p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center">
 
-          {/* Search by Loan Name */}
-          <div className="flex items-center bg-gray-50 rounded-md px-3 py-1.5 
-              w-full md:w-1/3 border border-gray-200">
-            <input
-              type="text"
-              placeholder="Search by Loan Description"
-              onChange={(e) => {
-                setSearchTerm(e.target.value.toLowerCase());
-                setCurrentPage(1);
-              }}
-              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 
-                  text-sm"
+        {/* Search by Loan Description */}
+        <div className="relative w-full md:w-1/3 h-15">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"
             />
-          </div>
+          </svg>
 
-          {/* Income Slab Filter */}
-          <div className="flex flex-col w-full md:w-1/3 border border-gray-200 ">
-            <MultiSelect
-              value={filterSelectedSslabs}
-              onChange={(e) => {
-                setFilterSelectedSslabs(e.value);
-                setCurrentPage(1);
-              }}
-              options={salarySlabOptions}
-              optionLabel="name"
-              placeholder="Select Income Slab(s)"
-              display="chip"
-              className="w-full md:w-20rem"
-            />
-          </div>
-
+          <input
+            type="text"
+            placeholder="Search by Loan Description"
+            onChange={(e) => {
+              setSearchTerm(e.target.value.toLowerCase());
+              setCurrentPage(1);
+            }}
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg 
+                focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+          />
         </div>
 
+        {/* Income Slab Filter */}
+        <div className="relative w-full md:w-1/3 border rounded md:border-l-2 border-gray-500 pl-0 md:pl-2">
+          <MultiSelect
+            value={filterSelectedSslabs}
+            onChange={(e) => {
+              setFilterSelectedSslabs(e.value);
+              setCurrentPage(1);
+            }}
+            options={salarySlabOptions}
+            optionLabel="name"
+            placeholder="Select Income Slab(s)"
+            display="chip"
+            showClear   
+            className="w-full rounded-lg"
+            panelClassName="rounded-lg"
+          />
+        </div>
+
+      </div>
+
+
         {/* Table - compact, no horizontal scroll */}
-        <div className="w-full bg-white shadow-lg border border-gray-700 overflow-hidden">
-          <table className="w-full text-sm text-left border border-gray-700 border-collapse">
+        <div className="max-w-7xl mx-auto overflow-x-auto bg-white shadow-lg border border-gray-700 overflow-hidden">
+          <table className="max-w-7xl mx-auto overflow-x-auto text-sm text-left border border-gray-700 border-collapse">
             <thead className="bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-500 text-white shadow-md">
               <tr>
                 {[
@@ -455,7 +563,10 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
                   </th>
                 ))}
                 <th className="px-2 py-3 text-center border border-gray-700 font-semibold text-xs uppercase">
-                    Income Slab
+                  Income Slab
+                </th>
+                <th className="px-2 py-3 text-center border border-gray-700 font-semibold text-xs uppercase">
+                  Purpose
                 </th>
 
                 <th className="px-2 py-3 font-semibold text-xs uppercase tracking-wide text-center border border-gray-700">
@@ -465,98 +576,124 @@ export default function LoanSettingMaster({ auth, salary_slabs }) {
             </thead>
 
             <tbody>
-              {paginatedData.map((loan, idx) => {
-                const isEditingRow = formData.id === loan.id; // highlight current edit row
-                return (
-                  <tr
-                    key={loan.id}
-                    className={`transition-all duration-300 ${
-                      isEditingRow
-                        ? "bg-amber-100 ring-2 ring-amber-200"
-                        : idx % 2 === 0
-                        ? "bg-white"
-                        : "bg-emerald-50/40"
-                    } hover:bg-emerald-100/70`}
-                  >
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {(currentPage - 1) * itemsPerPage + idx + 1}
-                    </td>
-                    <td className="px-2 py-2 font-semibold text-gray-800 text-center border border-gray-700">
-                      {loan.loan_desc}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.min_loan_amount}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.max_loan_amount}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.interest_rate}
-                    </td>
+              {paginatedData.length === 0 ? (
+                <tr>
+                  <td colSpan={13} className="px-2 py-4 text-center text-gray-600">No data found.</td>
+                </tr>
+              ) : (
+                paginatedData.map((loan, idx) => {
+                  const isEditingRow = formData.id === loan.id; // highlight current edit row
+                  return (
+                    <tr
+                      key={loan.id}
+                      className={`transition-all duration-300 ${isEditingRow
+                          ? "bg-amber-100 ring-2 ring-amber-200"
+                          : idx % 2 === 0
+                            ? "bg-white"
+                            : "bg-emerald-50/40"
+                        } hover:bg-emerald-100/70`}
+                    >
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </td>
+                      <td className="px-2 py-2 font-semibold text-gray-800 text-center border border-gray-700">
+                        {loan.loan_desc}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {formatCurrency(loan.min_loan_amount)}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {formatCurrency(loan.max_loan_amount)}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.interest_rate}
+                      </td>
 
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.amt_multiplier}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.min_loan_term_months} - {loan.max_loan_term_months}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.process_fees}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.effect_date}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.end_date}
-                    </td>
-                    {/* //slab */}
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                    <div className="flex flex-wrap gap-1 justify-center">
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.amt_multiplier}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.min_loan_term_months} - {loan.max_loan_term_months}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.process_fees}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.effect_date}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.end_date}
+                      </td>
+                      {/* //slab */}
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        <div className="flex flex-wrap gap-1 justify-center">
+                          {Array.isArray(loan.ss_id_list) && loan.ss_id_list.length > 0 ? (
+                            loan.ss_id_list.map((sid) => (
+                              <span key={sid} className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded">
+                                {salarySlabList.find((s) => s.id === sid)?.slab_desc}
+                              </span>
+                            ))
+                          ) : loan.slab_id ? (
+                            <span className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded">
+                              {salarySlabList.find((s) => s.id === loan.slab_id)?.slab_desc}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">No Slabs</span>
+                          )}
+                        </div>
+                      </td>
+                      {/* //purpose */}
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        <div className="flex flex-wrap gap-1 justify-center">
+                          {(() => {
+                            let purposeIds = [];
 
-                      {/* MULTIPLE slabs */}
-                      {Array.isArray(loan.ss_id_list) && loan.ss_id_list.length > 0 ? (
-                        loan.ss_id_list.map(sid => (
-                          <span
-                            key={sid}
-                            className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded"
-                          >
-                            {salarySlabList.find(s => s.id === sid)?.slab_desc}
-                          </span>
-                        ))
-                      ) : (
+                            if (Array.isArray(loan.purpose_id_list)) {
+                              purposeIds = loan.purpose_id_list;
+                            } else if (typeof loan.purpose_id_list === "string") {
+                              try {
+                                const parsed = JSON.parse(loan.purpose_id_list);
+                                if (Array.isArray(parsed)) purposeIds = parsed;
+                              } catch (e) {}
+                            } else if (loan.purpose_id) {
+                              purposeIds = [loan.purpose_id];
+                            }
 
-                        /* FALLBACK single slab */
-                        loan.slab_id ? (
-                          <span className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded">
-                            {salarySlabList.find(s => s.id === loan.slab_id)?.slab_desc}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">No Slabs</span>
-                        )
+                            if (purposeIds.length === 0) {
+                              return <span className="text-gray-400">No Purposes</span>;
+                            }
 
-                      )}
-                    </div>
-                  </td>
-
-                    <td className="px-2 py-2 flex justify-center gap-2 border border-gray-700">
-                      <button
-                        onClick={() => handleEdit(loan)}
-                        className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
-                        title="Edit"
-                      >
-                        <Pencil size={18} strokeWidth={2.2} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(loan.id, loan.loan_desc)}
-                        className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
-                        title="Delete"
-                      >
-                        <Trash2 size={18} strokeWidth={2.2} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                            return purposeIds.map((pid) => {
+                              const purpose = loanPurposeList.find((p) => p.id === pid);
+                              return (
+                                <span key={pid} className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded">
+                                  {purpose?.purpose_name ?? "Unknown"}
+                                </span>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </td>
+                      <td className="px-2 py-2 flex justify-center gap-2 border border-gray-700">
+                        <button
+                          onClick={() => handleEdit(loan)}
+                          className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
+                          title="Edit"
+                        >
+                          <Pencil size={18} strokeWidth={2.2} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(loan.id, loan.loan_desc)}
+                          className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
+                          title="Delete"
+                        >
+                          <Trash2 size={18} strokeWidth={2.2} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

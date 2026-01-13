@@ -1,7 +1,9 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Row, Col } from "react-bootstrap";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import { router } from "@inertiajs/react";
+
 
 export default function CustomerForm({
   formData,
@@ -11,230 +13,454 @@ export default function CustomerForm({
   allCustMast = [],
   onNext,
   setMessage,
-  setIsFormDirty,
+  setIsFormDirty, 
+  onExistingCustomerLoaded, 
 }) {
+  const dropdownRef = useRef(null);
+  const empAreaRef = useRef(null);
 
   const [isOrgSelectable, setOrgSelectable] = useState(true);
   const ImportantField = () => <span className="text-danger">*</span>;
   const [empSearch, setEmpSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [isExistingFound, setIsExistingFound] = useState(false);
+  const [isAutoFilled, setIsAutoFilled] = useState(false);
   const [empOptions, setEmpOptions] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Fetch employees
-  const fetchEmployees = async (query = "") => {
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isDataSaving, setIsDataSaving] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
+
+const fetchCustomerDraft = async () => {
+  try {
+    const res = await axios.get("/api/customer-draft/fetch", { withCredentials: true });
+    console.log("customer-draft fetch res:", res);
+    const draft = res.data?.data;
+    const exists = res.data?.exists;
+
+    if (exists && draft) {
+      console.log("Customer draft response:", draft);
+      // Normalize numeric-like fields then replace form data so UI shows saved values
+      const toNumberOrEmpty = (v) => {
+        if (v === "" || v === null || v === undefined) return "";
+        const n = Number(v);
+        return Number.isFinite(n) ? n : v;
+      };
+ 
+      const normalized = {
+        ...draft,
+        monthly_salary: toNumberOrEmpty(draft.monthly_salary),
+        net_salary: toNumberOrEmpty(draft.net_salary),
+        no_of_dependents: toNumberOrEmpty(draft.no_of_dependents),
+        company_id: toNumberOrEmpty(draft.company_id),
+        organisation_id: toNumberOrEmpty(draft.organisation_id),
+        years_at_current_employer: toNumberOrEmpty(draft.years_at_current_employer),
+      };
+
+      setFormData(() => normalized);
+
+      // If draft represents an existing customer, set UI flags
+      if (draft.cus_id && draft.cus_id !== 0) {
+        setIsExistingFound(true);
+        setIsAutoFilled(true);
+        setOrgSelectable(false);
+        if (onExistingCustomerLoaded) onExistingCustomerLoaded(draft);
+      } else if (draft.employee_no) {
+        // If draft has an employee_no but not a cus_id, prefill the search input
+        setEmpSearch(`${draft.employee_no}${draft.first_name || draft.last_name ? ` - ${draft.first_name || ""} ${draft.last_name || ""}` : ""}`.trim());
+      }
+
+      toast.success("Draft loaded", { duration: 1500 });
+    }
+
+    console.log("Customer draft loaded");
+  } catch (error) {
+    // No draft exists – silently ignore
+    console.log("No customer draft found");
+  }
+};
+useEffect(() => {
+  fetchCustomerDraft();
+}, []);
+
+
+
+
+
+  const NUMERIC_FIELDS = [
+    "monthly_salary",
+    "net_salary",
+    "no_of_dependents",
+    "company_id",
+    "organisation_id",
+    "years_at_current_employer",
+  ];
+  const sanitizeFormData = (data) => {
+    const cleaned = { ...data };
+
+    NUMERIC_FIELDS.forEach((field) => {
+      const value = cleaned[field];
+
+      if (value === "" || value === null || value === undefined) {
+        cleaned[field] = 0;
+      } else {
+        cleaned[field] = Number(value);
+        if (isNaN(cleaned[field])) {
+          cleaned[field] = 0;
+        }
+      }
+    });
+
+    return cleaned;
+  };
+
+
+  //Draft saved customer on mount
+  const handleSaveAndNext = async () => {
+    setIsDataSaving(true);
+
     try {
-      setIsSearching(true);
-      const res = await axios.get(`/api/all-dept-cust-list?search=${query}`);
-      setEmpOptions(res.data.data || []);
+      const payload = sanitizeFormData(formData);
+
+      // console.log("payload: ", payload);
+      // return;
+
+      await axios.post("/api/customer-draft/save", payload);
+
+      toast.success("Draft saved successfully", {
+        duration: 3000,
+      });
+
+    } catch (error) {
+      toast.error("Failed to save draft");
+      setIsDataSaving(false);
+      return;
+    }
+
+    setIsDataSaving(false);
+
+    // ✅ Navigate to loans list
+    router.visit("/loans");
+  };
+  // Draft loading handled by `fetchCustomerDraft()` on mount above
+
+  // Fetch employees logic
+  const fetchEmployees = async (query = "", pageNum = 1) => {
+    try {
+      if (pageNum === 1) {
+        setIsSearching(true);
+      }
+
+      const res = await axios.get(`/api/all-dept-cust-list`, {
+        params: {
+          search: query,
+          page: pageNum,
+          perPage: 20,
+        },
+      });
+
+      const newData = res.data.data || [];
+
+      setEmpOptions((prev) => {
+        if (pageNum === 1) {
+          return newData;
+        }
+        const existingCodes = new Set(prev.map((e) => String(e.emp_code)));
+        const filtered = newData.filter(
+          (e) => !existingCodes.has(String(e.emp_code))
+        );
+        return [...prev, ...filtered];
+      });
+
+      setHasMore(Boolean(res.data.next_page_url));
     } catch (err) {
       console.error("Employee fetch failed:", err);
     } finally {
       setIsSearching(false);
+      setIsLoadingMore(false);
     }
   };
 
-  // 🔍 On focus: load first 10 results
+  // On focus: load first results
   const handleFocus = () => {
-    if (!empSearch.trim()) {
-      fetchEmployees(""); // load default results
-    }
+    setPage(1);
+    fetchEmployees("", 1);
     setDropdownOpen(true);
   };
 
-  // 🔍 Debounced search when typing
+  // Click outside to close dropdown
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchEmployees(empSearch);
-    }, 400);
+    function handleClickOutside(event) {
+      if (empAreaRef.current && !empAreaRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    return () => clearTimeout(timer);
+  // Debounced search effect
+  useEffect(() => {
+    if (isSelecting) return;
+    const delay = setTimeout(() => {
+      setPage(1);
+      fetchEmployees(empSearch, 1);
+    }, 300);
+    return () => clearTimeout(delay);
   }, [empSearch]);
 
   const handleChange = (e) => {
     setIsFormDirty(false);
     const { name, value } = e.target;
+    if (isAutoFilled) {
+      setIsAutoFilled(false);
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleNext = async (e) => {
     e.preventDefault();
     setMessage("");
-
+    setIsDataSaving(true);
     try {
       let res, savedCustomer;
 
       if (formData.cus_id && formData.cus_id !== 0) {
-        // 🟢 Update existing customer
+        // Update existing customer
         res = await axios.post(
           `/api/edit-new-customer-for-new-loan/${formData.cus_id}`,
           formData
         );
         savedCustomer = res.data.customer;
-
         setMessage("✅ Customer updated successfully. Proceed to next step.");
         toast.success("Customer updated successfully!", {
-          position: "top-right",
-          duration: 3000,
-          style: {
-            borderRadius: "10px",
-            background: "#16a34a", // green success
-            color: "#fff",
-            fontWeight: "500",
-          },
+           id: "customer-save",
+           duration:3000,
+          style: { background: "#16a34a", color: "#fff" },
         });
       } else {
-        // 🆕 Create new customer
+        // Create new customer
         res = await axios.post("/api/save-new-customer-for-new-loan", formData);
         savedCustomer = res.data.customer;
-
         setFormData((prev) => ({
           ...prev,
           cus_id: savedCustomer.id,
         }));
-
         setMessage("✅ Customer saved successfully. Proceed to next step.");
         toast.success("Customer saved successfully!", {
-          position: "top-right",
-          duration: 3000,
-          style: {
-            borderRadius: "10px",
-            background: "#2563eb", // blue for create
-            color: "#fff",
-            fontWeight: "500",
-          },
+          style: { background: "#2563eb", color: "#fff" },
         });
+      } 
+      
+      // 🔥 Clear draft (non-blocking)
+      try {
+        await axios.delete("/api/customer-draft/clear");
+      } catch (err) {
+        console.warn("Draft clear failed", err);
       }
-
+      setIsDataSaving(false);
       onNext(savedCustomer);
     } catch (error) {
+      setIsDataSaving(false);
       console.error(error);
-
-      // 🔴 Laravel Validation Errors (422)
       if (error.response && error.response.status === 422) {
-        const validationErrors = error.response.data.errors;
-        let errorMessages = "";
+        setMessage("❌ Validation failed.");
+        console.log("update customer error", error);
+       toast.error(error.response.data.message, {
+        duration: 4000,
+        style: { background: "#dc2626", color: "#fff" },
+      });
 
-        if (validationErrors) {
-          for (const key in validationErrors) {
-            errorMessages += `${validationErrors[key].join(", ")}\n`;
-          }
-        }
-
-        setMessage("❌ Validation failed. Please check the fields.");
-        toast.error(errorMessages || "Validation error.", {
-          position: "top-right",
-          duration: 4000,
-          style: {
-            borderRadius: "10px",
-            background: "#dc2626", // red error
-            color: "#fff",
-            fontWeight: "500",
-          },
-        });
-      }
-      // 🔴 Duplicate Error (409)
-      else if (error.response && error.response.status === 409) {
-        const msg =
-          error.response.data.message ||
-          "Customer already exists with same email, phone, or employee number.";
+      } else if (error.response && error.response.status === 409) {
+        const msg = error.response.data.message || "Customer already exists.";
         setMessage(`❌ ${msg}`);
-        toast.error(msg, {
-          position: "top-right",
-          duration: 4000,
-          style: {
-            borderRadius: "10px",
-            background: "#dc2626",
-            color: "#fff",
-            fontWeight: "500",
-          },
-        });
+        toast.error(msg, { style: { id: "customer-error",
+                  duration: 4000,background: "#dc2626", color: "#fff" } });
+      } else {
+        setMessage("❌ Failed to save customer.");
+        toast.error("An unknown error occurred.", { style: { background: "#dc2626", color: "#fff" } });
       }
-      // 🔴 Generic Error
-      else {
-        setMessage(
-          `❌ Failed to save customer. ${error.message || "Please try again."}`
-        );
-        toast.error("An unknown error occurred. Please try again.", {
-          position: "top-right",
-          duration: 4000,
-          style: {
-            borderRadius: "10px",
-            background: "#dc2626",
-            color: "#fff",
-            fontWeight: "500",
-          },
-        });
+    }
+  };
+
+  // 🔹 FETCH FUNCTION FIXED: Added leading slash
+  const fetchCustomerByEmpCode = async (empCode) => {
+    try {
+      // FIX: Added leading slash "/" to ensure correct API routing
+      const res = await axios.get(`/api/customers/by-emp/${empCode}`);
+
+      if (!res.data.exists) {
+        setIsExistingFound(false);
+        return null;
       }
+      setIsExistingFound(true);
+      return res.data.customer;
+    } catch (err) {
+      console.error("Fetch customer failed", err);
+      return null;
     }
   };
 
   const custList = useMemo(() => {
     return Array.isArray(allCustMast) ? allCustMast : [];
   }, [allCustMast]);
-  // const cleanName = (name) => {
-  //   if (!name) return "";
-  //   return name.replace(/,$/, "").trim(); // remove ONLY trailing comma
-  // };
+
   const cleanName = (name) => {
     if (!name) return "";
     return name.replace(/,/g, "").replace(/\s+/g, " ").trim();
   };
-  const handleEmployeeChange = (e) => {
-    const val = e.target.value;
-    console.log("handleEmployeeChange called with:", val);
 
-    // First search inside API search results
-    let selectedEmp = empOptions.find(
-      (emp) => String(emp.emp_code) === String(val)
-    );
+  const handleEmployeeChange = async (e) => {
+    const empCode = e.target.value;
+    setIsSelecting(true);
 
-    // Fallback → search inside initial list
-    if (!selectedEmp) {
-      selectedEmp = custList.find(
-        (emp) => String(emp.emp_code) === String(val)
-      );
+    // 🔹 Step 1: Check customer table first
+    const existingCustomer = await fetchCustomerByEmpCode(empCode);
+
+    if (existingCustomer) {
+      // ✅ CUSTOMER EXISTS → Autofill EVERYTHING
+      // FIX: Added || "" to handle nulls from DB
+      // FIX: Added missing fields (no_of_dependents, spouse details)
+      setIsAutoFilled(true);
+      const baseCompany = formData?.company_id || 1;
+      const newObj = {
+        cus_id: existingCustomer.id,
+        employee_no: existingCustomer.employee_no || "",
+        company_id: existingCustomer.company_id || baseCompany,
+        organisation_id: existingCustomer.organisation_id || "",
+        first_name: existingCustomer.first_name || "",
+        last_name: existingCustomer.last_name || "",
+        gender: existingCustomer.gender || "",
+        dob: existingCustomer.dob || "",
+        marital_status: existingCustomer.marital_status || "",
+        no_of_dependents: existingCustomer.no_of_dependents || "",
+        spouse_full_name: existingCustomer.spouse_full_name || "",
+        spouse_contact: existingCustomer.spouse_contact || "",
+        phone: existingCustomer.phone || "",
+        email: existingCustomer.email || "",
+        home_province: existingCustomer.home_province || "",
+        district_village: existingCustomer.district_village || "",
+        present_address: existingCustomer.present_address || "",
+        permanent_address: existingCustomer.permanent_address || "",
+        payroll_number: existingCustomer.payroll_number || "",
+        employer_department: existingCustomer.employer_department || "",
+        designation: existingCustomer.designation || "",
+        employment_type: existingCustomer.employment_type || "",
+        date_joined: existingCustomer.date_joined || "",
+        monthly_salary: existingCustomer.monthly_salary || 0.00,
+        net_salary: existingCustomer.net_salary || 0.00,
+        immediate_supervisor: existingCustomer.immediate_supervisor || "",
+        years_at_current_employer: existingCustomer.years_at_current_employer || "",
+        work_district: existingCustomer.work_district || "",
+        work_province: existingCustomer.work_province || "",
+        employer_address: existingCustomer.employer_address || "",
+        work_location: existingCustomer.work_location || "",
+      };
+      setFormData(newObj);
+      
+       if (onExistingCustomerLoaded) {
+          onExistingCustomerLoaded(existingCustomer);
+        }
+      setOrgSelectable(false);
+      toast.success("Existing customer loaded",{
+        id: "existing-customer",
+        duration: 2000,
+      });
+      setIsSelecting(false);
+      setIsExistingFound(true);
+      return;
+    }else{
+      setIsExistingFound(false);
+      setIsAutoFilled(false);
     }
 
-    console.log("Selected Employee:", selectedEmp);
+    // 🔹 Step 2: Fallback → API employee list (your existing logic)
+    let selectedEmp = empOptions.find(
+      (emp) => String(emp.emp_code) === String(empCode)
+    );
+
+    if (!selectedEmp) {
+      selectedEmp = custList.find(
+        (emp) => String(emp.emp_code) === String(empCode)
+      );
+    }
 
     if (selectedEmp) {
       const cleanFullName = cleanName(selectedEmp.cust_name);
       const parts = cleanFullName.split(" ");
 
-      setFormData((prev) => ({
-        ...prev,
-        employee_no: selectedEmp.emp_code,
+      const baseCompany = formData?.company_id || 1;
+      const newObj = {
+        cus_id: null,
+        employee_no: selectedEmp.emp_code || "",
+        company_id: selectedEmp.company_id || baseCompany,
+        organisation_id: selectedEmp.organization_id || "",
         first_name: parts[0] || "",
         last_name: parts.slice(1).join(" ") || "",
         phone: selectedEmp.phone || "",
         email: selectedEmp.email || "",
         monthly_salary: selectedEmp.gross_pay || "",
         net_salary: selectedEmp.net_pay || "",
-        organisation_id: selectedEmp.organization_id || 1,
-        company_id: selectedEmp.company_id || 1,
-      }));
+        no_of_dependents: "",
+        spouse_full_name: "",
+        spouse_contact: "",
+        gender: "",
+        dob: "",
+        marital_status: "",
+        home_province: "",
+        district_village: "",
+        present_address: "",
+        permanent_address: "",
+        payroll_number: "",
+        employer_department: "",
+        designation: "",
+        employment_type: "",
+        date_joined: "",
+        immediate_supervisor: "",
+        years_at_current_employer: "",
+        work_district: "",
+        work_province: "",
+        employer_address: "",
+        work_location: "",
+      };
+
+      setFormData(newObj);
 
       setOrgSelectable(false);
-    } else {
-      setFormData((prev) => ({ ...prev, employee_no: "" }));
     }
+
+    setIsSelecting(false);
   };
-
-
-
-
 
   return (
     <>
-      {/* Toast Container */}
-      <Toaster position="top-right" reverseOrder={false} />
-
+      {/* Flash message for existing customer */}
+      {isExistingFound && (
+        <div className="mb-4 p-3 bg-green-100 border-l-4 border-blue-500 text-blue-700 shadow-sm rounded flex items-center justify-between ">
+          <div className="flex items-center">
+            <span className="mr-2 text-xl">👤</span>
+            <div>
+              <strong className="block">Existing Customer Profile Found</strong>
+              <small>Information has been automatically populated from our records.</small>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={() => setIsExistingFound(false)} 
+            className="text-blue-400 hover:text-blue-600 font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <form onSubmit={handleNext}>
-        <Row>
+        <Row className="align-items-stretch">
           {/* ========== IDENTIFICATION ========== */}
           <Col md={12}>
-            <fieldset className="fldset mt-4">
+            <fieldset className="fldset mt-2">
               <legend className="legend">Identification</legend>
               <div className="grid grid-cols-2 gap-4 mt-3">
                 <div style={{ display: "none" }}>
@@ -256,32 +482,11 @@ export default function CustomerForm({
                     ))}
                   </select>
                 </div>
-
-                {/* <div>
-                  <label className="block text-gray-700 font-medium">
-                    EMP Code <ImportantField />
-                  </label>
-                  <select
-                    name="employee_no"
-                    value={formData.employee_no || ""}
-                    onChange={handleEmployeeChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                    required
-                  >
-                    <option value="">-- Select EMP --</option>
-                    {custList.map((emp, idx) => (
-                      <option key={`${emp.emp_code}-${idx}`} value={emp.emp_code}>
-                        {emp.emp_code} - {emp.cust_name}
-                      </option>
-                    ))}
-                  </select>
-                </div> */}
-                <div className="relative">
+                <div className="relative" ref={empAreaRef}>
                   <label className="block text-gray-700 font-medium">
                     EMP Code <ImportantField />
                   </label>
 
-                  {/* Search Input */}
                   <input
                     type="text"
                     value={empSearch}
@@ -291,28 +496,41 @@ export default function CustomerForm({
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm px-3 py-2"
                   />
 
-                  {/* Dropdown List */}
                   {dropdownOpen && (
-                    <div 
+                    <div
+                      ref={dropdownRef}
                       className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto"
-                      onMouseLeave={() => setDropdownOpen(false)}
+                      onBlur={() => {
+                        setTimeout(() => setDropdownOpen(false), 150);
+                      }}
+                      onScroll={(e) => {
+                        const bottom =
+                          e.target.scrollHeight - e.target.scrollTop ===
+                          e.target.clientHeight;
+                        if (bottom && hasMore && !isLoadingMore) {
+                          setIsLoadingMore(true);
+                          const nextPage = page + 1;
+                          setPage(nextPage);
+                          fetchEmployees(empSearch, nextPage);
+                        }
+                      }}
                     >
                       {isSearching ? (
-                        <div className="p-2 text-sm text-gray-500">Searching...</div>
+                        <div className="p-2 text-sm text-gray-500">
+                          Searching...
+                        </div>
                       ) : empOptions.length > 0 ? (
                         empOptions.map((emp, idx) => (
                           <div
                             key={`${emp.emp_code}-${idx}`}
                             onClick={(e) => {
-                              // ⭐ Call your existing handleEmployeeChange function
-                              console.log("Selected emp:", emp);
-                              handleEmployeeChange({ target: { value: emp.emp_code } });
-
-                              // Fill text box with code + name
+                              setIsSelecting(true);
+                              handleEmployeeChange({
+                                target: { value: emp.emp_code },
+                              });
                               setEmpSearch(`${emp.emp_code} - ${emp.cust_name}`);
-
-                              // Close dropdown
                               setDropdownOpen(false);
+                              setTimeout(() => setIsSelecting(false), 300);
                             }}
                             className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
                           >
@@ -320,13 +538,13 @@ export default function CustomerForm({
                           </div>
                         ))
                       ) : (
-                        <div className="p-2 text-sm text-gray-500">No results found</div>
+                        <div className="p-2 text-sm text-gray-500">
+                          No results found
+                        </div>
                       )}
                     </div>
                   )}
                 </div>
-
-
 
                 <div>
                   <label className="block text-gray-700 font-medium">
@@ -336,9 +554,9 @@ export default function CustomerForm({
                     name="organisation_id"
                     value={formData.organisation_id || ""}
                     onChange={handleChange}
-                    disabled={!isOrgSelectable}
-                    aria-readonly={!isOrgSelectable}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                    disabled={isExistingFound && isAutoFilled}
+                    aria-readonly={isExistingFound}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${isExistingFound && isAutoFilled && "bg-gray-100 cursor-not-allowed"}`}
                     required
                   >
                     <option value="">-- Select Organisation --</option>
@@ -352,10 +570,12 @@ export default function CustomerForm({
               </div>
             </fieldset>
           </Col>
-
+       
+          
           {/* ========== BASIC INFORMATION ========== */}
-          <Col className="mt-3">
-            <fieldset className="fldset mt-4">
+          <Col md={6}>
+          <div className="w-100 d-flex flex-column h-100">
+            <fieldset className="fldset mt-4 flex-grow-1">
               <legend className="legend">Basic Information</legend>
               <div className="grid grid-cols-2 gap-4 mt-3">
                 <div>
@@ -367,8 +587,9 @@ export default function CustomerForm({
                     name="first_name"
                     value={formData.first_name || ""}
                     onChange={handleChange}
+                    disabled={isExistingFound && isAutoFilled}
                     required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${isExistingFound && isAutoFilled && "bg-gray-100 cursor-not-allowed"}`}
                   />
                 </div>
                 <div>
@@ -381,18 +602,20 @@ export default function CustomerForm({
                     value={formData.last_name || ""}
                     onChange={handleChange}
                     required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                    disabled={isExistingFound && isAutoFilled}
+                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${isExistingFound && isAutoFilled && "bg-gray-100 cursor-not-allowed"}`}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4 mt-3">
                 <div>
-                  <label>Gender</label>
+                  <label>Gender <ImportantField /></label>
                   <select
                     name="gender"
                     value={formData.gender || ""}
                     onChange={handleChange}
+                    required
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                   >
                     <option value="">-- Select --</option>
@@ -466,7 +689,188 @@ export default function CustomerForm({
             </fieldset>
 
             {/* ========== CONTACT INFORMATION ========== */}
+            
+          </div>
+          </Col>
+
+          {/* ========== EMPLOYMENT DETAILS ========== */}
+          <Col md={6}>
             <fieldset className="fldset mt-4">
+              <legend className="legend">Employment Details</legend>
+            <div className="fldScroll">
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <label>
+                    Payroll Number <ImportantField />
+                  </label>
+                  <input
+                    type="text"
+                    name="payroll_number"
+                    value={formData.payroll_number || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>
+                    Department <ImportantField />
+                  </label>
+                  <input
+                    type="text"
+                    name="employer_department"
+                    value={formData.employer_department || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label>
+                    Designation <ImportantField />
+                  </label>
+                  <input
+                    type="text"
+                    name="designation"
+                    value={formData.designation || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>Employment Type</label>
+                  <select
+                    name="employment_type"
+                    value={formData.employment_type || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  >
+                    <option value="">-- Select --</option>
+                    <option value="Permanent">Permanent</option>
+                    <option value="Contract">Contract</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label>Date Joined</label>
+                  <input
+                    type="date"
+                    name="date_joined"
+                    value={formData.date_joined || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>
+                    Gross Salary (PGK) <ImportantField />
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="monthly_salary"
+                    value={formData.monthly_salary || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <label>
+                    Net Salary (PGK) <ImportantField />
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="net_salary"
+                    value={formData.net_salary || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>Immediate Supervisor</label>
+                  <input
+                    type="text"
+                    name="immediate_supervisor"
+                    value={formData.immediate_supervisor || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <label>Years at Current Employer</label>
+                  <input
+                    type="text"
+                    name="years_at_current_employer"
+                    value={formData.years_at_current_employer || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>Work District</label>
+                  <input
+                    type="text"
+                    name="work_district"
+                    value={formData.work_district || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-1">
+                <div>
+                  <label>Work Province</label>
+                  <input
+                    type="text"
+                    name="work_province"
+                    value={formData.work_province || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label>Employer Address</label>
+                  <textarea
+                    name="employer_address"
+                    value={formData.employer_address || ""}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid mt-0">
+                <div>
+                  <label>
+                    Work Location <ImportantField />
+                  </label>
+                  <textarea
+                    name="work_location"
+                    value={formData.work_location || ""}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  />
+                </div>
+              </div>
+            </div>
+            </fieldset>
+          </Col>
+
+        </Row>
+        <Row className="mt-2">
+            <Col>
+            <fieldset className="fldset mt-4 ">
               <legend className="legend">Contact Information</legend>
               <div className="grid grid-cols-2 gap-4 mt-3">
                 <div>
@@ -541,199 +945,39 @@ export default function CustomerForm({
                 </div>
               </div>
             </fieldset>
-          </Col>
-
-          {/* ========== EMPLOYMENT DETAILS ========== */}
-          <Col className="mt-3">
-            <fieldset className="fldset">
-              <legend className="legend">Employment Details</legend>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>
-                    Payroll Number <ImportantField />
-                  </label>
-                  <input
-                    type="text"
-                    name="payroll_number"
-                    value={formData.payroll_number || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>
-                    Department <ImportantField />
-                  </label>
-                  <input
-                    type="text"
-                    name="employer_department"
-                    value={formData.employer_department || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>
-                    Designation <ImportantField />
-                  </label>
-                  <input
-                    type="text"
-                    name="designation"
-                    value={formData.designation || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>Employment Type</label>
-                  <select
-                    name="employment_type"
-                    value={formData.employment_type || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  >
-                    <option value="">-- Select --</option>
-                    <option value="Permanent">Permanent</option>
-                    <option value="Contract">Contract</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>Date Joined</label>
-                  <input
-                    type="date"
-                    name="date_joined"
-                    value={formData.date_joined || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>
-                    Gross Salary (PGK) <ImportantField />
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="monthly_salary"
-                    value={formData.monthly_salary || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>
-                    Net Salary (PGK) <ImportantField />
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="net_salary"
-                    value={formData.net_salary || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>Immediate Supervisor</label>
-                  <input
-                    type="text"
-                    name="immediate_supervisor"
-                    value={formData.immediate_supervisor || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>Years at Current Employer</label>
-                  <input
-                    type="text"
-                    name="years_at_current_employer"
-                    value={formData.years_at_current_employer || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>Work District</label>
-                  <input
-                    type="text"
-                    name="work_district"
-                    value={formData.work_district || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>Work Province</label>
-                  <input
-                    type="text"
-                    name="work_province"
-                    value={formData.work_province || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label>Employer Address</label>
-                  <textarea
-                    name="employer_address"
-                    value={formData.employer_address || ""}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <div>
-                  <label>
-                    Work Location <ImportantField />
-                  </label>
-                  <textarea
-                    name="work_location"
-                    value={formData.work_location || ""}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                  />
-                </div>
-              </div>
-            </fieldset>
-          </Col>
+            </Col>
         </Row>
 
         {/* ========== SUBMIT BUTTON ========== */}
-        <Row className="mt-4 text-end">
-          <Col>
-            <button
-              type="submit"
-              className="bg-indigo-600 text-white px-4 py-2 mt-3 rounded hover:bg-indigo-700 transition-all"
-            >
-              Save →
-            </button>
-          </Col>
-        </Row>
+
+      <Row className="mt-4 text-end">
+        <Col className="flex justify-end gap-3">
+          {/* Save  draft*/}
+          <button
+            type="button"
+            disabled={isDataSaving}
+            onClick={() => handleSaveAndNext()}
+            className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""}
+              bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-all`}
+          >
+            Save & Exit
+          </button>
+
+          {/* Save & Next Only */}
+          <button
+            type="submit"
+            disabled={isDataSaving}
+            className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""}
+              bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-all`}
+          >
+            {isDataSaving ? "Saving..." : isExistingFound ? "Update" : "Save & Next →"}
+          </button>
+
+          
+
+        </Col>
+      </Row>
+
       </form>
     </>
   );

@@ -27,7 +27,7 @@ const DataLine = ({ className = "" }) => (
   </span>
 );
 
-export default function LoanApplicationForm({ auth, data }) {
+export default function EduPrintFormat({ auth, loan }) {
  
   // Helper to create multiple character boxes
   const renderCharBoxes = (count) => {
@@ -71,8 +71,8 @@ export default function LoanApplicationForm({ auth, data }) {
             style={{ fontFamily: "Arial, sans-serif" }}
           >
             {/* Header */}
-            <div style={{ maxWidth: "150px", margin: "0 auto" }}>
-              <MainLogo width="120px" />
+            <div style={{ maxWidth: "100px", margin: "0 auto" }}>
+              <MainLogo width="80px" />
             </div>
 
 
@@ -386,61 +386,43 @@ export default function LoanApplicationForm({ auth, data }) {
         </div>
         {/* --- End of MODIFICATION 2 --- */}
       </div>
+<style>
+  {`
+    @media print {
+      /* 1. Hide the entire UI including sidebar and nav */
+      body * {
+        visibility: hidden !important;
+      }
 
-      <style>
-        {`
-          @media print {
-            @page {
-              size: A4 portrait;
-              margin: 10mm 12mm;
-            }
+      /* 2. Show only the specific form area */
+      #printable-area, #printable-area * {
+        visibility: visible !important;
+      }
 
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-              width: 100%;
-              height: 100%;
-            }
+      /* 3. Force the form to the top-left of the physical page */
+      #printable-area {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        margin-top: 0 !important;
+        padding: 0 !important;
+      }
 
-            body {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-              background: white !important;
-            }
+      /* 4. Fix height issues caused by the AuthenticatedLayout */
+      html, body {
+        height: auto !important;
+        overflow: visible !important;
+      }
 
-            #print-area {
-              width: 100%;
-              margin: 0;
-              padding: 0;
-              background: white;
-            }
-            
-            #printable-area {
-              width: 100%;
-              margin: 0;
-              padding: 0;
-            }
-
-            #printable-area > div {
-              max-width: 100% !important;
-              padding: 0 !important;
-              margin: 0 auto !important;
-              box-shadow: none !important;
-            }
-
-            /* Hide non-print UI */
-            .no-print, .header-bar {
-              display: none !important;
-            }
-
-            /* Ensure colors print */
-            * {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-          }
-        `}
-    </style>
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+    }
+  `}
+</style>
 
     </AuthenticatedLayout>
   );

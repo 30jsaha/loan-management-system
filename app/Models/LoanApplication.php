@@ -10,6 +10,7 @@ use App\Models\OrganisationMaster;
 use App\Models\InstallmentDetail;
 use App\Models\DocumentUpload;
 use App\Models\LoanSetting;
+use App\Models\LoanPurpose;
 use App\Models\CompanyMaster as Company;
 
 class LoanApplication extends Model
@@ -18,7 +19,7 @@ class LoanApplication extends Model
 
     protected $fillable = [
         'company_id','customer_id','organisation_id',
-        'loan_type','purpose','other_purpose_text',
+        'loan_type','purpose', 'purpose_id', 'other_purpose_text',
         'loan_amount_applied','loan_amount_approved',
         'tenure_fortnight','emi_amount','interest_rate',
         'elegible_amount','total_repay_amt','total_interest_amt',
@@ -40,4 +41,9 @@ class LoanApplication extends Model
     public function documents(){ return $this->hasMany(DocumentUpload::class,'loan_id'); }
     public function loan_settings(){ return $this->belongsTo(LoanSetting::class,'loan_type','id'); }
     public function company(){ return $this->belongsTo(Company::class,'company_id','id'); }
+    public function purpose()
+    {
+        return $this->belongsTo(LoanPurpose::class, 'purpose_id');
+    }
+
 }

@@ -10,7 +10,8 @@ use App\Models\allCustMaster;
 use App\Models\SalarySlab;
 use App\Models\OrganisationMaster as Org;
 use App\Models\InstallmentDetail;
-use App\Models\RejectionReson;
+use App\Models\RejectionReason;
+use App\Models\LoanPurpose;
 
 class LoansController extends Controller
 {
@@ -24,15 +25,60 @@ class LoansController extends Controller
             'salary_slabs'=>$salary_slabs
         ]);
     }
+    public function purpose_index()
+    {
+        $loanPurpose = LoanPurpose::orderBy('id', 'desc')->get();
+        return inertia('Loans/PurposeIndex', [
+            'loanPurpose'=>$loanPurpose
+        ]);
+    }
     public function loanDetailsView($id)
     {
-        $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        // $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        // ->where('id',$id)
+        // ->orderBy('created_at','desc')->get();
+
+        $loans = Loan::with([
+            'customer',
+            'organisation',
+            'installments',
+            'loan_settings',
+            'company',
+            'purpose',
+            'documents' => function ($q) {
+                $q->leftJoin(
+                    'document_types',
+                    'document_types.doc_key',
+                    '=',
+                    'document_upload.doc_type'
+                )
+                ->select(
+                    'document_upload.*',
+                    'document_types.is_required',
+                    'document_types.doc_name'
+                );
+            }
+        ])->findOrFail($id);
+
+        // return response()->json($loan);
+
+        $rejectionReasons = RejectionReason::all();
+
+        return inertia('Loans/View', [
+            'loans' => $loans,
+            'loanId' => $id,
+            'rejectionReasons' => $rejectionReasons
+        ]);
+    }
+    public function loanPrintDetailsView($id)
+    {
+        $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company', 'purpose'])
         ->where('id',$id)
         ->orderBy('created_at','desc')->get();
 
-        $rejectionReasons = RejectionReson::all();
+        $rejectionReasons = RejectionReason::all();
 
-        return inertia('Loans/View', [
+        return inertia('Loans/PrintFunc', [
             'loans' => $loans,
             'loanId' => $id,
             'rejectionReasons' => $rejectionReasons
@@ -47,11 +93,13 @@ class LoansController extends Controller
     public function loan_setting_index()
     {
         // return Loan::all();
-        $loan_settings = LoanSetting::all();
-        $salary_slabs = SalarySlab::all();
+        $loan_settings = LoanSetting::orderBy('id', 'desc')->get();
+        $salary_slabs = SalarySlab::orderBy('id', 'desc')->get();
+        $loanPurpose = LoanPurpose::orderBy('id', 'desc')->get();
         return inertia('Loans/LoanSettingMaster', [
             'loan_settings' => $loan_settings,
             'salary_slabs' => $salary_slabs,
+            'loanPurpose' => $loanPurpose
         ]);
     }
     public function loan_income_slab_index()
@@ -74,10 +122,11 @@ class LoansController extends Controller
             'documents',
             'installments',
             'loan_settings',
-            'company'
+            'company',
+            'purpose'
         ])
         ->where('status', 'Approved')
-        ->orderBy('approved_date', 'desc')
+        ->orderBy('id', 'desc')
         ->get();
         $approvedLoans = $approvedLoans->map(function ($loan) {
             $total_paid_amount_all_loan=$total_outstanding_amount_all_loan=$totalRepayAmtAll=0.00;
@@ -121,7 +170,7 @@ class LoansController extends Controller
     {
         $perPage = (int) $request->get('per_page', 15);
 
-        $approvedLoans = Loan::with(['customer','organisation','documents','installments','loan_settings','company'])
+        $approvedLoans = Loan::with(['customer','organisation','documents','installments','loan_settings','company','purpose'])
         ->where('status','Approved')
         ->where('id',$id)
         ->orderBy('approved_date','desc')->get();
@@ -148,13 +197,79 @@ class LoansController extends Controller
             'documents',
             'installments',
             'loan_settings',
-            'company'
+            'company',
+            'purpose'
+        ])
+            ->where('status', 'Approved')
+            ->orderBy('approved_date', 'desc')
+            ->get();
+
+        // ----------------------------
+        // GLOBAL TOTALS (ALL LOANS)
+        // ----------------------------
+        $globalTotalPaid = 0;
+        $globalTotalOutstanding = 0;
+
+        $approvedLoans = $approvedLoans->map(function ($loan) use (&$globalTotalPaid, &$globalTotalOutstanding) {
+
+            // Fetch all EMI installments
+            $installments = InstallmentDetail::where('loan_id', $loan->id)->get();
+
+            // Per-loan paid summary
+            $totalPaid = $installments->where('status', 'Paid')->sum('emi_amount');
+            $totalPaidCount = $installments->where('status', 'Paid')->count();
+
+            // Per-loan pending summary
+            $totalPending = $installments->where('status', 'Pending')->sum('emi_amount');
+            $totalOverdue = $installments->where('status', 'Overdue')->sum('emi_amount');
+            $totalOutstanding = $totalPending + $totalOverdue;
+
+            // Total repayable
+            $totalRepayAmt = $loan->total_repay_amt ?? 0;
+
+            // PER-LOAN FIELDS
+            $loan->total_emi_paid_count = $totalPaidCount;
+            $loan->total_emi_paid_amount = round($totalPaid, 2);
+            $loan->total_outstanding_amount = round($totalOutstanding, 2);
+            $loan->total_repayment_amount = round($totalRepayAmt, 2);
+            $loan->remaining_balance = round(($totalRepayAmt - $totalPaid), 2);
+
+            // ----------------------------
+            // ADD TO GLOBAL SUMS
+            // ----------------------------
+            $globalTotalPaid += $totalPaid;
+            $globalTotalOutstanding += ($totalRepayAmt - $totalPaid);
+
+            return $loan;
+        });
+
+        return inertia('Loans/LoanEmiCollection', [
+            'approved_loans' => $approvedLoans,
+            // ----------------------------
+            // SEND GLOBAL SUMMARY TO FRONTEND
+            // ----------------------------
+            'summary' => [
+                'total_paid_all_loans' => round($globalTotalPaid, 2),
+                'total_outstanding_all_loans' => round($globalTotalOutstanding, 2),
+            ]
+        ]);
+    } 
+    public function CompletedLoansWithEmiCollection()
+    {
+        $approvedLoans = Loan::with([
+            'customer',
+            'organisation',
+            'documents',
+            'installments',
+            'loan_settings',
+            'company',
+            'purpose'
         ])
         ->where('status', 'Approved')
         ->orderBy('approved_date', 'desc')
         ->get();
 
-        return inertia('Loans/LoanEmiCollection', [
+        return inertia('Loans/CompletedLoansWithEmiCollection', [
             'approved_loans' => $approvedLoans
         ]);
     } 
