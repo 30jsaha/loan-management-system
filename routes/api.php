@@ -126,7 +126,8 @@ Route::post('/validate-loan-tier', [LoanController::class, 'validateLoan'])
 
 
 
-Route::middleware('auth:sanctum')->post('/send-loan-mail', [FrontEndController::class, 'sendLoanMail']);
+Route::post('/send-loan-mail', [FrontEndController::class, 'sendLoanMail']);
+Route::post('/send-contact-mail', [FrontEndController::class, 'sendContactMail']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/salary-slab-create', [SalarySlabController::class, 'create_salary_slab']); // CREATE
