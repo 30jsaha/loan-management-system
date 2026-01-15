@@ -709,27 +709,27 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
         {/* Quick Loan Bar */}
         <div className="quick-loan-section mt-4">
-<div
-  className="quick-image"
-  style={{
-    width: "100%",
-    height: "130px",
-    overflow: "hidden",
-    position: "relative",
-  }}
->
-  <div className="slider-track">
+          <div
+            className="quick-image"
+            style={{
+              width: "100%",
+              height: "130px",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <div className="slider-track">
 
-    {/* Original 2 images */}
-    <img src={heroImage1} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-    <img src={heroImage}  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {/* Original 2 images */}
+              <img src={heroImage1} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={heroImage} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
 
-    {/* Duplicate 2 images for perfect infinite loop */}
-    <img src={heroImage1} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-    <img src={heroImage}  style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {/* Duplicate 2 images for perfect infinite loop */}
+              <img src={heroImage1} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={heroImage} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
 
-  </div>
-</div>
+            </div>
+          </div>
 
 
 
@@ -777,33 +777,61 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       <section id="about" className="py-5 bg-white">
         <div className="container">
           <div className="row align-items-center g-5">
-            <div className="col-md-6 about-text-shift">
-              <b><small className="text-uppercase" style={{ color: '#585858' }}>About Our Company</small></b>
 
-              <h2 className="fw-bold mb-4" style={{ color: 'green' }}>Empowering Lives Through<br /> Smart Finance</h2>
+
+            {/* LEFT TEXT */}
+            <div className="col-md-6 about-text-shift text-center text-md-start">
+              <b>
+                <small className="text-uppercase" style={{ color: '#585858' }}>
+                  About Our Company
+                </small>
+              </b>
+
+              <h2 className="fw-bold mb-4" style={{ color: 'green' }}>
+                Empowering Lives Through <br /> Smart Finance
+              </h2>
+
               <p className="about-desc text-muted mb-3">
-                Agro Advance Aben Limited is a trusted Papua New Guinea–based consumer finance <br />company,
+                Agro Advance Aben is a trusted Papua New Guinea–based consumer finance company,
                 dedicated to helping individuals meet personal and family financial needs.
               </p>
 
               <p className="about-desc text-muted mb-4">
-                From school fees to medical expenses, we provide quick, reliable, and flexible loan<br /> solutions
-                that make access to finance simple and stress-free for everyone.
+                From school fees to medical expenses, we provide quick, reliable, and flexible loan
+                solutions that make access to finance simple and stress-free for everyone.
               </p>
 
-              <a href="#contact" className="btn px-4 py-2 text-light" style={{ backgroundColor: '#d71920', color: '#fff', border: 'none', borderRadius: 6, textDecoration: 'none' }}>Apply for Loan</a>
+              <a
+                href="#contact"
+                className="btn px-4 py-2 text-light"
+                style={{
+                  backgroundColor: '#d71920',
+                  borderRadius: 6,
+                  textDecoration: 'none'
+                }}
+              >
+                Apply for Loan
+              </a>
             </div>
 
-            <div className="col-md-6 text-center position-relative">
+            {/* RIGHT IMAGE */}
+            <div className="col-md-6 col-lg-6 text-center position-relative">
+
               <div className="about-images">
-                <img src={about1} alt="Agro about 1" className="img-fluid main-img" />
-                <img src={about2} alt="Agro about 2" className="img-fluid overlay-img shadow-lg" style={{ width: '45%', height: 326 }} />
+                <img src={about1} alt="about 1" className="img-fluid main-img" />
+                <img
+                  src={about2}
+                  alt="about 2"
+                  className="img-fluid overlay-img shadow-lg"
+                  style={{ width: '45%', height: 326 }}
+                />
               </div>
             </div>
 
           </div>
         </div>
       </section>
+
 
       {/** Our Loan Section */}
       {/* Loan Solutions Section */}
@@ -860,7 +888,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               <div className="loan__services__item__text">
                 <h4> Health Loan</h4>
 
-                <p>Essential financial support for unexpected or planned medical expenses and treatments for the employee or their family.</p>
+                <p>
+                  Essential financial support for unexpected or planned medical expenses and treatments for the employee or their family members.</p>
               </div>
             </div>
           </div>
@@ -917,7 +946,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       <section id="testimonials" className="testimonial py-5" style={{ backgroundColor: '#1E2A5A' }}>
         <div className="container">
           <h2 className="text-center fw-bold mb-2" style={{ color: 'rgba(80, 196, 34, 1)' }}>What Customers Are Saying</h2>
-          <p className="text-center mb-4" style={{ color: 'white' }}>Hear from people across Papua New Guinea who’ve trusted Agro Advance Aben Limited for their financial needs.</p>
+          <p className="text-center mb-4" style={{ color: 'white' }}>Hear from people across Papua New Guinea who’ve trusted Agro Advance Aben for their financial needs.</p>
 
           <div id="testimonialCarousel" className="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
             <div className="carousel-inner">
@@ -1064,13 +1093,14 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
       {/* Footer */}
       <footer
-        className="text-white pt-5"
-        style={{
-          backgroundImage: `url(${footerBg})`,
-          backgroundSize: "1500px",
-          backgroundPosition: "left",
-          backgroundRepeat: "no-repeat"
-        }}
+       style={{
+  backgroundImage: `url(${footerBg})`,
+  backgroundSize: "800px",
+  backgroundPosition: "-120px center",
+  backgroundRepeat: "no-repeat"
+}}
+
+
       >
         <div className="footer-overlay">
 
@@ -1079,21 +1109,38 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             <div className="row justify-content-between align-items-start g-4">
 
               <div className="col-md-3">
-                <h6 className="text-uppercase mb-3" style={{ color: '#69F0AE' }}>Papua New Guinea</h6>
+                <h6 className="text-uppercase fw-bold mb-3" style={{ color: '#69F0AE' }}>Address</h6>
                 <p className="small mb-4" style={{ color: '#E8F5E9' }}>
-                  📍 Avara Annex, Level 7, Brampton St., <br />
+                   Avara Annex, Level 7, Brampton St., <br />
                   Port Moresby, Papua New Guinea
                 </p>
               </div>
 
-              <div className="col-md-4 text-md-center">
-                <p className="text-uppercase fw-bold mb-2" style={{ color: '#69F0AE' }}>Contact Us Now!</p>
-                <h4 className="small mb-0" style={{ color: '#E8F5E9' }}>+675 7211 5122</h4>
-                <h4 className="small mb-0" style={{ color: '#E8F5E9' }}>+675 7211 5122</h4>
+              <div className="col-md-4 text-center">
+                <p className="text-uppercase fw-bold mb-2" style={{ color: '#69F0AE' }}>
+                  Contact Us Now!
+                </p>
+
+                {/* Inner left-aligned block */}
+                <div className="d-inline-block text-start">
+
+                  {/* Phone */}
+                  <h4 className="small mb-1 d-flex align-items-center" style={{ color: '#E8F5E9' }}>
+                    <span className="me-2">📞</span>
+                    +675 7211 5122
+                  </h4>
+
+                  {/* Email */}
+                  <h4 className="small mb-0 d-flex align-items-center" style={{ color: '#E8F5E9' }}>
+                    <span className="me-2">📧</span>
+                    emmanuel@aaapng.com
+                  </h4>
+
+                </div>
               </div>
 
               <div className="col-md-3 text-md-end">
-                <h5 className="fw-bold mb-2" style={{ color: '#69F0AE' }}>Agro Advance Aben Limited</h5>
+                <h5 className="fw-bold mb-2" style={{ color: '#69F0AE' }}>Agro Advance Aben</h5>
                 <p className="small mb-0" style={{ color: '#E8F5E9' }}>
                   Finance with Purpose. Supporting farmers and small businesses with affordable loans.
                 </p>
@@ -1147,16 +1194,17 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           <div className="mobile-footer d-md-none mt-4 px-3">
 
             {/* TOP INFORMATION VISIBLE ALWAYS */}
-            <h6 className="text-uppercase mb-2" style={{ color: '#69F0AE' }}>Papua New Guinea</h6>
+            <h6 className="text-uppercase mb-2" style={{ color: '#69F0AE' }}>Address</h6>
             <p className="small mb-3" style={{ color: '#E8F5E9' }}>
               📍 Avara Annex, Level 7, Brampton St., <br />
               Port Moresby, Papua New Guinea
             </p>
 
-            <p className="text-uppercase small mb-1" style={{ color: '#E8F5E9' }}>Contact Us Now!</p>
-            <h4 className="fw-bold mb-3" style={{ color: '#4CAF50' }}>+675 7211 5122</h4>
+            <p className="text-uppercase small mb-1 text-green-custom" >Contact Us Now!</p>
+            <h4 className="small mb-0" style={{ color: '#E8F5E9' }}> <span className="me-2">📞</span>+675 7211 5122</h4>
+            <h4 className="small mb-3" style={{ color: '#E8F5E9' }}><span className="me-2">📧</span> emmanuel@aaapng.com</h4>
 
-            <h5 className="fw-bold mb-2" style={{ color: '#69F0AE' }}>Agro Advance Aben Limited</h5>
+            <h5 className="fw-bold mb-2" style={{ color: '#69F0AE' }}>Agro Advance Aben </h5>
             <p className="small mb-3" style={{ color: '#E8F5E9' }}>
               Finance with Purpose. Supporting farmers and small businesses with affordable loans.
             </p>

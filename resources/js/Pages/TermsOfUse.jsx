@@ -87,7 +87,7 @@ export default function TermsOfUse({ auth }) {
   ></div>
 
   <h4 className="fw-semibold" style={{ fontSize: "18px", color: "#0A8A42" }}>
-    Agro Advance Aben Limited
+    Agro Advance Aben 
   </h4>
 
   <p style={{ marginTop: "-5px", color: "#444" }}>
@@ -95,7 +95,7 @@ export default function TermsOfUse({ auth }) {
   </p>
 
   <p style={{ lineHeight: "1.7", color: "#444" }}>
-    Welcome to Agro Advance Aben Limited. By accessing or using our website,
+    Welcome to Agro Advance Aben . By accessing or using our website,
     services, or loan products, you agree to comply with and be bound by the
     following Terms of Use. Please read them carefully before proceeding.
   </p>
@@ -140,7 +140,7 @@ export default function TermsOfUse({ auth }) {
     6. Intellectual Property
   </h5>
   <p style={{ lineHeight: "1.7", color: "#555" }}>
-    All logos & content belong to Agro Advance Aben Limited.
+    All logos & content belong to Agro Advance Aben.
   </p>
 
   <h5 className="fw-bold mt-4" style={{ color: "#0A8A42", fontSize: "18px" }}>
@@ -171,12 +171,12 @@ export default function TermsOfUse({ auth }) {
       {/* ================= FOOTER ================= */}
      <footer
   className="text-white pt-5"
-  style={{
-    backgroundImage: `url(${footerBg})`,
-    backgroundSize: "1500px",
-    backgroundPosition: "left",
-    backgroundRepeat: "no-repeat"
-  }}
+ style={{
+  backgroundImage: `url(${footerBg})`,
+  backgroundSize: "800px",
+  backgroundPosition: "-120px center",
+  backgroundRepeat: "no-repeat"
+}}
 >
   <div className="footer-overlay">
 
@@ -185,20 +185,29 @@ export default function TermsOfUse({ auth }) {
       <div className="row justify-content-between align-items-start g-4">
         
         <div className="col-md-3">
-          <h6 className="text-uppercase mb-3" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
+          <h6 className="text-uppercase fw-bold mb-3" style={{color:'#69F0AE'}}>Address</h6>
           <p className="small mb-4" style={{color:'#E8F5E9'}}>
              📍 Avara Annex, Level 7, Brampton St., <br/>
             Port Moresby, Papua New Guinea
           </p>
         </div>
 
-        <div className="col-md-4 text-md-center">
-          <p className="text-uppercase small mb-1" style={{color:'#E8F5E9'}}>Contact Us Now!</p>
-          <h4 className="fw-bold" style={{color:'#4CAF50'}}>+675 7211 5122</h4>
+        <div className="col-md-2 text-md-center">
+          <p className="text-uppercase fw-bold mb-3" style={{color:'#69F0AE'}}>Contact Us Now!</p>
+         <h4 className="small mb-2 d-flex align-items-center" style={{ color: '#E8F5E9' }}>
+                    <span className="me-2">📞</span>
+                    +675 7211 5122
+                  </h4>
+
+                  {/* Email */}
+                  <h4 className="small mb-0 d-flex align-items-center" style={{ color: '#E8F5E9' }}>
+                    <span className="me-2">📧</span>
+                    emmanuel@aaapng.com
+                  </h4>
         </div>
 
         <div className="col-md-3 text-md-end">
-          <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben Limited</h5>
+          <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben</h5>
           <p className="small mb-0" style={{color:'#E8F5E9'}}>
             Finance with Purpose. Supporting farmers and small businesses with affordable loans.
           </p>
@@ -252,16 +261,17 @@ export default function TermsOfUse({ auth }) {
     <div className="mobile-footer d-md-none mt-4 px-3">
 
       {/* TOP INFORMATION VISIBLE ALWAYS */}
-      <h6 className="text-uppercase mb-2" style={{color:'#69F0AE'}}>Papua New Guinea</h6>
+      <h6 className="text-uppercase mb-2" style={{color:'#69F0AE'}}>Address</h6>
       <p className="small mb-3" style={{color:'#E8F5E9'}}>
         📍 Avara Annex, Level 7, Brampton St., <br/>
             Port Moresby, Papua New Guinea
       </p>
 
-      <p className="text-uppercase small mb-1" style={{color:'#E8F5E9'}}>Contact Us Now!</p>
-      <h4 className="fw-bold mb-3" style={{color:'#4CAF50'}}>+675 7211 5122</h4>
+      <p className="text-uppercase small mb-0 text-green-custom">Contact Us Now!</p>
+       <h4 className="small mb-0" style={{ color: '#E8F5E9' }}> <span className="me-2">📞</span>+675 7211 5122</h4>
+            <h4 className="small mb-3" style={{ color: '#E8F5E9' }}><span className="me-1">📧</span> emmanuel@aaapng.com</h4>
 
-      <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben Limited</h5>
+      <h5 className="fw-bold mb-2" style={{color:'#69F0AE'}}>Agro Advance Aben </h5>
       <p className="small mb-3" style={{color:'#E8F5E9'}}>
         Finance with Purpose. Supporting farmers and small businesses with affordable loans.
       </p>

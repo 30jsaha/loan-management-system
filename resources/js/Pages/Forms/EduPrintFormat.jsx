@@ -148,19 +148,25 @@ export default function EduPrintFormat({ auth, loan }) {
 
             {/* Deduction Details */}
             <div className="grid grid-cols-12 gap-2 text-sm mb-4">
-              <div className="col-span-3">
-                <div className="text-center text-xs">Deduction Code</div>
-                <div className="flex mt-1 px-7">
-                  <CharBox /> <CharBox /> <CharBox /> <CharBox /> <CharBox /> <CharBox />{" "}
-                  <CharBox />
-                </div>
-              </div>
-              <div className="col-span-3 flex flex-col items-center">
-                <div className="text-xs ">Description</div>
-                <div className="flex mt-1 ">
-                  <ChaarBox />
-                </div>
-              </div>
+             <div className="col-span-3">
+  <div className="text-center text-xs">Deduction Code</div>
+  <div className="flex mt-1 px-12 gap-0">
+    <CharBox value="D" />
+    <CharBox value="A" />
+    <CharBox value="G" />
+    <CharBox value="R" />
+    <CharBox value="O" />
+  </div>
+</div>
+
+ <div className="col-span-3 flex flex-col items-center">
+  <div className="text-xs">Description</div>
+
+  <div className="mt-1 px-4 py-1 border border-black text-xs  w-full text-center">
+    <b>AGRO ADVANCE ABEN</b>
+  </div>
+</div>
+
               <div className="col-span-3  flex flex-col items-center">
                 <div className="text-xs px-4">% or Amount Per Pay</div>
                 <div className="flex mt-1 ">
