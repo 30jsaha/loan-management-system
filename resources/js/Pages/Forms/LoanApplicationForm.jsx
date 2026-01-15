@@ -5,18 +5,22 @@ import { Card, Container, Row, Col, Alert } from "react-bootstrap";
 import { ArrowLeft } from "lucide-react";
 import MainLogo from "@/Components/MainLogo";
 
-// --- CSS rules for TWO-PAGE printing ---
+
 const printStyles = `
-  /* Hide page 2 header on screen */
-  .print-only {
-    display: none;
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
   }
 
-  @media print {
-    @page {
-      size: A4 portrait;
-      margin: 10mm;
-    }
+  <div
+  style={{
+    backgroundImage: "url('/img/logo_first.jpg')",
+    opacity: 1.0,   
+  }
+></div>
+
+}
 
     /* Reset Body and HTML to ensure full height and no scroll blocking */
     html, body {
@@ -30,9 +34,7 @@ const printStyles = `
       We use visibility: hidden on body so we don't destroy the layout flow
       of the React root, but we hide the visual elements.
     */
-    body * {
-      visibility: hidden;
-    }
+    
 
     /* Hiding specific wrappers to remove their whitespace if possible */
     .no-print, nav, header, footer {
@@ -217,8 +219,30 @@ export default function LoanApplicationForm({ auth }) {
           </Col>
         </Row>
 
-        {/* --- This is the only part that will print --- */}
-        <Card className="shadow-sm" id="printable-area">
+        
+     
+
+<Card className="shadow-sm position-relative" id="printable-area">
+
+  {/* WATERMARK */}
+  <div
+    className="position-absolute top-50 start-50 translate-middle"
+    style={{
+      width: "800px",
+      height: "800px",
+      backgroundImage: "url('/img/logo_first.jpg')",
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "center",
+      backgroundSize: "contain",
+      opacity: 0.20,     // yahin watermark halka hota hai
+      zIndex: 0,
+      pointerEvents: "none",
+    }}
+  ></div>
+
+  {/* FORM CONTENT */}
+  <div style={{ position: "relative", zIndex: 1 }}>
+ 
           <Card.Body>
             {/* --- PAGE 1 CONTENT --- */}
             
@@ -693,6 +717,10 @@ export default function LoanApplicationForm({ auth }) {
                             <input type="checkbox" style={{ marginRight: "3px" }} />{" "}
                             WESTPAC
                           </label>
+                           <label>
+                            <input type="checkbox" style={{ marginRight: "3px" }} />{" "}
+                            TISA BANK
+                          </label>
                           <label>
                             <input type="checkbox" style={{ marginRight: "3px" }} />{" "}
                             Other
@@ -964,11 +992,11 @@ export default function LoanApplicationForm({ auth }) {
               <div className="page-break-before" style={{ marginTop: "10px" }}>
                 
                 {/* Page 2 Header (matches page 1) - ONLY SHOWS ON PRINT */}
-                <div className="page-2-header print-only">
+                {/* <div className="page-2-header print-only">
                     <div className="logo-container" style={{ maxWidth: "100px", margin: "0 auto" }}>
                         <MainLogo width="100px" />
                     </div>
-                </div>
+                </div> */}
 
                 {/* TERMS & CONDITIONS SECTION */}
                 <table
@@ -1420,6 +1448,7 @@ export default function LoanApplicationForm({ auth }) {
               
             </div> {/* End of inner p-2 */}
           </Card.Body>
+          </div>
         </Card>
       </Container>
     </AuthenticatedLayout>
