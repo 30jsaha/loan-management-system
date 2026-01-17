@@ -352,12 +352,11 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             ? <HealthF auth={auth} loan={loan} />
             : <EduPrintFormat auth={auth} loan={loan} />;
     };
-    const normalizeFilePath = (path) => {
-        if (!path) return "";
-
-        // Remove leading "/storage/" if present
-        return path.replace(/^\/?storage\//, "");
-    };
+const normalizeFilePath = (path) => {
+    if (!path) return "";
+    // Removes "public/", "/public/", "storage/", or "/storage/" from the start of the string
+    return path.replace(/^\/?(public\/|storage\/)/, "");
+};
 
     // Open modal with selected document
     const openDocModal = (doc) => {
@@ -1676,6 +1675,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                 <th className="border p-2">Uploaded By</th>
                                                                 <th className="border p-2">View</th>
                                                                 <th className="border p-2">Download</th>
+                                                                <th className="border p-2">Mandatory</th>
                                                                 {(auth.user.is_admin == 1) ? (
                                                                     <th className="border p-2">Verify</th>
                                                                 ) : (
@@ -1726,6 +1726,17 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                         >
                                                                             Download <Download size={16} />
                                                                         </a>
+                                                                    </td>
+                                                                    <td className="border p-2">
+                                                                        <span
+                                                                            className={`px-2 py-1 text-xs rounded ${
+                                                                            doc.is_required
+                                                                                ? "bg-red-100 text-red-700"
+                                                                                : "bg-gray-100 text-gray-700"
+                                                                            }`}
+                                                                        >
+                                                                            {doc.is_required ? "Mandatory" : "Optional"}
+                                                                        </span>
                                                                     </td>
 
                                                                     {/* Verify / Reject Column */}
@@ -1980,7 +1991,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                             id: loan.id,
                                                                                             doc_type: "ISDA Signed Document",
                                                                                             file_name: "ISDA_signed_document.pdf",
-                                                                                            file_path: loan.isda_signed_upload_path
+                                                                                            file_path: loan.isda_signed_upload_path.replace('public/', '')
                                                                                         })
                                                                                     }
                                                                                     className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
@@ -2124,7 +2135,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                                                             id: loan.id,
                                                                                             doc_type: "ISDA Signed Document",
                                                                                             file_name: "ISDA_signed_document.pdf",
-                                                                                            file_path: loan.isda_signed_upload_path
+                                                                                            file_path: loan.isda_signed_upload_path.replace('public/', '')
                                                                                         })
                                                                                     }
                                                                                     className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
@@ -2225,7 +2236,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                                                     <Modal.Body>
                                                         {selectedDoc?.file_path && selectedDoc.file_name.endsWith(".pdf") ? (
                                                             <iframe
-                                                                src={`/storage/${selectedDoc.file_path}#toolbar=0&navpanes=0&scrollbar=0`}
+                                                                src={`/storage/${normalizeFilePath(selectedDoc.file_path)}#toolbar=0&navpanes=0`}
                                                                 width="100%"
                                                                 height="600"
                                                                 className="rounded border shadow-sm"

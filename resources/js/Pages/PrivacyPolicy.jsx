@@ -70,7 +70,7 @@ export default function PrivacyPolicy({ auth }) {
         ></div>
 
         <h4 className="fw-semibold" style={{ fontSize: "18px", color: "#0A8A42" }}>
-          Agro Advance Aben Limited
+          Agro Advance Aben 
         </h4>
 
         <p style={{ marginTop: "-5px", color: "#444" }}>
@@ -78,7 +78,7 @@ export default function PrivacyPolicy({ auth }) {
         </p>
 
         <p style={{ lineHeight: "1.7", color: "#444" }}>
-          Agro Advance Aben Limited respects your privacy and is committed to protecting your personal information.
+          Agro Advance Aben  respects your privacy and is committed to protecting your personal information.
           This Privacy Policy explains how we collect, use, and safeguard your data in accordance with Papua New Guinea privacy standards.
         </p>
 
@@ -141,12 +141,12 @@ export default function PrivacyPolicy({ auth }) {
       {/* ================= FOOTER ================= */}
       <footer
         className="text-white pt-5"
-        style={{
-          backgroundImage: `url(${footerBg})`,
-          backgroundSize: "1500px",
-          backgroundPosition: "left",
-          backgroundRepeat: "no-repeat",
-        }}
+       style={{
+  backgroundImage: `url(${footerBg})`,
+  backgroundSize: "800px",
+  backgroundPosition: "-120px center",
+  backgroundRepeat: "no-repeat"
+}}
       >
         <div className="footer-overlay">
 
@@ -162,13 +162,22 @@ export default function PrivacyPolicy({ auth }) {
                 </p>
               </div>
 
-              <div className="col-md-4 text-md-center">
-                <p className="text-uppercase small mb-1" style={{ color: "#E8F5E9" }}>Contact Us Now!</p>
-                <h4 className="fw-bold" style={{ color: "#4CAF50" }}>+675 7211 5122</h4>
-              </div>
+              <div className="col-md-2 text-md-center">
+          <p className="text-uppercase  mb-3" style={{color:'#69F0AE'}}>Contact Us Now!</p>
+         <h4 className="small mb-2 d-flex align-items-center" style={{ color: '#E8F5E9' }}>
+                    <span className="me-2">📞</span>
+                    +675 7211 5122
+                  </h4>
+
+                  {/* Email */}
+                  <h4 className="small mb-0 d-flex align-items-center" style={{ color: '#E8F5E9' }}>
+                    <span className="me-2">📧</span>
+                    emmanuel@aaapng.com
+                  </h4>
+        </div>
 
               <div className="col-md-3 text-md-end">
-                <h5 className="fw-bold mb-2" style={{ color: "#69F0AE" }}>Agro Advance Aben Limited</h5>
+                <h5 className="fw-bold mb-2" style={{ color: "#69F0AE" }}>Agro Advance Aben</h5>
                 <p className="small mb-0" style={{ color: "#E8F5E9" }}>
                   Finance with Purpose. Supporting farmers and small businesses.
                 </p>
@@ -216,16 +225,27 @@ export default function PrivacyPolicy({ auth }) {
 
           {/* Mobile Footer */}
           <div className="mobile-footer d-md-none mt-4 px-3">
-            <h6 className="text-uppercase mb-2" style={{ color: "#69F0AE" }}>Papua New Guinea</h6>
+            <h6 className="text-uppercase fw-bold mb-2" style={{ color: "#69F0AE" }}>ADDRESS</h6>
             <p className="small mb-3" style={{ color: "#E8F5E9" }}>
               📍 Avara Annex, Level 7, Brampton St.,<br/>
               Port Moresby,Papua New Guinea
             </p>
 
-            <p className="text-uppercase small mb-1" style={{ color: "#E8F5E9" }}>Contact Us Now!</p>
-            <h4 className="fw-bold mb-3" style={{ color: "#4CAF50" }}>+675 7211 5122</h4>
+            <div className="col-md-1 text-md-center">
+          <p className="text-uppercase fw-bold mb-0 text-green-custom">Contact Us Now!</p>
+         <h4 className="small mb-0 d-flex align-items-center" style={{ color: '#E8F5E9' }}>
+                    <span className="me-2">📞</span>
+                    +675 7211 5122
+                  </h4>
 
-            <h5 className="fw-bold mb-2" style={{ color: "#69F0AE" }}>Agro Advance Aben Limited</h5>
+                  {/* Email */}
+                  <h4 className="small mb-3 d-flex align-items-center" style={{ color: '#E8F5E9' }}>
+                    <span className="me-2">📧</span>
+                    emmanuel@aaapng.com
+                  </h4>
+        </div>
+
+            <h5 className="fw-bold mb-2" style={{ color: "#69F0AE" }}>Agro Advance Aben </h5>
             <p className="small mb-3" style={{ color: "#E8F5E9" }}>
               Finance with Purpose. Supporting farmers and small businesses.
             </p>
@@ -290,7 +310,6 @@ export default function PrivacyPolicy({ auth }) {
     Adzguru (PNG) Ltd
   </a>
 </div>
-
         </div>
       </footer>
 

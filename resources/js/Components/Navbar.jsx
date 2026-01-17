@@ -19,18 +19,33 @@ function BrochureModal({ open, onClose, brochureUrl }) {
     return Object.keys(e).length === 0;
   };
 
+  const clearForm = () => {
+    setName("");
+    setPhone("");
+    setEmail("");
+    setErrors({});
+  };
+
   const handleSubmit = (ev) => {
     ev.preventDefault();
     if (!validate()) return;
 
     onClose();
+    clearForm();
     const url = brochureUrl || "/storage/brochure.pdf";
     const a = document.createElement("a");
     a.href = url;
     a.download = "brochure.pdf";
     document.body.appendChild(a);
+    // alert("a href: " + a.href);
+    // return;
     a.click();
     a.remove();
+  };
+
+  const handleClose = () => {
+    clearForm();
+    onClose();
   };
 
   return (
@@ -59,15 +74,25 @@ function BrochureModal({ open, onClose, brochureUrl }) {
             {errors.email && <div className="text-red-500 text-xs mt-1">{errors.email}</div>}
           </div>
 
-          <div className="flex justify-end gap-3 items-center">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded border text-sm">
-              Cancel
-            </button>
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch w-full">
+  <button
+    type="button"
+    onClick={handleClose}
+    className="w-full sm:flex-1 px-4 py-2 rounded border text-sm text-center"
+  >
+    Cancel
+  </button>
 
-            <button type="submit" className="px-5 py-2 rounded text-white bg-[#287c3a] hover:bg-green-500">
-              Submit & Download
-            </button>
-          </div>
+  <button
+    type="submit"
+    className="w-full sm:flex-1 px-4 py-2 rounded text-white bg-[#287c3a] hover:bg-green-500 text-center whitespace-nowrap"
+  >
+    Submit & Download
+  </button>
+</div>
+
+
+
         </form>
       </div>
     </div>
@@ -80,7 +105,9 @@ export default function Navbar({ auth }) {
   const [activeSection, setActiveSection] = useState("");
 
   const openForm = () => setShowFormInternal(true);
-  const closeForm = () => setShowFormInternal(false);
+  const closeForm = () => {
+    setShowFormInternal(false);
+  };
 
   useEffect(() => {
     const handleScroll = () => {

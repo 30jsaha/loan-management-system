@@ -139,15 +139,23 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
           setIsChecking(false);
           return; // ❌ stop execution
         }
-        if (field.name == "current_net_pay_amt" && formData["current_net_pay_amt"] >= formData["gross_salary_amt"]) {
-          Swal.fire({
-            title: "Warning!",
-            text: `Net salary amt. cannot be ${formData["current_net_pay_amt"] == formData["gross_salary_amt"] ? "same as " : "greater than the"} gross salary amt.`,
-            icon: "warning",
-          });
-          setIsChecking(false);
-          return;
+        if (field.name === "current_net_pay_amt") {
+          const net = Number(formData.current_net_pay_amt);
+          const gross = Number(formData.gross_salary_amt);
+
+          if (gross > 0 && net >= gross) {
+            Swal.fire({
+              title: "Warning!",
+              text: `Net salary amount cannot be ${
+                net === gross ? "same as" : "greater than"
+              } the gross salary amount.`,
+              icon: "warning",
+            });
+            setIsChecking(false);
+            return;
+          }
         }
+
         if (field.name == "proposed_pva_amt" && (value == 0 || value == null)) {
           Swal.fire({
             title: "Warning!",

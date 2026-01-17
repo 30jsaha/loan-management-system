@@ -113,7 +113,7 @@ export default function Create({ auth }) {
     >
       <Head title={formData.cus_id ? "Edit Customer" : "Create Customer"} />
       <Container fluid className="py-5 custPadding">
-        <Row className="mb-3">
+        <Row className="mb-2 max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
           <Col className="d-flex justify-content-between align-items-center">
             <Link
               href={route("customers")}
@@ -124,7 +124,7 @@ export default function Create({ auth }) {
           </Col>
         </Row>
 
-        <Card className="shadow-sm">
+        <Card className="shadow-sm max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
           <Card.Body>
             {message && (
               <Alert

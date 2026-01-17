@@ -108,7 +108,6 @@ export default function Index({ auth }) {
   return (
     <AuthenticatedLayout user={auth.user}>
       <Head title="Rejection Reasons" />
-      <Toaster position="top-right" />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
 

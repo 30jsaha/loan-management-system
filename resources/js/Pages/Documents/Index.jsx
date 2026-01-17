@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Building2 } from "lucide-react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -137,7 +137,7 @@ export default function DocumentTypesIndex({ auth }) {
 
   const fetchDocs = async () => {
     try {
-      const res = await axios.get("/api/document-types");
+      const res = await axios.get("/api/document-types-all");
       setDocs(res.data);
     } catch {
       toast.error("Failed to load document types");
@@ -196,7 +196,7 @@ export default function DocumentTypesIndex({ auth }) {
         >
           <ArrowLeft size={16} className="mr-2" /> Back
         </Link>
-        <div className="bg-white shadow-md border p-6 rounded-lg mb-6">
+        <div className="bg-white shadow-md border p-6 rounded-lg mb-2">
           <h3 className="text-lg font-semibold mb-4">
             {isEditing ? "Edit Document Type" : "Add Document Type"}
           </h3>
@@ -293,13 +293,25 @@ export default function DocumentTypesIndex({ auth }) {
         </div>
 
         {/* Search */}
-        <div className="bg-white p-4 border mb-4">
-          <input
-            className="border px-3 py-2 rounded w-1/3"
-            placeholder="Search Document Name"
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="bg-white p-4 border mb-2 rounded-lg">
+
+          <div className="relative w-full md:w-1/3">
+            <Building2
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+
+            <input
+              type="text"
+              placeholder="Search Document Name"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md
+                focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
         </div>
+
 
         {/* Table */}
         <div className="bg-white border shadow overflow-x-auto">

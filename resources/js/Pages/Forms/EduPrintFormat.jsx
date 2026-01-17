@@ -71,8 +71,8 @@ export default function EduPrintFormat({ auth, loan }) {
             style={{ fontFamily: "Arial, sans-serif" }}
           >
             {/* Header */}
-            <div style={{ maxWidth: "150px", margin: "0 auto" }}>
-              <MainLogo width="120px" />
+            <div style={{ maxWidth: "100px", margin: "0 auto" }}>
+              <MainLogo width="80px" />
             </div>
 
 
@@ -148,19 +148,25 @@ export default function EduPrintFormat({ auth, loan }) {
 
             {/* Deduction Details */}
             <div className="grid grid-cols-12 gap-2 text-sm mb-4">
-              <div className="col-span-3">
-                <div className="text-center text-xs">Deduction Code</div>
-                <div className="flex mt-1 px-7">
-                  <CharBox /> <CharBox /> <CharBox /> <CharBox /> <CharBox /> <CharBox />{" "}
-                  <CharBox />
-                </div>
-              </div>
-              <div className="col-span-3 flex flex-col items-center">
-                <div className="text-xs ">Description</div>
-                <div className="flex mt-1 ">
-                  <ChaarBox />
-                </div>
-              </div>
+             <div className="col-span-3">
+  <div className="text-center text-xs">Deduction Code</div>
+  <div className="flex mt-1 px-12 gap-0">
+    <CharBox value="D" />
+    <CharBox value="A" />
+    <CharBox value="G" />
+    <CharBox value="R" />
+    <CharBox value="O" />
+  </div>
+</div>
+
+ <div className="col-span-3 flex flex-col items-center">
+  <div className="text-xs">Description</div>
+
+  <div className="mt-1 px-4 py-1 border border-black text-xs  w-full text-center">
+    <b>AGRO ADVANCE ABEN</b>
+  </div>
+</div>
+
               <div className="col-span-3  flex flex-col items-center">
                 <div className="text-xs px-4">% or Amount Per Pay</div>
                 <div className="flex mt-1 ">
@@ -386,61 +392,43 @@ export default function EduPrintFormat({ auth, loan }) {
         </div>
         {/* --- End of MODIFICATION 2 --- */}
       </div>
+<style>
+  {`
+    @media print {
+      /* 1. Hide the entire UI including sidebar and nav */
+      body * {
+        visibility: hidden !important;
+      }
 
-      <style>
-        {`
-          @media print {
-            @page {
-              size: A4 portrait;
-              margin: 10mm 12mm;
-            }
+      /* 2. Show only the specific form area */
+      #printable-area, #printable-area * {
+        visibility: visible !important;
+      }
 
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-              width: 100%;
-              height: 100%;
-            }
+      /* 3. Force the form to the top-left of the physical page */
+      #printable-area {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        margin-top: 0 !important;
+        padding: 0 !important;
+      }
 
-            body {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-              background: white !important;
-            }
+      /* 4. Fix height issues caused by the AuthenticatedLayout */
+      html, body {
+        height: auto !important;
+        overflow: visible !important;
+      }
 
-            #print-area {
-              width: 100%;
-              margin: 0;
-              padding: 0;
-              background: white;
-            }
-            
-            #printable-area {
-              width: 100%;
-              margin: 0;
-              padding: 0;
-            }
-
-            #printable-area > div {
-              max-width: 100% !important;
-              padding: 0 !important;
-              margin: 0 auto !important;
-              box-shadow: none !important;
-            }
-
-            /* Hide non-print UI */
-            .no-print, .header-bar {
-              display: none !important;
-            }
-
-            /* Ensure colors print */
-            * {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-          }
-        `}
-    </style>
+      @page {
+        size: A4 portrait;
+        margin: 10mm;
+      }
+    }
+  `}
+</style>
 
     </AuthenticatedLayout>
   );

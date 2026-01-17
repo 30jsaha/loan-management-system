@@ -226,7 +226,7 @@ class CustomerController extends Controller
             'organisation_id' => 'required|integer|exists:organisation_master,id',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'gender' => 'required|in:Male,Female,Other',
+            'gender' => 'nullable|in:Male,Female,Other',
             'dob' => 'nullable|date',
             'marital_status' => 'nullable|in:Single,Married,Divorced,Widowed',
             'no_of_dependents' => 'nullable|integer|min:0',

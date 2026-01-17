@@ -54,8 +54,8 @@ export default function HealthPrintFormat({ auth, loan }) {
       <div id="printable-area" className="max-w-4xl mx-auto bg-white p-8 shadow-lg">
         {/* Logo and Header */}
         <div className="flex flex-col items-center mb-2">
-           <div style={{ maxWidth: "100px", margin: "0 auto" }}>
-                        <MainLogo width="100px" />
+           <div style={{ maxWidth: "150px", margin: "0 auto" }}>
+                        <MainLogo width="120px" />
                       </div>
           <div className="text-center font-bold text-sm">AGRO ADVANCE ABEN LTD</div>
         </div>
@@ -133,11 +133,11 @@ export default function HealthPrintFormat({ auth, loan }) {
           <table className="w-full border-collapse border border-black text-xs">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-black p-1 text-left w-32">Code</th>
-                <th className="border border-black p-1 text-left">Description</th>
-                <th className="border border-black p-1 text-right w-24">A/U/D</th>
-                <th className="border border-black p-1 text-right w-32">Amount per pay</th>
-                <th className="border border-black p-1 text-right w-32">Total Amount</th>
+                <th className="border border-black p-1 text-left w-32 text-black">Code</th>
+                <th className="border border-black p-1 text-left text-black">Description</th>
+                <th className="border border-black p-1 text-right w-24 text-black">A/U/D</th>
+                <th className="border border-black p-1 text-right w-32 text-black">Amount per pay</th>
+                <th className="border border-black p-1 text-right w-32 text-black">Total Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -230,73 +230,48 @@ export default function HealthPrintFormat({ auth, loan }) {
       </div>
 
       {/* Print Styles */}
-      <style>{`
-          @media print {
-              @page {
-                  size: A4 portrait;
-                  margin: 6mm; /* This is your page margin */
-              }
+<style dangerouslySetInnerHTML={{ __html: `
+  @media print {
+    /* 1. Hide the Sidebar and Navbar of the layout */
+    body * { 
+      visibility: hidden !important; 
+    }
+    
+    /* 2. Show only the form and its children */
+    #printable-area, #printable-area * { 
+      visibility: visible !important; 
+    }
+    
+    /* 3. Move the form to the absolute top of the physical page */
+    #printable-area {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      padding-bottom: 5mm !important;
+    }
 
-              html, body {
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  width: 100%;
-                  height: 100%;
-                  background: white !important;
-              }
+    /* 4. CRITICAL: Reset layout height so it doesn't cut off at 1 page */
+    html, body {
+      height: auto !important;
+      overflow: visible !important;
+      background: white !important;
+    }
 
-              /* --- FIX 1: Hide everything by default --- */
-              body * {
-                  visibility: hidden;
-              }
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
 
-              .no-print {
-                  display: none !important;
-              }
-
-              /* --- FIX 2: ONLY show the printable area and its contents --- */
-              #printable-area, #printable-area * {
-                  visibility: visible;
-              }
-
-              /* --- FIX 3: Position the area to fill the page --- */
-              #printable-area {
-                  position: absolute;
-                  left: 0;
-                  top: 0;
-                  width: 100%;
-                  max-width: 100% !important;
-                  margin: 0 !important;
-                  padding: 0 !important; /* Remove screen padding (p-8) */
-                  box-shadow: none !important;
-              }
-
-              /* --- FIX 4: Corrected typo (!G -> !important) --- */
-              * {
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-              }
-
-              /* Your color-forcing rules (these are correct) */
-              .bg-red-600 {
-                  background-color: #dc2626 !important;
-              }
-
-              .text-white {
-                  color: white !important;
-              }
-
-              .bg-gray-100 {
-                  background-color: #f3f4f6 !important;
-              }
-          }
-
-          @media screen {
-              body {
-                  background: #f3f4f6;
-              }
-          }
-      `}</style>
+    /* 5. Force background colors to show up */
+    * { 
+      -webkit-print-color-adjust: exact !important; 
+      print-color-adjust: exact !important; 
+    }
+  }
+`}} />
     </div> 
     </AuthenticatedLayout>
     

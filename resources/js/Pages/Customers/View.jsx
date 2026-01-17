@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { formatCurrency } from "@/Utils/formatters";
 
 import {
   ArrowLeft,
@@ -90,6 +91,14 @@ export default function View({ auth, customerId }) {
       <Head title="Customer Dashboard" />
 
       <div className="py-10 px-4 bg-gray-100 min-h-screen">
+        <div className="max-w-9xl mx-auto -mt-4 mb-3 pl-4">
+          <Link
+            href={route("customers")}
+            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
+          >
+            <ArrowLeft size={16} className="mr-2" /> Back to List
+          </Link>
+        </div>
         <div className="max-w-7xl mx-auto">
           
           {/* ================= ONE UNIFIED MAIN CARD ================ */}
@@ -98,7 +107,7 @@ export default function View({ auth, customerId }) {
             {/* ================= LEFT SIDEBAR (Customer Info) ================ */}
             <div className="p-8 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200">
               <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-white rounded-full border shadow-sm">
+                <div className="p-3 bg-white rounded-full border shadow-sm" style={{marginTop: "-20px"}}>
                   <User size={32} className="text-indigo-600" />
                 </div>
                 <div>
@@ -313,12 +322,12 @@ const CompanyTab = ({ customer }) => {
       <InfoTable
         rows={[
           // Organisation info (kept)
-          ["Organisation Name", org.organisation_name || "—"],
-          ["Sector", org.sector_type || "—"],
+          ["Organisation Name", org.organisation_name ? org.organisation_name + ` [Sector: ${org.sector_type}]` : "—"],
+          // ["Sector", org.sector_type || "—"],
+          // ["Email", org?.email || "—"],
           ["Address", org.address || "—"],
-          ["Contact Number", org.contact_no || "—"],
-          ["Email", org.email || "—"],
-          ["Status", org.status || "—"],
+          // ["Employer Contact", org.contact_no || "—"],
+          // ["Status", org.status || "—"],
 
           // Employment info (added)
           ["Employee No", customer.employee_no || "—"],
@@ -330,8 +339,8 @@ const CompanyTab = ({ customer }) => {
           ["Work Province", customer.work_province || "—"],
           ["Immediate Supervisor", customer.immediate_supervisor || "—"],
           ["Date Joined", customer.date_joined || "—"],
-          ["Monthly Salary", customer.monthly_salary ? `PGK ${customer.monthly_salary}` : "—"],
-          ["Net Salary", customer.net_salary ? `PGK ${customer.net_salary}` : "—"],
+          ["Monthly Salary", customer.monthly_salary ? `PGK ${formatCurrency(customer.monthly_salary)}` : "—"],
+          ["Net Salary", customer.net_salary ? `PGK ${formatCurrency(customer.net_salary)}` : "—"],
         ]}
       />
     </div>
@@ -913,6 +922,51 @@ const LoanStatementCard = ({
       110,
       83
     );
+    const drawHeader = (doc) => {
+      /* ===== TITLE ===== */
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Loan Statement", 14, 15);
+
+      /* ===== CUSTOMER DETAILS ===== */
+      doc.setFontSize(11);
+      doc.text(
+        `${customer?.first_name || ""} ${customer?.last_name || ""}`,
+        14,
+        25
+      );
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        customer?.company?.company_name ||
+          loan.organisation?.organisation_name ||
+          "—",
+        14,
+        31
+      );
+
+      doc.text(`Phone: ${customer?.phone || "—"}`, 14, 40);
+      doc.text(`Email: ${customer?.email || "—"}`, 14, 46);
+
+      /* ===== LOAN SUMMARY ===== */
+      doc.setFont("helvetica", "bold");
+      doc.text("Loan Summary", 14, 58);
+
+      doc.setFont("helvetica", "normal");
+
+      // Left column
+      doc.text(`Loan ID: ${loan.id}`, 14, 65);
+      doc.text(`Loan Applied: ${loanAppliedDate}`, 14, 71);
+      doc.text(`Loan Approved: ${loanApprovedDate}`, 14, 77);
+      doc.text(`EMI Start Date: ${emiStartDate}`, 14, 83);
+
+      // Right column
+      doc.text(`EMI Amount: PGK ${emiAmount.toFixed(2)}`, 110, 65);
+      doc.text(`Tenure: ${tenure} Fortnights`, 110, 71);
+      doc.text(`Total Repayable: PGK ${totalRepayable.toFixed(2)}`, 110, 77);
+      doc.text(`Outstanding: PGK ${outstanding.toFixed(2)}`, 110, 83);
+    };
 
     /* ======================
       INSTALLMENT TABLE
@@ -928,20 +982,36 @@ const LoanStatementCard = ({
           "Balance (PGK)",
         ]],
         body: rows,
+
         styles: {
           fontSize: 9,
           halign: "center",
           lineWidth: 0.3,
           lineColor: [0, 0, 0],
         },
+
         headStyles: {
           fillColor: [79, 70, 229],
           textColor: 255,
           fontStyle: "bold",
-          lineWidth: 0.5,
         },
-        tableLineWidth: 0.3,
+
+        margin: { top: 95 },
+
+        didDrawPage: () => {
+          drawHeader(doc);
+
+          // Footer on every page
+          const pageHeight = doc.internal.pageSize.height;
+          doc.setFontSize(8);
+          doc.text(
+            "Generated by Loan Management System",
+            14,
+            pageHeight - 10
+          );
+        },
       });
+
     } else {
       doc.setFontSize(11);
       doc.text("No installments paid yet.", 14, 92);

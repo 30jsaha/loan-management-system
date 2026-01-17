@@ -115,94 +115,129 @@ class AllCustController extends Controller
 
     public function store(Request $request)
     {
-        $rules = [
-            'cust_name' => [
-                'required',
-                'string',
-                'max:200',
-                'unique:all_cust_master,cust_name'
-            ],
-            'emp_code' => [
-                'nullable',
-                'string',
-                'max:50',
-                'unique:all_cust_master,emp_code'
-            ],
-            'phone' => [
-                'nullable',
-                'string',
-                'max:20',
-                'unique:all_cust_master,phone'
-            ],
-            'email' => [
-                'nullable',
-                'email',
-                'max:100',
-                'unique:all_cust_master,email'
-            ],
-            'gross_pay' => 'nullable|numeric|min:0',
-            'net_pay' => 'nullable|numeric|min:0',
-            'organization_id' => 'required|numeric|exists:organisation_master,id',
-        ];
+        try {
+            $validated = $request->validate(
+                [
+                    'cust_name' => [
+                        'required',
+                        'string',
+                        'max:200',
+                        // 'unique:all_cust_master,cust_name'
+                    ],
+                    'emp_code' => [
+                        'nullable',
+                        'string',
+                        'max:50',
+                        'unique:all_cust_master,emp_code'
+                    ],
+                    'phone' => [
+                        'nullable',
+                        'digits:8',
+                        'unique:all_cust_master,phone',
+                    ],
+                    'email' => [
+                        'nullable',
+                        'email',
+                        'max:100',
+                        'unique:all_cust_master,email'
+                    ],
+                    'gross_pay' => 'nullable|numeric|min:0',
+                    'net_pay'   => 'nullable|numeric|min:0',
+                    'organization_id' => 'required|exists:organisation_master,id',
+                ],
+                [
+                    'cust_name.required' => 'Customer name is required.',
+                    'cust_name.unique'   => 'Customer name already exists.',
+                    'emp_code.unique'    => 'Employee code already exists.',
+                    'phone.unique'       => 'Phone number already exists.',
+                    'email.unique'       => 'Email address already exists.',
+                    'email.email'        => 'Please enter a valid email address.',
+                    'organization_id.required' => 'Organisation is required.',
+                    'organization_id.exists'   => 'Selected organisation is invalid.',
+                    'gross_pay.numeric' => 'Gross pay must be a number.',
+                    'net_pay.numeric'   => 'Net pay must be a number.',
+                ]
+            );
 
-        $messages = [
-            'cust_name.unique' => 'Customer name already exists.',
-            'emp_code.unique'  => 'Employee code already exists.',
-            'phone.unique'     => 'Phone number already exists.',
-            'email.unique'     => 'Email address already exists.',
-        ];
+            $cust = AllCustMaster::create($validated);
 
-        $validated = $request->validate($rules,$messages);
-        
-        $cust = AllCustMaster::create($validated);
-        return response()->json($cust, 201);
+            return response()->json([
+                'status' => true,
+                'message' => 'Customer created successfully',
+                'data' => $cust
+            ], 201);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
     }
+
     public function update(Request $request, $id)
     {
-        $rules = [
-            'cust_name' => [
-                'required',
-                'string',
-                'max:200',
-                Rule::unique('all_cust_master', 'cust_name')->ignore($id),
-            ],
-            'emp_code' => [
-                'nullable',
-                'string',
-                'max:50',
-                Rule::unique('all_cust_master', 'emp_code')->ignore($id),
-            ],
-            'phone' => [
-                'nullable',
-                'string',
-                'max:20',
-                Rule::unique('all_cust_master', 'phone')->ignore($id),
-            ],
-            'email' => [
-                'nullable',
-                'email',
-                'max:100',
-                Rule::unique('all_cust_master', 'email')->ignore($id),
-            ],
-            'gross_pay' => 'nullable|numeric|min:0',
-            'net_pay' => 'nullable|numeric|min:0',
-            'organization_id' => 'required|numeric|exists:organisation_master,id',
-        ];
+        try {
+            $validated = $request->validate(
+                [
+                    'cust_name' => [
+                        'required',
+                        'string',
+                        'max:200',
+                        // Rule::unique('all_cust_master', 'cust_name')->ignore($id),
+                    ],
+                    'emp_code' => [
+                        'nullable',
+                        'string',
+                        'max:50',
+                        Rule::unique('all_cust_master', 'emp_code')->ignore($id),
+                    ],
+                    'phone' => [
+                        'nullable',
+                        'digits:8',
+                        Rule::unique('all_cust_master', 'phone')->ignore($id),
+                    ],
+                    'email' => [
+                        'nullable',
+                        'email',
+                        'max:100',
+                        Rule::unique('all_cust_master', 'email')->ignore($id),
+                    ],
+                    'gross_pay' => 'nullable|numeric|min:0',
+                    'net_pay'   => 'nullable|numeric|min:0',
+                    'organization_id' => 'required|exists:organisation_master,id',
+                ],
+                [
+                    'cust_name.required' => 'Customer name is required.',
+                    'cust_name.unique'   => 'Customer name already exists.',
+                    'emp_code.unique'    => 'Employee code already exists.',
+                    'phone.unique'       => 'Phone number already exists.',
+                    'email.unique'       => 'Email address already exists.',
+                    'email.email'        => 'Please enter a valid email address.',
+                    'organization_id.required' => 'Organisation is required.',
+                    'organization_id.exists'   => 'Selected organisation is invalid.',
+                ]
+            );
 
-        $messages = [
-            'cust_name.unique' => 'Customer name already exists.',
-            'emp_code.unique'  => 'Employee code already exists.',
-            'phone.unique'     => 'Phone number already exists.',
-            'email.unique'     => 'Email address already exists.',
-        ];
+            $customer = AllCustMaster::findOrFail($id);
+            $customer->update($validated);
 
-        $validated = $request->validate($rules, $messages);
+            return response()->json([
+                'status' => true,
+                'message' => 'Customer updated successfully',
+                'data' => $customer
+            ]);
 
-        $customer = AllCustMaster::findOrFail($id);
-        $customer->update($validated);
-
-        return response()->json(['message' => 'Customer updated successfully', 'data' => $customer]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
     }
+
     public function destroy($id)
     {
         $customer = AllCustMaster::findOrFail($id);

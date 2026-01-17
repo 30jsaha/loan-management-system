@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Row, Col } from "react-bootstrap";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
+import { router } from "@inertiajs/react";
+
 
 export default function CustomerForm({
   formData,
@@ -32,8 +34,118 @@ export default function CustomerForm({
   const [isDataSaving, setIsDataSaving] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
 
+const fetchCustomerDraft = async () => {
+  try {
+    const res = await axios.get("/api/customer-draft/fetch", { withCredentials: true });
+    console.log("customer-draft fetch res:", res);
+    const draft = res.data?.data;
+    const exists = res.data?.exists;
+
+    if (exists && draft) {
+      console.log("Customer draft response:", draft);
+      // Normalize numeric-like fields then replace form data so UI shows saved values
+      const toNumberOrEmpty = (v) => {
+        if (v === "" || v === null || v === undefined) return "";
+        const n = Number(v);
+        return Number.isFinite(n) ? n : v;
+      };
+ 
+      const normalized = {
+        ...draft,
+        monthly_salary: toNumberOrEmpty(draft.monthly_salary),
+        net_salary: toNumberOrEmpty(draft.net_salary),
+        no_of_dependents: toNumberOrEmpty(draft.no_of_dependents),
+        company_id: toNumberOrEmpty(draft.company_id),
+        organisation_id: toNumberOrEmpty(draft.organisation_id),
+        years_at_current_employer: toNumberOrEmpty(draft.years_at_current_employer),
+      };
+
+      setFormData(() => normalized);
+
+      // If draft represents an existing customer, set UI flags
+      if (draft.cus_id && draft.cus_id !== 0) {
+        setIsExistingFound(true);
+        setIsAutoFilled(true);
+        setOrgSelectable(false);
+        if (onExistingCustomerLoaded) onExistingCustomerLoaded(draft);
+      } else if (draft.employee_no) {
+        // If draft has an employee_no but not a cus_id, prefill the search input
+        setEmpSearch(`${draft.employee_no}${draft.first_name || draft.last_name ? ` - ${draft.first_name || ""} ${draft.last_name || ""}` : ""}`.trim());
+      }
+
+      toast.success("Draft loaded", { duration: 1500 });
+    }
+
+    console.log("Customer draft loaded");
+  } catch (error) {
+    // No draft exists – silently ignore
+    console.log("No customer draft found");
+  }
+};
+useEffect(() => {
+  fetchCustomerDraft();
+}, []);
 
 
+
+
+
+  const NUMERIC_FIELDS = [
+    "monthly_salary",
+    "net_salary",
+    "no_of_dependents",
+    "company_id",
+    "organisation_id",
+    "years_at_current_employer",
+  ];
+  const sanitizeFormData = (data) => {
+    const cleaned = { ...data };
+
+    NUMERIC_FIELDS.forEach((field) => {
+      const value = cleaned[field];
+
+      if (value === "" || value === null || value === undefined) {
+        cleaned[field] = 0;
+      } else {
+        cleaned[field] = Number(value);
+        if (isNaN(cleaned[field])) {
+          cleaned[field] = 0;
+        }
+      }
+    });
+
+    return cleaned;
+  };
+
+
+  //Draft saved customer on mount
+  const handleSaveAndNext = async () => {
+    setIsDataSaving(true);
+
+    try {
+      const payload = sanitizeFormData(formData);
+
+      // console.log("payload: ", payload);
+      // return;
+
+      await axios.post("/api/customer-draft/save", payload);
+
+      toast.success("Draft saved successfully", {
+        duration: 3000,
+      });
+
+    } catch (error) {
+      toast.error("Failed to save draft");
+      setIsDataSaving(false);
+      return;
+    }
+
+    setIsDataSaving(false);
+
+    // ✅ Navigate to loans list
+    router.visit("/loans");
+  };
+  // Draft loading handled by `fetchCustomerDraft()` on mount above
 
   // Fetch employees logic
   const fetchEmployees = async (query = "", pageNum = 1) => {
@@ -141,6 +253,13 @@ export default function CustomerForm({
         toast.success("Customer saved successfully!", {
           style: { background: "#2563eb", color: "#fff" },
         });
+      } 
+      
+      // 🔥 Clear draft (non-blocking)
+      try {
+        await axios.delete("/api/customer-draft/clear");
+      } catch (err) {
+        console.warn("Draft clear failed", err);
       }
       setIsDataSaving(false);
       onNext(savedCustomer);
@@ -206,49 +325,41 @@ export default function CustomerForm({
       // FIX: Added || "" to handle nulls from DB
       // FIX: Added missing fields (no_of_dependents, spouse details)
       setIsAutoFilled(true);
-      setFormData((prev) => ({
-        ...prev,
+      const baseCompany = formData?.company_id || 1;
+      const newObj = {
         cus_id: existingCustomer.id,
-        employee_no: existingCustomer.employee_no,
-
+        employee_no: existingCustomer.employee_no || "",
+        company_id: existingCustomer.company_id || baseCompany,
+        organisation_id: existingCustomer.organisation_id || "",
         first_name: existingCustomer.first_name || "",
         last_name: existingCustomer.last_name || "",
-        gender: existingCustomer.gender || "", // Handles null
-        dob: existingCustomer.dob || "", // Handles null
-        marital_status: existingCustomer.marital_status || "", // Handles null
-
-        // 🔹 ADDED MISSING FIELDS FROM JSON
+        gender: existingCustomer.gender || "",
+        dob: existingCustomer.dob || "",
+        marital_status: existingCustomer.marital_status || "",
         no_of_dependents: existingCustomer.no_of_dependents || "",
         spouse_full_name: existingCustomer.spouse_full_name || "",
         spouse_contact: existingCustomer.spouse_contact || "",
-
         phone: existingCustomer.phone || "",
         email: existingCustomer.email || "",
-
         home_province: existingCustomer.home_province || "",
         district_village: existingCustomer.district_village || "",
         present_address: existingCustomer.present_address || "",
         permanent_address: existingCustomer.permanent_address || "",
-
         payroll_number: existingCustomer.payroll_number || "",
         employer_department: existingCustomer.employer_department || "",
         designation: existingCustomer.designation || "",
         employment_type: existingCustomer.employment_type || "",
         date_joined: existingCustomer.date_joined || "",
-
-        monthly_salary: existingCustomer.monthly_salary || "",
-        net_salary: existingCustomer.net_salary || "",
-
+        monthly_salary: existingCustomer.monthly_salary || 0.00,
+        net_salary: existingCustomer.net_salary || 0.00,
         immediate_supervisor: existingCustomer.immediate_supervisor || "",
         years_at_current_employer: existingCustomer.years_at_current_employer || "",
         work_district: existingCustomer.work_district || "",
         work_province: existingCustomer.work_province || "",
         employer_address: existingCustomer.employer_address || "",
         work_location: existingCustomer.work_location || "",
-
-        organisation_id: existingCustomer.organisation_id || "",
-        company_id: existingCustomer.company_id || "",
-      }));
+      };
+      setFormData(newObj);
       
        if (onExistingCustomerLoaded) {
           onExistingCustomerLoaded(existingCustomer);
@@ -281,23 +392,42 @@ export default function CustomerForm({
       const cleanFullName = cleanName(selectedEmp.cust_name);
       const parts = cleanFullName.split(" ");
 
-      setFormData((prev) => ({
-        ...prev,
+      const baseCompany = formData?.company_id || 1;
+      const newObj = {
         cus_id: null,
-        employee_no: selectedEmp.emp_code,
+        employee_no: selectedEmp.emp_code || "",
+        company_id: selectedEmp.company_id || baseCompany,
+        organisation_id: selectedEmp.organization_id || "",
         first_name: parts[0] || "",
         last_name: parts.slice(1).join(" ") || "",
         phone: selectedEmp.phone || "",
         email: selectedEmp.email || "",
         monthly_salary: selectedEmp.gross_pay || "",
         net_salary: selectedEmp.net_pay || "",
-        organisation_id: selectedEmp.organization_id || "",
-        company_id: selectedEmp.company_id || "",
-        // Reset specific fields when loading fresh from employee list
         no_of_dependents: "",
         spouse_full_name: "",
         spouse_contact: "",
-      }));
+        gender: "",
+        dob: "",
+        marital_status: "",
+        home_province: "",
+        district_village: "",
+        present_address: "",
+        permanent_address: "",
+        payroll_number: "",
+        employer_department: "",
+        designation: "",
+        employment_type: "",
+        date_joined: "",
+        immediate_supervisor: "",
+        years_at_current_employer: "",
+        work_district: "",
+        work_province: "",
+        employer_address: "",
+        work_location: "",
+      };
+
+      setFormData(newObj);
 
       setOrgSelectable(false);
     }
@@ -307,7 +437,6 @@ export default function CustomerForm({
 
   return (
     <>
-      {/* <Toaster position="top-right" reverseOrder={false} /> */}
       {/* Flash message for existing customer */}
       {isExistingFound && (
         <div className="mb-4 p-3 bg-green-100 border-l-4 border-blue-500 text-blue-700 shadow-sm rounded flex items-center justify-between ">
@@ -481,13 +610,13 @@ export default function CustomerForm({
 
               <div className="grid grid-cols-3 gap-4 mt-3">
                 <div>
-                  <label>Gender</label>
+                  <label>Gender <ImportantField /></label>
                   <select
                     name="gender"
                     value={formData.gender || ""}
                     onChange={handleChange}
-                    disabled={isExistingFound && isAutoFilled}
-                    className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm ${isExistingFound && isAutoFilled && "bg-gray-100 cursor-not-allowed"}`}
+                    required
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                   >
                     <option value="">-- Select --</option>
                     <option value="Male">Male</option>
@@ -565,7 +694,7 @@ export default function CustomerForm({
           </Col>
 
           {/* ========== EMPLOYMENT DETAILS ========== */}
-          <Col  md={6}>
+          <Col md={6}>
             <fieldset className="fldset mt-4">
               <legend className="legend">Employment Details</legend>
             <div className="fldScroll">
@@ -739,7 +868,7 @@ export default function CustomerForm({
           </Col>
 
         </Row>
-         <Row className="mt-2">
+        <Row className="mt-2">
             <Col>
             <fieldset className="fldset mt-4 ">
               <legend className="legend">Contact Information</legend>
@@ -817,33 +946,38 @@ export default function CustomerForm({
               </div>
             </fieldset>
             </Col>
-          </Row>
+        </Row>
 
         {/* ========== SUBMIT BUTTON ========== */}
-        <Row className="mt-4 text-end">
-          <Col>
-            <button
-              type="submit"
-              disabled={isDataSaving}
-              className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""
-                } bg-indigo-600 text-white px-4 py-2 mt-3 rounded hover:bg-indigo-700 transition-all`}
-            >
-              {isDataSaving ? (
-                <>
-                  <span
-                    className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
-                    role="status"
-                  ></span>
-                  Saving...
-                </>
-              ) : isExistingFound ? (
-                "Update →"
-              ) : (
-                "Save →"
-              )}
-            </button>
-          </Col>
-        </Row>
+
+      <Row className="mt-4 text-end">
+        <Col className="flex justify-end gap-3">
+          {/* Save  draft*/}
+          <button
+            type="button"
+            disabled={isDataSaving}
+            onClick={() => handleSaveAndNext()}
+            className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""}
+              bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-all`}
+          >
+            Save & Exit
+          </button>
+
+          {/* Save & Next Only */}
+          <button
+            type="submit"
+            disabled={isDataSaving}
+            className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""}
+              bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-all`}
+          >
+            {isDataSaving ? "Saving..." : isExistingFound ? "Update" : "Save & Next →"}
+          </button>
+
+          
+
+        </Col>
+      </Row>
+
       </form>
     </>
   );

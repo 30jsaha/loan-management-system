@@ -39,6 +39,12 @@ class LoanController extends Controller
 
         return response()->json($loanPurpose);
     }
+    public function getLoanPurposesPerType($loanTypeId)
+    {
+        $loan = LoanSetting::with('purposes')->findOrFail($loanTypeId);
+        return response()->json($loan->purposes);
+    }
+
 
     public function createLoanPurposes(Request $request)
     {
@@ -150,7 +156,8 @@ class LoanController extends Controller
             'other_purpose_text' => 'nullable|string|max:255',
 
             'loan_amount_applied' => 'required|numeric|min:0',
-            'purpose_id' => 'required|integer',
+            // allow null on server and coerce invalid 0 -> null before insert
+            'purpose_id' => 'nullable|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'required|integer|min:1',
             'emi_amount' => 'nullable|numeric',
@@ -193,6 +200,16 @@ class LoanController extends Controller
             $validated['company_id'] = $customer->company_id;
             $validated['organisation_id'] = $customer->organisation_id;
 
+            // Normalize purpose_id: treat 0 or empty as null to avoid FK errors
+            if (array_key_exists('purpose_id', $validated) && ((int)$validated['purpose_id'] === 0)) {
+                $validated['purpose_id'] = null;
+            }
+
+            // If a non-null purpose_id is provided, ensure it exists
+            if (!is_null($validated['purpose_id']) && !LoanPurpose::where('id', $validated['purpose_id'])->exists()) {
+                return response()->json(['errors' => ['purpose_id' => ['Invalid purpose_id']]], 422);
+            }
+
             // Default values for unset fields
             $validated['status'] = $validated['status'] ?? 'Pending';
             $validated['emi_amount'] = number_format($validated['emi_amount'],2);
@@ -227,7 +244,8 @@ class LoanController extends Controller
             'other_purpose_text' => 'nullable|string|max:255',
 
             'loan_amount_applied' => 'required|numeric|min:0',
-            'purpose_id' => 'required|integer',
+            // allow null on server and coerce invalid 0 -> null before insert
+            'purpose_id' => 'nullable|integer',
             'loan_amount_approved' => 'nullable|numeric|min:0',
             'tenure_fortnight' => 'integer',
             'emi_amount' => 'nullable|numeric',
@@ -270,6 +288,16 @@ class LoanController extends Controller
             $customer = Customer::find($validated['customer_id']);
             $validated['company_id'] = $customer->company_id;
             $validated['organisation_id'] = $customer->organisation_id;
+
+            // Normalize purpose_id: treat 0 or empty as null to avoid FK errors
+            if (array_key_exists('purpose_id', $validated) && ((int)$validated['purpose_id'] === 0)) {
+                $validated['purpose_id'] = null;
+            }
+
+            // If a non-null purpose_id is provided, ensure it exists
+            if (!is_null($validated['purpose_id']) && !LoanPurpose::where('id', $validated['purpose_id'])->exists()) {
+                return response()->json(['errors' => ['purpose_id' => ['Invalid purpose_id']]], 422);
+            }
 
             // Default values for unset fields
             $validated['status'] = $validated['status'] ?? 'HigherApproval';
@@ -807,48 +835,119 @@ class LoanController extends Controller
         ], 200);
     }
 
+    // public function collectEMI(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'loan_ids'   => 'required|array',
+    //         'loan_ids.*' => 'exists:loan_applications,id',
+    //         // 'emi_counter' => 'required|array', // array of loan_id => count
+    //         // 'emi_counter.*' => 'integer|min:1',
+    //         'payment_date' => 'nullable|date',
+    //         'collection_uid' => 'nullable|string|max:20',
+    //     ]);
+
+    //     $emiCounters = $validated['emi_counter'];
+
+    //     // Generate 6–7 character batch ID
+    //     $collectionUid = $validated['collection_uid'] ?? strtoupper(substr(md5(time() . rand()), 0, 7));
+
+    //     foreach ($validated['loan_ids'] as $loanId) {
+
+    //         $loan = Loan::findOrFail($loanId);
+
+    //         // EMI frequency
+    //         $emiFreq = LoanSetting::where('id', $loan->loan_type)
+    //             ->value('installment_frequency_in_days');
+
+    //         $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? (int)$emiFreq : 14;
+
+    //         // ➤ Get EMI count for this loan
+    //         $emiCount = isset($emiCounters[$loanId]) 
+    //                     ? max(1, (int)$emiCounters[$loanId]) 
+    //                     : 1;
+
+    //         // Current installment count
+    //         $currentInstallments = InstallmentDetail::where('loan_id', $loanId)->count();
+
+    //         // ➤ Loop & insert EMI records
+    //         for ($i = 1; $i <= $emiCount; $i++) {
+
+    //             InstallmentDetail::create([
+    //                 'loan_id'             => $loanId,
+    //                 'collection_uid'      => $collectionUid,
+    //                 'installment_no'      => $currentInstallments + $i,
+    //                 'due_date'            => now()->addDays(($i - 1) * $emiFreq),
+    //                 'emi_amount'          => $loan->emi_amount,
+    //                 'payment_date'        => $validated['payment_date'] ?? now(),
+    //                 'status'              => 'Paid',
+    //                 'emi_collected_by_id' => auth()->user()->id,
+    //                 'emi_collected_date'  => now(),
+    //             ]);
+    //         }
+
+    //         // Update loan's next due date
+    //         $loan->next_due_date = now()->addDays($emiFreq * $emiCount)->toDateString();
+    //         $loan->save();
+    //     }
+
+    //     return response()->json([
+    //         'message'        => 'EMI collection recorded successfully!',
+    //         'collection_uid' => $collectionUid,
+    //     ]);
+    // }
+
     public function collectEMI(Request $request)
     {
         $validated = $request->validate([
-            'loan_ids'   => 'required|array',
-            'loan_ids.*' => 'exists:loan_applications,id',
-            // 'emi_counter' => 'required|array', // array of loan_id => count
-            // 'emi_counter.*' => 'integer|min:1',
-            'payment_date' => 'nullable|date',
-            'collection_uid' => 'nullable|string|max:20',
+            'loan_ids'        => 'required|array',
+            'loan_ids.*'      => 'exists:loan_applications,id',
+            'emi_counter'     => 'required|array', // loan_id => emi count
+            'emi_counter.*'   => 'integer|min:1',
+            'payment_date'    => 'nullable|date',
+            'collection_uid'  => 'nullable|string|max:20',
         ]);
 
         $emiCounters = $validated['emi_counter'];
 
-        // Generate 6–7 character batch ID
-        $collectionUid = $validated['collection_uid'] ?? strtoupper(substr(md5(time() . rand()), 0, 7));
+        // 🔑 Generate batch collection UID (once)
+        $collectionUid = $validated['collection_uid']
+            ?? strtoupper(substr(md5(now() . rand()), 0, 7));
 
         foreach ($validated['loan_ids'] as $loanId) {
 
             $loan = Loan::findOrFail($loanId);
 
-            // EMI frequency
+            // EMI frequency (days)
             $emiFreq = LoanSetting::where('id', $loan->loan_type)
                 ->value('installment_frequency_in_days');
 
-            $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? (int)$emiFreq : 14;
+            $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? (int) $emiFreq : 14;
 
-            // ➤ Get EMI count for this loan
-            $emiCount = isset($emiCounters[$loanId]) 
-                        ? max(1, (int)$emiCounters[$loanId]) 
-                        : 1;
+            // EMI count for this loan
+            $emiCount = max(1, (int) ($emiCounters[$loanId] ?? 1));
 
-            // Current installment count
-            $currentInstallments = InstallmentDetail::where('loan_id', $loanId)->count();
+            // Already paid EMIs
+            $paidCount = InstallmentDetail::where('loan_id', $loanId)
+                ->where('status', 'Paid')
+                ->count();
 
-            // ➤ Loop & insert EMI records
+            // Remaining EMIs
+            $remaining = max(0, $loan->total_no_emi - $paidCount);
+
+            // Safety: don’t overpay
+            $emiCount = min($emiCount, $remaining);
+
+            if ($emiCount <= 0) {
+                continue;
+            }
+
+            // Insert EMI records
             for ($i = 1; $i <= $emiCount; $i++) {
-
                 InstallmentDetail::create([
                     'loan_id'             => $loanId,
                     'collection_uid'      => $collectionUid,
-                    'installment_no'      => $currentInstallments + $i,
-                    'due_date'            => now()->addDays(($i - 1) * $emiFreq),
+                    'installment_no'      => $paidCount + $i,
+                    'due_date'            => now(), // paid today
                     'emi_amount'          => $loan->emi_amount,
                     'payment_date'        => $validated['payment_date'] ?? now(),
                     'status'              => 'Paid',
@@ -857,8 +956,20 @@ class LoanController extends Controller
                 ]);
             }
 
-            // Update loan's next due date
-            $loan->next_due_date = now()->addDays($emiFreq * $emiCount)->toDateString();
+            // 🔁 Recalculate paid count AFTER insert
+            $newPaidCount = InstallmentDetail::where('loan_id', $loanId)
+                ->where('status', 'Paid')
+                ->count();
+
+            // ✅ CLOSE LOAN if fully paid
+            if ($newPaidCount >= $loan->total_no_emi) {
+                $loan->status = 'Closed';
+                $loan->next_due_date = null;
+            } else {
+                // 🔔 Next due date = TODAY + emiFreq (NOT multiplied)
+                $loan->next_due_date = now()->addDays($emiFreq)->toDateString();
+            }
+
             $loan->save();
         }
 
@@ -867,10 +978,6 @@ class LoanController extends Controller
             'collection_uid' => $collectionUid,
         ]);
     }
-
-
-
-
     //new update function
     public function update(Request $request, string $id)
     {

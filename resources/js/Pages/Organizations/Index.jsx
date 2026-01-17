@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"; 
+import { ArrowLeft, Pencil, Trash2, ArrowUp, ArrowDown, ArrowUpDown, Building2 } from "lucide-react"; 
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { currencyPrefix } from "@/config";
@@ -255,7 +255,6 @@ const SortableHeader = ({ label, columnKey }) => (
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Organisations</h2>}
     >
       <Head title="Organizations" />
-      <Toaster position="top-center" />
 
       <div className="p-6 max-w-7xl mx-auto">
 
@@ -268,7 +267,7 @@ const SortableHeader = ({ label, columnKey }) => (
         </Link>
 
         {/* === FORM CARD === */}
-        <div className="bg-white shadow-md border p-6 rounded-lg mb-6">
+        <div className="bg-white shadow-md border p-6 rounded-lg mb-3">
           <h3 className="text-lg font-semibold mb-4">
             {isEditing ? "Edit Organisation" : "Add Organisation"}
           </h3>
@@ -277,30 +276,51 @@ const SortableHeader = ({ label, columnKey }) => (
             onSubmit={handleSubmit}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
-            {[
-              ["organisation_name", "Organisation Name"],
-              ["department_code", "Department Code"],
-              ["location_code", "Location Code"],
-              ["address", "Address"],
-              ["province", "Province"],
-              ["contact_person", "Contact Person"],
-              ["contact_no", "Contact Number"],
-              ["email", "Email"],
-            ].map(([key, label]) => (
-              <div key={key}>
-                <label className="block text-sm font-medium">{label}</label>
-                <input
-                  type={key === "email" ? "email" : "text"}
-                  name={key}
-                  value={formData[key]}
-                  onChange={handleChange}
-                  className="w-full border rounded-md px-3 py-2 mt-1"
-                />
-              </div>
-            ))}
+            {
+              // mark these fields as required
+              (() => {
+                const requiredFields = [
+                  "organisation_name",
+                  "contact_no",
+                  "email",
+                  "department_code",
+                  "location_code",
+                  "address",
+                  "province",
+                ];
+
+                return [
+                  ["organisation_name", "Organisation Name"],
+                  ["department_code", "Department Code"],
+                  ["location_code", "Location Code"],
+                  ["address", "Address"],
+                  ["province", "Province"],
+                  ["contact_person", "Contact Person"],
+                  ["contact_no", "Contact Number"],
+                  ["email", "Email"],
+                ].map(([key, label]) => (
+                  <div key={key}>
+                    <label className="block text-sm font-medium">
+                      {label}
+                      {requiredFields.includes(key) && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
+                    </label>
+                    <input
+                      type={key === "email" ? "email" : "text"}
+                      name={key}
+                      value={formData[key]}
+                      onChange={handleChange}
+                      required={requiredFields.includes(key)}
+                      className="w-full border rounded-md px-3 py-2 mt-1"
+                    />
+                  </div>
+                ));
+              })()
+            }
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Sector Type
+                Sector Type <span className="text-red-500 ml-1">*</span>
               </label>
               <select
                   name="sector_type"
@@ -319,7 +339,7 @@ const SortableHeader = ({ label, columnKey }) => (
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Select Loans to assign
+                Select Loans to assign <span className="text-red-500 ml-1">*</span>
               </label>
               <div className="card flex justify-content-center">
                   <MultiSelect 
@@ -344,7 +364,7 @@ const SortableHeader = ({ label, columnKey }) => (
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium">Status</label>
+              <label className="block text-sm font-medium">Status <span className="text-red-500 ml-1">*</span></label>
               <select
                 name="status"
                 value={formData.status}
@@ -379,16 +399,26 @@ const SortableHeader = ({ label, columnKey }) => (
             </button>
           </div>
         </div>
-
         {/* === FILTER BAR === */}
-        <div className="bg-white shadow-sm p-4 border mb-4 flex justify-between items-center">
-          <input
-            type="text"
-            placeholder="Search by Organisation Name"
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border px-3 py-2 rounded-md w-1/3"
-          />
+        <div className="bg-white shadow-sm p-2 border mb-2 flex justify-between items-center rounded-lg">
+
+          <div className="relative w-full md:w-1/3">
+            <Building2
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+
+            <input
+              type="text"
+              placeholder="Search by Organisation Name"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md
+                focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
         </div>
+
 
         {/* === TABLE === */}
         <div className="bg-white border shadow-md overflow-x-auto max-w-7xl mx-auto">

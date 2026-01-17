@@ -346,7 +346,6 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
       header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Loan Type</h2>}
     >
       <Head title="Loan Type" />
-      <Toaster position="top-center" />
 
       <div className="min-h-screen bg-gray-100 p-6 space-y-6 ">
         {/* Back Button */}
@@ -377,6 +376,7 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
                 <MultiSelect
                   value={formSelectedSslabs}
                   onChange={(e) => {
+                    const values = e.value || [];
                     setFormSelectedSslabs(e.value);
                     setFormData({ ...formData, ss_id_list: e.value.map((s) => s.code) });
                   }}
@@ -386,6 +386,7 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
                   filterDelay={400}
                   placeholder="Income Slab(s)"
                   display="chip"
+                  showClear  
                   maxSelectedLabels={3}
                   className="w-full md:w-20rem"
                 />
@@ -473,41 +474,57 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
         </div>
 
         {/* --- FILTER BAR --- */}
-        <div className="max-w-7xl mx-auto bg-white shadow-sm border border-gray-100 p-3 
-            flex flex-wrap md:flex-nowrap items-center justify-between ">
+      <div className="max-w-7xl mx-auto bg-white shadow-sm border border-gray-200 
+          p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center">
 
-          {/* Search by Loan Name */}
-          <div className="flex items-center bg-gray-50 rounded-md px-3 py-1.5 
-              w-full md:w-1/3 border border-gray-200">
-            <input
-              type="text"
-              placeholder="Search by Loan Description"
-              onChange={(e) => {
-                setSearchTerm(e.target.value.toLowerCase());
-                setCurrentPage(1);
-              }}
-              className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 
-                  text-sm"
+        {/* Search by Loan Description */}
+        <div className="relative w-full md:w-1/3 h-15">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"
             />
-          </div>
+          </svg>
 
-          {/* Income Slab Filter */}
-          <div className="flex flex-col w-full md:w-1/3 border border-gray-200 ">
-            <MultiSelect
-              value={filterSelectedSslabs}
-              onChange={(e) => {
-                setFilterSelectedSslabs(e.value);
-                setCurrentPage(1);
-              }}
-              options={salarySlabOptions}
-              optionLabel="name"
-              placeholder="Select Income Slab(s)"
-              display="chip"
-              className="w-full md:w-20rem"
-            />
-          </div>
-
+          <input
+            type="text"
+            placeholder="Search by Loan Description"
+            onChange={(e) => {
+              setSearchTerm(e.target.value.toLowerCase());
+              setCurrentPage(1);
+            }}
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg 
+                focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+          />
         </div>
+
+        {/* Income Slab Filter */}
+        <div className="relative w-full md:w-1/3 border rounded md:border-l-2 border-gray-500 pl-0 md:pl-2">
+          <MultiSelect
+            value={filterSelectedSslabs}
+            onChange={(e) => {
+              setFilterSelectedSslabs(e.value);
+              setCurrentPage(1);
+            }}
+            options={salarySlabOptions}
+            optionLabel="name"
+            placeholder="Select Income Slab(s)"
+            display="chip"
+            showClear   
+            className="w-full rounded-lg"
+            panelClassName="rounded-lg"
+          />
+        </div>
+
+      </div>
+
 
         {/* Table - compact, no horizontal scroll */}
         <div className="max-w-7xl mx-auto overflow-x-auto bg-white shadow-lg border border-gray-700 overflow-hidden">
@@ -559,136 +576,124 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
             </thead>
 
             <tbody>
-              {paginatedData.map((loan, idx) => {
-                const isEditingRow = formData.id === loan.id; // highlight current edit row
-                return (
-                  <tr
-                    key={loan.id}
-                    className={`transition-all duration-300 ${isEditingRow
-                        ? "bg-amber-100 ring-2 ring-amber-200"
-                        : idx % 2 === 0
-                          ? "bg-white"
-                          : "bg-emerald-50/40"
-                      } hover:bg-emerald-100/70`}
-                  >
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {(currentPage - 1) * itemsPerPage + idx + 1}
-                    </td>
-                    <td className="px-2 py-2 font-semibold text-gray-800 text-center border border-gray-700">
-                      {loan.loan_desc}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {formatCurrency(loan.min_loan_amount)}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {formatCurrency(loan.max_loan_amount)}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.interest_rate}
-                    </td>
+              {paginatedData.length === 0 ? (
+                <tr>
+                  <td colSpan={13} className="px-2 py-4 text-center text-gray-600">No data found.</td>
+                </tr>
+              ) : (
+                paginatedData.map((loan, idx) => {
+                  const isEditingRow = formData.id === loan.id; // highlight current edit row
+                  return (
+                    <tr
+                      key={loan.id}
+                      className={`transition-all duration-300 ${isEditingRow
+                          ? "bg-amber-100 ring-2 ring-amber-200"
+                          : idx % 2 === 0
+                            ? "bg-white"
+                            : "bg-emerald-50/40"
+                        } hover:bg-emerald-100/70`}
+                    >
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </td>
+                      <td className="px-2 py-2 font-semibold text-gray-800 text-center border border-gray-700">
+                        {loan.loan_desc}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {formatCurrency(loan.min_loan_amount)}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {formatCurrency(loan.max_loan_amount)}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.interest_rate}
+                      </td>
 
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.amt_multiplier}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.min_loan_term_months} - {loan.max_loan_term_months}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.process_fees}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.effect_date}
-                    </td>
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      {loan.end_date}
-                    </td>
-                    {/* //slab */}
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      <div className="flex flex-wrap gap-1 justify-center">
-
-                        {/* MULTIPLE slabs */}
-                        {Array.isArray(loan.ss_id_list) && loan.ss_id_list.length > 0 ? (
-                          loan.ss_id_list.map(sid => (
-                            <span
-                              key={sid}
-                              className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded"
-                            >
-                              {salarySlabList.find(s => s.id === sid)?.slab_desc}
-                            </span>
-                          ))
-                        ) : (
-
-                          /* FALLBACK single slab */
-                          loan.slab_id ? (
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.amt_multiplier}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.min_loan_term_months} - {loan.max_loan_term_months}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.process_fees}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.effect_date}
+                      </td>
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        {loan.end_date}
+                      </td>
+                      {/* //slab */}
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        <div className="flex flex-wrap gap-1 justify-center">
+                          {Array.isArray(loan.ss_id_list) && loan.ss_id_list.length > 0 ? (
+                            loan.ss_id_list.map((sid) => (
+                              <span key={sid} className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded">
+                                {salarySlabList.find((s) => s.id === sid)?.slab_desc}
+                              </span>
+                            ))
+                          ) : loan.slab_id ? (
                             <span className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded">
-                              {salarySlabList.find(s => s.id === loan.slab_id)?.slab_desc}
+                              {salarySlabList.find((s) => s.id === loan.slab_id)?.slab_desc}
                             </span>
                           ) : (
                             <span className="text-gray-400">No Slabs</span>
-                          )
+                          )}
+                        </div>
+                      </td>
+                      {/* //purpose */}
+                      <td className="px-2 py-2 text-center border border-gray-700">
+                        <div className="flex flex-wrap gap-1 justify-center">
+                          {(() => {
+                            let purposeIds = [];
 
-                        )}
-                      </div>
-                    </td>
-                    {/* //purpose */}
-                    <td className="px-2 py-2 text-center border border-gray-700">
-                      <div className="flex flex-wrap gap-1 justify-center">
-                        {(() => {
-                          let purposeIds = [];
+                            if (Array.isArray(loan.purpose_id_list)) {
+                              purposeIds = loan.purpose_id_list;
+                            } else if (typeof loan.purpose_id_list === "string") {
+                              try {
+                                const parsed = JSON.parse(loan.purpose_id_list);
+                                if (Array.isArray(parsed)) purposeIds = parsed;
+                              } catch (e) {}
+                            } else if (loan.purpose_id) {
+                              purposeIds = [loan.purpose_id];
+                            }
 
-                          // Case 1: proper array
-                          if (Array.isArray(loan.purpose_id_list)) {
-                            purposeIds = loan.purpose_id_list;
-                          }
-                          // Case 2: JSON string
-                          else if (typeof loan.purpose_id_list === "string") {
-                            try {
-                              const parsed = JSON.parse(loan.purpose_id_list);
-                              if (Array.isArray(parsed)) purposeIds = parsed;
-                            } catch (e) {}
-                          }
-                          // Case 3: single purpose_id
-                          else if (loan.purpose_id) {
-                            purposeIds = [loan.purpose_id];
-                          }
+                            if (purposeIds.length === 0) {
+                              return <span className="text-gray-400">No Purposes</span>;
+                            }
 
-                          if (purposeIds.length === 0) {
-                            return <span className="text-gray-400">No Purposes</span>;
-                          }
-
-                          return purposeIds.map(pid => {
-                            const purpose = loanPurposeList.find(p => p.id === pid);
-                            return (
-                              <span
-                                key={pid}
-                                className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded"
-                              >
-                                {purpose?.purpose_name ?? "Unknown"}
-                              </span>
-                            );
-                          });
-                        })()}
-                      </div>
-                    </td>
-                    <td className="px-2 py-2 flex justify-center gap-2 border border-gray-700">
-                      <button
-                        onClick={() => handleEdit(loan)}
-                        className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
-                        title="Edit"
-                      >
-                        <Pencil size={18} strokeWidth={2.2} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(loan.id, loan.loan_desc)}
-                        className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
-                        title="Delete"
-                      >
-                        <Trash2 size={18} strokeWidth={2.2} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                            return purposeIds.map((pid) => {
+                              const purpose = loanPurposeList.find((p) => p.id === pid);
+                              return (
+                                <span key={pid} className="bg-blue-100 text-blue-700 px-2 py-1 text-xs rounded">
+                                  {purpose?.purpose_name ?? "Unknown"}
+                                </span>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </td>
+                      <td className="px-2 py-2 flex justify-center gap-2 border border-gray-700">
+                        <button
+                          onClick={() => handleEdit(loan)}
+                          className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-md shadow-sm"
+                          title="Edit"
+                        >
+                          <Pencil size={18} strokeWidth={2.2} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(loan.id, loan.loan_desc)}
+                          className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
+                          title="Delete"
+                        >
+                          <Trash2 size={18} strokeWidth={2.2} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

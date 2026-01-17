@@ -95,6 +95,10 @@ body {
   }
 }
 
+
+
+
+
 /* MOBILE — only first image */
 @media (max-width: 1023px) {
   .slider-track {
@@ -1320,6 +1324,7 @@ ol {
 .loan__services__item__text p {
   margin-top: 0 !important;
   line-height: 1.25 !important;
+  margin-left: 0px !important;
 }
 
 .loan__services__item__text h4 {
@@ -1330,10 +1335,8 @@ ol {
 .loan__services__item__text p {
   margin: 10px !important;
   line-height: 1.25 !important;
+  margin-left: 0px !important;
 }
-
-
-
 
 
 .loan__services__item__text h4 {
@@ -4438,6 +4441,9 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
       position: relative;
       display: inline-block;
     }
+.text-green-custom {
+  color: #69F0AE !important;
+}
 
     /* ===== Image 1 (Main Background Image) ===== */
     .about-images .main-img {
@@ -4448,7 +4454,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
       /* 🔧 Adjust image height (auto keeps proportion) */
       border-radius: 0;
       position: relative;
-      left: 40px;
+      left:    160px;
       /* 🔧 Move RIGHT: increase this value | Move LEFT: decrease */
       top: 0;
       /* 🔧 Move DOWN: increase | Move UP: decrease */
@@ -4525,7 +4531,21 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
       }
 
       .about-images .main-img {
+        width: 100%; .about-images {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .about-images .main-img {
         width: 100%;
+        max-width: 350px;
+        border-radius: 10px;
+        margin: 0 auto;
+        display: block;
+        left: 0;
+        /* ✅ Center image on mobile */
+      }
         max-width: 350px;
         border-radius: 10px;
         margin: 0 auto;
@@ -5349,7 +5369,12 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
   }
 
   /* Footer address paragraph */
+  .mobile-footer .text-green-custom {
+    /* color: #ffffff !important; */
+    color: #69F0AE  !important;
+  }
   .mobile-footer p {
+    /* color: #ffffff !important; */
     color: #ffffff !important;
   }
 
