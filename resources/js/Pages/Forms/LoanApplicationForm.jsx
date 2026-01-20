@@ -456,7 +456,7 @@ useEffect(() => {
                         </td>
                       </tr>
                       {/* Row 3 */}
-                      <tr>
+                      <tr> 
                         <td style={{ border: "1px solid #000", padding: "2px 4px", backgroundColor: "#d9d9d9", fontWeight: "bold", verticalAlign: 'middle' }}>Surname:</td>
                         <td style={{ border: "1px solid #000", padding: "0" }}>
                           <input type="text" style={{ width: "100%", height: "100%", border: "none", outline: "none", padding: "2px 4px", boxSizing: "border-box" }} />
