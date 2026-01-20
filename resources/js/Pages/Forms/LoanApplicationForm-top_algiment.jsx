@@ -13,13 +13,28 @@ const printStyles = `
 @media screen {
   .print-toolbar {
     position: fixed;
-    top: 50px;      /* 👈 niche lane ke liye */
-    right: 23px;     /* 👈 RIGHT SIDE */
+    top: 90px;      /* 👈 niche lane ke liye */
+    right: 70px;     /* 👈 RIGHT SIDE */
     z-index: 100000;
     display: flex;
     gap: 10px;
   }
 }
+@media print {
+  table, tr, td {
+    page-break-inside: avoid;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+}
+
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
 
 /* ===== PRINT ONLY ===== */
 @media print {
@@ -27,10 +42,22 @@ const printStyles = `
     display: none !important;
   }
 
-  @page {
-    size: A4 portrait;
-    margin: 10mm;
+  @media print {
+  body.printing {
+    zoom: 100%;
   }
+}
+
+//  @media print {
+//   @page {
+//     size: A4 portrait;
+//     margin-left: 100mm;   /* 👈 LEFT */
+//     margin-right: 0mm;  /* 👈 RIGHT */
+//     margin-top: 1mm;
+//     margin-bottom: 10mm;
+//   }
+// }
+
 
   /* watermark */
   #printable-area::before {
@@ -55,7 +82,7 @@ const printStyles = `
 }
 
 
-  /* content above watermark */
+  
   #printable-area {
     position: relative;
     z-index: 1;
@@ -90,14 +117,6 @@ const printStyles = `
     #printable-area, #printable-area * {
       visibility: visible !important;
     }
-
-    #printable-area {
-      position: absolute !important;
-      left: 0 !important;
-      top: 0 !important;
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
       
       /* Crucial for "Blank Page" issues: */
       z-index: 9999 !important; /* Sit on top of everything */
@@ -231,33 +250,89 @@ export default function LoanApplicationForm({ auth }) {
     });
   };
 
+// 🔹 1️⃣ Sabse upar (handlePrint se pehle)
+const preloadImages = () => {
+  const images = document.images;
+  return Promise.all(
+    [...images].map(img =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise(res => {
+            img.onload = img.onerror = res;
+          })
+    )
+  );
+};
 
-  const handlePrint = async () => {
-    await preloadWatermark();
-    document.body.offsetHeight;
-    setTimeout(() => window.print(), 300);
-  };
+// 🔹 2️⃣ Print button ka function
+const handlePrint = async () => {
+  await preloadWatermark();   // agar watermark hai
+  await preloadImages();      // 🔥 IMPORTANT
 
-useEffect(() => {
-  const shouldPrint = sessionStorage.getItem("AUTO_PRINT");
+  document.body.classList.add("printing");
 
-  if (shouldPrint) {
-    sessionStorage.removeItem("AUTO_PRINT");
+  const printable = document.getElementById("printable-area");
 
-    const runPrint = async () => {
-      await preloadWatermark();
+  printable.style.display = "none";
+  printable.offsetHeight;     // force reflow
+  printable.style.display = "block";
 
-      // 🔁 layout stable
-      document.body.offsetHeight;
+  await new Promise(resolve => setTimeout(resolve, 300));
 
-      setTimeout(() => {
-        window.print();
-      }, 400);
-    };
+  window.print();
+};
 
-    runPrint();
-  }
-}, []);
+// const handlePrint = async () => {
+//   // 1️⃣ watermark / logo preload
+//   await preloadWatermark();
+
+//   // 2️⃣ print mode ON
+//   document.body.classList.add("printing");
+
+//   // 3️⃣ force browser reflow (MOST IMPORTANT)
+//   const printable = document.getElementById("printable-area");
+
+//   printable.style.display = "none";
+//   printable.offsetHeight;        // 🔥 hard reflow
+//   printable.style.display = "block";
+
+//   // 4️⃣ wait for layout settle
+//   await new Promise(resolve => setTimeout(resolve, 300));
+
+//   // 5️⃣ print
+//   window.print();
+// };
+
+// useEffect(() => {
+//   const afterPrint = () => {
+//     document.body.classList.remove("printing");
+//   };
+
+//   window.addEventListener("afterprint", afterPrint);
+//   return () => window.removeEventListener("afterprint", afterPrint);
+// }, []);
+
+
+// useEffect(() => {
+//   const shouldPrint = sessionStorage.getItem("AUTO_PRINT");
+
+//   if (shouldPrint) {
+//     sessionStorage.removeItem("AUTO_PRINT");
+
+//     const runPrint = async () => {
+//       await preloadWatermark();
+
+//       // 🔁 layout stable
+//       document.body.offsetHeight;
+
+//       setTimeout(() => {
+//         window.print();
+//       }, 400);
+//     };
+
+//     runPrint();
+//   }
+// }, []);
 
 
 
@@ -324,8 +399,8 @@ useEffect(() => {
             <Card.Body>
               {/* --- PAGE 1 CONTENT --- */}
 
-              <div className="logo-container" style={{ maxWidth: "150px", margin: "0 auto" }}>
-                <MainLogo width="150px" />
+              <div className="logo-container" style={{ maxWidth: "100px", margin: "0 auto" }}>
+                <MainLogo width="100px" />
               </div>
 
               <div className="p-2">
@@ -339,7 +414,7 @@ useEffect(() => {
                       textAlign: "center",
                     }}
                   >
-                    <h3 className="mb-0 font-bold" style={{ fontSize: "14px", fontFamily: '"Times New Roman", serif',  color: "white" }}>LOAN APPLICATION</h3>
+                    <h3 className="mb-0 font-bold" style={{ fontSize: "14px", fontFamily: '"Times New Roman", serif' }}>LOAN APPLICATION</h3>
                   </div>
                 </div>
 
@@ -821,7 +896,7 @@ useEffect(() => {
                   </table>
                 </div>
                 {/* ISDA Section */}
-                <div style={{ marginTop: "10px" }} className="isda-table">
+                <div style={{ marginTop: "" }} className="ISEA-table">
                   <table
                     style={{
                       width: "100%",
@@ -1062,7 +1137,12 @@ useEffect(() => {
                       </tr>
                     </tbody>
                   </table>
-                  <div className="" style={{ marginTop: "10px" }}>
+                </div>
+
+                {/* --- PAGE 2 CONTENT --- */}
+
+                {/* --- FIXED: Re-added page break and Page 2 Header --- */}
+                <div className="" style={{ marginTop: "10px" }}>
 
                   {/* Page 2 Header (matches page 1) - ONLY SHOWS ON PRINT */}
                   {/* <div className="page-2-header print-only">
@@ -1275,12 +1355,6 @@ useEffect(() => {
                     </tbody>
                   </table>
                 </div>
-                </div>
-
-                {/* --- PAGE 2 CONTENT --- */}
-
-                {/* --- FIXED: Re-added page break and Page 2 Header --- */}
-                
 
                 {/* --- FIXED: Compressed margins and removed <br> tags --- */}
                 <div className="borrower-declaration" style={{ marginTop: "8px" }}>
@@ -1533,10 +1607,6 @@ useEffect(() => {
     </AuthenticatedLayout>
   );
 }
-
-
-
-
 
 
 
