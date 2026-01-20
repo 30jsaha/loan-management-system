@@ -5,7 +5,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // import '../../css/bootstrap5.3.0.min.css';
-import '../../css/bootstrap-icons.min.css';
+// import '../../css/bootstrap-icons.min.css';
 import '../../css/style.css';
 
 // Images (place your images in resources/img)
@@ -22,6 +22,9 @@ import footerBg from '../../img/png_image.png';
 import heroImage1 from '../../img/hero1.jpg';
 import Navbar from "@/Components/Navbar";
 
+import axios from "axios";
+import Swal from "sweetalert2";
+
 export default function Home({ auth, laravelVersion, phpVersion }) {
   const formRef = useRef(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
@@ -37,12 +40,75 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   const [respMsg, setRespMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [showScroll, setShowScroll] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: ""
   });
+  const [contactFormData, setContactFormData] = useState({
+    nm: "",
+    em: "",
+    ph: "",
+    service: "",
+    amount: "",
+    tenure: "",
+    repaymentPlan: "",
+  });
+  const handleContactChange = (e) => {
+    const { name, value } = e.target;
+    setContactFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await axios.post("/api/send-contact-mail", {
+        // amount: Number(contactFormData.amount),
+        // tenure: Number(contactFormData.tenure),
+        // repaymentPlan: contactFormData.repaymentPlan,
+        name: contactFormData.nm,
+        phone: contactFormData.ph,
+        email: contactFormData.em,
+        service: contactFormData.service,
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Inquiry Sent",
+        text: res.data.message,
+      });
+
+      // Reset form after success
+      setContactFormData({
+        nm: "",
+        em: "",
+        ph: "",
+        service: "",
+        amount: "",
+        tenure: "",
+        repaymentPlan: "",
+      });
+
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text:
+          error.response?.data?.message ||
+          "Unable to send inquiry. Please try again later.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const [showRepayment, setShowRepayment] = useState(false);
   const [sliderAmount, setSliderAmount] = useState(200);
   const [sliderFortnight, setSliderFortnight] = useState(5);
@@ -159,7 +225,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   };
 
   // handle form submit (keeps original behavior: prevent reload and calculate)
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const formEl = formRef.current;
     if (!formEl.checkValidity()) {
@@ -170,6 +236,45 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
     const repayment = calculateRepayment(formState.amount, formState.tenure);
     setFormState(prev => ({ ...prev, repaymentPlan: repayment }));
     //(do not auto-send here — "Check Your Loan Now" handles sending in original)
+    try {
+      const res = await axios.post("/api/send-loan-mail", {
+        amount: Number(formState.amount),
+        tenure: Number(formState.tenure),
+        repaymentPlan: formState.repaymentPlan,
+        name: formState.name,
+        phone: formState.phone,
+        email: formState.email,
+        // service: formState.service,
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Inquiry Sent",
+        text: res.data.message,
+      });
+
+      // Reset form after success
+      setFormState({
+        name: "",
+        email: "",
+        phone: "",
+        service: "",
+        amount: "",
+        tenure: "",
+        repaymentPlan: "",
+      });
+
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text:
+          error.response?.data?.message ||
+          "Unable to send inquiry. Please try again later.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   //handel submit & download brochure
@@ -560,25 +665,68 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
                       // 🔥 FIRST: Run built-in HTML validation
                       if (!formEl.checkValidity()) {
-                        formEl.reportValidity();  // Show browser validation message
-                        return;                   // Stop here if invalid
+                        formEl.reportValidity();
+                        return;
                       }
 
-                      // 🔥 SECOND: Run your logic only if form is valid
+                      // 🔥 SECOND: Run your eligibility logic
                       handleCheckLoan(e);
 
-                      // OPEN SLIDER SECTION
+                      setSending(true);
+
+                      axios
+                        .post("/api/send-loan-mail", {
+                          amount: Number(formState.amount),
+                          tenure: Number(formState.tenure),
+                          repaymentPlan: formState.repaymentPlan,
+                          name: formState.name,
+                          phone: formState.phone,
+                          email: formState.email,
+                          // service: formState.service,
+                        })
+                        .then((res) => {
+                          Swal.fire({
+                            icon: "success",
+                            title: "Inquiry Sent",
+                            text: res.data.message,
+                          });
+
+                          // Reset form after success
+                          setFormState({
+                            name: "",
+                            email: "",
+                            phone: "",
+                            service: "",
+                            amount: "",
+                            tenure: "",
+                            repaymentPlan: "",
+                          });
+                        })
+                        .catch((error) => {
+                          Swal.fire({
+                            icon: "error",
+                            title: "Failed",
+                            text:
+                              error.response?.data?.message ||
+                              "Unable to send inquiry. Please try again later.",
+                          });
+                        })
+                        .finally(() => {
+                          setSending(false);
+                        });
+
+                      // 🔽 OPEN SLIDER SECTION
                       setCalculatorFirstCheck(true);
 
-                      // SET SLIDERS FROM INPUT FIELDS
+                      // 🔽 SET SLIDERS FROM INPUT FIELDS
                       setSliderAmount(Number(formState.amount));
                       setSliderFortnight(Number(formState.tenure));
 
-                      // SCROLL TO SLIDER SECTION
+                      // 🔽 SCROLL TO SLIDER SECTION
                       setTimeout(() => {
                         sliderRef.current?.scrollIntoView({
                           behavior: "smooth",
-                          block: "start"
+                          block: "start",
                         });
                       }, 200);
                     }}
@@ -586,7 +734,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                   >
                     {sending ? "Sending..." : "Check Your Loan Now!"}
                   </button>
-
                 )}
 
                 <div className="resp mt-2">{respMsg}</div>
@@ -740,7 +887,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
               <div className="quick-item d-flex align-items-center gap-3">
                 {/* <!-- Stopwatch Icon --> */}
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F1E600" strokeWidth="2">
                   <circle cx="12" cy="13" r="9"></circle>
                   <line x1="12" y1="13" x2="12" y2="8"></line>
                   <line x1="12" y1="13" x2="16" y2="13"></line>
@@ -751,7 +898,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
               <div className="quick-item d-flex align-items-center gap-3">
                 {/* <!-- Thumbs Up Icon --> */}
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M7 10v12H3V10h4z"></path>
                   <path d="M7 10l4-7 1 7h7a2 2 0 0 1 2 2l-1 7a2 2 0 0 1-2 2H7"></path>
                 </svg>
@@ -760,7 +907,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
               <div className="quick-item d-flex align-items-center gap-3">
                 {/* <!-- Money Icon --> */}
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
                   <circle cx="12" cy="12" r="3"></circle>
                   <line x1="2" y1="12" x2="5" y2="12"></line>
@@ -1021,19 +1168,22 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
             <div className="col-md-5">
               <h3 className="fw-bold mb-3" style={{ color: '#fff' }}>Request A Call Back</h3>
               <p className="mb-4 text-light small">Our team is ready to assist you. Share your details, and we’ll reach out to discuss the best loan solution for your needs.</p>
-              <a href="#home" className="btn btn-outline-light px-4 py-2 rounded">Contact Us</a>
+              {/* <a href="#home" className="btn btn-outline-light px-4 py-2 rounded">Contact Us</a> */}
             </div>
 
             <div className="col-md-7">
-              <form className="row g-3" onSubmit={(e) => e.preventDefault()}>
+              <form className="row g-3" onSubmit={handleContactSubmit}>
 
                 {/* NAME */}
                 <div className="col-md-6">
                   <input
                     type="text"
+                    name="nm"
                     className="form-control"
                     placeholder="Name"
                     required
+                    value={contactFormData.nm}
+                    onChange={handleContactChange}
                     pattern="^[A-Za-z ]{3,}$"
                     title="Name must contain only alphabets and be at least 3 characters."
                   />
@@ -1043,8 +1193,11 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <div className="col-md-6">
                   <input
                     type="email"
+                    name="em"
                     className="form-control"
                     placeholder="Email"
+                    value={contactFormData.em}
+                    onChange={handleContactChange}
                     required
                     pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$"
                     title="Enter a valid email address."
@@ -1055,8 +1208,11 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                 <div className="col-md-6">
                   <input
                     type="tel"
+                    name="ph"
                     className="form-control"
                     placeholder="Phone"
+                    onChange={handleContactChange}
+                    value={contactFormData.ph}
                     required
                     maxLength="8"
                     pattern="^[0-9]{8}$"
@@ -1066,7 +1222,13 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
                 {/* SERVICE SELECT */}
                 <div className="col-md-6">
-                  <select className="form-select" required>
+                  <select 
+                    className="form-select" 
+                    required
+                    name="service"
+                    value={contactFormData.service}
+                    onChange={handleContactChange}
+                  >
                     <option value="">Choose Our Services</option>
                     <option value="1">Personal Loan</option>
                     <option value="2">Business Loan</option>
