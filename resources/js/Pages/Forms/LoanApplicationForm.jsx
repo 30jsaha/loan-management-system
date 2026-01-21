@@ -990,7 +990,7 @@ export default function LoanApplicationForm({ auth }) {
                 {/* Page 2 Header (matches page 1) - ONLY SHOWS ON PRINT */}
                 <div className="page-2-header print-only">
                     <div className="logo-container" style={{ maxWidth: "100px", margin: "0 auto" }}>
-                        <MainLogo width="50px" />
+                        <MainLogo width="100px" />
                     </div>
                 </div>
 
