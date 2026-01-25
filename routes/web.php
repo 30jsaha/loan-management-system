@@ -161,6 +161,9 @@ Route::middleware(['auth', 'verified'])
 Route::middleware(['auth', 'verified'])
     ->get('/completed-loans', [LoansController::class, 'CompletedLoansWithEmiCollection'])
     ->name('loan.completed');
+Route::middleware(['auth', 'verified'])
+    ->get('/ongoing-loans', [LoansController::class, 'OngoingLoans'])
+    ->name('loan.ongoing');
 
     Route::middleware(['auth', 'verified'])
     ->get('/document-types', [DocumentController::class, 'index'])

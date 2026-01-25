@@ -5,7 +5,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 // import '../../css/bootstrap5.3.0.min.css';
-import '../../css/bootstrap-icons.min.css';
+// import '../../css/bootstrap-icons.min.css';
 import '../../css/style.css';
 
 // Images (place your images in resources/img)
@@ -887,7 +887,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
               <div className="quick-item d-flex align-items-center gap-3">
                 {/* <!-- Stopwatch Icon --> */}
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F1E600" strokeWidth="2">
                   <circle cx="12" cy="13" r="9"></circle>
                   <line x1="12" y1="13" x2="12" y2="8"></line>
                   <line x1="12" y1="13" x2="16" y2="13"></line>
@@ -898,7 +898,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
               <div className="quick-item d-flex align-items-center gap-3">
                 {/* <!-- Thumbs Up Icon --> */}
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M7 10v12H3V10h4z"></path>
                   <path d="M7 10l4-7 1 7h7a2 2 0 0 1 2 2l-1 7a2 2 0 0 1-2 2H7"></path>
                 </svg>
@@ -907,7 +907,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
               <div className="quick-item d-flex align-items-center gap-3">
                 {/* <!-- Money Icon --> */}
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F1E600" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
                   <circle cx="12" cy="12" r="3"></circle>
                   <line x1="2" y1="12" x2="5" y2="12"></line>

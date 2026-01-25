@@ -7,179 +7,205 @@ import MainLogo from "@/Components/MainLogo";
 
 // --- CSS rules for TWO-PAGE printing ---
 const printStyles = `
-  /* Hide page 2 header on screen */
+/* Hide page 2 header on screen */
+.print-only {
+  display: none;
+}
+
+@media print {
+
+  /* ===============================
+     PAGE SETUP
+     =============================== */
+  @page {
+    size: A4 portrait;
+    margin: none;
+  }
+
+  html, body {
+    height: auto;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* ===============================
+     GLOBAL HIDING STRATEGY
+     =============================== */
+  body * {
+    visibility: hidden;
+  }
+
+  .no-print, nav, header, footer {
+    display: none !important;
+  }
+
+  /* ===============================
+     PRINTABLE AREA
+     =============================== */
+  #printable-area,
+  #printable-area * {
+    visibility: visible !important;
+  }
+
+  #printable-area {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+
+    background: white !important;
+    color: black !important;
+
+    box-shadow: none !important;
+    border: none !important;
+
+    z-index: 1;
+  }
+
+  /* ===============================
+     WATERMARK (WORKING ON ALL PAGES)
+     =============================== */
+  #printable-area::after {
+    content: "";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+
+    width: 450px;
+    height: 450px;
+
+    background-image: url("/img/logo_first.jpg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+
+    opacity: 25%;
+    transform: translate(-50%, -50%);
+
+    pointer-events: none;
+    visibility: visible !important;
+
+    z-index: 1;
+  }
+
+  /* Keep all content ABOVE watermark */
+  #printable-area * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ===============================
+     TYPOGRAPHY & SPACING
+     =============================== */
+  #printable-area {
+    font-size: 8pt !important;
+    line-height: 1.2 !important;
+  }
+
+  #printable-area h3 {
+    font-size: 11pt !important;
+    margin: 2px 0 !important;
+  }
+
+  #printable-area table {
+    width: 100% !important;
+    font-size: 7.5pt !important;
+  }
+
+  #printable-area .section-title {
+    font-size: 9pt !important;
+    margin: 3px 0 !important;
+  }
+
+  #printable-area p,
+  #printable-area li {
+    margin: 2px 0 !important;
+    line-height: 1.15 !important;
+  }
+
+  #printable-area ol,
+  #printable-area ul {
+    margin: 0 !important;
+    padding-left: 14px !important;
+  }
+
+  /* ===============================
+     TABLE & INPUT FIXES
+     =============================== */
+  #printable-area table td,
+  #printable-area table th {
+    padding: 2px 3px !important;
+    vertical-align: middle !important;
+  }
+
+  input,
+  textarea {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: 8pt !important;
+    color: black !important;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  .underline-field,
+  .underline-input,
+  .inline-date,
+  .input-box {
+    border-bottom: 1px solid #000 !important;
+    border-radius: 0 !important;
+    padding: 0 2px !important;
+  }
+
+  .form-check-input,
+  input[type="checkbox"] {
+    width: 10px !important;
+    height: 10px !important;
+    border: 1px solid #000 !important;
+  }
+
+  .stamp-box {
+    border: 1px solid #000 !important;
+    height: 40px !important;
+  }
+
+  /* ===============================
+     PAGE BREAKS
+     =============================== */
+  .page-break-before {
+    page-break-before: always !important;
+    display: block !important;
+    margin-top: 20px !important;
+  }
+
   .print-only {
-    display: none;
+    display: block !important;
   }
 
-  @media print {
-    @page {
-      size: A4 portrait;
-      margin: 10mm;
-    }
-
-    /* Reset Body and HTML to ensure full height and no scroll blocking */
-    html, body {
-      height: 100vh;
-      margin: 0 !important;
-      padding: 0 !important;
-      overflow: visible !important;
-    }
-
-    /* HIDING STRATEGY: 
-      We use visibility: hidden on body so we don't destroy the layout flow
-      of the React root, but we hide the visual elements.
-    */
-    body * {
-      visibility: hidden;
-    }
-
-    /* Hiding specific wrappers to remove their whitespace if possible */
-    .no-print, nav, header, footer {
-      display: none !important;
-    }
-
-    /* SHOWING STRATEGY:
-      Target the printable area, make it visible, and force it to 
-      the top-left of the browser window (Viewport).
-    */
-    #printable-area, #printable-area * {
-      visibility: visible !important;
-    }
-
-    #printable-area {
-      position: absolute !important;
-      left: 0 !important;
-      top: 0 !important;
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      
-      /* Crucial for "Blank Page" issues: */
-      z-index: 9999 !important; /* Sit on top of everything */
-      background-color: white !important; /* Ensure background isn't transparent */
-      color: black !important; /* Force text to black */
-      
-      /* Reset any shadow or borders from the Card component */
-      box-shadow: none !important;
-      border: none !important;
-    }
-
-    /* --- Typography & Spacing adjustments (Keep your existing fine-tuning) --- */
-    #printable-area {
-      font-size: 8pt !important;
-      line-height: 1.2 !important;
-    }
-
-    #printable-area h3 {
-      font-size: 11pt !important;
-      margin: 2px 0 !important;
-    }
-
-    #printable-area table {
-      font-size: 7.5pt !important;
-      width: 100% !important;
-    }
-
-    #printable-area .section-title {
-      font-size: 9pt !important;
-      margin: 3px 0 !important;
-    }
-
-    #printable-area ol, #printable-area ul {
-      margin: 0 !important;
-      padding-left: 14px !important;
-    }
-
-    #printable-area li {
-      margin-bottom: 2px !important;
-      line-height: 1.15 !important;
-    }
-
-    #printable-area p {
-      margin: 2px 0 !important;
-      line-height: 1.15 !important;
-    }
-
-    /* Padding Utilities overrides */
-    #printable-area .p-4 { padding: 4px !important; }
-    #printable-area .p-2 { padding: 2px !important; }
-    #printable-area .mb-3 { margin-bottom: 4px !important; }
-    #printable-area .mb-2 { margin-bottom: 2px !important; }
-    #printable-area .mt-1 { margin-top: 2px !important; }
-
-    #printable-area hr {
-      margin: 4px 0 !important;
-      border-top: 1px solid #000 !important;
-    }
-
-    #printable-area table td,
-    #printable-area table th {
-      padding: 2px 3px !important;
-      vertical-align: middle !important;
-    }
-
-    /* Input Styling */
-    input, textarea {
-      border: none !important;
-      box-shadow: none !important;
-      background-color: transparent !important;
-      font-size: 8pt !important;
-      color: black !important;
-    }
-    
-    input.underline-field, 
-    input.underline-input, 
-    input.inline-date, 
-    input.input-box,
-    input[type="text"],
-    input[type="date"] {
-      border-bottom: 1px solid #000 !important;
-      border-radius: 0;
-      height: auto !important;
-      padding: 0 2px !important;
-    }
-
-    .stamp-box {
-      border: 1px solid #000 !important;
-      height: 40px !important;
-    }
-
-    .form-check-input,
-    input[type="checkbox"] {
-      border: 1px solid #000 !important;
-      width: 10px !important;
-      height: 10px !important;
-    }
-
-    /* Page Breaks */
-    .page-break-before {
-      page-break-before: always !important;
-      margin-top: 20px !important;
-      display: block !important;
-    }
-    
-    .print-only {
-        display: block !important;
-    }
-
-    /* Layout specific fixes */
-    .official-use-container {
-      width: 45% !important;
-    }
-
-    /* Logo Sizing */
-    .logo-container svg, .logo-container img {
-        width: 80px !important;
-        height: auto !important;
-    }
+  /* ===============================
+     LOGO SIZE
+     =============================== */
+  .logo-container img,
+  .logo-container svg {
+    width: 80px !important;
+    height: auto !important;
   }
+
+  .official-use-container {
+    width: 45% !important;
+  }
+}
 `;
+
 
 export default function LoanApplicationForm({ auth }) {
   // --- Simplified print handler ---
   const handlePrint = () => {
-    window.print();
+    setTimeout(() => {
+      window.print();
+    }, 500);
   };
 
   return (
