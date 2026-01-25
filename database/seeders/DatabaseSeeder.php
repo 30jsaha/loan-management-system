@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
             SalarySlabSeeder::class,
             RejectionReasonSeeder::class,
             DocumentTypesSeeder::class,
+            DeptDatabaseSeeder::class,
+            LoanPurposeSeeder::class,
         ]);
     }
 }
