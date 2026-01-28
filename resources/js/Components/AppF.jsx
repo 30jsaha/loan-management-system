@@ -746,6 +746,10 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
                         WESTPAC
                       </label>
                       <label>
+                        <input type="checkbox" style={{ marginRight: "3px" }} checked={loan.bank_name === "TISA BANK"} readOnly />{" "}
+                        TISA BANK
+                      </label>
+                      <label>
                         <input type="checkbox" style={{ marginRight: "3px" }} checked={!!(loan.bank_name && !["BSP","KINA (ANZ)","WESTPAC"].includes(loan.bank_name))} readOnly />{" "}
                         Other
                         <input

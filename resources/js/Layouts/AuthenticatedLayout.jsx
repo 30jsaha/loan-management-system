@@ -130,6 +130,7 @@ export default function Authenticated({ user, header, children }) {
                                             route().current('loan.view') ||
                                             route().current('loan.emi') ||
                                             route().current('loan.emi.collection') ||
+                                            route().current('loan.ongoing') ||
                                             route().current('loan.completed') 
                                             ? 'dropdown-nav-active' // Active style
                                             : 'text-gray-500'
@@ -163,11 +164,12 @@ export default function Authenticated({ user, header, children }) {
                                                 <Dropdown.Link className={`${route().current('loans') ? 'dropdown-nav-a-active' : ''}`} href={route('loans')}>Loan Applications</Dropdown.Link>
                                                 {/* <Dropdown.Link className={`${route().current('loan-create') ? 'dropdown-nav-a-active' : ''}`} href={route('loan-create')}>+ New Loan</Dropdown.Link> */}
                                                 <Dropdown.Link className={`${route().current('loan.emi') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.emi')}>EMI Collection</Dropdown.Link>
+                                                <Dropdown.Link className={`${route().current('loan.ongoing') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.ongoing')}>Ongoing Loans</Dropdown.Link>
                                                 <Dropdown.Link className={`${route().current('loan.completed') ? 'dropdown-nav-a-active' : ''}`} href={route('loan.completed')}>Completed Loans</Dropdown.Link>
                                             </Dropdown.Content>
                                         </Dropdown>
                                     </div>
-                                    {/* <NavLink href={route('customers')} active={route().current('customers') || route().current('customer.create') || route().current('customer.view')}>
+                                    {/* <NavLink href={route('customers')} active={route().current('customers') || route().current('customer.create') || route().current('customer.view')}}>
                                         Customers
                                     </NavLink> */}
                                     <div className="ms-3 relative pt-3">

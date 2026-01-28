@@ -194,15 +194,25 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
           <div className="grid grid-cols-12 gap-2 text-sm mb-4">
             <div className="col-span-3">
               <div className="text-center text-xs">Deduction Code</div>
-              <div className="flex mt-1 px-7">
-                {renderCharBoxesFromText(deductionCode, 7)}
+              {/* <div className="flex mt-1 px-7">
+                {renderCharBoxesFromText(deductionCode, 7)} 
+              </div> */}
+              <div className="flex mt-1 px-12 gap-0">
+                <CharBox value="D" />
+                <CharBox value="A" />
+                <CharBox value="G" />
+                <CharBox value="R" />
+                <CharBox value="O" />
               </div>
             </div>
 
             <div className="col-span-3 flex flex-col items-center">
               <div className="text-xs">Description</div>
-              <div className="flex mt-1 w-full justify-center">
+              {/* <div className="flex mt-1 w-full justify-center">
                 <ChaarBox value={description ? description : ""} />
+              </div> */}
+              <div className="mt-1 px-4 py-1 border border-black text-xs  w-full text-center">
+                <b>AGRO ADVANCE ABEN</b>
               </div>
             </div>
 
