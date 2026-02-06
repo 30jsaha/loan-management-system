@@ -101,7 +101,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
     },
     {
       name: "current_fincorp_deduction_amt",
-      label: "Current Fincorp Deduction",
+      label: "Current Agro Deduction",
       ref: currentFincorpDeductionRef,
     },
     {
@@ -315,7 +315,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
           </Col>
           <Col md={3}>
             <Form.Group>
-              <Form.Label>Current Fincorp Deduction (PGK)</Form.Label>
+              <Form.Label>Current Agro Deduction (PGK)</Form.Label>
               <Form.Control
                 type="number"
                 ref={currentFincorpDeductionRef}
