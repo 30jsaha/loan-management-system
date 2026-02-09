@@ -511,7 +511,7 @@ class LoanController extends Controller
     {
         $request->validate([
             'loan_setting_id' => 'required|exists:loan_settings,id',
-            'amount' => 'required|numeric|min:200',
+            'amount' => 'required|numeric|min:0',
             'term' => 'required|integer|min:1',
         ]);
 
@@ -605,6 +605,24 @@ class LoanController extends Controller
 
         // Create loan setting
         $loanSetting = LoanSetting::create($data);
+
+        // 🔹 Create Loan Tier Rule automatically
+        // Generate next tier number (example: Tier 25)
+        $lastTierNumber = LoanTierRule::max(
+            DB::raw("CAST(SUBSTRING(tier_type, 6) AS UNSIGNED)")
+        );
+
+        $nextTierNumber = $lastTierNumber ? $lastTierNumber + 1 : 1;
+
+        LoanTierRule::create([
+            'loan_setting_id'     => $loanSetting->id,
+            'tier_type'           => 'Tier ' . $nextTierNumber,
+            'min_amount'          => $data['min_loan_amount'],
+            'max_amount'          => $data['max_loan_amount'],
+            'min_term_fortnight'  => $data['min_loan_term_months'],
+            'max_term_fortnight'  => $data['max_loan_term_months'],
+        ]);
+
 
         // Insert slabs
         if (!empty($data['ss_id_list'])) {
@@ -739,6 +757,13 @@ class LoanController extends Controller
                 ->where('loan_id', $loanSetting->id)
                 ->pluck('purpose_id')
                 ->toArray();
+
+            LoanTierRule::where('loan_setting_id', $loanSetting->id)->update([
+                'min_amount' => $data['min_loan_amount'],
+                'max_amount' => $data['max_loan_amount'],
+                'min_term_fortnight' => $data['min_loan_term_months'],
+                'max_term_fortnight' => $data['max_loan_term_months'],
+            ]);
 
             return response()->json([
                 'message' => 'Loan setting updated successfully',
@@ -1372,7 +1397,7 @@ class LoanController extends Controller
         if (!$rule) {
             return response()->json([
                 'valid' => false,
-                'message' => 'No FN rule found for the given loan amount.',
+                'message' => 'No FN rule found for the given loan amount.', 
             ], 422);
         }
 

@@ -3,6 +3,7 @@ import { Row, Col } from "react-bootstrap";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { router } from "@inertiajs/react";
+import { SaveAll, RotateCcw } from 'lucide-react';
 
 
 export default function CustomerForm({
@@ -14,7 +15,8 @@ export default function CustomerForm({
   onNext,
   setMessage,
   setIsFormDirty, 
-  onExistingCustomerLoaded, 
+  onExistingCustomerLoaded,
+  resetForm
 }) {
   const dropdownRef = useRef(null);
   const empAreaRef = useRef(null);
@@ -73,7 +75,7 @@ const fetchCustomerDraft = async () => {
         setEmpSearch(`${draft.employee_no}${draft.first_name || draft.last_name ? ` - ${draft.first_name || ""} ${draft.last_name || ""}` : ""}`.trim());
       }
 
-      toast.success("Draft loaded", { duration: 1500 });
+      toast.success("Draft loaded", { duration: 2500 });
     }
 
     console.log("Customer draft loaded");
@@ -85,10 +87,6 @@ const fetchCustomerDraft = async () => {
 useEffect(() => {
   fetchCustomerDraft();
 }, []);
-
-
-
-
 
   const NUMERIC_FIELDS = [
     "monthly_salary",
@@ -956,11 +954,27 @@ useEffect(() => {
           <button
             type="button"
             disabled={isDataSaving}
+            onClick={() => {
+              resetForm();
+              setEmpSearch("");
+              setIsExistingFound(false);
+              setIsAutoFilled(false);
+            }}
+            className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""}
+              bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-all`}
+          >
+            <RotateCcw className="w-4 h-4 inline mr-1" />
+            Reset Form
+          </button>
+          <button
+            type="button"
+            disabled={isDataSaving}
             onClick={() => handleSaveAndNext()}
             className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""}
               bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-all`}
           >
-            Save & Exit
+            <SaveAll className="w-4 h-4 inline mr-1" />
+            Save Draft
           </button>
 
           {/* Save & Next Only */}
