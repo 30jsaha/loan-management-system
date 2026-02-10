@@ -594,6 +594,13 @@ class LoanController extends Controller
             'ss_id_list.*' => 'integer',
             'purpose_id_list' => 'nullable|array',
             'purpose_id_list.*' => 'integer',
+            //Tier rules validation
+            'tier_rules' => 'required|array|min:1',
+            'tier_rules.*.tier_type' => 'nullable|string|max:50',
+            'tier_rules.*.min_amount' => 'required|numeric|min:0',
+            'tier_rules.*.max_amount' => 'required|numeric|gt:tier_rules.*.min_amount',
+            'tier_rules.*.min_term_fortnight' => 'required|integer|min:1',
+            'tier_rules.*.max_term_fortnight' => 'required|integer|gte:tier_rules.*.min_term_fortnight',
         ]);
 
         if ($validator->fails()) {
@@ -608,21 +615,39 @@ class LoanController extends Controller
 
         // 🔹 Create Loan Tier Rule automatically
         // Generate next tier number (example: Tier 25)
-        $lastTierNumber = LoanTierRule::max(
-            DB::raw("CAST(SUBSTRING(tier_type, 6) AS UNSIGNED)")
-        );
+        // $lastTierNumber = LoanTierRule::where('loan_setting_id', $loanSetting->id)
+        //     ->max(
+        //     DB::raw("CAST(SUBSTRING(tier_type, 6) AS UNSIGNED)")
+        //     );
 
-        $nextTierNumber = $lastTierNumber ? $lastTierNumber + 1 : 1;
+        // $nextTierNumber = $lastTierNumber ? $lastTierNumber + 1 : 1;
 
-        LoanTierRule::create([
-            'loan_setting_id'     => $loanSetting->id,
-            'tier_type'           => 'Tier ' . $nextTierNumber,
-            'min_amount'          => $data['min_loan_amount'],
-            'max_amount'          => $data['max_loan_amount'],
-            'min_term_fortnight'  => $data['min_loan_term_months'],
-            'max_term_fortnight'  => $data['max_loan_term_months'],
-        ]);
+        // LoanTierRule::create([
+        //     'loan_setting_id'     => $loanSetting->id,
+        //     'tier_type'           => 'Tier ' . $nextTierNumber,
+        //     'min_amount'          => $data['min_loan_amount'],
+        //     'max_amount'          => $data['max_loan_amount'],
+        //     'min_term_fortnight'  => $data['min_loan_term_months'],
+        //     'max_term_fortnight'  => $data['max_loan_term_months'],
+        // ]);
 
+        if (!isset($data['tier_rules']) || !is_array($data['tier_rules']) || count($data['tier_rules']) === 0) {
+            // return response()->json([
+            //     'message' => 'At least one loan tier rule is required.'
+            // ], 422);
+        } else {
+            $nextTierNumber = 1;
+            foreach ($data['tier_rules'] as $tier) {
+                LoanTierRule::create([
+                    'loan_setting_id'    => $loanSetting->id,
+                    'tier_type'          => $tier['tier_type'] ?? 'Tier ' . $nextTierNumber++,
+                    'min_amount'         => $tier['min_amount'],
+                    'max_amount'         => $tier['max_amount'],
+                    'min_term_fortnight' => $tier['min_term_fortnight'],
+                    'max_term_fortnight' => $tier['max_term_fortnight'],
+                ]);
+            }
+        }
 
         // Insert slabs
         if (!empty($data['ss_id_list'])) {

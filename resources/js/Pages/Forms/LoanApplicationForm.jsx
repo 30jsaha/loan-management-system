@@ -1800,7 +1800,7 @@ export default function LoanApplicationForm({ auth }) {
                                                     To the Pay Master/OIC
                                                     Salaries <br />
                                                     <br />
-                                                    I,&nbsp;
+                                                    I hereby authorize you to deduct total sum of PGK,&nbsp;
                                                     <input
                                                         type="text"
                                                         style={{
@@ -1812,12 +1812,11 @@ export default function LoanApplicationForm({ auth }) {
                                                             outline: "none",
                                                         }}
                                                     />
-                                                    &nbsp;hereby authorize you
-                                                    to deduct the sum of
-                                                    PGK&nbsp;
+                                                    &nbsp;from my fortnightly salary at a rate of PGK&nbsp;
                                                     <input
                                                         type="text"
                                                         style={{
+                                                            height: "10px",
                                                             border: "none",
                                                             borderBottom:
                                                                 "1px solid black",
@@ -1825,9 +1824,7 @@ export default function LoanApplicationForm({ auth }) {
                                                             outline: "none",
                                                         }}
                                                     />
-                                                    &nbsp;from my fortnightly
-                                                    salary starting and remit
-                                                    cheque in favor of&nbsp;
+                                                    &nbsp;per fortnight and remit cheque in favour of&nbsp;
                                                     <b>
                                                         Agro Advance Aben Ltd,
                                                         Bank South Pacific
@@ -1835,9 +1832,7 @@ export default function LoanApplicationForm({ auth }) {
                                                         7016405867, Harbor City
                                                         Branch, P.O Box 1840,
                                                         PORT MORESBY.
-                                                    </b>
-                                                    <br />
-                                                    <br />
+                                                    </b>&nbsp;
                                                     This deduction authority is
                                                     irrevocable by me and can
                                                     only be cancelled by written
@@ -1848,8 +1843,7 @@ export default function LoanApplicationForm({ auth }) {
                                                     resignation or termination,
                                                     I authorize my Employer to
                                                     deduct all monies still
-                                                    owing to Melanesian Finance
-                                                    Limited from my final
+                                                    owing to Agro Advance Aben Ltd. from my final
                                                     entitlements I may have in
                                                     respect of Long Service
                                                     Leave, Annual Leave, Bonus

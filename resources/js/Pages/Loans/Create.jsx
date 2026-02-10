@@ -710,7 +710,7 @@ export default function Create({ auth, loan_settings }) {
 
         // Apply Excel formulas:
         // Total Interest = C4 * D4 / 100 * E4
-        const totalInterest = loanAmount * rate / 100 * term;
+        const totalInterest = ((loanAmount * rate) / 100) * term;
 
         // Total Repay = F4 + C4
         const totalRepay = totalInterest + loanAmount;

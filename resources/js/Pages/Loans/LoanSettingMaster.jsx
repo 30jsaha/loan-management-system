@@ -39,8 +39,62 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
     ss_id_list: [],
     purpose_id_list: []
   });
+  const [tierRules, setTierRules] = useState([
+    {
+      tier_type: "Tier 1",
+      min_amount: "",
+      max_amount: "",
+      min_term_fortnight: "",
+      max_term_fortnight: ""
+    }
+  ]);
+
   const [loanPurposes, setLoanPurposes] = useState([]);
   const [formSelectedPurposes, setFormSelectedPurposes] = useState([]);
+  const addTierRow = () => {
+    setTierRules(prev => [
+      ...prev,
+      {
+        tier_type: `Tier ${prev.length + 1}`,
+        min_amount: "",
+        max_amount: "",
+        min_term_fortnight: "",
+        max_term_fortnight: ""
+      }
+    ]);
+  };
+
+  const resetTierRules = () => {
+    setTierRules([
+      {
+        tier_type: "Tier 1",
+        min_amount: "",
+        max_amount: "",
+        min_term_fortnight: "",
+        max_term_fortnight: ""
+      }
+    ]);
+  };
+
+  const removeTierRow = (index) => {
+    setTierRules(prev =>
+      prev
+        .filter((_, i) => i !== index)
+        .map((row, idx) => ({
+          ...row,
+          tier_type: `Tier ${idx + 1}` // re-number tiers
+        }))
+    );
+  };
+
+  const updateTierRow = (index, field, value) => {
+    setTierRules(prev =>
+      prev.map((row, i) =>
+        i === index ? { ...row, [field]: value } : row
+      )
+    );
+  };
+
   useEffect(() => {
     axios.get("/api/loan-purposes-list")
       .then(res => {
@@ -50,6 +104,7 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
       })
       .catch(() => toast.error("Failed to load loan purposes"));
   }, []);
+
   const loanPurposeOptions = loanPurposes.map(p => ({
     name: p.purpose_name,
     code: p.id,
@@ -114,6 +169,7 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
           ? formSelectedSslabs.map((s) => s.code)
           : Array.isArray(formData.ss_id_list) ? formData.ss_id_list : [],
         purpose_id_list: formSelectedPurposes.map(p => p.code),
+        tier_rules: tierRules
       };
 
       if (isEditing && formData.id) {
@@ -131,6 +187,7 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
         toast.success("Loan Type added successfully!");
       }
       resetForm();
+      resetTierRules();
     } catch (error) {
       console.error("Error saving:", error);
 
@@ -459,6 +516,98 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
               );
             })}
           </form>
+
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-3">Loan Tier Rules</h3>
+
+            <div className="overflow-x-auto border">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-2">Tier</th>
+                    <th className="p-2">Min Amount</th>
+                    <th className="p-2">Max Amount</th>
+                    <th className="p-2">Min FN</th>
+                    <th className="p-2">Max FN</th>
+                    <th className="p-2 text-center">Action</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {tierRules.map((row, index) => (
+                    <tr key={index} className="border-t">
+                      <td className="p-2">{row.tier_type}</td>
+
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          value={row.min_amount}
+                          onChange={e =>
+                            updateTierRow(index, "min_amount", e.target.value)
+                          }
+                        />
+                      </td>
+
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          value={row.max_amount}
+                          onChange={e =>
+                            updateTierRow(index, "max_amount", e.target.value)
+                          }
+                        />
+                      </td>
+
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          value={row.min_term_fortnight}
+                          onChange={e =>
+                            updateTierRow(index, "min_term_fortnight", e.target.value)
+                          }
+                        />
+                      </td>
+
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                          value={row.max_term_fortnight}
+                          onChange={e =>
+                            updateTierRow(index, "max_term_fortnight", e.target.value)
+                          }
+                        />
+                      </td>
+
+                      <td className="p-2 text-center">
+                        {tierRules.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeTierRow(index)}
+                            className="text-red-600 hover:underline"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              type="button"
+              onClick={addTierRow}
+              className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+            >
+              + Add New Tier
+            </button>
+          </div>
+
 
           <div className="mt-6 flex justify-end gap-3">
             {isEditing && (
