@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react";
+import { Head, Link } from "@inertiajs/react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Swal from "sweetalert2";
@@ -110,6 +110,15 @@ export default function Index({ auth }) {
       <Head title="Rejection Reasons" />
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
+
+        <div className="max-w-7xl mx-auto mb-3 -mt-2 ">
+          <Link
+            href={route("loans")}
+            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
+          >
+            <ArrowLeft size={16} className="mr-2" /> Back to List
+          </Link>
+        </div>
 
         {/* ================= FORM ================= */}
         <div className="bg-white p-6 rounded-xl shadow border">

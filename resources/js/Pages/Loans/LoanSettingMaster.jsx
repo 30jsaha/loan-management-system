@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Pencil, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"; // Added Arrow icons
+import { ArrowLeft, Pencil, Trash2, ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from "lucide-react"; // Added Arrow icons
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import Swal from 'sweetalert2';
-
+import { Modal, Button } from "react-bootstrap";
 import { MultiSelect } from 'primereact/multiselect';
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
@@ -20,7 +20,14 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
   const [loanPurposeList, setLoanPurpose] = useState(loanPurpose);
   const [loanSettings, setLoanSettings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [emiSchedule, setEmiSchedule] = useState([]);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const topScrollRef = useRef(null);
+  const bottomScrollRef = useRef(null);
+  const tableRef = useRef(null);
+  const [showModal, setShowModal] = useState(false);
   console.log("loanPurposeList: ",loanPurposeList);
   const [formData, setFormData] = useState({
     id: null,
@@ -187,7 +194,6 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
         toast.success("Loan Type added successfully!");
       }
       resetForm();
-      resetTierRules();
     } catch (error) {
       console.error("Error saving:", error);
 
@@ -214,6 +220,9 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
   };
 
   const handleEdit = (loan) => {
+    setShowSchedule(false);
+    setEmiSchedule([]);
+    console.log("Editing loan setting:", loan);
     // 1. Normalize slab list from either slab_id or ss_id_list
     const slabIds = Array.isArray(loan.ss_id_list)
       ? loan.ss_id_list                // multiple slabs
@@ -242,6 +251,31 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
       ...loan,
       ss_id_list: slabIds,
     });
+
+    //5. Set the Tier Rules
+    if (Array.isArray(loan.tier_rules) && loan.tier_rules.length > 0) {
+      const mappedTiers = loan.tier_rules.map((tier, index) => ({
+        id: tier.id, // keep id for update
+        tier_type: tier.tier_type || `Tier ${index + 1}`,
+        min_amount: parseFloat(tier.min_amount),
+        max_amount: parseFloat(tier.max_amount),
+        min_term_fortnight: tier.min_term_fortnight,
+        max_term_fortnight: tier.max_term_fortnight
+      }));
+
+      setTierRules(mappedTiers);
+    } else {
+      // fallback if no tiers
+      setTierRules([
+        {
+          tier_type: "Tier 1",
+          min_amount: "",
+          max_amount: "",
+          min_term_fortnight: "",
+          max_term_fortnight: ""
+        }
+      ]);
+    }
 
     setIsEditing(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -289,6 +323,14 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
       // --- UPDATED ERROR HANDLING ---
       const errorMsg = error.response?.data?.message || "Failed to delete record!";
       toast.error(errorMsg);
+      //sweetalert
+      await Swal.fire({
+        title: 'Can\'t Delete',
+        text: errorMsg,
+        icon: 'error',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK',
+      });
     }
   };
 
@@ -310,9 +352,13 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
       ss_id_list: [],    // required
       purpose_id_list: []    // required
     });
-
     setFormSelectedSslabs([]);
+    setFormSelectedPurposes([]);
     setIsEditing(false);
+    setShowModal(false);
+    setShowSchedule(false);
+    setEmiSchedule([]);
+    resetTierRules();
   };
 
   // Sorting handler
@@ -397,6 +443,134 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
   const nextPage = () => currentPage < totalPages && setCurrentPage((p) => p + 1);
   const prevPage = () => currentPage > 1 && setCurrentPage((p) => p - 1);
 
+  // const generateSchedule = () => {
+  //   setLoadingSchedule(true);
+  //   const rate = parseFloat(formData.interest_rate) || 0;
+
+  //   let schedule = [];
+
+  //   if ((!tierRules || tierRules.length === 0) || (tierRules.some(tr => !tr.min_amount || !tr.max_amount || !tr.min_term_fortnight || !tr.max_term_fortnight) && tierRules.length === 1)) {
+  //     // alert("No tier rules found!");
+  //     console.warn("No tier rules found to generate schedule. length: ", tierRules.length);
+  //     toast.error("Please add at least one tier rule to generate the schedule.");
+  //     setLoadingSchedule(false);
+  //     return;
+  //   }
+
+  //   tierRules.forEach((tier) => {
+  //     const minAmt = parseFloat(tier.min_amount);
+  //     const maxAmt = parseFloat(tier.max_amount);
+  //     const minFN = parseInt(tier.min_term_fortnight);
+  //     const maxFN = parseInt(tier.max_term_fortnight);
+
+  //     // 🔹 Loop Loan Amounts (example: step by multiplier)
+  //     const step = parseFloat(formData.amt_multiplier) || 1;
+
+  //     for (let amount = minAmt; amount <= maxAmt; amount += step) {
+  //       for (let fn = minFN; fn <= maxFN; fn++) {
+
+  //         const totalInterest = ((amount * rate) / 100) * fn;
+  //         const totalRepay = totalInterest + amount;
+  //         const repayPerFN = fn > 0 ? totalRepay / fn : 0;
+
+  //         schedule.push({
+  //           tier: tier.tier_type,
+  //           loanAmount: amount,
+  //           fn,
+  //           interest: totalInterest.toFixed(2),
+  //           totalRepay: totalRepay.toFixed(2),
+  //           repayPerFN: repayPerFN.toFixed(2)
+  //         });
+  //       }
+  //     }
+  //   });
+
+  //   setEmiSchedule(schedule);
+  //   setShowSchedule(true);
+  //   setLoadingSchedule(false);
+  // };
+  const generateSchedule = () => {
+    const rate = parseFloat(formData.interest_rate) || 0;
+    const step = parseFloat(formData.amt_multiplier) || 1;
+
+   if ((!tierRules || tierRules.length === 0) || (tierRules.some(tr => !tr.min_amount || !tr.max_amount || !tr.min_term_fortnight || !tr.max_term_fortnight) && tierRules.length === 1)) {
+      toast.error("Please add at least one tier rule.");
+      return;
+    }
+    setLoadingSchedule(true);
+
+    let matrix = [];
+
+    tierRules.forEach((tier) => {
+      const minAmt = parseFloat(tier.min_amount);
+      const maxAmt = parseFloat(tier.max_amount);
+      const minFN = parseInt(tier.min_term_fortnight);
+      const maxFN = parseInt(tier.max_term_fortnight);
+
+      let tierData = {
+        tier: tier.tier_type,
+        fns: [],
+        rows: {}
+      };
+
+      // Generate FN columns
+      for (let fn = minFN; fn <= maxFN; fn++) {
+        tierData.fns.push(fn);
+      }
+
+      // Generate amount rows
+      for (let amount = minAmt; amount <= maxAmt; amount += step) {
+        tierData.rows[amount] = {};
+
+        for (let fn = minFN; fn <= maxFN; fn++) {
+          const totalInterest = ((amount * rate) / 100) * fn;
+          const totalRepay = totalInterest + amount;
+          const repayPerFN = fn > 0 ? totalRepay / fn : 0;
+
+          tierData.rows[amount][fn] = repayPerFN.toFixed(2);
+        }
+      }
+
+      matrix.push(tierData);
+    });
+
+    setLoadingSchedule(false);
+    setEmiSchedule(matrix);
+    setShowSchedule(true);
+    setShowModal(true);
+  };
+  useEffect(() => {
+    const top = topScrollRef.current;
+    const bottom = bottomScrollRef.current;
+    const table = tableRef.current;
+
+    if (!top || !bottom || !table) return;
+
+    // Set top scrollbar width equal to table width
+    top.firstChild.style.width = table.scrollWidth + "px";
+
+    const syncTop = () => {
+      bottom.scrollLeft = top.scrollLeft;
+    };
+
+    const syncBottom = () => {
+      top.scrollLeft = bottom.scrollLeft;
+    };
+
+    top.addEventListener("scroll", syncTop);
+    bottom.addEventListener("scroll", syncBottom);
+
+    return () => {
+      top.removeEventListener("scroll", syncTop);
+      bottom.removeEventListener("scroll", syncBottom);
+    };
+  }, [emiSchedule]);
+
+  const closeDocModal = () => {
+    setShowModal(false);
+    setShowSchedule(false);
+    setEmiSchedule([]);
+  };
   return (
     <AuthenticatedLayout
       user={auth.user}
@@ -516,100 +690,221 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
               );
             })}
           </form>
+          <fieldset className="fldset">
+            <legend className="font-semibold">Loan Tier Rules</legend>
+            <div className="mt-6">
+              {/* <h3 className="text-lg font-semibold mb-3">Loan Tier Rules</h3> */}
 
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3">Loan Tier Rules</h3>
+              <div className="overflow-x-auto border">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-2">Tier</th>
+                      <th className="p-2">Min Amount</th>
+                      <th className="p-2">Max Amount</th>
+                      <th className="p-2">Min FN</th>
+                      <th className="p-2">Max FN</th>
+                      <th className="p-2 text-center">Action</th>
+                    </tr>
+                  </thead>
 
-            <div className="overflow-x-auto border">
-              <table className="min-w-full text-sm">
+                  <tbody>
+                    {tierRules.map((row, index) => (
+                      <tr key={index} className="border-t">
+                        <td className="p-2">{row.tier_type}</td>
+
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            value={row.min_amount}
+                            onChange={e =>
+                              updateTierRow(index, "min_amount", e.target.value)
+                            }
+                          />
+                        </td>
+
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            value={row.max_amount}
+                            onChange={e =>
+                              updateTierRow(index, "max_amount", e.target.value)
+                            }
+                          />
+                        </td>
+
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            value={row.min_term_fortnight}
+                            onChange={e =>
+                              updateTierRow(index, "min_term_fortnight", e.target.value)
+                            }
+                          />
+                        </td>
+
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            value={row.max_term_fortnight}
+                            onChange={e =>
+                              updateTierRow(index, "max_term_fortnight", e.target.value)
+                            }
+                          />
+                        </td>
+
+                        <td className="p-2 text-center">
+                          {tierRules.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeTierRow(index)}
+                              className="text-red-600 hover:underline"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <button
+                type="button"
+                onClick={addTierRow}
+                className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+              >
+                + Add New Tier
+              </button>
+            </div>
+          </fieldset>
+          {/* {showSchedule && (
+            <div className="mt-8 overflow-x-auto">
+              <h3 className="text-lg font-semibold mb-3">EMI Schedule</h3>
+
+              <table className="min-w-full border text-sm">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="p-2">Tier</th>
-                    <th className="p-2">Min Amount</th>
-                    <th className="p-2">Max Amount</th>
-                    <th className="p-2">Min FN</th>
-                    <th className="p-2">Max FN</th>
-                    <th className="p-2 text-center">Action</th>
+                    <th className="border p-2">Tier</th>
+                    <th className="border p-2">Loan Amount</th>
+                    <th className="border p-2">FN</th>
+                    <th className="border p-2">Interest</th>
+                    <th className="border p-2">Total Repay</th>
+                    <th className="border p-2">Repay / FN</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {tierRules.map((row, index) => (
-                    <tr key={index} className="border-t">
-                      <td className="p-2">{row.tier_type}</td>
-
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                          value={row.min_amount}
-                          onChange={e =>
-                            updateTierRow(index, "min_amount", e.target.value)
-                          }
-                        />
-                      </td>
-
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                          value={row.max_amount}
-                          onChange={e =>
-                            updateTierRow(index, "max_amount", e.target.value)
-                          }
-                        />
-                      </td>
-
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                          value={row.min_term_fortnight}
-                          onChange={e =>
-                            updateTierRow(index, "min_term_fortnight", e.target.value)
-                          }
-                        />
-                      </td>
-
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          className="form-input w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                          value={row.max_term_fortnight}
-                          onChange={e =>
-                            updateTierRow(index, "max_term_fortnight", e.target.value)
-                          }
-                        />
-                      </td>
-
-                      <td className="p-2 text-center">
-                        {tierRules.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeTierRow(index)}
-                            className="text-red-600 hover:underline"
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </td>
+                  {emiSchedule.map((row, index) => (
+                    <tr key={index}>
+                      <td className="border p-2">{row.tier}</td>
+                      <td className="border p-2 text-right">{row.loanAmount}</td>
+                      <td className="border p-2 text-center">{row.fn}</td>
+                      <td className="border p-2 text-right">{row.interest}</td>
+                      <td className="border p-2 text-right">{row.totalRepay}</td>
+                      <td className="border p-2 text-right">{row.repayPerFN}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          )} */}
+          {/* Modal for viewing schedule */}
+          <Modal
+              show={showModal}
+              onHide={closeDocModal}
+              size="xl"
+              centered
+              dialogClassName="max-w-[900px]"
+          >
+              <Modal.Header closeButton>
+                  <Modal.Title>
+                      Loan EMI Schedule
+                  </Modal.Title>
+              </Modal.Header>
 
+              <Modal.Body>
+                  {showSchedule && (
+                    <div className="mt-8 space-y-10">
+                      {emiSchedule.map((tier, tIndex) => (
+                        <div key={tIndex}>
+
+                          <h3 className="text-lg font-semibold mb-3">{tier.tier}</h3>
+                            {/* 🔥 TOP SCROLLBAR */}
+                            <div
+                              ref={topScrollRef}
+                              className="overflow-x-auto overflow-y-hidden"
+                            >
+                              <div style={{ height: "1px" }} />
+                            </div>
+
+                            {/* 🔥 MAIN TABLE SCROLL */}
+                            <div
+                              ref={bottomScrollRef}
+                              className="overflow-x-auto"
+                            >
+                              <table
+                                ref={tableRef}
+                                className="min-w-max border-collapse text-sm relative"
+                              >
+                                <thead>
+                                  <tr className="bg-gray-800 text-white sticky top-0 z-20">
+                                    <th className="border border-r-2 p-2 sticky left-0 z-30 bg-gray-900">
+                                      Amount
+                                    </th>
+
+                                    {tier.fns.map((fn) => (
+                                      <th key={fn} className="border p-2 text-center">
+                                        {fn}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+
+                                <tbody>
+                                  {Object.keys(tier.rows).map((amount) => (
+                                    <tr key={amount}>
+                                      <td className="border border-r-2 p-2 font-semibold text-right bg-gray-100 sticky left-0 z-10">
+                                        {amount}
+                                      </td>
+
+                                      {tier.fns.map((fn) => (
+                                        <td key={fn} className="border p-2 text-right">
+                                          {tier.rows[amount][fn] || ""}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                        </div>
+                      ))}
+                    </div>
+                  )}
+              </Modal.Body>
+
+              <Modal.Footer>
+                  <Button variant="secondary" onClick={closeDocModal}>
+                      Close
+                  </Button>
+              </Modal.Footer>
+          </Modal>
+          <div className="mt-6 flex justify-end gap-3">
             <button
               type="button"
-              onClick={addTierRow}
-              className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+              onClick={generateSchedule}
+              disabled={loadingSchedule}
+              className={`${loadingSchedule ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"} text-white px-6 py-2 rounded-lg font-semibold shadow-md`}
             >
-              + Add New Tier
+              {loadingSchedule ? <>Generating&nbsp;<Loader2 className="h-6 w-6 animate-spin inline" /></> : "Preview EMI Schedule"}
             </button>
-          </div>
-
-
-          <div className="mt-6 flex justify-end gap-3">
             {isEditing && (
               <button type="button" onClick={resetForm} className="bg-gray-400 hover:bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold shadow-md">Cancel</button>
             )}
@@ -691,26 +986,32 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
                   [`Proc. Fees(${currencyPrefix})`, "process_fees"],
                   ["Effect Date", "effect_date"],
                   ["End Date", "end_date"],
-                ].map(([header, key]) => (
-                  <th
-                    key={key}
-                    onClick={() => handleSort(key)}
-                    className="px-2 py-3 font-semibold text-xs md:text-[0.85rem] uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center border border-gray-700"
-                  >
-                    <div className="flex justify-center items-center gap-1 group">
-                      <span className="whitespace-nowrap">{header}</span>
-                      {sortConfig.key === key ? (
-                        sortConfig.direction === "asc" ? (
-                          <ArrowUp size={16} className="text-white" />
+                ]
+                  .filter(([_, key]) => key !== "effect_date" && key !== "end_date") // cleaner approach
+                  .map(([header, key]) => (
+                    <th
+                      key={key}
+                      onClick={() => handleSort(key)}
+                      className="px-2 py-3 font-semibold text-xs md:text-[0.85rem] uppercase tracking-wide cursor-pointer select-none hover:bg-emerald-600/70 transition text-center border border-gray-700"
+                    >
+                      <div className="flex justify-center items-center gap-1 group">
+                        <span className="whitespace-nowrap">{header}</span>
+
+                        {sortConfig.key === key ? (
+                          sortConfig.direction === "asc" ? (
+                            <ArrowUp size={16} className="text-white" />
+                          ) : (
+                            <ArrowDown size={16} className="text-white" />
+                          )
                         ) : (
-                          <ArrowDown size={16} className="text-white" />
-                        )
-                      ) : (
-                        <ArrowUpDown size={16} className="text-white/50 group-hover:text-white" />
-                      )}
-                    </div>
-                  </th>
-                ))}
+                          <ArrowUpDown
+                            size={16}
+                            className="text-white/50 group-hover:text-white"
+                          />
+                        )}
+                      </div>
+                    </th>
+                  ))}
                 <th className="px-2 py-3 text-center border border-gray-700 font-semibold text-xs uppercase">
                   Income Slab
                 </th>
@@ -767,10 +1068,10 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
                       <td className="px-2 py-2 text-center border border-gray-700">
                         {loan.process_fees}
                       </td>
-                      <td className="px-2 py-2 text-center border border-gray-700">
+                      <td className="px-2 py-2 text-center border border-gray-700 d-none">
                         {loan.effect_date}
                       </td>
-                      <td className="px-2 py-2 text-center border border-gray-700">
+                      <td className="px-2 py-2 text-center border border-gray-700 d-none">
                         {loan.end_date}
                       </td>
                       {/* //slab */}
