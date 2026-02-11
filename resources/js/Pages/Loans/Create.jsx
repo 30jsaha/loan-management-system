@@ -27,6 +27,7 @@ export default function Create({ auth, loan_settings }) {
     const [isEligible, setIsEligible] = useState(false);
     const [isCustSelectable, setCustSelectable] = useState(true);
     const [recProposedPvaAmt, setRecProposedPvaAmt] = useState(0);
+    const [recMaxAllowedPvaAmt, setRecMaxAllowedPvaAmt] = useState(0);
     const [recEleigibleAmount, setRecEleigibleAmount] = useState(0);
     const [isTruelyEligible, setIsTruelyEligible] = useState(false);
     const [isFormDirty, setIsFormDirty] = useState(false);
@@ -229,6 +230,42 @@ export default function Create({ auth, loan_settings }) {
         }
     };
 
+    const resetCustomerForm = () => {
+        setFormData({
+            cus_id: 0,
+            company_id: 1,
+            organisation_id: 0,
+            first_name: "",
+            last_name: "",
+            gender: "",
+            dob: "",
+            marital_status: "",
+            no_of_dependents: "",
+            phone: "",
+            email: "",
+            present_address: "",
+            permanent_address: "",
+            employee_no: "",
+            designation: "",
+            employment_type: "",
+            date_joined: "",
+            monthly_salary: 0.00,
+            net_salary: 0.00,
+            work_location: "",
+            payroll_number: "",
+            employer_department: "",
+            immediate_supervisor: "",
+            work_province: "",
+            work_district: "",
+            years_at_current_employer: "",
+            employer_address: "",
+            home_province: "",
+            district_village: "",
+            spouse_full_name: "",
+            spouse_contact: "",
+        });
+    };
+
     useEffect(() => {
         fetchCustomers();
         fetchLoanPurposes();
@@ -374,11 +411,11 @@ export default function Create({ auth, loan_settings }) {
             setIsChecking(false);
             return;
         }
-        if (Number(loanFormData.loan_amount_applied) > Number(recProposedPvaAmt)) {
-            setMessage(`❌ Loan Amount Applied exceeds the Recommended PVA Amount of PGK ${recProposedPvaAmt}. Please adjust accordingly.`);
+        if (Number(recProposedPvaAmt) > Number(loanFormData.elegible_amount)) {
+            setMessage(`❌ Loan Amount Applied exceeds the max allowed PVA Amount of PGK ${loanFormData.elegible_amount}. Please adjust accordingly.`);
             Swal.fire({
                 title: "Warning !",
-                text: `Loan Amount Applied exceeds the Recommended PVA Amount of PGK ${recProposedPvaAmt}. Please adjust accordingly.`,
+                text: `Loan Amount Applied exceeds the max allowed PVA Amount of PGK ${loanFormData.elegible_amount}. Please adjust accordingly.`,
                 icon: "warning"
             });
             setIsChecking(false);
@@ -529,6 +566,18 @@ export default function Create({ auth, loan_settings }) {
                 setIsChecking(false);
                 return;
             }
+            
+            if (Number(loanFormData?.loan_amount_applied) > Number(loanFormData?.elegible_amount)) {
+                console.log("Validation failed: Applied amount exceeds eligible amount. loan_amount_applied: ", loanFormData.loan_amount_applied, "elegible_amount: ", loanFormData.elegible_amount);
+                setMessage(`❌ Loan Amount Applied exceeds the max allowed PVA Amount of PGK ${loanFormData.elegible_amount}. Please adjust accordingly.`);
+                Swal.fire({
+                    title: "Warning !",
+                    text: `Loan Amount Applied exceeds the max allowed PVA Amount of PGK ${loanFormData.elegible_amount}. Please adjust accordingly.`,
+                    icon: "warning"
+                });
+                setIsChecking(false);
+                return;
+            }
             loanFormData.loan_amount_applied = parseFloat(loanFormData.loan_amount_applied);
             loanFormData.tenure_fortnight = parseFloat(loanFormData.tenure_fortnight);
             // loanFormData.total_interest_amt = parseFloat(loanFormData.total_interest_amt);
@@ -661,7 +710,7 @@ export default function Create({ auth, loan_settings }) {
 
         // Apply Excel formulas:
         // Total Interest = C4 * D4 / 100 * E4
-        const totalInterest = loanAmount * rate / 100 * term;
+        const totalInterest = ((loanAmount * rate) / 100) * term;
 
         // Total Repay = F4 + C4
         const totalRepay = totalInterest + loanAmount;
@@ -1064,7 +1113,7 @@ export default function Create({ auth, loan_settings }) {
                 )}
             </div>
             <div className="py-2">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding"> 
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         {/* Top Action Bar */}
                         <Row className="mb-3 px-4 pt-4">
@@ -1154,6 +1203,7 @@ export default function Create({ auth, loan_settings }) {
                                                     })
                                                     .catch((err) => console.error("Error fetching loan types:", err));
                                             }}
+                                            resetForm={resetCustomerForm}
                                         />
                                     )}
 
@@ -1272,6 +1322,9 @@ export default function Create({ auth, loan_settings }) {
                                                             if (!isNaN(recProposedPvaAmt) && recProposedPvaAmt > 0) {
                                                                 fetchFnRange(recProposedPvaAmt); // 🔥 API call here
                                                             }
+                                                        }}
+                                                        maxAllowedPvaAmt={(recMaxAllowedPvaAmt) => {
+                                                            setRecMaxAllowedPvaAmt(recMaxAllowedPvaAmt);
                                                         }}
                                                         eleigibleAmount={(recEleigibleAmount) => {
                                                             setRecEleigibleAmount(recEleigibleAmount);

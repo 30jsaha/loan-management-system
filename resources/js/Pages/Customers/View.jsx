@@ -1330,7 +1330,7 @@ const EmiScheduleCard = ({ loan, collections, defaultOpen }) => {
                   <th className="px-3 py-2 border">Paid On</th>
                   <th className="px-3 py-2 border text-right">Amount</th>
                   <th className="px-3 py-2 border text-right">Balance</th>
-                  <th className="px-3 py-2 border text-center">Status</th>
+                  {/* <th className="px-3 py-2 border text-center">Status</th> */}
                 </tr>
               </thead>
 
@@ -1348,7 +1348,7 @@ const EmiScheduleCard = ({ loan, collections, defaultOpen }) => {
                     <td className="px-3 py-2 border text-right">
                       PGK {s.balance.toFixed(2)}
                     </td>
-                    <td className="px-3 py-2 border text-center">
+                    {/* <td className="px-3 py-2 border text-center">
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                           s.status === "Paid"
@@ -1360,7 +1360,7 @@ const EmiScheduleCard = ({ loan, collections, defaultOpen }) => {
                       >
                         {s.status}
                       </span>
-                    </td>
+                    </td> */}
                   </tr>
                 ))}
               </tbody>

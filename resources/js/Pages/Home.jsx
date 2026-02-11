@@ -1304,7 +1304,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
               <div className="col-md-3 text-md-end">
                 <h5 className="fw-bold mb-2" style={{ color: '#69F0AE' }}>Agro Advance Aben</h5>
                 <p className="small mb-0" style={{ color: '#E8F5E9' }}>
-                  Finance with Purpose. Supporting farmers and small businesses with affordable loans.
+                  {/* Finance with Purpose. Supporting farmers and small businesses with affordable loans. */}
+                  Finance with Purpose.
                 </p>
               </div>
 

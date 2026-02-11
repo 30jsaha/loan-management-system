@@ -4,7 +4,7 @@ import axios from "axios";
 //swal
 import Swal from "sweetalert2";
 
-export default function CustomerEligibilityForm({ customerId, grossSalary, netSalary, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, eleigibleAmount }) {
+export default function CustomerEligibilityForm({ customerId, grossSalary, netSalary, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, maxAllowedPvaAmt, eleigibleAmount }) {
   const [isChecking, setIsChecking] = useState(false);
   const [formData, setFormData] = useState({
     customer_id: customerId || 0,
@@ -101,7 +101,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
     },
     {
       name: "current_fincorp_deduction_amt",
-      label: "Current Fincorp Deduction",
+      label: "Current Agro Deduction",
       ref: currentFincorpDeductionRef,
     },
     {
@@ -198,6 +198,9 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
       }
       if (typeof proposedPvaAmt === "function") {
         proposedPvaAmt(formData.proposed_pva_amt);
+      }
+      if (typeof maxAllowedPvaAmt === "function") {
+        maxAllowedPvaAmt(parseFloat(res.data.data.max_allowable_pva_amt));
       }
       if (typeof eleigibleAmount === "function") {
         eleigibleAmount(parseFloat(res.data.data.max_allowable_pva_amt));
@@ -315,7 +318,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
           </Col>
           <Col md={3}>
             <Form.Group>
-              <Form.Label>Current Fincorp Deduction (PGK)</Form.Label>
+              <Form.Label>Current Agro Deduction (PGK)</Form.Label>
               <Form.Control
                 type="number"
                 ref={currentFincorpDeductionRef}

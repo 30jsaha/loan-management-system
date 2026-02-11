@@ -511,7 +511,7 @@ class LoanController extends Controller
     {
         $request->validate([
             'loan_setting_id' => 'required|exists:loan_settings,id',
-            'amount' => 'required|numeric|min:200',
+            'amount' => 'required|numeric|min:0',
             'term' => 'required|integer|min:1',
         ]);
 
@@ -566,8 +566,10 @@ class LoanController extends Controller
                 ->where('active', 1)
                 ->pluck('purpose_id')
                 ->toArray();
+            $tierRules = LoanTierRule::where('loan_setting_id', $ls->id)->get();
             $ls->ss_id_list = $slabs;
             $ls->purpose_id_list = $loanPurpose;
+            $ls->tier_rules = $tierRules;
         }
 
         return response()->json($loanSettings);
@@ -594,6 +596,15 @@ class LoanController extends Controller
             'ss_id_list.*' => 'integer',
             'purpose_id_list' => 'nullable|array',
             'purpose_id_list.*' => 'integer',
+            //Tier rules validation
+            'tier_rules' => 'nullable|array',
+
+            'tier_rules.*.tier_type' => 'nullable|string|max:50',
+            'tier_rules.*.min_amount' => 'required_with:tier_rules|numeric|min:0',
+            'tier_rules.*.max_amount' => 'required_with:tier_rules|numeric',
+            'tier_rules.*.min_term_fortnight' => 'required_with:tier_rules|integer|min:1',
+            'tier_rules.*.max_term_fortnight' => 'required_with:tier_rules|integer|min:1',
+
         ]);
 
         if ($validator->fails()) {
@@ -605,6 +616,42 @@ class LoanController extends Controller
 
         // Create loan setting
         $loanSetting = LoanSetting::create($data);
+
+        // 🔹 Create Loan Tier Rule automatically
+        // Generate next tier number (example: Tier 25)
+        // $lastTierNumber = LoanTierRule::where('loan_setting_id', $loanSetting->id)
+        //     ->max(
+        //     DB::raw("CAST(SUBSTRING(tier_type, 6) AS UNSIGNED)")
+        //     );
+
+        // $nextTierNumber = $lastTierNumber ? $lastTierNumber + 1 : 1;
+
+        // LoanTierRule::create([
+        //     'loan_setting_id'     => $loanSetting->id,
+        //     'tier_type'           => 'Tier ' . $nextTierNumber,
+        //     'min_amount'          => $data['min_loan_amount'],
+        //     'max_amount'          => $data['max_loan_amount'],
+        //     'min_term_fortnight'  => $data['min_loan_term_months'],
+        //     'max_term_fortnight'  => $data['max_loan_term_months'],
+        // ]);
+
+        if (!isset($data['tier_rules']) || !is_array($data['tier_rules']) || count($data['tier_rules']) === 0) {
+            // return response()->json([
+            //     'message' => 'At least one loan tier rule is required.'
+            // ], 422);
+        } else {
+            $nextTierNumber = 1;
+            foreach ($data['tier_rules'] as $tier) {
+                LoanTierRule::create([
+                    'loan_setting_id'    => $loanSetting->id,
+                    'tier_type'          => $tier['tier_type'] ?? 'Tier ' . $nextTierNumber++,
+                    'min_amount'         => $tier['min_amount'],
+                    'max_amount'         => $tier['max_amount'],
+                    'min_term_fortnight' => $tier['min_term_fortnight'],
+                    'max_term_fortnight' => $tier['max_term_fortnight'],
+                ]);
+            }
+        }
 
         // Insert slabs
         if (!empty($data['ss_id_list'])) {
@@ -674,6 +721,14 @@ class LoanController extends Controller
                 'ss_id_list.*' => 'integer',
                 'purpose_id_list' => 'nullable|array',
                 'purpose_id_list.*' => 'integer',
+
+                //Tier rules validation
+                'tier_rules' => 'nullable|array',
+                'tier_rules.*.tier_type' => 'nullable|string|max:50',
+                'tier_rules.*.min_amount' => 'required_with:tier_rules|numeric|min:0',
+                'tier_rules.*.max_amount' => 'required_with:tier_rules|numeric',
+                'tier_rules.*.min_term_fortnight' => 'required_with:tier_rules|integer|min:1',
+                'tier_rules.*.max_term_fortnight' => 'required_with:tier_rules|integer|min:1',
             ]);
 
             if ($validator->fails()) {
@@ -740,6 +795,29 @@ class LoanController extends Controller
                 ->pluck('purpose_id')
                 ->toArray();
 
+            // LoanTierRule::where('loan_setting_id', $loanSetting->id)->update([
+            //     'min_amount' => $data['min_loan_amount'],
+            //     'max_amount' => $data['max_loan_amount'],
+            //     'min_term_fortnight' => $data['min_loan_term_months'],
+            //     'max_term_fortnight' => $data['max_loan_term_months'],
+            // ]);
+
+            // Delete existing tiers first
+            LoanTierRule::where('loan_setting_id', $loanSetting->id)->delete();
+
+            // Then reinsert all tiers
+            foreach ($request->tier_rules as $tier) {
+                LoanTierRule::create([
+                    'loan_setting_id' => $loanSetting->id,
+                    'tier_type' => $tier['tier_type'],
+                    'min_amount' => $tier['min_amount'],
+                    'max_amount' => $tier['max_amount'],
+                    'min_term_fortnight' => $tier['min_term_fortnight'],
+                    'max_term_fortnight' => $tier['max_term_fortnight'],
+                ]);
+            }
+
+
             return response()->json([
                 'message' => 'Loan setting updated successfully',
                 'data' => $loanSetting,
@@ -759,12 +837,68 @@ class LoanController extends Controller
     /**
      * ✅ Remove a loan setting
      */
+    // public function remove_loan_setting($id)
+    // {
+    //     $loanSetting = LoanSetting::findOrFail($id);
+    //     $loanSetting->delete();
+
+    //     return response()->json(['message' => 'Loan setting deleted successfully']);
+    // }
     public function remove_loan_setting($id)
     {
         $loanSetting = LoanSetting::findOrFail($id);
-        $loanSetting->delete();
 
-        return response()->json(['message' => 'Loan setting deleted successfully']);
+        // 🔴 STEP 1: Check active loan applications
+        $hasActiveLoans = DB::table('loan_applications')
+            ->where('loan_type', $id)
+            ->where('status', '!=', 'Closed')
+            ->exists();
+
+        $count = DB::table('loan_applications')
+            ->where('loan_type', $id)
+            ->where('status', '!=', 'Closed')
+            ->count();
+
+        if ($hasActiveLoans) {
+            return response()->json([
+                'message' => "Cannot delete. There are {$count} active loan applications using this loan type."
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+
+            // 🔹 Delete tier rules
+            LoanTierRule::where('loan_setting_id', $id)->delete();
+
+            // 🔹 Delete assigned slabs
+            DB::table('assigned_slabs_under_loan')
+                ->where('loan_id', $id)
+                ->delete();
+
+            // 🔹 Delete assigned purposes
+            DB::table('assigned_purpose_under_loans')
+                ->where('loan_id', $id)
+                ->delete();
+
+            // 🔹 Delete loan setting
+            $loanSetting->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Loan setting deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Something went wrong while deleting.'
+            ], 500);
+        }
     }
 
     public function loan_emi_list()
@@ -1372,7 +1506,7 @@ class LoanController extends Controller
         if (!$rule) {
             return response()->json([
                 'valid' => false,
-                'message' => 'No FN rule found for the given loan amount.',
+                'message' => 'No FN rule found for the given loan amount.', 
             ], 422);
         }
 
