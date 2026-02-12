@@ -465,7 +465,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
 
                   <CalcRow
                     label="Net after Tax & Super"
-                    formula={`${result.gross_salary_amt} + ${result.temp_allowances_amt} + ${result.overtime_amt} - ${result.tax_amt} - ${result.superannuation_amt}`}
+                    formula={`${result.gross_salary_amt} - ${result.temp_allowances_amt} - ${result.overtime_amt} - ${result.tax_amt} - ${result.superannuation_amt}`}
                     result={result.net_after_tax_superannuation_amt}
                   />
 
@@ -506,7 +506,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
 
                   <CalcRow
                     label="Net Based on Proposed PVA"
-                    formula={`${result.total_net_salary_amt} - ${result.proposed_pva_amt}`}
+                    formula={`${result.total_net_salary_amt} + ${result.current_fincorp_deduction_amt} - ${result.proposed_pva_amt}`}
                     result={result.net_based_on_proposed_pva_amt}
                   />
 

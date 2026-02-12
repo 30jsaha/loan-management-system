@@ -364,13 +364,13 @@ class CustomerController extends Controller
         $proposed_pva = $f('proposed_pva_amt');
 
         // === Calculations ===
-        $net_after_tax_superannuation = $gross_salary + $temp_allowances + $overtime - $tax - $superannuation;
+        $net_after_tax_superannuation = $gross_salary - ($temp_allowances + $overtime + $tax + $superannuation);
         $total_net_salary = $current_net_pay + $bank_2;
         $total_other_deductions = $net_after_tax_superannuation - $total_net_salary;
         $net_50_percent = $net_after_tax_superannuation / 2.0;
         $net_50_percent_available = $net_50_percent - $total_other_deductions;
         $max_allowable_pva = $net_50_percent_available + $current_fincorp_deduction + $other_deductions - 0.01;
-        $net_based_on_proposed_pva = $total_net_salary - $proposed_pva;
+        $net_based_on_proposed_pva = $total_net_salary + $current_fincorp_deduction - $proposed_pva;
         $shortage = $max_allowable_pva - $proposed_pva;
         $is_eligible = $max_allowable_pva > $proposed_pva ? 1 : 0;
 
