@@ -346,7 +346,7 @@ class CustomerController extends Controller
             'current_fincorp_deduction_amt' => 'nullable|numeric',
             'other_deductions_amt' => 'nullable|numeric',
             'proposed_pva_amt' => 'nullable|numeric',
-            'checked_by_user_id' => 'nullable|integer',
+            'checked_by_user_id' => 'nullable|integer', 
         ]);
 
         $f = fn($key) => isset($validated[$key]) ? (float) $validated[$key] : 0.0;
