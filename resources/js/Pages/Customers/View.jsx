@@ -7,6 +7,7 @@ import "jspdf-autotable";
 import autoTable from "jspdf-autotable";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { formatCurrency } from "@/Utils/formatters";
+import { Search,Filter } from "lucide-react";
 
 import {
   ArrowLeft,
@@ -254,6 +255,7 @@ export default function View({ auth, customerId }) {
                   <EmiSchedulerTab
                     loans={loans}
                     collections={history.collections}
+                    customer={customer}
                   />
                 )}
 
@@ -353,10 +355,46 @@ const CompanyTab = ({ customer }) => {
 -------------------------------------- */
 
 function LoanTab({ loans, collections }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [organisations, setOrganisations] = useState([]);
+  const [selectedOrg, setSelectedOrg] = useState("");
+
+  // Fetch Organisation List on Mount
+  useEffect(() => {
+    let mounted = true;
+    axios.get('/api/organisation-list')
+      .then((res) => {
+        if (mounted) {
+          // Assuming response data is an array of objects { id, organisation_name }
+          setOrganisations(res.data || []);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch organisations:", err));
+      
+    return () => { mounted = false; };
+  }, []);
+
   if (!loans.length)
     return <div className="text-gray-500 text-sm">No loan history available.</div>;
 
-  // Group collections by loan_id
+  // Filter Loans
+  const filteredLoans = loans.filter((loan) => {
+    // 1. Check Organization Filter
+    const loanOrgName = loan.organisation?.organisation_name || loan.company_name || "";
+    if (selectedOrg && loanOrgName !== selectedOrg) {
+      return false;
+    }
+
+    // 2. Check Text Search (ID or Amount)
+    const term = searchTerm.toLowerCase();
+    const loanId = String(loan.id).toLowerCase();
+    const amount = String(loan.loan_amount_applied || "").toLowerCase();
+    const totalRepay = String(loan.total_repay_amt || "").toLowerCase();
+
+    return loanId.includes(term) || amount.includes(term) || totalRepay.includes(term);
+  });
+
+  // Group collections by loan_id for display
   const collectionMap = {};
   const flatCollections = Array.isArray(collections) 
     ? collections 
@@ -368,21 +406,70 @@ function LoanTab({ loans, collections }) {
   });
 
   return (
-    <div className="space-y-4 overflow-y-auto max-h-[600px] pr-2">
-      {loans.map((loan,index) => {
-        const loanCollections = collectionMap[loan.id] || [];
-        const totalCollected = loanCollections.reduce((s, c) => s + Number(c.emi_amount || 0), 0);
+    <div className="space-y-4 h-full flex flex-col">
+      
+      {/* Filters Container */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        
+        {/* Organization Select Dropdown */}
+        <div className="relative min-w-[200px]">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Filter size={16} className="text-gray-400" />
+          </div>
+          <select
+            className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm appearance-none bg-white"
+            value={selectedOrg}
+            onChange={(e) => setSelectedOrg(e.target.value)}
+          >
+            <option value="">All Organizations</option>
+            {organisations.map((org) => (
+              <option key={org.id} value={org.organisation_name}>
+                {org.organisation_name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        return (
-          <ModernLoanCard
-            key={loan.id}
-            loan={loan}
-            collections={loanCollections}
-            totalCollected={totalCollected}
-            initiallyOpen={index===0}
+        {/* Text Search Input */}
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={16} className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by Loan ID or Amount..."
+            className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
-        );
-      })}
+        </div>
+      </div>
+
+      {/* Loan List */}
+      <div className="overflow-y-auto max-h-[600px] pr-2 space-y-4">
+        {filteredLoans.length > 0 ? (
+          filteredLoans.map((loan, index) => {
+            const loanCollections = collectionMap[loan.id] || [];
+            const totalCollected = loanCollections.reduce((s, c) => s + Number(c.emi_amount || 0), 0);
+
+            return (
+              <ModernLoanCard
+                key={loan.id}
+                loan={loan}
+                collections={loanCollections}
+                totalCollected={totalCollected}
+                initiallyOpen={index === 0}
+              />
+            );
+          })
+        ) : (
+          <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
+            <p className="text-gray-500 text-sm">
+              No loans found matching the selected filters.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -770,10 +857,21 @@ const BankTab = ({ customer, loans }) => {
 /* -----------------------------------
         Loan Statement PDF Export
 -------------------------------------- */
-const LoanStatementTab = ({ loans, collections, customer }) => {
+function LoanStatementTab({ loans, collections, customer }) {
+  const [searchTerm, setSearchTerm] = useState("");
+
   if (!loans.length) {
     return <p className="text-gray-500 text-sm">No loan data available.</p>;
   }
+
+  // Filter Loans
+  const filteredLoans = loans.filter((loan) => {
+    const term = searchTerm.toLowerCase();
+    const loanId = String(loan.id).toLowerCase();
+    const amount = String(loan.loan_amount_applied || "").toLowerCase();
+    
+    return loanId.includes(term) || amount.includes(term);
+  });
 
   // flatten collections once
   const flatCollections = Array.isArray(collections)
@@ -781,19 +879,42 @@ const LoanStatementTab = ({ loans, collections, customer }) => {
     : Object.values(collections || {}).flat();
 
   return (
-    <div className="space-y-6">
-      {loans.map((loan,index) => (
-        <LoanStatementCard
-          key={loan.id}
-          loan={loan}
-          customer={customer}
-          collections={flatCollections}
-          defaultOpen={index === 0}
+    <div className="space-y-4">
+      {/* Search Bar */}
+      <div className="relative mb-4">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search size={16} className="text-gray-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search by Loan ID or Amount..."
+          className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-      ))}
+      </div>
+
+      {/* List */}
+      <div className="space-y-6">
+        {filteredLoans.length > 0 ? (
+          filteredLoans.map((loan, index) => (
+            <LoanStatementCard
+              key={loan.id}
+              loan={loan}
+              customer={customer}
+              collections={flatCollections}
+              defaultOpen={index === 0}
+            />
+          ))
+        ) : (
+          <p className="text-sm text-gray-500 text-center py-4">
+            No loans found matching "{searchTerm}"
+          </p>
+        )}
+      </div>
     </div>
   );
-};
+}
 
 const LoanStatementCard = ({
   loan,
@@ -1223,7 +1344,9 @@ const PersonalInfo = ({ customer }) => {
       EMI Scheduler
 -------------------------------------- */
 
-const EmiSchedulerTab = ({ loans, collections }) => {
+function EmiSchedulerTab({ loans, collections, customer }) {
+  const [searchTerm, setSearchTerm] = useState("");
+
   if (!loans.length) {
     return (
       <p className="text-sm text-gray-500">
@@ -1232,31 +1355,67 @@ const EmiSchedulerTab = ({ loans, collections }) => {
     );
   }
 
+  // Filter Loans
+  const filteredLoans = loans.filter((loan) => {
+    const term = searchTerm.toLowerCase();
+    const loanId = String(loan.id).toLowerCase();
+    const amount = String(loan.loan_amount_applied || "").toLowerCase();
+    const emi = String(loan.emi_amount || "").toLowerCase();
+
+    return loanId.includes(term) || amount.includes(term) || emi.includes(term);
+  });
+
   // Flatten collections
   const flatCollections = Array.isArray(collections)
     ? collections
     : Object.values(collections || {}).flat();
 
   return (
-    <div className="space-y-6">
-      {loans.map((loan, index) => (
-        <EmiScheduleCard
-          key={loan.id}
-          loan={loan}
-          collections={flatCollections}
-          defaultOpen={index === 0}
+    <div className="space-y-4">
+      {/* Search Bar */}
+      <div className="relative mb-4">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search size={16} className="text-gray-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search by Loan ID or Amount..."
+          className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-      ))}
+      </div>
+
+      {/* List */}
+      <div className="space-y-6">
+        {filteredLoans.length > 0 ? (
+          filteredLoans.map((loan, index) => (
+            <EmiScheduleCard
+              key={loan.id}
+              loan={loan}
+              customer={customer}
+              collections={flatCollections}
+              defaultOpen={index === 0}
+            />
+          ))
+        ) : (
+          <p className="text-sm text-gray-500 text-center py-4">
+            No loans found matching "{searchTerm}"
+          </p>
+        )}
+      </div>
     </div>
   );
-};
-const EmiScheduleCard = ({ loan, collections, defaultOpen }) => {
+}
+
+const EmiScheduleCard = ({ loan, collections, customer, defaultOpen }) => {
   const [open, setOpen] = useState(defaultOpen);
 
   const tenure = Number(loan.tenure_fortnight || 0);
   const emiAmount = Number(loan.emi_amount || 0);
   const totalRepay = Number(loan.total_repay_amt || 0);
 
+  // Map payments for quick lookup
   const paidMap = {};
   collections
     .filter((c) => c.loan_id === loan.id)
@@ -1265,38 +1424,95 @@ const EmiScheduleCard = ({ loan, collections, defaultOpen }) => {
     });
 
   const startDate = new Date(
-    loan.first_due_date ||
-      loan.created_at ||
-      new Date()
+    loan.first_due_date || loan.created_at || new Date()
   );
 
   let balance = totalRepay;
+  // Fallback to 14 days (Fortnight) if not specified
   const frequency = Number(loan.installment_frequency_in_days || 14);
 
+  // Generate Schedule Data
   const schedule = Array.from({ length: tenure }, (_, i) => {
     const instNo = i + 1;
+    
+    // Calculate due date based on frequency
     const dueDate = new Date(startDate);
-    dueDate.setDate(dueDate.getDate() + i * frequency);
-
+    dueDate.setDate(startDate.getDate() + i * frequency);
 
     const paid = paidMap[instNo];
+    
+    // If paid, subtract from balance (logic for display)
+    // Note: This logic assumes simple reducing balance for display purposes based on EMI count
+    if (paid) {
+       // Only reduce balance if paid, or use a calculated running balance approach 
+       // depending on your specific accounting needs. 
+       // For this snippet, we decrement balance per schedule row to show projected reducing balance.
+       balance -= emiAmount; 
+    } else {
+       balance -= emiAmount; // Project the balance reducing
+    }
+
+    // Determine Status
     const status = paid
       ? "Paid"
       : new Date() > dueDate
       ? "Overdue"
       : "Upcoming";
 
-    if (paid) balance -= emiAmount;
-
     return {
       instNo,
       dueDate,
       paidOn: paid?.payment_date || "—",
       amount: emiAmount,
-      balance: balance < 0 ? 0 : balance,
+      balance: balance < 0 ? 0 : balance, // Prevent negative balance in display
       status,
     };
   });
+
+  // --- PDF Download Function ---
+  const downloadSchedule = () => {
+    const doc = new jsPDF();
+
+    // Title
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("EMI Schedule", 14, 15);
+
+    // Customer & Loan Details
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    const custName = customer ? `${customer.first_name} ${customer.last_name}` : "Customer";
+    doc.text(`Customer: ${custName}`, 14, 25);
+    doc.text(`Loan ID: ${loan.id}`, 14, 30);
+    doc.text(`Total Tenure: ${tenure} Fortnights`, 14, 35);
+    doc.text(`EMI Amount: PGK ${emiAmount.toFixed(2)}`, 14, 40);
+
+    // Prepare Table Rows
+    // We recalculate balance strictly for the table if needed, 
+    // or reuse the `schedule` array we already generated.
+    const tableRows = schedule.map((s) => [
+      s.instNo,
+      s.dueDate.toLocaleDateString(),
+      s.paidOn,
+      `PGK ${s.amount.toFixed(2)}`,
+      `PGK ${s.balance.toFixed(2)}`,
+      s.status
+    ]);
+
+    // Generate Table
+    autoTable(doc, {
+      startY: 45,
+      head: [["No", "Due Date", "Paid On", "Amount", "Balance"]],
+      body: tableRows,
+      theme: "grid",
+      headStyles: { fillColor: [79, 70, 229] }, // Indigo color
+      styles: { fontSize: 9 },
+    });
+
+    // Save
+    doc.save(`emi-schedule-loan-${loan.id}.pdf`);
+  };
 
   return (
     <div className="border rounded-xl shadow-sm bg-white overflow-hidden">
@@ -1320,60 +1536,65 @@ const EmiScheduleCard = ({ loan, collections, defaultOpen }) => {
 
       {/* BODY */}
       {open && (
-        <div className="border rounded-lg overflow-hidden">
-          <div className="max-h-[320px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
-            <table className="w-full text-sm border-collapse">
-              <thead className="bg-indigo-600 text-white sticky top-0 z-10">
-                <tr>
-                  <th className="px-3 py-2 border">EMI</th>
-                  <th className="px-3 py-2 border">Due Date</th>
-                  <th className="px-3 py-2 border">Paid On</th>
-                  <th className="px-3 py-2 border text-right">Amount</th>
-                  <th className="px-3 py-2 border text-right">Balance</th>
-                  {/* <th className="px-3 py-2 border text-center">Status</th> */}
-                </tr>
-              </thead>
+        <div className="p-4 space-y-4 animate-in fade-in">
+          
+          {/* ACTION BUTTONS */}
+          <div className="flex justify-end">
+            <button
+              onClick={downloadSchedule}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+            >
+              <Download size={14} />
+              Download Schedule
+            </button>
+          </div>
 
-              <tbody className="divide-y">
-                {schedule.map((s) => (
-                  <tr key={s.instNo} className="h-[44px]">
-                    <td className="px-3 py-2 border">{s.instNo}</td>
-                    <td className="px-3 py-2 border">
-                      {s.dueDate.toLocaleDateString()}
-                    </td>
-                    <td className="px-3 py-2 border">{s.paidOn}</td>
-                    <td className="px-3 py-2 border text-right">
-                      PGK {s.amount.toFixed(2)}
-                    </td>
-                    <td className="px-3 py-2 border text-right">
-                      PGK {s.balance.toFixed(2)}
-                    </td>
-                    {/* <td className="px-3 py-2 border text-center">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          s.status === "Paid"
-                            ? "bg-green-100 text-green-700"
-                            : s.status === "Overdue"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {s.status}
-                      </span>
-                    </td> */}
+          {/* TABLE CONTAINER */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="max-h-[320px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
+              <table className="w-full text-sm border-collapse">
+                <thead className="bg-indigo-600 text-white sticky top-0 z-10">
+                  <tr>
+                    <th className="px-3 py-2 border-r border-indigo-500">EMI</th>
+                    <th className="px-3 py-2 border-r border-indigo-500">Due Date</th>
+                    <th className="px-3 py-2 border-r border-indigo-500">Paid On</th>
+                    <th className="px-3 py-2 border-r border-indigo-500 text-right">Amount</th>
+                    <th className="px-3 py-2 border-r border-indigo-500 text-right">Balance</th>
+                   
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody className="divide-y">
+                  {schedule.map((s) => (
+                    <tr key={s.instNo} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 border-r">{s.instNo}</td>
+                      <td className="px-3 py-2 border-r">
+                        {s.dueDate.toLocaleDateString()}
+                      </td>
+                      <td className="px-3 py-2 border-r">{s.paidOn}</td>
+                      <td className="px-3 py-2 border-r text-right">
+                        PGK {s.amount.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2 border-r text-right">
+                        PGK {s.balance.toFixed(2)}
+                      </td>
+
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-
       )}
     </div>
   );
 };
 
-
 /* -----------------------------------
       END OF FILE
 -------------------------------------- */
+
+
+
+
