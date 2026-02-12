@@ -133,7 +133,7 @@ export default function EduF({ auth, loan }) {
 
             {/* SURNAME */}
             <div className="flex items-center mb-2 text-sm">
-              <span className="font-semibold w-28">SurName</span>
+              <span className="font-semibold w-28">Surname</span>
               <div className="flex gap-px">
                 {renderCharBoxes(26, customer.last_name)}
               </div>

@@ -124,7 +124,7 @@ export default function EduPrintFormat({ auth, loan }) {
 
             {/* Sure Name */}
             <div className="flex items-center mb-2 text-sm">
-              <span className="font-semibold w-28 shrink-0">SurName</span>
+              <span className="font-semibold w-28 shrink-0">Surname</span>
               <div className="flex gap-px">{renderCharBoxes(26)}</div>
             </div>
 

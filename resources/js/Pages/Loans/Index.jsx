@@ -273,7 +273,7 @@ export default function Index({ auth }) {
                         onClick={() => handleSort("organisation")}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          Organisation
+                          Org. (Dept.)
                           <ArrowUpDown size={14} />
                         </div>
                       </th>
@@ -284,7 +284,7 @@ export default function Index({ auth }) {
                         onClick={() => handleSort("customers")}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          Customers
+                          Customer
                           <ArrowUpDown size={14} />
                         </div>
                       </th>
@@ -295,7 +295,7 @@ export default function Index({ auth }) {
                         onClick={() => handleSort("amount")}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          Amount Details
+                          Amt. Details
                           <ArrowUpDown size={14} />
                         </div>
                       </th>
@@ -327,7 +327,7 @@ export default function Index({ auth }) {
                         onClick={() => handleSort("date")}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          Created At
+                          Date
                           <ArrowUpDown size={14} />
                         </div>
                       </th>
@@ -369,7 +369,7 @@ export default function Index({ auth }) {
                         <div className="flex flex-col items-center justify-center">
                           <strong>{loan.organisation?.organisation_name || "-"}</strong>
                           <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
-                            {loan.organisation?.email || "-"}
+                            {loan.organisation?.sector_type || "-"}
                           </span>
                         </div>
                       </td>

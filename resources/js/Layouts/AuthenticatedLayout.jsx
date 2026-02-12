@@ -5,7 +5,7 @@ import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link } from '@inertiajs/react';
-import { Calculator } from 'lucide-react';
+import { Calculator, CalendarCheck } from 'lucide-react';
 import { toast,Toaster } from "react-hot-toast";
 
 export default function Authenticated({ user, header, children }) {
@@ -208,11 +208,18 @@ export default function Authenticated({ user, header, children }) {
                             </div>
 
                             <div className="hidden sm:flex sm:items-center sm:ms-6">
-                                <Link
-                                    href={route("loan-calculator")}
-                                >
-                                    <Calculator />
-                                </Link>
+                                <div className="flex gap-3">
+                                    <Link
+                                        href={route("loan-calculator")}
+                                    >
+                                        <Calculator />
+                                    </Link>
+                                    <Link
+                                        href={route("loan-schedule")}
+                                    >
+                                        <CalendarCheck />
+                                    </Link>
+                                </div>
                                 <div className="ms-3 relative">
                                     <Dropdown>
                                         <Dropdown.Trigger>

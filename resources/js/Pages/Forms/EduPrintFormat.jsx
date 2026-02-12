@@ -124,7 +124,7 @@ export default function EduPrintFormat({ auth, loan }) {
 
             {/* Sure Name */}
             <div className="flex items-center mb-2 text-sm">
-              <span className="font-semibold w-28 shrink-0">SurName</span>
+              <span className="font-semibold w-28 shrink-0">Surname</span>
               <div className="flex gap-px">{renderCharBoxes(26)}</div>
             </div>
 
@@ -199,7 +199,7 @@ export default function EduPrintFormat({ auth, loan }) {
               whatever final entitlements I may have in respect of Long Service
               Leave, Annual leave, Bonus and Gratuity. A loan statement from{" "}
               <b>Agro Advance Aben Ltd</b> shall be deemed as conclusive evidence
-              of the amount owned by me. This deduction authority is irrevocable
+              of the amount owed by me. This deduction authority is irrevocable
               by me and can only be cancelled by written approval of{" "}
               <b>Agro Advance Aben Ltd</b>.
             </p>
