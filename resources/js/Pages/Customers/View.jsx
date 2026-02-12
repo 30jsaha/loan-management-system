@@ -437,7 +437,7 @@ function LoanTab({ loans, collections }) {
           </div>
           <input
             type="text"
-            placeholder="Search by Loan ID or Amount..."
+            placeholder="Search by Loan ID or Loan Amount..."
             className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
