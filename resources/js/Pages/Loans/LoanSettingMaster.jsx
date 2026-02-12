@@ -819,6 +819,7 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
               show={showModal}
               onHide={closeDocModal}
               size="xl"
+              fullscreen={true}
               centered
               dialogClassName="max-w-[900px]"
           >
