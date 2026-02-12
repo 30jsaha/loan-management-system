@@ -211,13 +211,24 @@ export default function Authenticated({ user, header, children }) {
                                 <div className="flex gap-3">
                                     <Link
                                         href={route("loan-calculator")}
+                                        className={`group relative p-2 rounded-full transition-all duration-300 backdrop-blur-sm
+                                        ${route().current("loan-calculator")
+                                            ? "bg-white/40 text-emerald-600 shadow-xl ring-1 ring-emerald-400"
+                                            : "text-gray-500 hover:bg-gray-100"
+                                        }`}
                                     >
-                                        <Calculator />
+                                        <Calculator className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
                                     </Link>
                                     <Link
                                         href={route("loan-schedule")}
+                                        className={`group relative p-2 rounded-full transition-all duration-300 backdrop-blur-sm
+                                        ${route().current("loan-schedule")
+                                            ? "bg-white/40 text-emerald-600 shadow-xl ring-1 ring-emerald-400"
+                                            : "text-gray-500 hover:bg-gray-100"
+                                        }`}
+
                                     >
-                                        <CalendarCheck />
+                                        <CalendarCheck className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
                                     </Link>
                                 </div>
                                 <div className="ms-3 relative">

@@ -271,7 +271,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
 
 
       <Row className="g-3">
-        <Col md={3}>
+        <Col md={4}>
           <Form.Group>
             <Form.Label>Gross Salary (PGK)</Form.Label>
             <Form.Control
@@ -284,7 +284,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             />
           </Form.Group>
         </Col>
-        <Col md={3}>
+        <Col md={4}>
           <Form.Group>
             <Form.Label>Current Net Pay Amt. (PGK)</Form.Label>
             <Form.Control
@@ -297,7 +297,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             />
           </Form.Group>
         </Col>
-        <Col md={3}>
+        <Col md={4}>
           <Form.Group>
             <Form.Label>Bank 2 Amt. (PGK)</Form.Label>
             <Form.Control
@@ -339,19 +339,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
               />
             </Form.Group>
           </Col>
-          {/* <Col md={4}>
-            <Form.Group>
-              <Form.Label>Bank 2 Amt. (PGK)</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                name="bank_2_amt"
-                value={formData.bank_2_amt}
-                onChange={handleChange}
-              />
-            </Form.Group>
-          </Col> */}
-          <Col md={3}>
+          <Col md={4}>
             <Form.Group>
               <Form.Label>Current Agro Deduction (PGK)</Form.Label>
               <Form.Control
