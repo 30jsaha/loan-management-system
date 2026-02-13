@@ -26,10 +26,13 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         Array.isArray(rejectionReasons) ? rejectionReasons : []
     );
     const [loanPurposes, setLoanPurposes] = useState([]);
+    const [fnRange, setFnRange] = useState(null);
+    const [isFetchingFn, setIsFetchingFn] = useState(false);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [allDocVerivied, setAllDocVerified] = useState(false);
     const [isSentApproval, setIsSentApproval] = useState(false);
+    const [isSentForApproval, setIsSentForApproval] = useState(false);
 
     const [videoFile, setVideoFile] = useState(null);
     const [pdfFile, setPdfFile] = useState(null);
@@ -92,7 +95,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [showApprovalSuccess, setShowApprovalSuccess] = useState(false);
     const [approvalMailBody, setApprovalMailBody] = useState("");
     const [isSendingApprovalMail, setIsSendingApprovalMail] = useState(false);
-
+    
+    const [loanPurposeOptions, setLoanPurposeOptions] = useState([]);
+    const [isFetchingPurpose, setIsFetchingPurpose] = useState(false);
 
     const [loanFormData, setLoanFormData] = useState({
         id: loan ? loan.id : null,
@@ -181,15 +186,27 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             label: r.reason_desc,
             canReapply: r.do_allow_reapply === 1
         }));
-    const loanPurposeOptions = Array.isArray(loanPurposes)
-    ? loanPurposes
-        .filter(p => Number(p.status) === 1)
-        .map(p => ({
-            value: p.id,
-            label: p.purpose_name
-        }))
-    : [];
 
+    // const loanPurposeOptions = Array.isArray(loanPurposes)
+    // ? loanPurposes
+    //     .filter(p => Number(p.status) === 1)
+    //     .map(p => ({
+    //         value: p.id,
+    //         label: p.purpose_name
+    //     }))
+    // : [];
+
+    useEffect(() => {
+        const lpo = Array.isArray(loanPurposes)
+            ? loanPurposes
+                .filter(p => Number(p.status) === 1)
+                .map(p => ({
+                    value: p.id,
+                    label: p.purpose_name
+                }))
+            : [];
+        setLoanPurposeOptions(lpo);
+    }, loanPurposes);
 
     const startRecording = async () => {
         try {
@@ -555,33 +572,6 @@ const normalizeFilePath = (path) => {
             setUploadProgress((prev) => ({ ...prev, [type]: 0 }));
         }
     };
-    //fetch loan types and settings on component mount
-    useEffect(() => {
-        //fetch loan settings
-        axios
-            .get("/api/loan-settings-data")
-            .then((res) => {
-                setLoanSettings(res.data);
-                setLoanTypes(res.data);
-            })
-            .catch((error) => {
-                console.error("Error fetching loan settings:", error);
-            });
-        // 🔥 Fetch loan types based on salary and organisation
-        axios.get(`/api/filtered-loan-types-from-loan/${loan?.customer.id}`)
-            .then((res) => {
-                // if (res.data.length === 0) {
-                //      setIsEligible(false);
-                //      setMessage("❌ Customer is not eligible for any loan types based on their salary and organisation.");
-                // } else {
-                //      setIsEligible(true);
-                // }
-                if (res.data.length != 0) {
-                    setLoanTypes(res.data);
-                }
-            })
-            .catch((err) => console.error("Error fetching loan types:", err));
-    }, []);
 
     // Handle loan form input changes
     const loanHandleChange = (e) => {
@@ -647,12 +637,13 @@ const normalizeFilePath = (path) => {
                     max_interest_rate
                 } = selectedLoanSetting;
 
-                const tenureMonths = loanFormData.tenure_fortnight * 0.5;
+                const tenureMonths = parseFloat(loanFormData.tenure_fortnight);
                 const appliedAmount = parseFloat(loanFormData.loan_amount_applied);
                 const multiplier = Number(amt_multiplier);
 
                 // --- Validations ---
                 if (!Number.isFinite(appliedAmount) || !Number.isFinite(multiplier)) {
+                    setIsChecking(false);
                     setMessage("❌ Invalid input. Please enter numeric values.");
                     Swal.fire({
                         title: "Warning !",
@@ -664,6 +655,7 @@ const normalizeFilePath = (path) => {
 
                 // Check if the applied amount is fully divisible by the multiplier
                 if (appliedAmount % multiplier !== 0) {
+                    setIsChecking(false);
                     setMessage(
                         `❌ Loan Amount Applied must be in multiples of PGK ${multiplier} for the selected Loan Type. Please adjust accordingly.`
                     );
@@ -676,6 +668,7 @@ const normalizeFilePath = (path) => {
                 }
 
                 if (tenureMonths < Number(min_loan_term_months)) {
+                    setIsChecking(false);
                     setMessage(
                         `❌ Loan Tenure must be at least ${min_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`
                     );
@@ -688,6 +681,7 @@ const normalizeFilePath = (path) => {
                 }
 
                 if (tenureMonths > Number(max_loan_term_months)) {
+                    setIsChecking(false);
                     setMessage(
                         `❌ Loan Tenure must not exceed ${max_loan_term_months} months for the selected Loan Type. Please adjust accordingly.`
                     );
@@ -703,6 +697,7 @@ const normalizeFilePath = (path) => {
                     interest_rate < Number(loanFormData.interest_rate) ||
                     interest_rate > Number(loanFormData.interest_rate)
                 ) {
+                    setIsChecking(false);
                     setMessage(
                         `❌ Interest Rate must not be greater or lesser than ${interest_rate}% for the selected Loan Type. Please adjust accordingly.`
                     );
@@ -1125,6 +1120,161 @@ const normalizeFilePath = (path) => {
     const isRejectDisabled =
         (!approvalBlockers.canReject) || missingMandatoryUploads;
 
+    //fetch loan types and settings on component mount
+    useEffect(() => {
+        //fetch loan settings
+        axios
+            .get("/api/loan-settings-data")
+            .then((res) => {
+                setLoanSettings(res.data);
+                // setLoanTypes(res.data);
+            })
+            .catch((error) => {
+                console.error("Error fetching loan settings:", error);
+            });
+        // 🔥 Fetch loan types based on salary and organisation
+        console.log("filtered-loan-types loan data: ",loan);
+        axios.get(`/api/filtered-loan-types-from-loan/${loan?.customer.id}`)
+        .then((res) => {
+            // if (res.data.length === 0) {
+            //      setIsEligible(false);
+            //      setMessage("❌ Customer is not eligible for any loan types based on their salary and organisation.");
+            // } else {
+            //      setIsEligible(true);
+            // }
+            if (res.data.length != 0) {
+                setLoanTypes(res.data);
+            }
+        })
+        .catch((err) => console.error("Error fetching loan types:", err));        
+    }, [loan]);
+    const fetchFnRange = async (amount) => {
+        console.log("fetchFnRange entered");
+        if (!loanFormData.loan_type || !amount) {
+            setFnRange(null);
+            return;
+        }
+
+        try {
+            setIsFetchingFn(true);
+
+            const res = await axios.post("/api/loan-fn-range", {
+                loan_setting_id: loanFormData.loan_type,
+                amount: amount,
+            });
+
+            setFnRange({
+                min: res.data.fn_min,
+                max: res.data.fn_max,
+            });
+
+            // Auto-correct tenure if outside range
+            setLoanFormData((prev) => ({
+                ...prev,
+                tenure_fortnight:
+                    prev.tenure_fortnight < res.data.fn_min
+                        ? res.data.fn_min
+                        : prev.tenure_fortnight > res.data.fn_max
+                            ? res.data.fn_max
+                            : prev.tenure_fortnight,
+            }));
+        } catch (err) {
+            setFnRange(null);
+            // Swal.fire({
+            //     title: "Invalid Amount",
+            //     text: err.response?.data?.message || "Invalid loan amount",
+            //     icon: "warning",
+            // });
+        } finally {
+            setIsFetchingFn(false);
+        }
+    };
+    const getMinTenureByAmount = (amount, loanSetting) => {
+        if (!loanSetting || !amount) return loanSetting?.min_loan_term_months || 0;
+        const amt = parseFloat(amount);
+        const tiers = [
+            {
+                min: loanSetting.tier1_min_amount,
+                max: loanSetting.tier1_max_amount,
+                termMin: loanSetting.tier1_min_term,
+            },
+            {
+                min: loanSetting.tier2_min_amount,
+                max: loanSetting.tier2_max_amount,
+                termMin: loanSetting.tier2_min_term,
+            },
+            {
+                min: loanSetting.tier3_min_amount,
+                max: loanSetting.tier3_max_amount,
+                termMin: loanSetting.tier3_min_term,
+            },
+            {
+                min: loanSetting.tier4_min_amount,
+                max: loanSetting.tier4_max_amount,
+                termMin: loanSetting.tier4_min_term,
+            },
+        ];
+        for (const tier of tiers) {
+            if (
+                tier.min != null &&
+                tier.max != null &&
+                amt >= tier.min &&
+                amt <= tier.max
+            ) {
+                return tier.termMin;
+            }
+        }
+        return loanSetting.min_loan_term_months;
+    };
+    useEffect(() => {
+        if (!loanFormData.loan_type || !loanFormData.loan_amount_applied) return;
+        if (!Array.isArray(loanSettings)) return;
+
+        const selectedLoanSetting = loanSettings.find(
+            (ls) => ls.id === Number(loanFormData.loan_type)
+        );
+
+        if (!selectedLoanSetting) return;
+
+        const minTenure = getMinTenureByAmount(
+            loanFormData.loan_amount_applied,
+            selectedLoanSetting
+        );
+
+        // ✅ Auto-fill only if empty or below minimum
+        setLoanFormData((prev) => ({
+            ...prev,
+            tenure_fortnight:
+                !prev.tenure_fortnight || prev.tenure_fortnight < minTenure
+                    ? minTenure
+                    : prev.tenure_fortnight,
+        }));
+
+        // 🔥 Also fetch FN range
+        fetchFnRange(loanFormData.loan_amount_applied);
+        //   setTimeout(() => {
+        //     calculateRepaymentDetails();
+        //   }, 0);
+
+    }, [loanFormData.loan_type, loanFormData.loan_amount_applied]);
+    useEffect(() => {
+        if (
+            loanFormData.loan_type &&
+            loanFormData.loan_amount_applied > 0 &&
+            loanFormData.tenure_fortnight > 0 &&
+            loanFormData.interest_rate > 0
+        ) {
+            calculateRepaymentDetails();
+        }
+    }, [
+        loanFormData.loan_type,           // 👈 loan type selection
+        loanFormData.loan_amount_applied, // 👈 already present
+        loanFormData.tenure_fortnight,    // 👈 auto-filled
+        loanFormData.interest_rate        // 👈 auto-filled
+    ]);
+    if (loan?.is_sent_for_approval == 1) {
+        setIsSentForApproval(true);
+    }
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -1136,7 +1286,8 @@ const normalizeFilePath = (path) => {
                     <Spinner animation="border" variant="primary" />
                     <p className="mt-2 text-gray-600">Loading loan details...</p>
                 </div>
-            ) : showApprovalSuccess ? (
+            ) 
+            : showApprovalSuccess ? (
                 <div className="p-8 text-center animate__animated animate__fadeIn">
 
                     <div className="max-w-6xl mx-auto bg-green-50 border border-green-200 rounded-lg p-6">
@@ -1186,7 +1337,8 @@ const normalizeFilePath = (path) => {
                         </div>
                     </div>
                 </div>
-            ) : (
+            ) 
+            : (
                 <>
                     {/* Always mounted print target */}
                     <div className="p-4 bg-gray-100 print-area text-black">
@@ -1285,6 +1437,19 @@ const normalizeFilePath = (path) => {
                                                                 return r ? <div className="small">Reason: {r.reason_desc}</div> : null;
                                                             })()
                                                         )}
+                                                    </div>
+                                                    <div>
+                                                        <Button variant="outline-secondary" size="sm" onClick={() => router.visit(route("loans"))}>
+                                                            Back to List
+                                                        </Button>
+                                                    </div>
+                                                </Alert>
+                                            )}
+                                            {(!isSentForApproval && auth.user.is_admin == 1) && (
+                                                <Alert variant="info" className="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <strong>ℹ Not submitted yet</strong>
+                                                        <div className="small">This loan application has not yet been submitted for approval. Final submission is required before this loan can be approved or acted upon.</div>
                                                     </div>
                                                     <div>
                                                         <Button variant="outline-secondary" size="sm" onClick={() => router.visit(route("loans"))}>
@@ -1413,7 +1578,7 @@ const normalizeFilePath = (path) => {
                                             <Col md={12} className="mb-4">
                                                 <Alert variant="info">
                                                     <Alert.Heading style={{ fontSize: '18px' }}>ℹ Higher Approved</Alert.Heading>
-                                                    <p>
+                                                    <div className="small">
                                                         This customer was marked as <strong>Not Eligible</strong> for the applied loan amount based on their salary and organisation criteria. However, the loan has been <strong>Higher Approved</strong> by&nbsp;
                                                         {
                                                             (auth.user.is_admin == 1 &&
@@ -1421,7 +1586,7 @@ const normalizeFilePath = (path) => {
                                                                 ? "You"
                                                                 : loan.higher_approved_by
                                                         }.
-                                                    </p>
+                                                    </div>
                                                 </Alert>
                                             </Col>
                                         )}
@@ -1471,6 +1636,50 @@ const normalizeFilePath = (path) => {
                                                                                 document.querySelector('input[name="interest_rate"]').readOnly = true;
                                                                                 document.querySelector('input[name="processing_fee"]').disabled = true;
                                                                                 document.querySelector('input[name="interest_rate"]').disabled = true;
+
+                                                                                let val = parseFloat(loan?.loan_amount_applied);
+                                                                                if (!isNaN(val) && val > 0) {
+                                                                                    fetchFnRange(val);
+                                                                                }
+        
+                                                                                // 🔄 Reset purpose state first
+                                                                                setLoanPurposeOptions([]);
+                                                                                setSelectedLoanPurposeId(null);
+                                                                                setIsFetchingPurpose(true);
+        
+                                                                                axios
+                                                                                    .get(`/api/get-loan-purposes/${selectedLoanSetting.id}`)
+                                                                                    .then((res) => {
+                                                                                        const purposes = Array.isArray(res.data)
+                                                                                            ? res.data
+                                                                                                .filter(p => Number(p.status) === 1)
+                                                                                                .map(p => ({
+                                                                                                    value: p.id,
+                                                                                                    label: p.purpose_name,
+                                                                                                }))
+                                                                                            : [];
+        
+                                                                                        if (purposes.length === 0) {
+                                                                                            const lpo = Array.isArray(loanPurposes)
+                                                                                                ? loanPurposes  
+                                                                                                    .filter(p => Number(p.status) === 1)
+                                                                                                    .map(p => ({
+                                                                                                        value: p.id,
+                                                                                                        label: p.purpose_name
+                                                                                                    }))
+                                                                                                : [];
+                                                                                            setLoanPurposeOptions(lpo);
+                                                                                        } else {
+                                                                                            setLoanPurposeOptions(purposes);
+                                                                                        }
+                                                                                    })
+                                                                                    .catch((err) => {
+                                                                                        console.error("Error fetching loan purposes:", err);
+                                                                                        // setLoanPurposeOptions([]);
+                                                                                    })
+                                                                                    .finally(() => {
+                                                                                        setIsFetchingPurpose(false);
+                                                                                    });
                                                                             }
                                                                         }
                                                                     }}
@@ -1539,7 +1748,14 @@ const normalizeFilePath = (path) => {
                                                                     className={`form-control`}
                                                                     name="loan_amount_applied"
                                                                     value={loanFormData.loan_amount_applied}
-                                                                    onChange={(e) => loanHandleChange(e)}
+                                                                    onChange={(e) => {
+                                                                        loanHandleChange(e);
+
+                                                                        const val = parseFloat(e.target.value);
+                                                                        if (!isNaN(val) && val > 0) {
+                                                                            fetchFnRange(val); // 🔥 API call here
+                                                                        }
+                                                                    }}
                                                                     onKeyUp={calculateRepaymentDetails}
                                                                     disabled={true}
                                                                     required
@@ -1557,6 +1773,15 @@ const normalizeFilePath = (path) => {
                                                                     onKeyUp={calculateRepaymentDetails}
                                                                     required
                                                                 />
+                                                                {fnRange && (
+                                                                    <div className="text-sm text-blue-600 mt-1">
+                                                                        {fnRange.min == fnRange.max ? (
+                                                                            <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b>&nbsp;FN</small>
+                                                                        ) : (
+                                                                            <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b> – <b>{fnRange.max}</b>&nbsp;FN</small>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
 
                                                             <div className="col-md-3">
@@ -1776,7 +2001,7 @@ const normalizeFilePath = (path) => {
                                                                                         )}
 
                                                                                         {/* Admin Action Buttons */}
-                                                                                        {auth.user.is_admin == 1 && (
+                                                                                        {auth.user.is_admin == 1 && isSentForApproval ? (
                                                                                             <div className="flex gap-2 justify-center mt-2">
                                                                                                 <button
                                                                                                     onClick={() => handleVerifyDoc(doc.id, "Verified")}
@@ -1791,6 +2016,14 @@ const normalizeFilePath = (path) => {
                                                                                                 >
                                                                                                     Reject
                                                                                                 </button>
+                                                                                            </div>
+                                                                                        ) : auth.user.is_admin == 1 && (
+                                                                                            <div className="mt-2">
+                                                                                                <span
+                                                                                                    className={`px-2 py-1 text-xs rounded bg-red-100 text-red-700"`}
+                                                                                                >
+                                                                                                    Actions Blocked
+                                                                                                </span>
                                                                                             </div>
                                                                                         )}
                                                                                     </>
@@ -2394,10 +2627,14 @@ const normalizeFilePath = (path) => {
                                                                             if (!showModal1) {
                                                                                 setShowModal1(true);
                                                                                 setTimeout(() => handlePrintAck(), 1000);
-                                                                                markAckDownloaded();
+                                                                                if(auth.user.is_admin!=1){
+                                                                                    markAckDownloaded();
+                                                                                }
                                                                             } else {
                                                                                 handlePrintAck();
-                                                                                markAckDownloaded();
+                                                                                if(auth.user.is_admin!=1){
+                                                                                    markAckDownloaded();
+                                                                                }
                                                                             }
                                                                         }}
                                                                         className="bg-green-500 text-white px-3 py-1 rounded text-xs flex mx-auto gap-1 items-center"
@@ -2471,10 +2708,14 @@ const normalizeFilePath = (path) => {
                                                         if (!showModal1) {
                                                             setShowModal1(true);
                                                             setTimeout(() => handlePrintAck(), 1000);
-                                                            markAckDownloaded();
+                                                            if(auth.user.is_admin!=1){
+                                                                markAckDownloaded();
+                                                            }
                                                         } else {
                                                             handlePrintAck();
-                                                            markAckDownloaded();
+                                                            if(auth.user.is_admin!=1){
+                                                                markAckDownloaded();
+                                                            }
                                                         }
                                                     }}
                                                     className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md flex items-center gap-1 mx-auto text-xs"
@@ -3392,18 +3633,34 @@ const normalizeFilePath = (path) => {
                                         ) : (
                                             <Col md={12}>
                                                 {(loan.status === "Pending") ? (
-                                                    <div className="mt-6 flex justify-center gap-4">
-                                                        <Link
-                                                            href={route("loans")}
-                                                        >
-                                                            <button
-                                                                className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md`}
-                                                                onClick={markSentApproval}
+                                                    <>
+                                                        {loan?.is_ack_downloaded == 0 && (
+                                                            <div className="mb-4 flex justify-center">
+                                                                <div className="max-w-xl w-full bg-red-50 border border-red-300
+                                                                                text-red-700 px-4 py-3 rounded-md text-sm
+                                                                                flex items-start gap-2 justify-center">
+                                                                    <span className="text-red-600 font-bold mt-0.5">⚠️</span>
+                                                                    <span>
+                                                                        <strong>Blocked:</strong> 
+                                                                        View & Download the <b>Application Form</b> before send for approval
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        )}                                                    
+                                                        <div className="mt-6 flex justify-center gap-4">
+                                                            <Link
+                                                                href={route("loans")}
                                                             >
-                                                                {loan?.is_sent_for_approval == 1 ? ("Back to the list") : ("Send for approval")}
-                                                            </button>
-                                                        </Link>
-                                                    </div>
+                                                                <button
+                                                                    className={`${loan?.is_ack_downloaded == 0 ? "bg-green-600 hover:bg-green-700 cursor-not-allowed opacity-50" : "bg-green-600 hover:bg-green-700"} text-white px-4 py-2 rounded-md`}
+                                                                    disabled={loan?.is_ack_downloaded == 0}
+                                                                    onClick={markSentApproval}
+                                                                >
+                                                                    {loan?.is_sent_for_approval == 1 ? ("Back to the list") : ("Send for approval")}
+                                                                </button>
+                                                            </Link>
+                                                        </div>
+                                                    </>
                                                 ) : (
                                                     <div className="mt-6 flex justify-center gap-4">
                                                         <Link

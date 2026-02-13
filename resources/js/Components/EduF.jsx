@@ -133,7 +133,7 @@ export default function EduF({ auth, loan }) {
 
             {/* SURNAME */}
             <div className="flex items-center mb-2 text-sm">
-              <span className="font-semibold w-28">SurName</span>
+              <span className="font-semibold w-28">Surname</span>
               <div className="flex gap-px">
                 {renderCharBoxes(26, customer.last_name)}
               </div>
@@ -179,14 +179,14 @@ export default function EduF({ auth, loan }) {
               <div className="col-span-3 flex flex-col items-center">
                 <div className="text-xs">% or Amount Per Pay</div>
                 <div className="flex mt-1 gap-px">
-                  {renderCharBoxes(9, loan?.emi_amount)}
+                  {renderCharBoxes(9, parseFloat(loan?.emi_amount).toFixed(2))}
                 </div>
               </div>
 
               <div className="col-span-3 flex flex-col items-center">
                 <div className="text-xs">Total Amount Required</div>
                 <div className="flex mt-1 gap-px">
-                  {renderCharBoxes(9, loan?.loan_amount_applied)}
+                  {renderCharBoxes(9, parseFloat(loan?.total_repay_amt).toFixed(2))}
                 </div>
               </div>
             </div>
@@ -194,9 +194,9 @@ export default function EduF({ auth, loan }) {
             {/* AUTH TEXT */}
             <p className="text-sm leading-relaxed text-justify">
               I hereby authorize you to deduct total sum of PGK
-              <DataLine className="w-40">{loan?.loan_amount_applied}</DataLine>
+              <DataLine className="w-40">{parseFloat(loan?.total_repay_amt).toFixed(2)}</DataLine>
               from my fortnightly salary at a rate of PGK
-              <DataLine className="w-40">{loan?.emi_amount}</DataLine>
+              <DataLine className="w-40">{parseFloat(loan?.emi_amount).toFixed(2)}</DataLine>
               per fortnight and remit cheque in favour of
               <b> Agro Advance Aben Ltd.</b> …
             </p>
