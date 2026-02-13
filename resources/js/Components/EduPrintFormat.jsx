@@ -68,7 +68,7 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
   const deductionCode = loan.id ?? "";
   const description = loan.purpose?.purpose_name ?? loan.other_purpose_text ?? "";
   const perPay = loan.emi_amount ?? loan.elegible_amount ?? "";
-  const totalRequired = loan.loan_amount_applied ?? loan.loan_amount_approved ?? "";
+  const totalRequired = loan.loan_amount_applied ?? loan.total_repay_amt ?? "";
   const dateStr = formatDate(loan.created_at ?? loan.updated_at ?? loan.ack_downloaded_date ?? "");
 
   return (
@@ -219,14 +219,14 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
             <div className="col-span-3 flex flex-col items-center">
               <div className="text-xs px-4">% or Amount Per Pay</div>
               <div className="flex mt-1">
-                {renderAmountBoxes(perPay, 9)}
+                {renderAmountBoxes(parseFloat(perPay).toFixed(2), 9)}
               </div>
             </div>
 
             <div className="col-span-3 flex flex-col items-center">
               <div className="text-xs">Total Amount Required</div>
               <div className="flex mt-1">
-                {renderAmountBoxes(totalRequired, 9)}
+                {renderAmountBoxes(parseFloat(totalRequired).toFixed(2), 9)}
               </div>
             </div>
           </div>
@@ -234,9 +234,9 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
           {/* Authorization Text */}
           <p className="text-sm leading-relaxed mb-2">
             I hereby authorize you to deduct total sum of PGK{" "}
-            <DataLine className="w-38">{totalRequired}</DataLine> from my
+            <DataLine className="w-38">{parseFloat(totalRequired).toFixed(2)}</DataLine> from my
             fortnightly salary at a rate of PGK{" "}
-            <DataLine className="w-38">{perPay}</DataLine> per fortnight and
+            <DataLine className="w-38">{parseFloat(perPay).toFixed(2)}</DataLine> per fortnight and
             remit cheque in favour of <b>Agro Advance Aben Ltd.</b> If I take
             paid leave of any kind I further authorize and direct you to remit
             in lump sum deduction from the duration of the leave and remit

@@ -441,6 +441,21 @@ export default function Index({ auth }) {
                       {/* Actions */}
                       <td className="px-4 py-3 text-center border border-gray-700">
                         <div className="flex justify-center gap-2">
+                          {/* {auth.user.is_admin==1 && loan.is_sent_for_approval==0 ? (
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700`}
+                            >
+                              Still in Editing
+                            </span>
+                          ) : (
+                              <Link
+                                href={route("loan.view", { id: loan.id })}
+                                className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+                                title="View"
+                              >
+                                <Eye size={15} />
+                              </Link>
+                          )} */}
                           <Link
                             href={route("loan.view", { id: loan.id })}
                             className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"

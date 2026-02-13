@@ -270,7 +270,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
       )}
 
 
-      <Row className="g-3">
+      {/* <Row className="g-3">
         <Col md={4}>
           <Form.Group>
             <Form.Label>Gross Salary (PGK)</Form.Label>
@@ -309,8 +309,9 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             />
           </Form.Group>
         </Col>
-      </Row>
-      <fieldset className="fldset">
+      </Row> */}
+
+      {/* <fieldset className="fldset">
         <legend className="legend">Deductions</legend>
         <Row className="g-3 mt-2 p-3">
           <Col md={4}>
@@ -392,8 +393,8 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             </Form.Group>
           </Col>
         </Row>
-      </fieldset>
-      <Row className="mt-3">
+      </fieldset> */}
+      {/* <Row className="mt-3">
         <Col md={8}>
           <Form.Group>
             <Form.Label>Proposed PVA (PGK)</Form.Label>
@@ -432,14 +433,156 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             </Button>
           </div>
         </Col>
-      </Row>
+      </Row> */}
+
+      {/* New Design [excel like view] */}
+      
+      {/* ===== Excel Style Form Layout ===== */}
+      <div className="border rounded bg-white">
+
+        {/* Salary Section */}
+        <div className="bg-gray-100 px-3 py-2 font-semibold border-b">
+          Salary Information
+        </div>
+
+        <div className="divide-y text-sm">
+
+          {/* Gross Salary */}
+          <div className="grid grid-cols-12 items-center px-3 py-2">
+            <div className="col-span-4 font-medium">Gross Salary (PGK)</div>
+            <div className="col-span-8">
+              <input
+                type="number"
+                ref={grossSalaryRef}
+                step="0.01"
+                name="gross_salary_amt"
+                value={formData.gross_salary_amt}
+                onChange={handleChange}
+                className="w-full border rounded px-2 py-1"
+              />
+            </div>
+          </div>
+
+          {/* Current Net Pay */}
+          <div className="grid grid-cols-12 items-center px-3 py-2">
+            <div className="col-span-4 font-medium">Current Net Pay (PGK)</div>
+            <div className="col-span-8">
+              <input
+                type="number"
+                ref={netSalaryRef}
+                step="0.01"
+                name="current_net_pay_amt"
+                value={formData.current_net_pay_amt}
+                onChange={handleChange}
+                className="w-full border rounded px-2 py-1"
+              />
+            </div>
+          </div>
+
+          {/* Bank 2 */}
+          <div className="grid grid-cols-12 items-center px-3 py-2">
+            <div className="col-span-4 font-medium">Bank 2 Amount (PGK)</div>
+            <div className="col-span-8">
+              <input
+                type="number"
+                step="0.01"
+                name="bank_2_amt"
+                value={formData.bank_2_amt}
+                onChange={handleChange}
+                className="w-full border rounded px-2 py-1"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Deductions Section */}
+        <div className="bg-gray-100 px-3 py-2 font-semibold border-y">
+          Deductions
+        </div>
+
+        <div className="divide-y text-sm">
+
+          {[
+            { label: "Tax Amount (PGK)", name: "tax_amt", ref: taxRef },
+            { label: "Superannuation (PGK)", name: "superannuation_amt", ref: superannuationRef },
+            { label: "Temporary Allowances (PGK)", name: "temp_allowances_amt", ref: tempAllowancesRef },
+            { label: "Overtime (PGK)", name: "overtime_amt", ref: overtimeRef },
+            { label: "Current Agro Deduction (PGK)", name: "current_fincorp_deduction_amt", ref: currentFincorpDeductionRef },
+            { label: "Other Deductions (PGK)", name: "other_deductions_amt", ref: otherDeductionsRef }
+          ].map((field) => (
+            <div key={field.name} className="grid grid-cols-12 items-center px-3 py-2">
+              <div className="col-span-4 font-medium">{field.label}</div>
+              <div className="col-span-8">
+                <input
+                  type="number"
+                  step="0.01"
+                  ref={field.ref}
+                  name={field.name}
+                  value={formData[field.name]}
+                  onChange={handleChange}
+                  className="w-full border rounded px-2 py-1"
+                />
+              </div>
+            </div>
+          ))}
+
+        </div>
+
+        {/* Proposed PVA Section */}
+        <div className="bg-gray-100 px-3 py-2 font-semibold border-y">
+          Loan Proposal
+        </div>
+
+        <div className="grid grid-cols-12 items-center px-3 py-3 text-sm">
+          <div className="col-span-4 font-semibold text-green-700">
+            Proposed PVA (PGK)
+          </div>
+          <div className="col-span-5">
+            <input
+              type="number"
+              ref={proposedPvaRef}
+              step="0.01"
+              name="proposed_pva_amt"
+              value={formData.proposed_pva_amt}
+              onChange={handleChange}
+              className="w-full border-2 border-green-500 rounded px-2 py-1"
+            />
+          </div>
+          <div className="col-span-3 text-right">
+            <button
+              type="button"
+              onClick={handleCheckEligibility}
+              disabled={isChecking}
+              className={`px-4 py-2 rounded text-white
+                ${isChecking
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+                }`}
+            >
+              {isChecking ? "Checking..." : "Check Eligibility →"}
+            </button>
+          </div>
+        </div>
+
+      </div>
 
       {result && (
         <div className="mt-6 border-t pt-4">
           <h4 className="text-lg font-semibold mb-3 text-gray-800">
             Eligibility Result
+              <span
+                className={`inline-block px-4 py-2 rounded text-sm font-semibold ${result.is_eligible_for_loan
+                  ? "bg-green-100 text-green-700 border border-green-300"
+                  : "bg-red-100 text-red-700 border border-red-300"
+                  }`}
+                style={{marginLeft:"250px"}}
+              >
+                {result.is_eligible_for_loan ? "✅ Eligible for Loan" : "❌ Not Eligible"}
+              </span>
           </h4>
-
+          <div className="mt-4 text-center">
+            
+          </div>
           <div className="flex items-center justify-between mt-4 mb-2">
             {/* <h5 className="font-semibold text-gray-700">Eligibility Result</h5> */}
 
@@ -480,17 +623,11 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                     formula={`${result.net_after_tax_superannuation_amt} - ${result.total_net_salary_amt}`}
                     result={result.total_other_deductions_amt}
                   />
-
+                  
                   <CalcRow
                     label="50% Net"
                     formula={`${result.net_after_tax_superannuation_amt} / 2`}
                     result={result.net_50_percent_amt}
-                  />
-
-                  <CalcRow
-                    label="50% Net Available"
-                    formula={`${result.net_50_percent_amt} - ${result.total_other_deductions_amt}`}
-                    result={result.net_50_percent_available_amt}
                   />
 
                 </div>
@@ -498,6 +635,11 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                 {/* Right Column */}
                 <div className="space-y-2">
 
+                  <CalcRow
+                    label="50% Net Available"
+                    formula={`${result.net_50_percent_amt} - ${result.total_other_deductions_amt}`}
+                    result={result.net_50_percent_available_amt}
+                  />
                   <CalcRow
                     label="Maximum Allowable PVA"
                     formula={`${result.net_50_percent_available_amt} + ${result.current_fincorp_deduction_amt} + ${result.other_deductions_amt} - 0.01`}
@@ -510,21 +652,21 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                     result={result.net_based_on_proposed_pva_amt}
                   />
 
-                  <CalcRow
+                  {/* <CalcRow
                     label="Shortage"
                     formula={`${result.max_allowable_pva_amt} - ${result.proposed_pva_amt}`}
                     result={result.shortage_amt}
                     highlightNegative
-                  />
+                  /> */}
 
-                  <div className={`mt-3 font-semibold p-2 rounded 
+                  {/* <div className={`mt-3 font-semibold p-2 rounded 
                     ${result.is_eligible_for_loan
                       ? "bg-green-100 text-green-700"
                       : "bg-red-100 text-red-700"}`}>
                     {result.is_eligible_for_loan
                       ? "✔ Eligible for Loan"
                       : "✖ Not Eligible for Loan"}
-                  </div>
+                  </div> */}
 
                 </div>
 
@@ -532,7 +674,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             </div>
           )}
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+          {/* <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
             <div className="p-3 bg-gray-50 rounded shadow-sm">
               <strong>Total Net Salary:</strong>
               <div className="text-gray-800">
@@ -574,18 +716,9 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                 PGK {Number(result.shortage_amt).toFixed(2)}
               </div>
             </div>
-          </div>
+          </div> */}
 
-          <div className="mt-4 text-center">
-            <span
-              className={`inline-block px-4 py-2 rounded text-sm font-semibold ${result.is_eligible_for_loan
-                ? "bg-green-100 text-green-700 border border-green-300"
-                : "bg-red-100 text-red-700 border border-red-300"
-                }`}
-            >
-              {result.is_eligible_for_loan ? "✅ Eligible for Loan" : "❌ Not Eligible"}
-            </span>
-          </div>
+          
         </div>
       )}
     </div>

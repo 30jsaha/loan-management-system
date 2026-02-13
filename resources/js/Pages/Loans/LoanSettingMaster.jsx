@@ -699,7 +699,9 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
                       <th className="p-2">Max Amount</th>
                       <th className="p-2">Min FN</th>
                       <th className="p-2">Max FN</th>
-                      <th className="p-2 text-center">Action</th>
+                      {tierRules.length > 1 && (
+                        <th className="p-2 text-center">Action</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -722,18 +724,19 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
                           <input type="number" className="form-input w-full border border-gray-300 rounded-lg px-3 py-2"
                             value={row.max_term_fortnight} onChange={e => updateTierRow(index, "max_term_fortnight", e.target.value)} />
                         </td>
-                        <td className="p-2 text-center">
+                        
                           {tierRules.length > 1 && (
-                            <button type="button" onClick={() => removeTierRow(index)} className="text-red-600 hover:underline">Remove</button>
+                            <td className="p-2 text-center">
+                                <button onClick={() => removeTierRow(index)} className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm" title="Delete"><Trash2 size={18} strokeWidth={2.2} /></button>
+                            </td>
                           )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <button type="button" onClick={addTierRow} className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                + Add New Tier
+              <button type="button" onClick={addTierRow} className="mt-3 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-md">
+                + Add New
               </button>
             </div>
           </fieldset>
@@ -778,82 +781,86 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
 
                   {/* --- CONTENT AREA --- */}
                   <div className="p-6 min-h-[400px]">
-{/* --- TAB 1: SCHEDULE (Fixed Height Table UI) --- */}
-{activeTab === 'schedule' && (
-  <div className="space-y-8 p-4">
-    {emiSchedule.length > 0 ? (
-      emiSchedule.map((tier, tIndex) => (
-        <div 
-          key={tIndex} 
-          className="bg-white border border-gray-200 rounded-xl shadow-[0_4px_12px_-4px_rgba(0,0,0,0.08)] overflow-hidden w-fit max-w-full flex flex-col animate-in fade-in slide-in-from-bottom-2"
-        >
-          
-          {/* Card Header */}
-          <div className="px-5 py-3 bg-white border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-xs font-extrabold text-gray-700 uppercase tracking-widest bg-gray-100 px-3 py-1.5 rounded-md border border-gray-200">
-              {tier.tier}
-            </h3>
-            <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wide">
-              {Object.keys(tier.rows).length} Rows
-            </span>
-          </div>
+                    {/* --- TAB 1: SCHEDULE (Fixed Height Table UI) --- */}
+                    {activeTab === 'schedule' && (
+                      <div className="space-y-8 p-4">
+                        {emiSchedule.length > 0 ? (
+                          emiSchedule.map((tier, tIndex) => {
+                            const isSmallTable = tier.fns.length < 6;
+                            return (
+                            <div 
+                              key={tIndex} 
+                              // className="bg-white border border-gray-200 xl shadow-[0_4px_12px_-4px_rgba(0,0,0,0.08)] overflow-hidden w-fit max-w-full flex flex-col animate-in fade-in slide-in-from-bottom-2"
+                              className={`bg-white xl shadow-sm border border-gray-200 overflow-hidden ${isSmallTable ? 'max-w-fit' : 'w-full'}`}
+                            >
+                              
+                              {/* Card Header */}
+                              <div className="px-5 py-3 bg-white border-b border-gray-100 flex items-center justify-between">
+                                <h3 className="text-xs font-extrabold text-gray-700 uppercase tracking-widest bg-gray-100 px-3 py-1.5 rounded-md border border-gray-200">
+                                  {tier.tier}
+                                </h3>
+                                <span className="text-[11px] text-gray-400 font-medium uppercase tracking-wide">
+                                  {Object.keys(tier.rows).length} Rows
+                                </span>
+                              </div>
 
-          {/* Table Container - FIXED HEIGHT with scroll */}
-          <div className="overflow-auto h-[400px] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent relative bg-white">
-            <table className="text-sm border-collapse whitespace-nowrap min-w-full">
-              
-              {/* Table Header */}
-              <thead className="sticky top-0 z-20">
-                <tr className="bg-[#1e293b] text-white">
-                  {/* Sticky "Amount" Header */}
-                  <th className="py-3 px-6 text-left font-semibold sticky left-0 z-30 bg-[#1e293b] border-r border-slate-600 min-w-[100px] shadow-[4px_0_10px_-2px_rgba(0,0,0,0.3)]">
-                    Amount
-                  </th>
-                  {/* FN Headers */}
-                  {tier.fns.map((fn) => (
-                    <th key={fn} className="py-3 px-5 text-center font-medium border-r border-slate-700 min-w-[70px] last:border-0">
-                      {fn} <span className="text-[10px] text-slate-400 font-normal ml-0.5">FN</span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              
-              <tbody className="divide-y divide-gray-100">
-                {Object.keys(tier.rows).map((amount) => (
-                  <tr key={amount} className="group hover:bg-blue-50/50 transition-colors">
-                    
-                    {/* Sticky "Amount" Value */}
-                    <td className="py-2.5 px-6 font-bold text-slate-700 sticky left-0 z-10 bg-white group-hover:bg-blue-50 border-r border-gray-200 shadow-[4px_0_10px_-2px_rgba(0,0,0,0.05)]">
-                      {amount}
-                    </td>
+                              {/* Table Container - FIXED HEIGHT with scroll */}
+                              {/* <div className="overflow-auto h-[400px] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent relative bg-white"> */}
+                              <div className={`relative overflow-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent ${isSmallTable ? '' : 'max-h-[500px] w-full'}`}>
+                                {/* <table className="text-sm border-collapse whitespace-nowrap min-w-full"> */}
+                                <table className={`border-collapse text-sm text-left whitespace-nowrap ${isSmallTable ? 'w-auto' : 'w-full'}`}>
+                                  {/* Table Header */}
+                                  <thead className="sticky top-0 z-20">
+                                    <tr className="bg-[#1e293b] text-white">
+                                      {/* Sticky "Amount" Header */}
+                                      <th className="py-3 px-6 text-left font-semibold sticky left-0 z-30 bg-[#1e293b] border-r border-slate-600 min-w-[100px] shadow-[4px_0_10px_-2px_rgba(0,0,0,0.3)]">
+                                        Amount
+                                      </th>
+                                      {/* FN Headers */}
+                                      {tier.fns.map((fn) => (
+                                        <th key={fn} className="py-3 px-5 text-center font-medium border-r border-slate-700 min-w-[70px] last:border-0">
+                                          {fn} <span className="text-[10px] text-slate-400 font-normal ml-0.5">FN</span>
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  
+                                  <tbody className="divide-y divide-gray-100">
+                                    {Object.keys(tier.rows).map((amount) => (
+                                      <tr key={amount} className="group hover:bg-blue-50/50 transition-colors">
+                                        
+                                        {/* Sticky "Amount" Value */}
+                                        <td className="py-2.5 px-6 font-bold text-slate-700 sticky left-0 z-10 bg-gray-300 group-hover:bg-blue-50 border-r border-gray-200 shadow-[4px_0_10px_-2px_rgba(0,0,0,0.05)]">
+                                          {amount}
+                                        </td>
 
-                    {/* Data Cells */}
-                    {tier.fns.map((fn) => (
-                      <td key={fn} className="py-2.5 px-5 text-center text-slate-600 border-r border-dashed border-gray-100 last:border-0 tabular-nums font-medium">
-                        {tier.rows[amount][fn] || <span className="text-gray-300">-</span>}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ))
-    ) : (
-      // Empty State
-      <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300 mx-auto max-w-2xl mt-4">
-        <div className="bg-white p-4 rounded-full shadow-sm mb-3">
-          <Table size={28} className="text-gray-400" />
-        </div>
-        <h4 className="text-gray-700 font-semibold">No Schedule Generated</h4>
-        <p className="text-gray-500 text-sm mt-1">
-          Adjust the tier rules and click "Preview EMI Schedule"
-        </p>
-      </div>
-    )}
-  </div>
-)}
+                                        {/* Data Cells */}
+                                        {tier.fns.map((fn) => (
+                                          <td key={fn} className="py-2.5 px-5 text-center text-slate-600 border-r border-dashed border-gray-100 last:border-0 tabular-nums font-medium">
+                                            {tier.rows[amount][fn] || <span className="text-gray-300">-</span>}
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )})
+                        ) : (
+                          // Empty State
+                          <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300 mx-auto max-w-2xl mt-4">
+                            <div className="bg-white p-4 rounded-full shadow-sm mb-3">
+                              <Table size={28} className="text-gray-400" />
+                            </div>
+                            <h4 className="text-gray-700 font-semibold">No Schedule Generated</h4>
+                            <p className="text-gray-500 text-sm mt-1">
+                              Adjust the tier rules and click "Preview EMI Schedule"
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                       {/* --- TAB 2: MODERN CALCULATOR UI --- */}
                       {activeTab === 'search' && (
                           <div className="max-w-4xl mx-auto py-8 px-4">

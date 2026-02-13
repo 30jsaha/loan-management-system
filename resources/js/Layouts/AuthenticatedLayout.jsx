@@ -7,9 +7,16 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link } from '@inertiajs/react';
 import { Calculator, CalendarCheck } from 'lucide-react';
 import { toast,Toaster } from "react-hot-toast";
+import { Modal, Button } from "react-bootstrap";
+import LoanEmiSchedule from '@/Components/LoanEmiSchedule';
 
 export default function Authenticated({ user, header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+
+    const closeModal = () => {
+        setShowModal(false);
+    };
 
     return (
         <>
@@ -219,17 +226,17 @@ export default function Authenticated({ user, header, children }) {
                                     >
                                         <Calculator className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
                                     </Link>
-                                    <Link
-                                        href={route("loan-schedule")}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowModal(true)}
                                         className={`group relative p-2 rounded-full transition-all duration-300 backdrop-blur-sm
-                                        ${route().current("loan-schedule")
-                                            ? "bg-white/40 text-emerald-600 shadow-xl ring-1 ring-emerald-400"
-                                            : "text-gray-500 hover:bg-gray-100"
-                                        }`}
-
+                                            ${showModal
+                                                ? "bg-white/40 text-emerald-600 shadow-xl ring-1 ring-emerald-400"
+                                                : "hover:bg-gray-100"
+                                            }`}
                                     >
                                         <CalendarCheck className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-                                    </Link>
+                                    </button>
                                 </div>
                                 <div className="ms-3 relative">
                                     <Dropdown>
@@ -406,6 +413,28 @@ export default function Authenticated({ user, header, children }) {
 
                 <main>{children}</main>
             </div>
+            <Modal
+                show={showModal}
+                onHide={closeModal}
+                size="xl"
+                fullscreen={true}
+                centered
+                dialogClassName="max-w-[900px]"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Loan Tools</Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body className="p-0">
+                    <LoanEmiSchedule />
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={closeModal}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </>
     );
 }
