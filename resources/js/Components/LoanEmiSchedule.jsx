@@ -118,23 +118,74 @@ export default function LoanEmiSchedule({ auth }) {
     // --- Calculator Logic ---
     const handleCalculate = () => {
         if (!selectedLoan) return;
+
         const rate = parseFloat(selectedLoan.interest_rate) || 0;
+        const tiers = selectedLoan.tier_rules || [];
 
         const getDetails = (p, n, e) => {
             const totalPayable = e * n;
             const totalInterest = totalPayable - p;
             return {
                 totalPayable: totalPayable.toFixed(2),
-                totalInterest: totalInterest > 0 ? totalInterest.toFixed(2) : "0.00"
+                totalInterest:
+                    totalInterest > 0 ? totalInterest.toFixed(2) : "0.00"
             };
         };
 
-        if (calcTarget === 'emi') {
+        // ✅ Helper: Find matching tier
+        const findMatchingTier = (amount, term) => {
+            return tiers.find(tier =>
+                amount >= Number(tier.min_amount) &&
+                amount <= Number(tier.max_amount) &&
+                term >= tier.min_term_fortnight &&
+                term <= tier.max_term_fortnight
+            );
+        };
+
+        // ✅ Helper: Find nearest valid amount
+        const findNearestAmount = (amount) => {
+            const points = tiers.flatMap(tier => [
+                Number(tier.min_amount),
+                Number(tier.max_amount)
+            ]);
+
+            if (!points.length) return null;
+
+            return points.reduce((prev, curr) =>
+                Math.abs(curr - amount) < Math.abs(prev - amount)
+                    ? curr
+                    : prev
+            );
+        };
+
+        // =========================================================
+        // EMI CALCULATION
+        // =========================================================
+        if (calcTarget === "emi") {
             const P = parseFloat(calcInputs.amount);
             const N = parseFloat(calcInputs.fn);
-            if (!P || !N) { toast.error("Please enter Amount and Tenure"); return; }
 
-            const val = P * ((1 / N) + (rate / 100));
+            if (!P || !N) {
+                toast.error("Please enter Amount and Tenure");
+                return;
+            }
+
+            // 🔴 Tier Validation
+            const matchedTier = findMatchingTier(P, N);
+
+            if (!matchedTier) {
+                const nearest = findNearestAmount(P);
+                toast.error(
+                    nearest
+                        ? `Amount ${P} is not allowed. Nearest valid amount is ${nearest}.`
+                        : "Invalid loan amount for this loan type."
+                );
+                setCalcResult(null);
+                return;
+            }
+
+            const val = P * ((1 / N) + rate / 100);
+
             setCalcResult({
                 label: "Estimated EMI",
                 value: val.toFixed(2),
@@ -142,39 +193,87 @@ export default function LoanEmiSchedule({ auth }) {
                 details: getDetails(P, N, val)
             });
         }
-        else if (calcTarget === 'amount') {
+
+        // =========================================================
+        // LOAN AMOUNT CALCULATION
+        // =========================================================
+        else if (calcTarget === "amount") {
             const E = parseFloat(calcInputs.emi);
             const N = parseFloat(calcInputs.fn);
-            if (!E || !N) { toast.error("Please enter EMI and Tenure"); return; }
 
-            const val = E / ((1 / N) + (rate / 100));
+            if (!E || !N) {
+                toast.error("Please enter EMI and Tenure");
+                return;
+            }
+
+            const P = E / ((1 / N) + rate / 100);
+
+            // 🔴 Tier Validation
+            const matchedTier = findMatchingTier(P, N);
+
+            if (!matchedTier) {
+                const nearest = findNearestAmount(P);
+                toast.error(
+                    nearest
+                        ? `Calculated amount ${P.toFixed(
+                            2
+                        )} is not allowed. Nearest valid amount is ${nearest}.`
+                        : "Calculated loan amount is not valid for this loan type."
+                );
+                setCalcResult(null);
+                return;
+            }
+
             setCalcResult({
                 label: "Estimated Loan Amount",
-                value: val.toFixed(2),
+                value: P.toFixed(2),
                 unit: currencyPrefix,
-                details: getDetails(val, N, E)
+                details: getDetails(P, N, E)
             });
         }
-        else if (calcTarget === 'fn') {
+
+        // =========================================================
+        // TENURE CALCULATION
+        // =========================================================
+        else if (calcTarget === "fn") {
             const P = parseFloat(calcInputs.amount);
             const E = parseFloat(calcInputs.emi);
-            if (!P || !E) { toast.error("Please enter Amount and EMI"); return; }
 
-            const denominator = E - ((P * rate) / 100);
+            if (!P || !E) {
+                toast.error("Please enter Amount and EMI");
+                return;
+            }
+
+            const denominator = E - (P * rate) / 100;
+
             if (denominator <= 0) {
                 toast.error("EMI is too low to cover interest!");
                 setCalcResult(null);
                 return;
             }
-            const val = Math.ceil(P / denominator);
+
+            const N = Math.ceil(P / denominator);
+
+            // 🔴 Tier Validation
+            const matchedTier = findMatchingTier(P, N);
+
+            if (!matchedTier) {
+                toast.error(
+                    `Calculated tenure ${N} FN is not allowed for amount ${P}.`
+                );
+                setCalcResult(null);
+                return;
+            }
+
             setCalcResult({
                 label: "Estimated Tenure",
-                value: val,
+                value: N,
                 unit: "FNs",
-                details: getDetails(P, val, E)
+                details: getDetails(P, N, E)
             });
         }
     };
+
 
     return (
         <div className="max-w-9xl mx-auto bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">

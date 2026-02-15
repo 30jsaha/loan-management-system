@@ -751,7 +751,7 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
               dialogClassName="max-w-[900px]"
           >
               <Modal.Header closeButton>
-                  <Modal.Title>Loan Tools</Modal.Title>
+                  <Modal.Title>Loan Schedule</Modal.Title>
               </Modal.Header>
 
               <Modal.Body className="p-0">
@@ -767,7 +767,7 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
                       >
                           <Table size={16} /> Schedule Matrix
                       </button>
-                      <button
+                      {/* <button
                           onClick={() => setActiveTab('search')}
                           className={`flex items-center gap-2 px-6 py-3 font-medium text-sm transition-colors ${
                               activeTab === 'search' 
@@ -776,7 +776,7 @@ export default function LoanSettingMaster({ auth, salary_slabs, loanPurpose }) {
                           }`}
                       >
                           <Calculator size={16} /> Calculator / Search
-                      </button>
+                      </button> */}
                   </div>
 
                   {/* --- CONTENT AREA --- */}

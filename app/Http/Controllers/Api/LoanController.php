@@ -212,7 +212,7 @@ class LoanController extends Controller
 
             // Default values for unset fields
             $validated['status'] = $validated['status'] ?? 'Pending';
-            $validated['emi_amount'] = number_format($validated['emi_amount'],2);
+            $validated['emi_amount'] = (float) $validated['emi_amount'];
             // dd($validated);
             // exit;
             // Create loan application
