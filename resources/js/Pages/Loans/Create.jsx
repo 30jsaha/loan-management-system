@@ -1070,33 +1070,94 @@ export default function Create({ auth, loan_settings }) {
         }
     };
 
-    // FN validation
-    const isTenureInvalid =
-        fnRange &&
-        (
-            loanFormData.tenure_fortnight > fnRange.max ||
-            loanFormData.tenure_fortnight < fnRange.min
-        );
+    // ---------------- FN VALIDATION ----------------
+const isTenureInvalid =
+    fnRange &&
+    (
+        loanFormData.tenure_fortnight > fnRange.max ||
+        loanFormData.tenure_fortnight < fnRange.min
+    );
 
-    // EMI > Recommended PVA validation
-    const isPvaExceeded =
-        loanFormData.emi_amount &&
-        recMaxAllowedPvaAmt &&
-        loanFormData.emi_amount > recMaxAllowedPvaAmt;
+const isPvaExceeded =
+    loanFormData.emi_amount &&
+    recMaxAllowedPvaAmt &&
+    loanFormData.emi_amount > recMaxAllowedPvaAmt;
 
-    // Loan amount invalid (no FN range returned)
-    const isAmountInvalid =
-        loanFormData.loan_amount_applied &&
-        !fnRange &&
-        !isFetchingFn;
+const isAmountInvalid =
+    loanFormData.loan_amount_applied &&
+    !fnRange &&
+    !isFetchingFn;
 
-    // Final disable condition
-    const isSubmitDisabled =
-        !isEligible ||
-        isChecking ||
-        isTenureInvalid ||
-        isPvaExceeded ||
-        isAmountInvalid;
+
+// ---------------- LOAN SETTINGS VALIDATION ----------------
+let isMultiplierWiseokay = true;
+let isValidNumber = true;
+let isUnderMinAmt = true;
+let isUnderMaxAmt = true;
+let isUnderMinTen = true;
+let isUnderMaxTen = true;
+
+if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+
+    const selectedLoanSetting = loanSettings.find(
+        (ls) => ls.id === Number(loanFormData.loan_type)
+    );
+
+    if (selectedLoanSetting) {
+
+        const {
+            amt_multiplier,
+            min_loan_amount,
+            max_loan_amount,
+            min_loan_term_months,
+            max_loan_term_months
+        } = selectedLoanSetting;
+
+        const appliedAmount = parseFloat(loanFormData.loan_amount_applied);
+        const tenure = parseFloat(loanFormData.tenure_fortnight);
+        const multiplier = Number(amt_multiplier);
+
+        if (!Number.isFinite(appliedAmount) || !Number.isFinite(multiplier)) {
+            isValidNumber = false;
+        }
+
+        if (multiplier && appliedAmount % multiplier !== 0) {
+            isMultiplierWiseokay = false;
+        }
+
+        if (appliedAmount < Number(min_loan_amount)) {
+            isUnderMinAmt = false;
+        }
+
+        if (appliedAmount > Number(max_loan_amount)) {
+            isUnderMaxAmt = false;
+        }
+
+        if (tenure < Number(min_loan_term_months)) {
+            isUnderMinTen = false;
+        }
+
+        if (tenure > Number(max_loan_term_months)) {
+            isUnderMaxTen = false;
+        }
+    }
+}
+
+
+// ---------------- FINAL SUBMIT DISABLE ----------------
+const isSubmitDisabled =
+    !isEligible ||
+    isChecking ||
+    isTenureInvalid ||
+    isPvaExceeded ||
+    isAmountInvalid ||
+    !isMultiplierWiseokay ||
+    !isValidNumber ||
+    !isUnderMinAmt ||
+    !isUnderMaxAmt ||
+    !isUnderMinTen ||
+    !isUnderMaxTen;
+
 
     return (
         <AuthenticatedLayout
@@ -1582,6 +1643,34 @@ export default function Create({ auth, loan_settings }) {
                                                                 Checking FN range...
                                                             </div>
                                                         )}
+                                                        {!isValidNumber && (
+                                                            <small className="text-danger">⚠️ Invalid number</small>
+                                                        )}
+
+                                                        {!isMultiplierWiseokay && (
+                                                            <small className="text-danger">
+                                                                ⚠️ Amount must be multiple of selected loan multiplier
+                                                            </small>
+                                                        )}
+
+                                                        {!isUnderMinAmt && (
+                                                            <small className="text-danger">
+                                                                ⚠️ Amount below minimum allowed
+                                                            </small>
+                                                        )}
+
+                                                        {!isUnderMaxAmt && (
+                                                            <small className="text-danger">
+                                                                ⚠️ Amount exceeds maximum allowed
+                                                            </small>
+                                                        )}
+
+                                                        {isPvaExceeded && (
+                                                            <small className="text-danger">
+                                                                ⚠️ EMI exceeds max allowed PVA: <b>{recMaxAllowedPvaAmt}</b>
+                                                            </small>
+                                                        )}
+
                                                     </div>
 
                                                     <div className="col-md-3">
@@ -1612,6 +1701,17 @@ export default function Create({ auth, loan_settings }) {
                                                                 ℹ No FN range data available for this amount
                                                             </div>
                                                         ))}
+                                                        {/* {!isUnderMinTen && (
+                                                            <small className="text-danger">
+                                                                ⚠️ Tenure below minimum allowed
+                                                            </small>
+                                                        )}
+
+                                                        {!isUnderMaxTen && (
+                                                            <small className="text-danger">
+                                                                ⚠️ Tenure exceeds maximum allowed
+                                                            </small>
+                                                        )} */}
                                                     </div>
 
                                                     <div className="col-md-3">
@@ -1714,6 +1814,7 @@ export default function Create({ auth, loan_settings }) {
                                                             "Save & Upload Documents →"
                                                         )}
                                                     </button>
+
                                                 </Col>
                                             </Row>
                                         </form>
