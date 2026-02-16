@@ -2,6 +2,7 @@ import React from "react";
 import MainLogo from "@/Components/MainLogo";
 import { useEffect, useState } from "react";
 import { Row, Col } from "react-bootstrap";
+import { formatCurrency } from "@/Utils/formatters";
 
 // All your print CSS
 const printStyles = `
@@ -184,6 +185,7 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
     axios
       .get(`/api/loans/${initialLoan.id}`)
       .then((res) => {
+        console.log("Fetched loan data:", res.data);
         setLoan(res.data);   // ✅ correct
         setLoading(false);
       })
@@ -199,7 +201,9 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
   const company = loan.company || {};
   const organisation = loan.organisation || {};
 
-  const loanAmount = loan.loan_amount_applied ?? loan.elegible_amount ?? "";
+  const loanAmount = loan.loan_amount_applied || 0.00;
+  const emiAmount = loan.emi_amount || 0.00;
+  const totalRepayAmount = loan.total_repay_amt || 0.00;
   const noOfFNs = loan.tenure_fortnight ?? "";
   const purpose = (loan.purpose?.purpose_name || "").toString();
   const clientStatus = loan.client_status ?? (customer.client_status ?? null); // 1 => existing
@@ -287,7 +291,7 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
                   type="text"
                   className="underline-field"
                   style={{ width: "100px" }}
-                  defaultValue={loanAmount}
+                  defaultValue={formatCurrency(loanAmount)}
                   readOnly
                 />
               </div>
@@ -495,7 +499,7 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
                   </td>
                   <td style={{ border: "1px solid #000", padding: "2px 4px", backgroundColor: "#d9d9d9", fontWeight: "bold", verticalAlign: 'middle' }}>Gross Pay({company.currency_symbol ?? "K"})</td>
                   <td style={{ border: "1px solid #000", padding: "0" }}>
-                    <input type="text" defaultValue={grossPay} readOnly style={{ width: "100%", height: "100%", border: "none", outline: "none", padding: "2px 4px", boxSizing: "border-box" }} />
+                    <input type="text" defaultValue={formatCurrency(grossPay)} readOnly style={{ width: "100%", height: "100%", border: "none", outline: "none", padding: "2px 4px", boxSizing: "border-box" }} />
                   </td>
                 </tr>
                 {/* Row 12 */}
@@ -506,7 +510,7 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
                   </td>
                   <td style={{ border: "1px solid #000", padding: "2px 4px", backgroundColor: "#d9d9d9", fontWeight: "bold", verticalAlign: 'middle' }}>Net Pay ({company.currency_symbol ?? "K"}):</td>
                   <td style={{ border: "1px solid #000", padding: "0" }}>
-                    <input type="text" defaultValue={netPay} readOnly style={{ width: "100%", height: "100%", border: "none", outline: "none", padding: "2px 4px", boxSizing: "border-box" }} />
+                    <input type="text" defaultValue={formatCurrency(netPay)} readOnly style={{ width: "100%", height: "100%", border: "none", outline: "none", padding: "2px 4px", boxSizing: "border-box" }} />
                   </td>
                 </tr>
 
@@ -813,7 +817,7 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
                   >
                     To the Pay Master/OIC Salaries <br />
                     <br />
-                    I,&nbsp;
+                    I 
                     <input
                       type="text"
                       defaultValue={`${firstName} ${lastName}`.trim()}
@@ -825,29 +829,47 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
                         width: "180px",
                         outline: "none",
                       }}
-                    />
-                    &nbsp;hereby authorize you to deduct the sum of PGK&nbsp;
+                    />                    
+                    &nbsp;hereby authorize you to deduct total sum of PGK,&nbsp;
                     <input
                       type="text"
-                      defaultValue={loan.elegible_amount ?? ""}
+                      defaultValue={formatCurrency(totalRepayAmount)}
                       readOnly
                       style={{
+                        height: "10px",
+                        border: "none",
+                        borderBottom: "1px solid black",
+                        width: "180px",
+                        outline: "none",
+                      }}
+                    />
+                    &nbsp;from my fortnightly salary at a rate of PGK&nbsp;
+                    <input
+                      type="text"
+                      defaultValue={formatCurrency(emiAmount)} //EMI Amount
+                      readOnly
+                      style={{
+                        height: "10px",
                         border: "none",
                         borderBottom: "1px solid black",
                         width: "100px",
                         outline: "none",
                       }}
                     />
-                    &nbsp;from my fortnightly salary starting and remit cheque
-                    in favor of&nbsp;
+                    &nbsp;per fortnight and remit cheque in favour of&nbsp;
                     <b>
-                      {company.company_name ?? "Agro Advance Aben Ltd."}, {company.currency ?? ""}
+                      {/* {company.company_name ?? "Agro Advance Aben Ltd."}, {company.currency ?? ""} */}
+                      Agro Advance Aben Ltd,
+                      Bank South Pacific
+                      Account Number
+                      7016405867, Harbor City
+                      Branch, P.O Box 1840,
+                      PORT MORESBY.
                     </b>
-                    .
-                    <br />
-                    <br />
-                    This deduction authority is irrevocable by me and can only
-                    be cancelled by written approval of {company.company_name ?? "Agro Advance Aben Ltd."}.
+                    &nbsp;
+                    This deduction authority is irrevocable by me and can only be cancelled by written approval of Agro Advance Aben Ltd. I further agree that on the
+                    cessation of my current employment upon resignation or termination, I authorize my Employer to deduct all monies still owing to Agro Advance Aben Ltd.
+                    from my final entitlements I may have in respect of Long Service Leave, Annual Leave, Bonus and Gratuity.
                   </td>
                 </tr>
 

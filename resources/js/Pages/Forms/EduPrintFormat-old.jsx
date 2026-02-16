@@ -124,7 +124,7 @@ export default function EduPrintFormat({ auth, loan }) {
 
             {/* Sure Name */}
             <div className="flex items-center mb-2 text-sm">
-              <span className="font-semibold w-28 shrink-0">SurName</span>
+              <span className="font-semibold w-28 shrink-0">Surname</span>
               <div className="flex gap-px">{renderCharBoxes(26)}</div>
             </div>
 
@@ -184,7 +184,7 @@ export default function EduPrintFormat({ auth, loan }) {
               from my fortnightly salary at a rate of PGK
               <DataLine className="w-40" />
               per fortnight and remit cheque in favour of{" "}
-              <b>Agro Advance Aben Ltd.</b> If I fake paid leave of any kind I
+              <b>Agro Advance Aben L td , Bank South Pacific Account Number 7016405867, Harbor City Branch, P.O Box 1840 , PORT MORESBY</b> If I take paid leave of any kind I
               further authorize and direct you to remit in lump sum deduction
               from the duration of the leave and remit cheque in favour of{" "}
               <b>Agro Advance Aben Ltd.</b> I further agree that on the

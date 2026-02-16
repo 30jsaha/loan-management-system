@@ -27,6 +27,7 @@ export default function Create({ auth, loan_settings }) {
     const [isEligible, setIsEligible] = useState(false);
     const [isCustSelectable, setCustSelectable] = useState(true);
     const [recProposedPvaAmt, setRecProposedPvaAmt] = useState(0);
+    const [recMaxAllowedPvaAmt, setRecMaxAllowedPvaAmt] = useState(0);
     const [recEleigibleAmount, setRecEleigibleAmount] = useState(0);
     const [isTruelyEligible, setIsTruelyEligible] = useState(false);
     const [isFormDirty, setIsFormDirty] = useState(false);
@@ -229,6 +230,42 @@ export default function Create({ auth, loan_settings }) {
         }
     };
 
+    const resetCustomerForm = () => {
+        setFormData({
+            cus_id: 0,
+            company_id: 1,
+            organisation_id: 0,
+            first_name: "",
+            last_name: "",
+            gender: "",
+            dob: "",
+            marital_status: "",
+            no_of_dependents: "",
+            phone: "",
+            email: "",
+            present_address: "",
+            permanent_address: "",
+            employee_no: "",
+            designation: "",
+            employment_type: "",
+            date_joined: "",
+            monthly_salary: 0.00,
+            net_salary: 0.00,
+            work_location: "",
+            payroll_number: "",
+            employer_department: "",
+            immediate_supervisor: "",
+            work_province: "",
+            work_district: "",
+            years_at_current_employer: "",
+            employer_address: "",
+            home_province: "",
+            district_village: "",
+            spouse_full_name: "",
+            spouse_contact: "",
+        });
+    };
+
     useEffect(() => {
         fetchCustomers();
         fetchLoanPurposes();
@@ -374,11 +411,11 @@ export default function Create({ auth, loan_settings }) {
             setIsChecking(false);
             return;
         }
-        if (Number(loanFormData.loan_amount_applied) > Number(recProposedPvaAmt)) {
-            setMessage(`❌ Loan Amount Applied exceeds the Recommended PVA Amount of PGK ${recProposedPvaAmt}. Please adjust accordingly.`);
+        if (Number(loanFormData.emi_amount) > Number(recMaxAllowedPvaAmt)) {
+            setMessage(`❌ Loan Amount Applied exceeds the max allowed PVA Amount of PGK ${recMaxAllowedPvaAmt}. Please adjust accordingly.`);
             Swal.fire({
                 title: "Warning !",
-                text: `Loan Amount Applied exceeds the Recommended PVA Amount of PGK ${recProposedPvaAmt}. Please adjust accordingly.`,
+                text: `Loan Amount Applied exceeds the max allowed PVA Amount of PGK ${recMaxAllowedPvaAmt}. Please adjust accordingly.`,
                 icon: "warning"
             });
             setIsChecking(false);
@@ -529,8 +566,21 @@ export default function Create({ auth, loan_settings }) {
                 setIsChecking(false);
                 return;
             }
+            
+            if (Number(loanFormData?.emi_amount) > Number(recMaxAllowedPvaAmt)) {
+                console.log("Validation failed: Applied amount exceeds eligible PVA. loan_amount_applied: ", loanFormData.loan_amount_applied, "elegible_amount: ", loanFormData.emi_amount);
+                setMessage(`❌ Loan Amount Applied exceeds the max allowed PVA Amount of PGK ${recMaxAllowedPvaAmt}. Please adjust accordingly.`);
+                Swal.fire({
+                    title: "Warning !",
+                    text: `Loan Amount Applied exceeds the max allowed PVA Amount of PGK ${recMaxAllowedPvaAmt}. Please adjust accordingly.`,
+                    icon: "warning"
+                });
+                setIsChecking(false);
+                return;
+            }
             loanFormData.loan_amount_applied = parseFloat(loanFormData.loan_amount_applied);
             loanFormData.tenure_fortnight = parseFloat(loanFormData.tenure_fortnight);
+            loanFormData.emi_amount = parseFloat(loanFormData.emi_amount);
             // loanFormData.total_interest_amt = parseFloat(loanFormData.total_interest_amt);
             // loanFormData.total_repay_amt = parseFloat(loanFormData.total_repay_amt)
             if (selectedLoanPurposeId) {
@@ -661,7 +711,7 @@ export default function Create({ auth, loan_settings }) {
 
         // Apply Excel formulas:
         // Total Interest = C4 * D4 / 100 * E4
-        const totalInterest = loanAmount * rate / 100 * term;
+        const totalInterest = ((loanAmount * rate) / 100) * term;
 
         // Total Repay = F4 + C4
         const totalRepay = totalInterest + loanAmount;
@@ -1019,6 +1069,35 @@ export default function Create({ auth, loan_settings }) {
             console.error("Failed to update ack download status", err);
         }
     };
+
+    // FN validation
+    const isTenureInvalid =
+        fnRange &&
+        (
+            loanFormData.tenure_fortnight > fnRange.max ||
+            loanFormData.tenure_fortnight < fnRange.min
+        );
+
+    // EMI > Recommended PVA validation
+    const isPvaExceeded =
+        loanFormData.emi_amount &&
+        recMaxAllowedPvaAmt &&
+        loanFormData.emi_amount > recMaxAllowedPvaAmt;
+
+    // Loan amount invalid (no FN range returned)
+    const isAmountInvalid =
+        loanFormData.loan_amount_applied &&
+        !fnRange &&
+        !isFetchingFn;
+
+    // Final disable condition
+    const isSubmitDisabled =
+        !isEligible ||
+        isChecking ||
+        isTenureInvalid ||
+        isPvaExceeded ||
+        isAmountInvalid;
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -1064,7 +1143,7 @@ export default function Create({ auth, loan_settings }) {
                 )}
             </div>
             <div className="py-2">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding"> 
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         {/* Top Action Bar */}
                         <Row className="mb-3 px-4 pt-4">
@@ -1154,6 +1233,7 @@ export default function Create({ auth, loan_settings }) {
                                                     })
                                                     .catch((err) => console.error("Error fetching loan types:", err));
                                             }}
+                                            resetForm={resetCustomerForm}
                                         />
                                     )}
 
@@ -1268,10 +1348,13 @@ export default function Create({ auth, loan_settings }) {
                                                         }}
                                                         proposedPvaAmt={(recProposedPvaAmt) => {
                                                             setRecProposedPvaAmt(recProposedPvaAmt);
-                                                            setLoanFormData((prev) => ({ ...prev, loan_amount_applied: recProposedPvaAmt }));
-                                                            if (!isNaN(recProposedPvaAmt) && recProposedPvaAmt > 0) {
-                                                                fetchFnRange(recProposedPvaAmt); // 🔥 API call here
-                                                            }
+                                                            // setLoanFormData((prev) => ({ ...prev, loan_amount_applied: recProposedPvaAmt }));
+                                                            // if (!isNaN(recProposedPvaAmt) && recProposedPvaAmt > 0) {
+                                                            //     fetchFnRange(recProposedPvaAmt); // 🔥 API call here
+                                                            // }
+                                                        }}
+                                                        maxAllowedPvaAmt={(recMaxAllowedPvaAmt) => {
+                                                            setRecMaxAllowedPvaAmt(recMaxAllowedPvaAmt);
                                                         }}
                                                         eleigibleAmount={(recEleigibleAmount) => {
                                                             setRecEleigibleAmount(recEleigibleAmount);
@@ -1482,6 +1565,17 @@ export default function Create({ auth, loan_settings }) {
                                                             onBlur={calculateRepaymentDetails}
                                                             required
                                                         />
+                                                        {fnRange ? (
+                                                            <div className={`text-sm ${loanFormData.emi_amount > recMaxAllowedPvaAmt ? "text-danger" : "text-blue-600"} mt-1`}>
+                                                                {loanFormData.emi_amount > recMaxAllowedPvaAmt && (
+                                                                    <small className="text-danger">⚠️ Amount exceeds max allowed PVA: <b>{recMaxAllowedPvaAmt}</b></small>
+                                                                )}
+                                                            </div>
+                                                        ) : (loanFormData.loan_amount_applied && !isFetchingFn && (
+                                                            <div className="text-sm text-gray-500 mt-1">
+                                                                ℹ Amount cannot be applied
+                                                            </div>
+                                                        ))}
                                                         {isFetchingFn && (
                                                             <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                                                                 <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
@@ -1489,8 +1583,6 @@ export default function Create({ auth, loan_settings }) {
                                                             </div>
                                                         )}
                                                     </div>
-
-
 
                                                     <div className="col-md-3">
                                                         <label className="form-label">Tenure (Fortnight)</label>
@@ -1503,15 +1595,23 @@ export default function Create({ auth, loan_settings }) {
                                                             onKeyUp={calculateRepaymentDetails}
                                                             required
                                                         />
-                                                        {fnRange && (
-                                                            <div className="text-sm text-blue-600 mt-1">
+                                                        {fnRange ? (
+                                                            <div className={`text-sm ${loanFormData.tenure_fortnight > fnRange.max || loanFormData.tenure_fortnight < fnRange.min ? "text-danger" : "text-blue-600"} mt-1`}>
                                                                 {fnRange.min == fnRange.max ? (
                                                                     <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b>&nbsp;FN</small>
-                                                                ) : (
-                                                                    <small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b> – <b>{fnRange.max}</b>&nbsp;FN</small>
-                                                                )}
+                                                                )  
+                                                                : (loanFormData.tenure_fortnight > fnRange.max) ? (
+                                                                    <small className="text-danger">⚠️ Tenure exceeds maximum allowed: <b>{fnRange.max}</b>&nbsp;FN</small>
+                                                                ) : (loanFormData.tenure_fortnight < fnRange.min) ? (
+                                                                    <small className="text-danger">⚠️ Tenure below minimum allowed: <b>{fnRange.min}</b>&nbsp;FN</small>
+                                                                ) : 
+                                                                (<small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b> – <b>{fnRange.max}</b>&nbsp;FN</small>)}
                                                             </div>
-                                                        )}
+                                                        ) : (loanFormData.loan_amount_applied && !isFetchingFn && (
+                                                            <div className="text-sm text-gray-500 mt-1">
+                                                                ℹ No FN range data available for this amount
+                                                            </div>
+                                                        ))}
                                                     </div>
 
                                                     <div className="col-md-3">
@@ -1578,7 +1678,7 @@ export default function Create({ auth, loan_settings }) {
                                             </fieldset>
                                             <Row className="mt-4 text-end">
                                                 <Col className='text-end '>
-                                                    <button
+                                                    {/* <button
                                                         type="submit"
                                                         className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${!isEligible || isChecking ? "cursor-not-allowed opacity-50" : ""}`}
                                                         disabled={!isEligible || isChecking}
@@ -1594,8 +1694,26 @@ export default function Create({ auth, loan_settings }) {
                                                         ) : (
                                                             "Save & Upload Documents →"
                                                         )}
+                                                    </button> */}
+                                                    <button
+                                                        type="submit"
+                                                        className={`bg-indigo-600 text-white px-4 py-2 mt-3 rounded text-center flex items-center justify-center ${
+                                                            isSubmitDisabled ? "cursor-not-allowed opacity-50" : "hover:bg-indigo-700"
+                                                        }`}
+                                                        disabled={isSubmitDisabled}
+                                                    >
+                                                        {isChecking ? (
+                                                            <>
+                                                                <span
+                                                                    className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"
+                                                                    role="status"
+                                                                ></span>
+                                                                Checking...
+                                                            </>
+                                                        ) : (
+                                                            "Save & Upload Documents →"
+                                                        )}
                                                     </button>
-
                                                 </Col>
                                             </Row>
                                         </form>

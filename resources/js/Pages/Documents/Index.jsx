@@ -190,12 +190,14 @@ export default function DocumentTypesIndex({ auth }) {
       <Toaster />
 
       <div className="p-6 max-w-7xl mx-auto">
-        <Link
-          href={route("dashboard")}
-          className="inline-flex items-center bg-gray-200 px-3 py-2 rounded mb-4"
-        >
-          <ArrowLeft size={16} className="mr-2" /> Back
-        </Link>
+        <div className="max-w-7xl mx-auto mb-3 -mt-2 ">
+          <Link
+            href={route("loans")}
+            className="inline-flex items-center bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
+          >
+            <ArrowLeft size={16} className="mr-2" /> Back to List
+          </Link>
+        </div>
         <div className="bg-white shadow-md border p-6 rounded-lg mb-2">
           <h3 className="text-lg font-semibold mb-4">
             {isEditing ? "Edit Document Type" : "Add Document Type"}

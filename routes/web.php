@@ -124,6 +124,10 @@ Route::get('/loan-calculator', function () {
     return inertia('LoanCalculator/LoanCalculator');
 })->middleware(['auth', 'verified'])->name('loan-calculator');
 
+Route::get('/loan-schedule', function () {
+    return inertia('LoanSchedule/LoanScheduleView');
+})->middleware(['auth', 'verified'])->name('loan-schedule');
+
 Route::get('/loan-application-form', function () {
     return inertia('Forms/LoanApplicationForm');
 })->middleware(['auth', 'verified'])->name('loan-application.form');

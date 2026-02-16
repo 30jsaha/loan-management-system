@@ -10,6 +10,7 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
+  MoveUp,
   ChevronLeft,
   ChevronRight,
   Building2,

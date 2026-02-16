@@ -142,7 +142,7 @@ useEffect(() => {
     >
       <Head title="Customer Records" />
 
-      <div className="py-8 w-full max-w-[95vw] mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
+      <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5 custPadding">
         <div className="max-w-9xl mx-auto -mt-4">
           <Link
             href={route("dashboard")}
@@ -157,12 +157,12 @@ useEffect(() => {
           <h3 className="text-lg font-semibold text-gray-800 tracking-wide">
             Customer Records
           </h3>
-          <Link
+          {/* <Link
             href={route("customer.create")}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-all duration-200"
           >
             + New Customer
-          </Link>
+          </Link> */}
         </div>
 
         {/* 🔍 Search Filters */}
