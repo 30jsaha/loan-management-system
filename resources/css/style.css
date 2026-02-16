@@ -4208,6 +4208,7 @@ body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
       font-size: 0.9rem;
       white-space: nowrap;
       transition: left 0.25s ease, background-color 0.3s ease;
+	  pointer-events: none;
     }
     #emiWrapper {
       transition: transform 0.3s ease;

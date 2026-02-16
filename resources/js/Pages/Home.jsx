@@ -95,7 +95,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
         repaymentPlan: "",
       });
 
-    } catch (error) {
+    }
+     catch (error) {
       Swal.fire({
         icon: "error",
         title: "Failed",
@@ -103,7 +104,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           error.response?.data?.message ||
           "Unable to send inquiry. Please try again later.",
       });
-    } finally {
+    } 
+    finally {
       setLoading(false);
     }
   };
@@ -264,7 +266,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
         repaymentPlan: "",
       });
 
-    } catch (error) {
+    }
+     catch (error) {
       Swal.fire({
         icon: "error",
         title: "Failed",
@@ -272,7 +275,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           error.response?.data?.message ||
           "Unable to send inquiry. Please try again later.",
       });
-    } finally {
+    }
+     finally {
       setLoading(false);
     }
   };
@@ -410,7 +414,10 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <div className="row">
                       {/* AMOUNT */}
                       <div className="col-md-6 mb-3 text-left">
-                        <label className="form-label">Amount *</label>
+                       <label className="form-label">
+  Amount <span style={{ color: 'red' }}>*</span>
+</label>
+
                         <input
                           type="number"
                           name="amount"
@@ -426,7 +433,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
                       {/* TENURE */}
                       <div className="col-md-6 mb-3 text-left">
-                        <label className="form-label">Tenure (Days) *</label>
+                        <label className="form-label">Tenure (Days) <span style={{ color: 'red' }}>*</span></label>
                         <input
                           type="number"
                           name="tenure"
@@ -441,7 +448,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                     <div className="row">
                       {/* NAME */}
                       <div className="col-md-6 mb-3 text-left">
-                        <label className="form-label">Name *</label>
+                        <label className="form-label">Name <span style={{ color: 'red' }}>*</span></label>
                         <input
                           type="text"
                           name="name"
@@ -456,7 +463,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
                       {/* PHONE */}
                       <div className="col-md-6 mb-3 text-left">
-                        <label className="form-label">Phone *</label>
+                        <label className="form-label">Phone <span style={{ color: 'red' }}>*</span></label>
                         <input
                           type="tel"
                           name="phone"
@@ -472,7 +479,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
                       {/* EMAIL */}
                       <div className="mb-3 text-left">
-                        <label className="form-label">Email *</label>
+                        <label className="form-label">Email <span style={{ color: 'red' }}>*</span></label>
                         <input
                           type="email"
                           name="email"
@@ -517,11 +524,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                         </div>
                       </>
                     )}
-
-
-
-
-
                     {/* If error */}
                     {respMsg && !calculatorFirstCheck && (
                       <div
@@ -563,6 +565,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                           <div className="d-flex align-items-center justify-content-center gap-3">
 
                             <button
+                            type="button"
                               onClick={() => setSliderAmount(prev => Math.max(200, prev - 50))}
                               className="small-inc-btn"
                             >
@@ -579,12 +582,20 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                                 onChange={(e) => setSliderAmount(Number(e.target.value))}
                                 className="form-range"
                               />
-                              <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
-                                K{sliderAmount}
-                              </div>
+                              <div
+  className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm"
+  style={{
+    left: `${((sliderAmount - 200) / (10000 - 200)) * 100}%`,
+    transform: "translateX(-50%)",
+  }}
+>
+  K{sliderAmount}
+</div>
+
                             </div>
 
                             <button
+                            type="button"
                               onClick={() => setSliderAmount(prev => Math.min(10000, prev + 50))}
                               className="small-inc-btn"
                             >
@@ -601,6 +612,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                           <div className="d-flex align-items-center justify-content-center gap-3">
 
                             <button
+                            type="button"
                               onClick={() => setSliderFortnight(prev => Math.max(5, prev - 1))}
                               className="small-inc-btn"
                             >
@@ -617,12 +629,20 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                                 onChange={(e) => setSliderFortnight(Number(e.target.value))}
                                 className="form-range"
                               />
-                              <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
-                                {sliderFortnight}
-                              </div>
+                             <div
+  className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm"
+  style={{
+    left: `${((sliderFortnight - 5) / (52 - 5)) * 100}%`,
+    transform: "translateX(-50%)",
+  }}
+>
+  {sliderFortnight}
+</div>
+
                             </div>
 
                             <button
+                            type="button"
                               onClick={() => setSliderFortnight(prev => Math.min(52, prev + 1))}
                               className="small-inc-btn"
                             >
@@ -657,84 +677,72 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                   </section>
                 )}
                 {(!calculatorFirstCheck) && (
-                  <button
-                    type="button"
-                    className="btn btn-success btn-check-loan"
-                    onClick={(e) => {
-                      const formEl = formRef.current;
+  <button
+    type="button"
+    className="btn btn-success btn-check-loan"
+    onClick={async (e) => {
+      const formEl = formRef.current;
 
-                      // 🔥 FIRST: Run built-in HTML validation
-                      if (!formEl.checkValidity()) {
-                        formEl.reportValidity();
-                        return;
-                      }
+      if (!formEl.checkValidity()) {
+        formEl.reportValidity();
+        return;
+      }
 
-                      // 🔥 SECOND: Run your eligibility logic
-                      handleCheckLoan(e);
+      // Run validation logic
+      handleCheckLoan(e);
 
-                      setSending(true);
+      setSending(true);
 
-                      axios
-                        .post("/api/send-loan-mail", {
-                          amount: Number(formState.amount),
-                          tenure: Number(formState.tenure),
-                          repaymentPlan: formState.repaymentPlan,
-                          name: formState.name,
-                          phone: formState.phone,
-                          email: formState.email,
-                          // service: formState.service,
-                        })
-                        .then((res) => {
-                          Swal.fire({
-                            icon: "success",
-                            title: "Inquiry Sent",
-                            text: res.data.message,
-                          });
+      try {
+        const res = await axios.post("/api/send-loan-mail", {
+          amount: Number(formState.amount),
+          tenure: Number(formState.tenure),
+          repaymentPlan: calculateRepayment(
+            formState.amount,
+            formState.tenure
+          ),
+          name: formState.name,
+          phone: formState.phone,
+          email: formState.email,
+        });
 
-                          // Reset form after success
-                          setFormState({
-                            name: "",
-                            email: "",
-                            phone: "",
-                            service: "",
-                            amount: "",
-                            tenure: "",
-                            repaymentPlan: "",
-                          });
-                        })
-                        .catch((error) => {
-                          Swal.fire({
-                            icon: "error",
-                            title: "Failed",
-                            text:
-                              error.response?.data?.message ||
-                              "Unable to send inquiry. Please try again later.",
-                          });
-                        })
-                        .finally(() => {
-                          setSending(false);
-                        });
+        Swal.fire({
+          icon: "success",
+          title: "Inquiry Sent",
+          text: res.data.message,
+        });
 
-                      // 🔽 OPEN SLIDER SECTION
-                      setCalculatorFirstCheck(true);
+      } catch (error) {
+        Swal.fire({
+          icon: "error",
+          title: "Failed",
+          text:
+            error.response?.data?.message ||
+            "Unable to send inquiry. Please try again later.",
+        });
+      } finally {
+        setSending(false);
+      }
 
-                      // 🔽 SET SLIDERS FROM INPUT FIELDS
-                      setSliderAmount(Number(formState.amount));
-                      setSliderFortnight(Number(formState.tenure));
+      // Open slider
+      setCalculatorFirstCheck(true);
 
-                      // 🔽 SCROLL TO SLIDER SECTION
-                      setTimeout(() => {
-                        sliderRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                      }, 200);
-                    }}
-                    disabled={sending}
-                  >
-                    {sending ? "Sending..." : "Check Your Loan Now!"}
-                  </button>
-                )}
+      setSliderAmount(Number(formState.amount));
+      setSliderFortnight(Number(formState.tenure));
+
+      setTimeout(() => {
+        sliderRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 200);
+    }}
+    disabled={sending}
+  >
+    {sending ? "Sending..." : "Check Your Loan Now!"}
+  </button>
+)}
+
 
                 <div className="resp mt-2">{respMsg}</div>
               </form>
@@ -776,9 +784,16 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                         onChange={(e) => setSliderAmount(Number(e.target.value))}
                         className="form-range"
                       />
-                      <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
-                        K{sliderAmount}
-                      </div>
+                     <div
+  className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm"
+  style={{
+    left: `${((sliderFortnight - 5) / (52 - 5)) * 100}%`,
+    transform: "translateX(-50%)",
+  }}
+>
+  {sliderFortnight}
+</div>
+
                     </div>
 
                     <button
@@ -814,9 +829,16 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                         onChange={(e) => setSliderFortnight(Number(e.target.value))}
                         className="form-range"
                       />
-                      <div className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm">
-                        {sliderFortnight}
-                      </div>
+                      <div
+  className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm"
+  style={{
+    left: `${((sliderFortnight - 5) / (52 - 5)) * 100}%`,
+    transform: "translateX(-50%)",
+  }}
+>
+  {sliderFortnight}
+</div>
+
                     </div>
 
                     <button
@@ -877,9 +899,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
             </div>
           </div>
-
-
-
 
           <div className="quick-items d-flex gap-3">
 
@@ -978,7 +997,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
           </div>
         </div>
       </section>
-
 
       {/** Our Loan Section */}
       {/* Loan Solutions Section */}
@@ -1261,8 +1279,6 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   backgroundPosition: "-120px center",
   backgroundRepeat: "no-repeat"
 }}
-
-
       >
         <div className="footer-overlay">
 
@@ -1449,4 +1465,4 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
       </footer>
     </div>
   );
-}
+};

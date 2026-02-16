@@ -1024,7 +1024,7 @@ export default function Create({ auth, loan_settings }) {
             user={auth.user}
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">New Loan Application</h2>}
         >
-            {/*  map the loan_settings passed from controller for debugging */}
+    
             {/* <pre>
                 {JSON.stringify(loan_settings, null, 2)}
             </pre>
