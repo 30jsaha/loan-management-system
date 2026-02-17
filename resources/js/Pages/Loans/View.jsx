@@ -1468,16 +1468,29 @@ const normalizeFilePath = (path) => {
                                                             <tr><td className="border p-2 font-semibold">Loan Type</td><td className="border p-2">{loan.loan_settings?.loan_desc || "-"}</td></tr>
                                                             <tr><td className="border p-2 font-semibold">Purpose</td><td className="border p-2">{(loan.purpose?.purpose_name) == "Other" ? loan.other_purpose_text : loan.purpose?.purpose_name}</td></tr>
                                                             <tr><td className="border p-2 font-semibold">Tenure (fortnight)</td><td className="border p-2">{loan.tenure_fortnight}</td></tr>
-                                                            <tr><td className="border p-2 font-semibold">EMI Amount</td><td className="border p-2">{(loan.emi_amount != null) ? `${currencyPrefix} ${parseFloat(loan.emi_amount).toFixed(2)}` : 0.00}</td></tr>
-                                                            <tr><td className="border p-2 font-semibold">Interest Rate</td><td className="border p-2">{loan.interest_rate}%</td></tr>
-                                                            <tr><td className="border p-2 font-semibold">Processing Fee</td><td className="border p-2">{(loan.processing_fee != null) ? currencyPrefix + " " + parseFloat(loan.processing_fee).toFixed(2) : 0.00}</td></tr>
                                                             <tr>
-                                                                <td className="border p-2 font-semibold">Amount Details</td>
+                                                                <td className="border p-2 font-semibold"><b>Amount Details</b></td>
                                                                 <td className="border p-2">
-                                                                    <strong>Applied Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.loan_amount_applied).toFixed(2)}<br />
-                                                                    <strong>Elegible Amt.: </strong>{currencyPrefix}&nbsp;{parseFloat(loan.elegible_amount).toFixed(2)}
+                                                                     <strong>Applied Amt.: </strong><span className="text-green-700 font-bold">{(loan.loan_amount_applied != null) ? `${currencyPrefix} ${formatCurrency(loan.loan_amount_applied)}` : 0.00}</span><br />
+                                                                     <strong>Total Repay Amt.: </strong>{(loan.total_repay_amt != null) ? `${currencyPrefix} ${formatCurrency(loan.total_repay_amt)}` : 0.00}
                                                                 </td>
                                                             </tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">PVA Details/FN</td>
+                                                                <td className="border p-2">
+                                                                    <strong>Repay Amt.: </strong>{currencyPrefix}&nbsp;{formatCurrency(loan.emi_amount)}<br />
+                                                                    <strong>Max allowed.: </strong>{currencyPrefix}&nbsp;{formatCurrency(loan.elegible_amount)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td className="border p-2 font-semibold">Interest Details</td>
+                                                                <td className="border p-2">
+                                                                    <strong>Rate.: </strong>{loan.interest_rate}%<br />
+                                                                    <strong>Total Interest.: </strong>{currencyPrefix}&nbsp;{loan.total_interest_amt ?? formatCurrency(loan.total_interest_amt)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr><td className="border p-2 font-semibold">Processing Fee</td><td className="border p-2">{(loan.processing_fee != null) ? currencyPrefix + " " + formatCurrency(loan.processing_fee) : 0.00}</td></tr>
+                                                            
                                                             <tr>
                                                                 <td className="border p-2 font-semibold">Organisation Details</td>
                                                                 <td className="border p-2">
@@ -1522,13 +1535,13 @@ const normalizeFilePath = (path) => {
                                                                     <strong>Immediate Supervisor:</strong> {loan.customer.immediate_supervisor} <br />
                                                                     <strong>Payroll Number:</strong> {loan.customer.payroll_number} <br />
                                                                     <strong>Joinning Date:</strong> {(loan.customer.date_joined != null) ? new Date(loan.customer.date_joined).toLocaleDateString() : ""}<br />
-                                                                    <strong>Gross Salary:</strong> {(loan.customer.monthly_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.monthly_salary).toFixed(2)}` : ""}
+                                                                    <strong>Gross Salary:</strong> {(loan.customer.monthly_salary != null) ? `${currencyPrefix} ${formatCurrency(loan.customer.monthly_salary)}` : ""}
                                                                     <br />
-                                                                    <strong>Net Salary:</strong> {(loan.customer.net_salary != null) ? `${currencyPrefix} ${parseFloat(loan.customer.net_salary).toFixed(2)}` : ""}
+                                                                    <strong>Net Salary:</strong> {(loan.customer.net_salary != null) ? `${currencyPrefix} ${formatCurrency(loan.customer.net_salary)}` : ""}
                                                                     <br />
                                                                     <strong>Work Location:</strong> {loan.customer.work_location}
                                                                     <br />
-                                                                    <strong>Years at current employer:</strong> {(loan.customer.years_at_current_employer != null) ? parseFloat(loan.customer.years_at_current_employer) : "N/A"}
+                                                                    <strong>Years at current employer:</strong> {(loan.customer.years_at_current_employer != null) ? formatCurrency(loan.customer.years_at_current_employer) : "N/A"}
                                                                 </td>
                                                             </tr>
                                                             <tr>
@@ -3652,11 +3665,21 @@ const normalizeFilePath = (path) => {
                                                                 href={route("loans")}
                                                             >
                                                                 <button
-                                                                    className={`${loan?.is_ack_downloaded == 0 ? "bg-green-600 hover:bg-green-700 cursor-not-allowed opacity-50" : "bg-green-600 hover:bg-green-700"} text-white px-4 py-2 rounded-md`}
-                                                                    disabled={loan?.is_ack_downloaded == 0}
+                                                                    className={`${loan?.is_ack_downloaded == 0 ||
+                                                                    ((!videoPreview ) || 
+                                                                    (!pdfPreview ) || 
+                                                                    (!pdfPreview1 )
+                                                                    ) ? "bg-green-600 hover:bg-green-700 cursor-not-allowed opacity-50" : "bg-green-600 hover:bg-green-700"} text-white px-4 py-2 rounded-md`}
+                                                                    disabled={
+                                                                    loan?.is_ack_downloaded == 0 ||
+                                                                    ((!videoPreview ) || 
+                                                                    (!pdfPreview ) || 
+                                                                    (!pdfPreview1 )
+                                                                    )}
                                                                     onClick={markSentApproval}
                                                                 >
-                                                                    {loan?.is_sent_for_approval == 1 ? ("Back to the list") : ("Send for approval")}
+                                                                    {loan?.is_sent_for_approval == 1 
+                                                                    ? ("Back to the list") : ("Send for approval")}
                                                                 </button>
                                                             </Link>
                                                         </div>

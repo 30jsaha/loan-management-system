@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\FrontEndController;
 use App\Http\Controllers\Api\SalarySlabController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\CustomerDraftController;
+use App\Http\Controllers\Api\PayrollImportController;
 use App\Http\Controllers\RejectionController;
 use App\Models\LoanTempCustomer;
 /*
@@ -163,3 +164,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/rejection-reason-modify/{id}', [RejectionController::class, 'update']);
     Route::delete('/rejection-reason-remove/{id}', [RejectionController::class, 'destroy']);
 });
+Route::post('/payroll-import', [PayrollImportController::class, 'import'])
+->middleware('auth:sanctum');
