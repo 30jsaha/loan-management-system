@@ -1631,7 +1631,7 @@ const isSubmitDisabled =
                                                         {!isUnderMinAmt && (
                                                             <small className="text-danger">
                                                                 {`⚠️
-                                                                    ${validationMinAmt!=0 ? "Minimum allowed is "+validationMinAmt : "Amount below minimum allowed"}
+                                                                    ${validationMinAmt!=0 ? `Minimum allowed is `+validationMinAmt : `Amount below minimum allowed`}
                                                                 `}<br />
                                                             </small>
                                                         )}
@@ -1644,7 +1644,7 @@ const isSubmitDisabled =
                                                             </small>
                                                         )}
 
-                                                        {isPvaExceeded ? (
+                                                        {isPvaExceeded && isUnderMinAmt && isUnderMaxAmt ? (
                                                             <small className="text-danger">
                                                                 ⚠️ Amount cannot be applied as the EMI exceeds max allowed PVA: <b>{recMaxAllowedPvaAmt}</b><br />
                                                             </small>

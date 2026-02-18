@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
 import {
     ArrowLeft,
