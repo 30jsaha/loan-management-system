@@ -878,22 +878,37 @@ export default function LoanEmiSchedule({ auth }) {
                                                             </div>
                                                             <div className="rounded-xl p-4 space-y-3">
                                                                 <p>Showing Result for:</p>
-                                                                {nerestLoan != 0 && (
+                                                                {nerestLoan != 0 ? (
                                                                     <div className="flex justify-between text-sm">
                                                                         <span className="text-blue-100">Amount</span>
                                                                         <span className="font-bold">{nerestLoan}</span>
                                                                     </div>
+                                                                ) : calcInputs.amount && (
+                                                                    <div className="flex justify-between text-sm">
+                                                                        <span className="text-blue-100">Amount</span>
+                                                                        <span className="font-bold">{calcInputs.amount}</span>
+                                                                    </div>
                                                                 )}
-                                                                {nerestEmi != 0 && (
+                                                                {nerestEmi != 0 ? (
                                                                     <div className="flex justify-between text-sm">
                                                                         <span className="text-blue-100">EMI</span>
                                                                         <span className="font-bold">{nerestEmi}</span>
                                                                     </div>
+                                                                ) : calcInputs.emi && (
+                                                                    <div className="flex justify-between text-sm">
+                                                                        <span className="text-blue-100">EMI</span>
+                                                                        <span className="font-bold">{calcInputs.emi}</span>
+                                                                    </div>
                                                                 )}
-                                                                {nerestTenure != 0 && (
+                                                                {nerestTenure != 0 ? (
                                                                     <div className="flex justify-between text-sm">
                                                                         <span className="text-blue-100">Tenure</span>
                                                                         <span className="font-bold">{nerestTenure}</span>
+                                                                    </div>
+                                                                ) : calcInputs.fn && (
+                                                                    <div className="flex justify-between text-sm">
+                                                                        <span className="text-blue-100">Tenure</span>
+                                                                        <span className="font-bold">{calcInputs.fn}</span>
                                                                     </div>
                                                                 )}
                                                             </div>
