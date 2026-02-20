@@ -1070,33 +1070,100 @@ export default function Create({ auth, loan_settings }) {
         }
     };
 
-    // FN validation
-    const isTenureInvalid =
-        fnRange &&
-        (
-            loanFormData.tenure_fortnight > fnRange.max ||
-            loanFormData.tenure_fortnight < fnRange.min
-        );
+    // ---------------- FN VALIDATION ----------------
+const isTenureInvalid =
+    fnRange &&
+    (
+        loanFormData.tenure_fortnight > fnRange.max ||
+        loanFormData.tenure_fortnight < fnRange.min
+    );
 
-    // EMI > Recommended PVA validation
-    const isPvaExceeded =
-        loanFormData.emi_amount &&
-        recMaxAllowedPvaAmt &&
-        loanFormData.emi_amount > recMaxAllowedPvaAmt;
+const isPvaExceeded =
+    loanFormData.emi_amount &&
+    recMaxAllowedPvaAmt &&
+    loanFormData.emi_amount > recMaxAllowedPvaAmt;
 
-    // Loan amount invalid (no FN range returned)
-    const isAmountInvalid =
-        loanFormData.loan_amount_applied &&
-        !fnRange &&
-        !isFetchingFn;
+const isAmountInvalid =
+    loanFormData.loan_amount_applied &&
+    !fnRange &&
+    !isFetchingFn;
 
-    // Final disable condition
-    const isSubmitDisabled =
-        !isEligible ||
-        isChecking ||
-        isTenureInvalid ||
-        isPvaExceeded ||
-        isAmountInvalid;
+
+// ---------------- LOAN SETTINGS VALIDATION ----------------
+let isMultiplierWiseokay = true;
+let validationMultiplier = 0;
+let isValidNumber = true;
+let isUnderMinAmt = true;
+let validationMinAmt = 0;
+let validationMaxAmt = 0;
+let isUnderMaxAmt = true;
+let isUnderMinTen = true;
+let isUnderMaxTen = true;
+
+if (Array.isArray(loanSettings) && loanSettings.length > 0) {
+
+    const selectedLoanSetting = loanSettings.find(
+        (ls) => ls.id === Number(loanFormData.loan_type)
+    );
+
+    if (selectedLoanSetting) {
+
+        const {
+            amt_multiplier,
+            min_loan_amount,
+            max_loan_amount,
+            min_loan_term_months,
+            max_loan_term_months
+        } = selectedLoanSetting;
+
+        const appliedAmount = parseFloat(loanFormData.loan_amount_applied);
+        const tenure = parseFloat(loanFormData.tenure_fortnight);
+        const multiplier = Number(amt_multiplier);
+
+        if (!Number.isFinite(appliedAmount) || !Number.isFinite(multiplier)) {
+            isValidNumber = false;
+        }
+
+        if (multiplier && appliedAmount % multiplier !== 0) {
+            isMultiplierWiseokay = false;
+            validationMultiplier = multiplier;
+        }
+
+        if (appliedAmount < Number(min_loan_amount)) {
+            isUnderMinAmt = false;
+            validationMinAmt = min_loan_amount;
+        }
+
+        if (appliedAmount > Number(max_loan_amount)) {
+            isUnderMaxAmt = false;
+            validationMaxAmt = max_loan_amount;
+        }
+
+        if (tenure < Number(min_loan_term_months)) {
+            isUnderMinTen = false;
+        }
+
+        if (tenure > Number(max_loan_term_months)) {
+            isUnderMaxTen = false;
+        }
+    }
+}
+
+
+// ---------------- FINAL SUBMIT DISABLE ----------------
+const isSubmitDisabled =
+    !isEligible ||
+    isChecking ||
+    isTenureInvalid ||
+    isPvaExceeded ||
+    isAmountInvalid ||
+    !isMultiplierWiseokay ||
+    !isValidNumber ||
+    !isUnderMinAmt ||
+    !isUnderMaxAmt ||
+    !isUnderMinTen ||
+    !isUnderMaxTen;
+
 
     return (
         <AuthenticatedLayout
@@ -1240,45 +1307,6 @@ export default function Create({ auth, loan_settings }) {
                                     {step === 2 && (
                                         <form onSubmit={handleSubmit}> {/* Loan application form here */}
                                             <div className="row mb-3">
-                                                {/* <div className="col-md-4">
-                                                    <label className="form-label">Customer</label>
-                                                    <select
-                                                        className="form-select"
-                                                        name="customer_id"
-                                                        value={loanFormData.customer_id || ""}  // ✅ always non-null
-                                                        disabled={!isCustSelectable}
-                                                        onChange={(e) => {
-                                                            // Always call your main handler first
-                                                            loanHandleChange(e);
-                                                            // Extract selected value
-                                                            const selectedValue = e.target.value;
-                                                            // Check if value is not null or 0
-                                                            if (selectedValue && selectedValue !== "0") {
-                                                                // Check your custom condition
-                                                                if (isTruelyEligible) {
-                                                                    setIsEligible(true);
-                                                                }
-                                                                // 🔥 Fetch loan types based on salary and organisation
-                                                                axios.get(`/api/filtered-loan-types/${selectedValue}`)
-                                                                    .then((res) => {
-                                                                        setLoanTypes(res.data);
-                                                                    })
-                                                                    .catch((err) => console.error("Error fetching loan types:", err));
-                                                            } else {
-                                                                // Optional: reset eligibility when no customer selected
-                                                                setIsEligible(false);
-                                                            }
-                                                        }}
-                                                        required
-                                                    >
-                                                        <option value="">Select Customer</option>
-                                                        {customers.map((c) => (
-                                                            <option key={c.id} value={c.id}>
-                                                                {c.employee_no} - {c.first_name} {c.last_name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div> */}
                                                 <div className="col-md-4">
                                                     <label className="form-label">Customer</label>
 
@@ -1298,6 +1326,12 @@ export default function Create({ auth, loan_settings }) {
                                                                 setLoanFormData(prev => ({
                                                                     ...prev,
                                                                     customer_id: selectedCustomer.id
+                                                                }));
+                                                                console.log("selectedCustomer on loan application customer select: ",selectedCustomer);
+                                                                setSavedCustomerData(prev =>({
+                                                                    ...prev,
+                                                                    monthly_salary: parseFloat(selectedCustomer.monthly_salary),
+                                                                    net_salary: parseFloat(selectedCustomer.net_salary)
                                                                 }));
 
                                                                 // Eligibility logic (unchanged)
@@ -1566,22 +1600,56 @@ export default function Create({ auth, loan_settings }) {
                                                             required
                                                         />
                                                         {fnRange ? (
-                                                            <div className={`text-sm ${loanFormData.emi_amount > recMaxAllowedPvaAmt ? "text-danger" : "text-blue-600"} mt-1`}>
+                                                            <>
+                                                            {/* <div className={`text-sm ${loanFormData.emi_amount > recMaxAllowedPvaAmt ? "text-danger" : "text-blue-600"} mt-1`}>
                                                                 {loanFormData.emi_amount > recMaxAllowedPvaAmt && (
-                                                                    <small className="text-danger">⚠️ Amount exceeds max allowed PVA: <b>{recMaxAllowedPvaAmt}</b></small>
+                                                                    <small className="text-danger">⚠️ Amount exceeds max allowed PVA: <b>{recMaxAllowedPvaAmt}</b><br /></small>
                                                                 )}
-                                                            </div>
-                                                        ) : (loanFormData.loan_amount_applied && !isFetchingFn && (
+                                                            </div> */}
+                                                            </>
+                                                        ) : loanFormData.loan_amount_applied && !isFetchingFn ? (
                                                             <div className="text-sm text-gray-500 mt-1">
-                                                                ℹ Amount cannot be applied
+                                                                ℹ Amount cannot be applied<br />
                                                             </div>
-                                                        ))}
+                                                        ) : null}
                                                         {isFetchingFn && (
                                                             <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                                                                 <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
                                                                 Checking FN range...
                                                             </div>
                                                         )}
+                                                        {!isValidNumber && (
+                                                            <small className="text-danger">⚠️ Invalid number<br /></small>
+                                                        )}
+
+                                                        {!isMultiplierWiseokay && (
+                                                            <small className="text-danger">
+                                                                {`⚠️ Amount must be multiple of ${validationMultiplier!=0?validationMultiplier:"selected"} loan multiplier`}<br />
+                                                            </small>
+                                                        )}
+
+                                                        {!isUnderMinAmt && (
+                                                            <small className="text-danger">
+                                                                {`⚠️
+                                                                    ${validationMinAmt!=0 ? `Minimum allowed is `+validationMinAmt : `Amount below minimum allowed`}
+                                                                `}<br />
+                                                            </small>
+                                                        )}
+
+                                                        {!isUnderMaxAmt && (
+                                                            <small className="text-danger">
+                                                                {`⚠️
+                                                                    ${validationMaxAmt!=0 ? "Maximum allowed is "+validationMaxAmt : "Amount exceeds maximum allowed"}
+                                                                `}<br />
+                                                            </small>
+                                                        )}
+
+                                                        {isPvaExceeded && isUnderMinAmt && isUnderMaxAmt ? (
+                                                            <small className="text-danger">
+                                                                ⚠️ Amount cannot be applied as the EMI exceeds max allowed PVA: <b>{recMaxAllowedPvaAmt}</b><br />
+                                                            </small>
+                                                        ) : null}
+
                                                     </div>
 
                                                     <div className="col-md-3">
@@ -1607,11 +1675,22 @@ export default function Create({ auth, loan_settings }) {
                                                                 ) : 
                                                                 (<small>ℹ Allowed Tenure for this amount: <b>{fnRange.min}</b> – <b>{fnRange.max}</b>&nbsp;FN</small>)}
                                                             </div>
-                                                        ) : (loanFormData.loan_amount_applied && !isFetchingFn && (
+                                                        ) : loanFormData.loan_amount_applied && !isFetchingFn ? (
                                                             <div className="text-sm text-gray-500 mt-1">
                                                                 ℹ No FN range data available for this amount
                                                             </div>
-                                                        ))}
+                                                        ) : null}
+                                                        {/* {!isUnderMinTen && (
+                                                            <small className="text-danger">
+                                                                ⚠️ Tenure below minimum allowed
+                                                            </small>
+                                                        )}
+
+                                                        {!isUnderMaxTen && (
+                                                            <small className="text-danger">
+                                                                ⚠️ Tenure exceeds maximum allowed
+                                                            </small>
+                                                        )} */}
                                                     </div>
 
                                                     <div className="col-md-3">
@@ -1714,6 +1793,7 @@ export default function Create({ auth, loan_settings }) {
                                                             "Save & Upload Documents →"
                                                         )}
                                                     </button>
+
                                                 </Col>
                                             </Row>
                                         </form>

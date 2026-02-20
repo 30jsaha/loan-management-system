@@ -68,7 +68,7 @@ const EduPrintFormat = React.forwardRef(({ auth, loan }, ref) => {
   const deductionCode = loan.id ?? "";
   const description = loan.purpose?.purpose_name ?? loan.other_purpose_text ?? "";
   const perPay = loan.emi_amount ?? loan.elegible_amount ?? "";
-  const totalRequired = loan.loan_amount_applied ?? loan.total_repay_amt ?? "";
+  const totalRequired = loan.total_repay_amt ?? loan.loan_amount_applied ?? "";
   const dateStr = formatDate(loan.created_at ?? loan.updated_at ?? loan.ack_downloaded_date ?? "");
 
   return (

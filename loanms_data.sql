@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 13, 2026 at 01:32 PM
+-- Generation Time: Feb 18, 2026 at 02:12 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -138,17 +138,20 @@ CREATE TABLE `assigned_purpose_under_loans` (
 --
 
 INSERT INTO `assigned_purpose_under_loans` (`id`, `loan_id`, `purpose_id`, `active`, `created_at`, `updated_at`) VALUES
-(3, 9, 1, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38'),
-(4, 9, 2, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38'),
-(7, 1, 3, 1, '2025-12-22 05:03:35', '2025-12-22 05:03:35'),
-(8, 1, 2, 1, '2025-12-22 05:03:35', '2025-12-22 05:03:35'),
 (9, 10, 2, 1, '2026-02-09 01:34:38', '2026-02-09 01:34:38'),
 (10, 10, 1, 1, '2026-02-09 01:34:38', '2026-02-09 01:34:38'),
 (22, 12, 8, 1, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
 (23, 12, 2, 1, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
 (24, 12, 3, 1, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
 (25, 11, 8, 1, '2026-02-12 05:48:13', '2026-02-12 05:48:13'),
-(26, 11, 2, 1, '2026-02-12 05:48:13', '2026-02-12 05:48:13');
+(26, 11, 2, 1, '2026-02-12 05:48:13', '2026-02-12 05:48:13'),
+(29, 2, 3, 1, '2026-02-17 03:29:31', '2026-02-17 03:29:31'),
+(30, 2, 1, 1, '2026-02-17 03:29:31', '2026-02-17 03:29:31'),
+(31, 1, 3, 1, '2026-02-17 07:05:42', '2026-02-17 07:05:42'),
+(32, 1, 2, 1, '2026-02-17 07:05:42', '2026-02-17 07:05:42'),
+(36, 13, 5, 1, '2026-02-17 07:08:05', '2026-02-17 07:08:05'),
+(37, 13, 3, 1, '2026-02-17 07:08:05', '2026-02-17 07:08:05'),
+(38, 13, 2, 1, '2026-02-17 07:08:05', '2026-02-17 07:08:05');
 
 -- --------------------------------------------------------
 
@@ -170,23 +173,21 @@ CREATE TABLE `assigned_slabs_under_loan` (
 --
 
 INSERT INTO `assigned_slabs_under_loan` (`id`, `loan_id`, `slab_id`, `active`, `created_at`, `updated_at`) VALUES
-(1, 6, 2, 1, '2025-11-17 05:48:03', '2025-11-17 05:48:03'),
-(2, 6, 3, 1, '2025-11-17 05:48:03', '2025-11-17 05:48:03'),
-(3, 7, 2, 1, '2025-11-24 01:54:33', '2025-11-24 01:54:33'),
-(4, 7, 3, 1, '2025-11-24 01:54:33', '2025-11-24 01:54:33'),
-(7, 2, 3, 1, '2025-11-28 06:31:14', '2025-11-28 06:31:14'),
-(8, 2, 2, 1, '2025-11-28 06:31:14', '2025-11-28 06:31:14'),
 (11, 8, 3, 1, '2025-12-12 01:55:22', '2025-12-12 01:55:22'),
 (12, 8, 2, 1, '2025-12-12 01:55:22', '2025-12-12 01:55:22'),
-(17, 9, 1, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38'),
-(18, 9, 2, 1, '2025-12-19 02:11:38', '2025-12-19 02:11:38'),
-(23, 1, 1, 1, '2025-12-22 05:03:35', '2025-12-22 05:03:35'),
-(24, 1, 2, 1, '2025-12-22 05:03:35', '2025-12-22 05:03:35'),
 (25, 10, 1, 1, '2026-02-09 01:34:38', '2026-02-09 01:34:38'),
 (36, 12, 1, 1, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
 (37, 12, 2, 1, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
 (38, 12, 3, 1, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
-(39, 11, 9, 1, '2026-02-12 05:48:13', '2026-02-12 05:48:13');
+(39, 11, 9, 1, '2026-02-12 05:48:13', '2026-02-12 05:48:13'),
+(50, 2, 3, 1, '2026-02-17 03:29:31', '2026-02-17 03:29:31'),
+(51, 2, 2, 1, '2026-02-17 03:29:31', '2026-02-17 03:29:31'),
+(52, 6, 2, 1, '2026-02-17 07:05:24', '2026-02-17 07:05:24'),
+(53, 6, 3, 1, '2026-02-17 07:05:24', '2026-02-17 07:05:24'),
+(54, 1, 1, 1, '2026-02-17 07:05:42', '2026-02-17 07:05:42'),
+(55, 1, 2, 1, '2026-02-17 07:05:42', '2026-02-17 07:05:42'),
+(58, 13, 9, 1, '2026-02-17 07:08:05', '2026-02-17 07:08:05'),
+(59, 13, 1, 1, '2026-02-17 07:08:05', '2026-02-17 07:08:05');
 
 -- --------------------------------------------------------
 
@@ -550,7 +551,19 @@ INSERT INTO `customer_eligibility_history` (`id`, `customer_id`, `gross_salary_a
 (150, 13, 4200.00, 0.00, 0.00, 956.00, 110.00, 3134.00, 4000.00, 0.00, 4000.00, -866.00, 1567.00, 2433.00, 410.00, 0.00, 2842.99, 1200.00, 2800.00, 1642.99, 2, 1, '2026-02-10 05:25:37', '2026-02-10 05:25:37'),
 (151, 44, 5500.00, 20.00, 30.00, 950.00, 110.00, 4490.00, 3000.00, 2000.00, 5000.00, -510.00, 2245.00, 2755.00, 400.00, 10.00, 3164.99, 1600.00, 3400.00, 1564.99, 2, 1, '2026-02-12 06:53:27', '2026-02-12 06:53:27'),
 (152, 44, 5500.00, 20.00, 30.00, 950.00, 110.00, 4490.00, 3000.00, 2000.00, 5000.00, -510.00, 2245.00, 2755.00, 400.00, 10.00, 3164.99, 3200.00, 1800.00, -35.01, 2, 0, '2026-02-12 06:53:43', '2026-02-12 06:53:43'),
-(153, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 410.00, 0.00, 2944.99, 1600.00, 3310.00, 1344.99, 2, 1, '2026-02-13 06:36:03', '2026-02-13 06:36:03');
+(153, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 410.00, 0.00, 2944.99, 1600.00, 3310.00, 1344.99, 2, 1, '2026-02-13 06:36:03', '2026-02-13 06:36:03'),
+(154, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 410.00, 0.00, 2944.99, 2000.00, 2910.00, 944.99, 2, 1, '2026-02-16 00:09:44', '2026-02-16 00:09:44'),
+(155, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 0.00, 0.00, 2534.99, 2500.00, 2000.00, 34.99, 2, 1, '2026-02-16 00:20:17', '2026-02-16 00:20:17'),
+(156, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 410.00, 0.00, 2944.99, 2500.00, 2410.00, 444.99, 2, 1, '2026-02-16 00:51:25', '2026-02-16 00:51:25'),
+(157, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 0.00, 0.00, 2534.99, 2500.00, 2000.00, 34.99, 2, 1, '2026-02-16 01:19:31', '2026-02-16 01:19:31'),
+(158, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 410.00, 0.00, 2944.99, 2000.00, 2910.00, 944.99, 2, 1, '2026-02-16 03:02:06', '2026-02-16 03:02:06'),
+(159, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 410.00, 0.00, 2944.99, 2500.00, 2410.00, 444.99, 2, 1, '2026-02-16 06:32:32', '2026-02-16 06:32:32'),
+(160, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 0.00, 0.00, 2534.99, 2500.00, 2000.00, 34.99, 2, 1, '2026-02-16 07:54:46', '2026-02-16 07:54:46'),
+(161, 44, 5000.00, 0.00, 0.00, 1000.00, 110.00, 3890.00, 3000.00, 1500.00, 4500.00, -610.00, 1945.00, 2555.00, 400.00, 0.00, 2954.99, 2555.00, 2345.00, 399.99, 2, 1, '2026-02-17 02:48:47', '2026-02-17 02:48:47'),
+(162, 44, 5000.00, 0.00, 0.00, 1000.00, 80.00, 3920.00, 3000.00, 1500.00, 4500.00, -580.00, 1960.00, 2540.00, 0.00, 0.00, 2539.99, 2555.00, 1945.00, -15.01, 2, 0, '2026-02-17 03:01:34', '2026-02-17 03:01:34'),
+(163, 44, 5000.00, 0.00, 0.00, 1000.00, 80.00, 3920.00, 3000.00, 1500.00, 4500.00, -580.00, 1960.00, 2540.00, 0.00, 0.00, 2539.99, 2500.00, 2000.00, 39.99, 2, 1, '2026-02-17 03:01:46', '2026-02-17 03:01:46'),
+(164, 44, 5000.00, 0.00, 0.00, 1000.00, 80.00, 3920.00, 3000.00, 1500.00, 4500.00, -580.00, 1960.00, 2540.00, 410.00, 0.00, 2949.99, 2500.00, 2410.00, 449.99, 2, 1, '2026-02-17 03:08:49', '2026-02-17 03:08:49'),
+(165, 44, 5000.00, 0.00, 0.00, 1000.00, 70.00, 3930.00, 3000.00, 1500.00, 4500.00, -570.00, 1965.00, 2535.00, 410.00, 0.00, 2944.99, 2500.00, 2410.00, 444.99, 2, 1, '2026-02-17 23:23:20', '2026-02-17 23:23:20');
 
 -- --------------------------------------------------------
 
@@ -928,7 +941,15 @@ INSERT INTO `document_upload` (`id`, `loan_id`, `customer_id`, `doc_type`, `file
 (305, 67, 44, 'BankStatement', 'emi-schedule-loan-58.pdf', 'uploads/documents/srPhj0q9JjyKJN9aDaas6esxqTIYg3ccLJliJX9u.pdf', 'Normal User', 2, '2026-02-13 04:53:15', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-12 23:23:15', '2026-02-12 23:23:15'),
 (306, 67, 44, 'Payslip', 'Technical-Overview-Security-and-Operational-Flow 2.pdf', 'uploads/documents/BCtMeQsKATvDux2mRf2SJ4ZvC3hmZVu46YjKd7lS.pdf', 'Normal User', 2, '2026-02-13 04:53:16', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-12 23:23:16', '2026-02-12 23:23:16'),
 (307, 67, 44, 'ID', 'education_format.pdf', 'uploads/documents/at09ax7cnQmCQkmeZq8SnP4d78zvp1BFta8dEkyN.pdf', 'Normal User', 2, '2026-02-13 04:53:17', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-12 23:23:17', '2026-02-12 23:23:17'),
-(308, 67, 44, 'Signature', 'loan-statement-24.pdf', 'uploads/documents/4VvDxDaTLTHyWOGJ7XwGNtbvV94x4QtRnHJpi9nw.pdf', 'Normal User', 2, '2026-02-13 04:53:18', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-12 23:23:18', '2026-02-12 23:23:18');
+(308, 67, 44, 'Signature', 'loan-statement-24.pdf', 'uploads/documents/4VvDxDaTLTHyWOGJ7XwGNtbvV94x4QtRnHJpi9nw.pdf', 'Normal User', 2, '2026-02-13 04:53:18', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-12 23:23:18', '2026-02-12 23:23:18'),
+(309, 69, 44, 'Signature', 'emi-schedule-loan-58.pdf', 'uploads/documents/zchKthhpMWmykIR6P50TcBZt9X8K7BfnZCXdMiTh.pdf', 'Normal User', 2, '2026-02-16 05:56:51', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-16 00:26:51', '2026-02-16 00:26:51'),
+(310, 69, 44, 'LoanForm_Scanned', 'aaa_loan_application_form.pdf', 'uploads/documents/a5HevnD2PifEWiIe3lGajpdA6HF3EKRqSZskTcL9.pdf', 'Normal User', 2, '2026-02-16 05:56:52', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-16 00:26:52', '2026-02-16 00:26:52'),
+(311, 69, 44, 'ISDA_Signed', 'Agro Advance Aben Ltd Company Profile (2).pdf', 'uploads/documents/JKOqmUu17MoBxryPlB6DJiAy498xfJ0cOGAuesb9.pdf', 'Normal User', 2, '2026-02-16 05:56:53', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-16 00:26:53', '2026-02-16 00:26:53'),
+(312, 69, 44, 'ResumptionSheet', 'eligibility_check_formula.pdf', 'uploads/documents/ASo2wy3NwCQbioGmvtFxk6Qvp80VGu2D1vXUGad5.pdf', 'Normal User', 2, '2026-02-16 05:56:54', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-16 00:26:54', '2026-02-16 00:26:54'),
+(313, 69, 44, 'EmploymentLetter', 'health_format.pdf', 'uploads/documents/SSnP3RcUyi2DgWDrX1mBFN7xtoheObLdw7GdFVvX.pdf', 'Normal User', 2, '2026-02-16 05:56:55', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-16 00:26:55', '2026-02-16 00:26:55'),
+(314, 69, 44, 'BankStatement', 'Loan Management System.pdf', 'uploads/documents/g61NnYyaK1TqTOllALH5SIR0y1nJvxnPDFPIeWUu.pdf', 'Normal User', 2, '2026-02-16 05:56:56', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-16 00:26:56', '2026-02-16 00:26:56'),
+(315, 69, 44, 'Payslip', 'loan-process-details.pdf', 'uploads/documents/5M0vfPlwxMHHUev6fuHYJWUbpEpYRsmI0h9COEzK.pdf', 'Normal User', 2, '2026-02-16 05:56:57', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-16 00:26:57', '2026-02-16 00:26:57'),
+(316, 69, 44, 'ID', 'Technical-Overview-Security-and-Operational-Flow.pdf', 'uploads/documents/9lIOlaOM2ioVSxZUr20hEKtw98f4hVukx3aee0WY.pdf', 'Normal User', 2, '2026-02-16 05:56:58', 0, NULL, 'Pending', NULL, 0, 0, 0, NULL, 0, NULL, 2, '2026-02-16 00:26:58', '2026-02-16 00:26:58');
 
 -- --------------------------------------------------------
 
@@ -1252,7 +1273,8 @@ INSERT INTO `loan_applications` (`id`, `company_id`, `customer_id`, `organisatio
 (65, 1, 49, 7, 11, NULL, 2, NULL, 10, 0, 10, 3.5, 25, NULL, NULL, 20.67, 0, 35, 25, 0, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, NULL, 1, 0, 0, 0, 1, '2026-02-09 07:31:27', '2026-02-09 07:31:27'),
 (66, 1, 49, 7, 11, NULL, 2, NULL, 20, 0, 10, 7, 25, NULL, NULL, 15.67, 0, 70, 50, 0, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, NULL, 1, 0, 0, 0, 1, '2026-02-09 07:32:22', '2026-02-09 07:32:22'),
 (67, 1, 44, 4, 1, NULL, 2, NULL, 3200, 3200, 25, 203.2, 2.35, 25, NULL, 3164.99, 0, 5080, 1880, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, 'Jyotirmoy Saha', 1, '2026-02-12 12:24:29', 1, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, '2026-02-12 23:23:35', 1, 0, 0, 0, 1, '2026-02-12 06:53:51', '2026-02-12 23:23:35'),
-(68, 1, 44, 4, 2, NULL, 3, NULL, 1600, 0, 52, 62.77, 2, NULL, NULL, 2944.99, 0, 3264, 1664, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, NULL, 1, 0, 0, 0, 1, '2026-02-13 06:52:23', '2026-02-13 06:52:23');
+(68, 1, 44, 4, 2, NULL, 3, NULL, 1600, 0, 52, 62.77, 2, NULL, NULL, 2944.99, 0, 3264, 1664, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0, 0, NULL, 1, 0, 0, 0, 1, '2026-02-13 06:52:23', '2026-02-13 06:52:23'),
+(69, 1, 44, 4, 2, NULL, 3, NULL, 17000, 0, 8, 2465, 2, NULL, NULL, 2534.99, 0, 19720, 2720, 20, NULL, NULL, NULL, NULL, NULL, 'Pending', NULL, 0, NULL, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, NULL, 0, 0, 0, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 1, 0, '2026-02-16 00:27:10', 1, 0, 0, 0, 1, '2026-02-16 00:25:46', '2026-02-16 00:27:10');
 
 -- --------------------------------------------------------
 
@@ -1330,16 +1352,12 @@ CREATE TABLE `loan_settings` (
 
 INSERT INTO `loan_settings` (`id`, `loan_desc`, `org_id`, `slab_id`, `min_loan_amount`, `max_loan_amount`, `interest_rate`, `amt_multiplier`, `min_loan_term_months`, `max_loan_term_months`, `process_fees`, `min_repay_percentage_for_next_loan`, `late_fees`, `installment_frequency_in_days`, `tier1_min_amount`, `tier1_max_amount`, `tier1_min_term`, `tier1_max_term`, `tier2_min_amount`, `tier2_max_amount`, `tier2_min_term`, `tier2_max_term`, `tier3_min_amount`, `tier3_max_amount`, `tier3_min_term`, `tier3_max_term`, `tier4_min_amount`, `tier4_max_amount`, `tier4_min_term`, `tier4_max_term`, `effect_date`, `end_date`, `user_id`, `created_at`, `updated_at`) VALUES
 (1, 'New', 1, 2, 200, 20000, 2.35, 50, 5, 52, 20, 80, 0.00, 14, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, NULL, NULL, 1, '2025-10-30 02:59:39', '2025-10-30 02:59:39'),
-(2, 'Consolidation', 1, 1, 100, 20000, 2, 50, 5, 52, 20, 80, 0.00, 14, 100.00, 100.00, 4, 4, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, NULL, NULL, 1, '2025-10-30 02:59:39', '2025-10-30 02:59:39'),
-(3, 'Rollover', 1, 3, 5000, 20000, 2.35, 50, 5, 52, 40, 80, 0.00, 14, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, NULL, NULL, 1, '2025-10-30 02:59:39', '2025-11-12 01:39:00'),
-(4, 'Top-Up', 1, 2, 200, 20000, 2.35, 50, 5, 52, 20, 80, 0.00, 14, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, NULL, NULL, 1, '2025-10-30 02:59:39', '2025-10-30 02:59:39'),
-(5, 'New 1', 1, 2, 100, 0, 0, 0, 0, 0, 0, 0, 0.00, 0, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, NULL, NULL, 0, NULL, NULL),
+(2, 'Consolidation', 1, 1, 100, 20000, 2, 50, 5, 52, 20, 80, 0.00, 14, 100.00, 100.00, 4, 4, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, '2026-02-17', NULL, 1, '2025-10-30 02:59:39', '2026-02-17 03:29:31'),
 (6, 'High Value', 0, 2, 5000, 15000, 5, 50, 8, 52, 20, 85, 0.00, 0, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, '2025-11-17', '2025-12-31', 0, '2025-11-17 05:48:03', '2025-11-17 05:48:03'),
-(7, 'New Loan Type', 0, 2, 200, 20000, 2.35, 50, 5, 26, 10, 80, 0.00, 0, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, '2025-11-24', '2025-12-31', 0, '2025-11-24 01:54:33', '2025-11-24 01:54:33'),
-(9, 'Test Loan Description', 0, 2, 500, 50000, 20, 50, 10, 52, 20, 80, 0.00, 0, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, '2025-12-19', NULL, 0, '2025-12-19 02:02:31', '2025-12-19 02:02:31'),
 (10, 'new11', 0, 2, 100, 500, 16, 100, 10, 26, 0, 80, 0.00, 0, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, '2026-02-09', NULL, 0, '2026-02-09 01:34:38', '2026-02-09 01:34:38'),
 (11, 'very basic', 0, 2, 0, 100, 15, 5, 5, 20, 20, 60, 0.00, 0, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, '2026-02-09', NULL, 0, '2026-02-09 07:28:29', '2026-02-12 05:48:13'),
-(12, 'WithTier', 0, 2, 200, 20000, 2.35, 50, 5, 52, 0, 80, 0.00, 0, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, '2026-02-10', NULL, 0, '2026-02-10 07:39:55', '2026-02-10 07:39:55');
+(12, 'WithTier', 0, 2, 200, 20000, 2.35, 50, 5, 52, 0, 80, 0.00, 0, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, '2026-02-10', NULL, 0, '2026-02-10 07:39:55', '2026-02-10 07:39:55'),
+(13, 'low Category', 0, 2, 200, 10000, 2, 50, 5, 26, 5, 80, 0.00, 0, 200.00, 300.00, 1, 1, 350.00, 600.00, 5, 8, 550.00, 950.00, 5, 26, 951.00, 20000.00, 5, 52, '2026-02-16', NULL, 0, '2026-02-16 00:07:17', '2026-02-17 07:08:05');
 
 -- --------------------------------------------------------
 
@@ -1396,29 +1414,26 @@ CREATE TABLE `loan_tier_rules` (
 --
 
 INSERT INTO `loan_tier_rules` (`id`, `loan_setting_id`, `tier_type`, `min_amount`, `max_amount`, `min_term_fortnight`, `max_term_fortnight`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Tier 1', 200.00, 300.00, 5, 5, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(2, 1, 'Tier 2', 350.00, 600.00, 5, 8, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(3, 1, 'Tier 3', 550.00, 950.00, 5, 26, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(4, 1, 'Tier 4', 951.00, 20000.00, 5, 52, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(5, 2, 'Tier 1', 200.00, 300.00, 5, 5, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(6, 2, 'Tier 2', 350.00, 600.00, 5, 8, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(7, 2, 'Tier 3', 550.00, 950.00, 5, 26, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(8, 2, 'Tier 4', 951.00, 20000.00, 5, 52, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(9, 3, 'Tier 1', 200.00, 300.00, 5, 5, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(10, 3, 'Tier 2', 350.00, 600.00, 5, 8, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(11, 3, 'Tier 3', 550.00, 950.00, 5, 26, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(12, 3, 'Tier 4', 951.00, 20000.00, 5, 52, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(13, 4, 'Tier 1', 200.00, 300.00, 5, 5, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(14, 4, 'Tier 2', 350.00, 600.00, 5, 8, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(15, 4, 'Tier 3', 550.00, 950.00, 5, 26, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
-(16, 4, 'Tier 4', 951.00, 20000.00, 5, 52, '2025-11-06 06:24:32', '2025-11-06 06:24:32'),
 (17, 10, 'Tier 5', 100.00, 500.00, 10, 26, '2026-02-09 01:34:38', '2026-02-09 01:34:38'),
 (31, 12, 'Tier 1', 200.00, 300.00, 5, 5, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
 (32, 12, 'Tier 2', 350.00, 500.00, 5, 8, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
 (33, 12, 'Tier 3', 550.00, 950.00, 5, 26, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
 (34, 12, 'Tier 4', 1000.00, 20000.00, 5, 52, '2026-02-10 23:22:25', '2026-02-10 23:22:25'),
 (35, 11, 'Tier 6', 0.00, 100.00, 5, 20, '2026-02-12 05:48:13', '2026-02-12 05:48:13'),
-(36, 11, 'Tier 2', 105.00, 200.00, 5, 30, '2026-02-12 05:48:13', '2026-02-12 05:48:13');
+(36, 11, 'Tier 2', 105.00, 200.00, 5, 30, '2026-02-12 05:48:13', '2026-02-12 05:48:13'),
+(51, 2, 'Tier 1', 200.00, 300.00, 5, 5, '2026-02-17 03:29:31', '2026-02-17 03:29:31'),
+(52, 2, 'Tier 2', 350.00, 600.00, 5, 8, '2026-02-17 03:29:31', '2026-02-17 03:29:31'),
+(53, 2, 'Tier 3', 650.00, 950.00, 5, 26, '2026-02-17 03:29:31', '2026-02-17 03:29:31'),
+(54, 2, 'Tier 4', 1000.00, 20000.00, 5, 52, '2026-02-17 03:29:31', '2026-02-17 03:29:31'),
+(55, 6, 'Tier 1', 5000.00, 10000.00, 8, 26, '2026-02-17 07:05:24', '2026-02-17 07:05:24'),
+(56, 6, 'Tier 2', 10050.00, 15000.00, 8, 52, '2026-02-17 07:05:24', '2026-02-17 07:05:24'),
+(57, 1, 'Tier 1', 200.00, 300.00, 5, 5, '2026-02-17 07:05:42', '2026-02-17 07:05:42'),
+(58, 1, 'Tier 2', 350.00, 600.00, 5, 8, '2026-02-17 07:05:42', '2026-02-17 07:05:42'),
+(59, 1, 'Tier 3', 650.00, 950.00, 5, 26, '2026-02-17 07:05:42', '2026-02-17 07:05:42'),
+(60, 1, 'Tier 4', 1000.00, 20000.00, 5, 52, '2026-02-17 07:05:42', '2026-02-17 07:05:42'),
+(64, 13, 'Tier 1', 200.00, 1000.00, 5, 5, '2026-02-17 07:08:05', '2026-02-17 07:08:05'),
+(65, 13, 'Tier 2', 1050.00, 5000.00, 5, 10, '2026-02-17 07:08:05', '2026-02-17 07:08:05'),
+(66, 13, 'Tier 3', 5050.00, 10000.00, 5, 26, '2026-02-17 07:08:05', '2026-02-17 07:08:05');
 
 -- --------------------------------------------------------
 
@@ -1501,7 +1516,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (64, '2025_12_22_104640_create_customer_drafts_table', 47),
 (65, '2026_01_23_111654_create_refinanced_loans_table', 48),
 (66, '2026_01_23_112923_add_is_refinancing_to_document_upload_table', 48),
-(67, '2026_01_23_112954_add_is_refinancing_to_installment_details_table', 48);
+(67, '2026_01_23_112954_add_is_refinancing_to_installment_details_table', 48),
+(68, '2026_02_17_125826_create_payroll_records_table', 49);
 
 -- --------------------------------------------------------
 
@@ -1548,6 +1564,29 @@ CREATE TABLE `password_reset_tokens` (
   `email` varchar(255) NOT NULL,
   `token` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `payroll_records`
+--
+
+CREATE TABLE `payroll_records` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `emp_code` varchar(255) NOT NULL,
+  `job` varchar(255) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `this_period` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `last_period` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `variance` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `arrears` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `paycode` varchar(255) DEFAULT NULL,
+  `year` int(11) NOT NULL,
+  `period` int(11) NOT NULL,
+  `uploaded_date` date NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1824,6 +1863,12 @@ ALTER TABLE `password_reset_tokens`
   ADD PRIMARY KEY (`email`);
 
 --
+-- Indexes for table `payroll_records`
+--
+ALTER TABLE `payroll_records`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
@@ -1880,13 +1925,13 @@ ALTER TABLE `assigned_loans_under_org`
 -- AUTO_INCREMENT for table `assigned_purpose_under_loans`
 --
 ALTER TABLE `assigned_purpose_under_loans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `assigned_slabs_under_loan`
 --
 ALTER TABLE `assigned_slabs_under_loan`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `company_master`
@@ -1910,7 +1955,7 @@ ALTER TABLE `customer_drafts`
 -- AUTO_INCREMENT for table `customer_eligibility_history`
 --
 ALTER TABLE `customer_eligibility_history`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=154;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
 
 --
 -- AUTO_INCREMENT for table `document_types`
@@ -1922,7 +1967,7 @@ ALTER TABLE `document_types`
 -- AUTO_INCREMENT for table `document_upload`
 --
 ALTER TABLE `document_upload`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=309;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=317;
 
 --
 -- AUTO_INCREMENT for table `exempt_invoices`
@@ -1946,7 +1991,7 @@ ALTER TABLE `installment_details`
 -- AUTO_INCREMENT for table `loan_applications`
 --
 ALTER TABLE `loan_applications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
 
 --
 -- AUTO_INCREMENT for table `loan_purposes`
@@ -1958,7 +2003,7 @@ ALTER TABLE `loan_purposes`
 -- AUTO_INCREMENT for table `loan_settings`
 --
 ALTER TABLE `loan_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `loan_temp_customers`
@@ -1970,19 +2015,25 @@ ALTER TABLE `loan_temp_customers`
 -- AUTO_INCREMENT for table `loan_tier_rules`
 --
 ALTER TABLE `loan_tier_rules`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
 
 --
 -- AUTO_INCREMENT for table `organisation_master`
 --
 ALTER TABLE `organisation_master`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `payroll_records`
+--
+ALTER TABLE `payroll_records`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`

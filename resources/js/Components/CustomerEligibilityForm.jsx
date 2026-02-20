@@ -402,7 +402,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             Gross Salary
           </div>
 
-          <div className="col-span-3 px-3 py-2 border-r border-gray-300 text-xs text-blue-600 font-semibold">
+          <div className="col-span-3 px-3 py-2 border-r border-gray-300 text-blue-600 font-semibold text-md">
             a
           </div>
 
@@ -439,7 +439,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
               {field.label}
             </div>
 
-            <div className="col-span-3 px-3 py-2 border-r border-gray-300 text-xs text-blue-600 font-semibold">
+            <div className="col-span-3 px-3 py-2 border-r border-gray-300 text-md text-blue-600 font-semibold">
               {field.formula}
             </div>
 
@@ -467,7 +467,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             Proposed PVA
           </div>
 
-          <div className="col-span-3 px-3 py-3 border-r border-gray-300 text-xs text-blue-600 font-semibold">
+          <div className="col-span-3 px-3 py-3 border-r border-gray-300 text-md text-blue-600 font-semibold">
             o
           </div>
 
@@ -552,7 +552,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                     Net after tax & super
                   </div>
 
-                  <div className="col-span-3 text-xs text-red-600 font-semibold">
+                  <div className="col-span-3 text-md text-red-600 font-semibold">
                     f = a + b + c - d - e
                   </div>
 
@@ -573,7 +573,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                     Total Net Salary
                   </div>
 
-                  <div className="col-span-3 text-xs text-blue-600 font-semibold">
+                  <div className="col-span-3 text-md text-blue-600 font-semibold">
                     G = g1 + g2
                   </div>
 
@@ -590,7 +590,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                     Total Other Deductions
                   </div>
 
-                  <div className="col-span-3 text-xs text-blue-600 font-semibold">
+                  <div className="col-span-3 text-md text-blue-600 font-semibold">
                     h = (f-G)
                   </div>
 
@@ -613,7 +613,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                     50% Net
                   </div>
 
-                  <div className="col-span-3 text-xs text-blue-600 font-semibold">
+                  <div className="col-span-3 text-md text-blue-600 font-semibold">
                     j = f / 2
                   </div>
 
@@ -629,7 +629,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                     50% Net Available
                   </div>
 
-                  <div className="col-span-3 text-xs text-blue-600 font-semibold">
+                  <div className="col-span-3 text-md text-blue-600 font-semibold">
                     k = (j-h)
                   </div>
 
@@ -645,7 +645,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                     Maximum Allowable PVA
                   </div>
 
-                  <div className="col-span-3 text-xs text-blue-600 font-semibold">
+                  <div className="col-span-3 text-md text-blue-600 font-semibold">
                      n = (k+l+m-0.01) 
                   </div>
 
@@ -661,7 +661,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                     Net Based on Proposed PVA
                   </div>
 
-                  <div className="col-span-3 text-xs text-blue-600 font-semibold">
+                  <div className="col-span-3 text-md text-blue-600 font-semibold">
                      p = (g+l+m-o)
                   </div>
 

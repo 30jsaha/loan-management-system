@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
-import { ArrowLeft, Search, Loader2, X } from "lucide-react";
+import { ArrowLeft, Search, Loader2, X, Upload } from "lucide-react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,6 +12,7 @@ import { MultiSelect } from 'primereact/multiselect';
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
+import PayrollUpload from "@/Components/PayrollUpload";
 
 // Document Viewer Modal
 function DocumentViewerModal({ isOpen, onClose, documentUrl }) {
@@ -64,6 +65,7 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   const [filterLoading, setFilterLoading] = useState(false);
   const [totalPendingAmount, setTotalPendingAmount] = useState(0);
   const [totalCollectedAmount, setTotalCollectedAmount] = useState(0);
+  const [uploadDeducSheet, setUploadDeducSheet] = useState(false);
 
   // Generate once and keep fixed for entire page session
   const collectionUniqueIdRef = React.useRef(`COL${Date.now()}`);
@@ -110,7 +112,12 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
     });
   };
 
-
+  const openUploadDeducSheetArea = () => {
+    setUploadDeducSheet(true);
+  };
+  const closeUploadDeducSheetArea = () => {
+    setUploadDeducSheet(false);
+  };
 
   // 🔍 Filtered loans (guard loans with Array.isArray)
   const filteredLoans = useMemo(() => {
@@ -705,15 +712,23 @@ const handleCollectEMI = async () => {
                         />
                       </div>
                     </div>
-
-                  <button
-                    onClick={handleCollectEMI}
-                    className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md shadow-sm"
-                  >
-                    💰 Collect EMI
-                  </button>
+                  <div className="flex justify-end gap-2 text-xs">
+                    <button
+                      onClick={handleCollectEMI}
+                      className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md shadow-sm"
+                    >
+                      💰 Collect EMI
+                    </button>
+                    {!uploadDeducSheet && (
+                      <button
+                        onClick={openUploadDeducSheetArea}
+                        className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md shadow-sm flex items-center gap-1"
+                      >
+                        <Upload size={16} /> Upload Deduction Sheet
+                      </button>
+                    )}
+                  </div>
                 </div>
-
                 {/* Selected Loans Summary */}
               <div className="max-h-[70vh] overflow-y-auto border border-gray-300 rounded-lg shadow-sm relative">
                 <table className="min-w-full text-sm border-collapse">
@@ -816,7 +831,9 @@ const handleCollectEMI = async () => {
                   </tbody>
                 </table>
               </div>
-
+              {uploadDeducSheet && (
+                <PayrollUpload onCancel={closeUploadDeducSheetArea}/>
+              )}
               </>
             ) : (
               <div className="text-gray-500 text-sm text-center mt-10 d-none">
