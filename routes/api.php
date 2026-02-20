@@ -35,6 +35,9 @@ Route::middleware('auth:sanctum')->get('/loans', [LoanController::class, 'index'
 Route::middleware('auth:sanctum')->get('/loans/emi-collection-list', [LoanController::class, 'loan_emi_list'])->name('loans.emi_list');
 Route::middleware('auth:sanctum')->get('/loans/emi-collections', [LoanController::class, 'collectionHistory'])->name('loans.emi-collections');
 
+// I am taking this route out of the auth middleware because the frontend needs to access loan settings data even before login to show eligible loan types on the landing page. This route only fetches loan settings and does not expose any sensitive information, so it should be safe to keep it public.
+Route::get('/loan-settings-data', [LoanController::class, 'get_all_loan_setting_data']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/loans', [LoanController::class, 'index']);
     Route::post('/loans', [LoanController::class, 'store']);
@@ -47,7 +50,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/{id}/reject', [LoanController::class, 'rejectLoan']);
     Route::delete('/loans/{id}', [LoanController::class, 'destroy']);
     Route::get('/loan-types/{cid}', [LoanController::class, 'loan_types']);
-    Route::get('/loan-settings-data', [LoanController::class, 'get_all_loan_setting_data']);
     Route::post('/loan-settings-create', [LoanController::class, 'create_loan_setting']); // CREATE
     Route::put('/loan-settings-modify/{id}', [LoanController::class, 'modify_loan_setting']); // UPDATE
     Route::delete('/loan-settings-remove/{id}', [LoanController::class, 'remove_loan_setting']); // DELETE

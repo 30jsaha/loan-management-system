@@ -21,11 +21,58 @@ import loan5 from '../../img/Ourloansolution5.jpg';
 import footerBg from '../../img/png_image.png';
 import heroImage1 from '../../img/hero1.jpg';
 import Navbar from "@/Components/Navbar";
-
 import axios from "axios";
 import Swal from "sweetalert2";
 
 export default function Home({ auth, laravelVersion, phpVersion }) {
+   const [loanSettings, setLoanSettings] = useState([]);
+   const [minAmount, setMinAmount] = useState(200);
+   const [maxAmount, setMaxAmount] = useState(20000);
+   const [minTenure, setMinTenure] = useState(5);
+   const [maxTenure, setMaxTenure] = useState(52);
+   useEffect(() => {
+  fetchLoanSettings();
+}, []);
+
+const fetchLoanSettings = async () => {
+  try {
+    const res = await axios.get("/api/loan-settings-data");
+    setLoanSettings(res.data);
+    const first = res.data?.[0];
+    if (first) {
+      const rules = first.tier_rules || [];
+
+      // Amount bounds: use tier rules if present, else fall back to tier1_x / tier4_x fields.
+      const ruleMins = rules.map(r => Number(r.min_amount)).filter(v => !Number.isNaN(v));
+      const ruleMaxs = rules.map(r => Number(r.max_amount)).filter(v => !Number.isNaN(v));
+      const derivedMinAmount = ruleMins.length
+        ? Math.min(...ruleMins)
+        : Number(first.tier1_min_amount ?? first.min_loan_amount) || 200;
+      const derivedMaxAmount = ruleMaxs.length
+        ? Math.max(...ruleMaxs)
+        : Number(first.tier4_max_amount ?? first.max_loan_amount) || 20000;
+
+      // Tenure bounds: use tier rules if present, else fall back to tierX_min_term / max_term fields.
+      const ruleMinTerms = rules.map(r => Number(r.min_term_fortnight)).filter(v => !Number.isNaN(v));
+      const ruleMaxTerms = rules.map(r => Number(r.max_term_fortnight)).filter(v => !Number.isNaN(v));
+      const derivedMinTenure = ruleMinTerms.length
+        ? Math.min(...ruleMinTerms)
+        : Number(first.tier1_min_term ?? first.min_loan_term_months) || 5;
+      const derivedMaxTenure = ruleMaxTerms.length
+        ? Math.max(...ruleMaxTerms)
+        : Number(first.tier4_max_term ?? first.max_loan_term_months) || 52;
+
+      setMinAmount(derivedMinAmount);
+      setMaxAmount(derivedMaxAmount);
+      setMinTenure(derivedMinTenure);
+      setMaxTenure(derivedMaxTenure);
+    }
+    console.log("Fetched loan settings:", res.data);
+  } catch (error) {
+    console.error("Loan settings fetch error:", error);
+  }
+};
+
   const formRef = useRef(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [formState, setFormState] = useState({
@@ -41,8 +88,7 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   const [sending, setSending] = useState(false);
   const [showScroll, setShowScroll] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: ""
@@ -119,6 +165,14 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
   const [calculatorFirstCheck, setCalculatorFirstCheck] = useState(false);
   const sliderRef = useRef(null);
 
+  // pick the tier rule that matches the entered amount
+  const getRuleForAmount = (amt) => {
+    const rules = loanSettings?.[0]?.tier_rules || [];
+    return rules.find(
+      (r) => amt >= Number(r.min_amount) && amt <= Number(r.max_amount)
+    );
+  };
+
 
   // scroll listener for scroll-to-top button
   useEffect(() => {
@@ -137,37 +191,23 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
     setSliderError(""); // reset
 
-    // Rule: amount must be >= 200
-    if (amt < 200) {
-      setSliderError("❌ Amount not applicable (minimum is 200)");
+    if (amt < minAmount || amt > maxAmount) {
+      setSliderError(`❌ Amount must be between ${minAmount} and ${maxAmount}`);
       setSliderEMI(0);
       return;
     }
 
-    // Rule: tenure minimum 5
-    if (tn < 5) {
-      setSliderError("❌ Tenure not applicable (minimum is 5 days)");
+    const rule = getRuleForAmount(amt);
+    if (!rule) {
+      setSliderError("❌ No matching tier rule for this amount");
       setSliderEMI(0);
       return;
     }
 
-    // Rule 1: 200/250/300 max 5 days
-    if ([200, 250, 300].includes(amt) && tn > 5) {
-      setSliderError("❌ Tenure not applicable for this amount (Max 5 days)");
-      setSliderEMI(0);
-      return;
-    }
-
-    // Rule 2: 350–500 max 8
-    if ([350, 400, 450, 500].includes(amt) && tn > 8) {
-      setSliderError("❌ Tenure not applicable for this amount (Max 8 days)");
-      setSliderEMI(0);
-      return;
-    }
-
-    // Rule 3: 350–950 max 26
-    if (amt >= 350 && amt <= 950 && tn > 26) {
-      setSliderError("❌ Tenure not applicable (Max 26 days)");
+    if (tn < rule.min_term_fortnight || tn > rule.max_term_fortnight) {
+      setSliderError(
+        `❌ Tenure must be between ${rule.min_term_fortnight} and ${rule.max_term_fortnight} days for this amount`
+      );
       setSliderEMI(0);
       return;
     }
@@ -176,49 +216,38 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
     const emi = calculateRepayment(amt, tn);
     setSliderEMI(emi);
 
-  }, [sliderAmount, sliderFortnight]);
+  }, [sliderAmount, sliderFortnight, minAmount, maxAmount, loanSettings]);
 
 
   // Loan calculation logic (shared by submit & "Check Your Loan Now")
-  function calculateRepayment(amountVal, tenureDaysVal) {
-    const amount = Number(amountVal);
-    const tenureDays = Number(tenureDaysVal);
-    if (!amount || !tenureDays) return "";
+function calculateRepayment(amountVal, tenureDaysVal) {
+  const amount = Number(amountVal);
+  const tenureDays = Number(tenureDaysVal);
 
-    const lockedEMIValues = {
-      200: { minDays: 5, lockedEMI: 44.7 },
-      250: { minDays: 5, lockedEMI: 55.88 },
-      300: { minDays: 5, lockedEMI: 67.05 },
-      350: { minDays: 8, lockedEMI: 51.98 },
-      400: { minDays: 8, lockedEMI: 59.4 },
-      450: { minDays: 8, lockedEMI: 66.83 },
-      500: { minDays: 8, lockedEMI: 74.25 },
-      550: { minDays: 26, lockedEMI: 34.08 },
-      600: { minDays: 26, lockedEMI: 37.18 },
-      650: { minDays: 26, lockedEMI: 40.28 },
-      700: { minDays: 26, lockedEMI: 43.37 },
-      750: { minDays: 26, lockedEMI: 46.47 },
-      800: { minDays: 26, lockedEMI: 49.57 },
-      850: { minDays: 26, lockedEMI: 52.67 },
-      900: { minDays: 26, lockedEMI: 55.77 },
-      950: { minDays: 26, lockedEMI: 58.86 }
-    };
+  if (!amount || !tenureDays) return "";
 
-    if (lockedEMIValues[amount] && tenureDays >= lockedEMIValues[amount].minDays) {
-      return lockedEMIValues[amount].lockedEMI.toFixed(2);
-    }
+  // 🔥 Get matching setting from API
+  const matchedSetting = loanSettings.find(
+    (item) => Number(item.amount) === amount
+  );
 
-
-    function roundTwo(num) {
-      return Math.round(num * 100 + 0.0000001) / 100;
-    }
-    const interestRate = 2.35;
-
-    const emi = ((amount * (interestRate / 100) * tenureDays) + amount) / tenureDays;
-    const result = roundTwo(emi);
-
-    return result.toFixed(2);
+  if (matchedSetting && tenureDays >= Number(matchedSetting.minDays)) {
+    return Number(matchedSetting.lockedEMI).toFixed(2);
   }
+
+  function roundTwo(num) {
+    return Math.round(num * 100 + 0.0000001) / 100;
+  }
+
+  const interestRate = 2.35;
+
+  const emi =
+    ((amount * (interestRate / 100) * tenureDays) + amount) /
+    tenureDays;
+
+  return roundTwo(emi).toFixed(2);
+}
+
 
   // handle input change
   const handleChange = (e) => {
@@ -315,44 +344,25 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
     // ... (your existing logic continues)
 
 
-    // Rule 3: tenure must be >= 5 for all amounts
-    if (amt < 200) {
-      setRespMsg("❌ amount not applicable (minimum is 200)");
-      setShowRepayment(true);
-      return;
-    }
-    if (tn < 5) {
-      setRespMsg("❌ Tenure not applicable (minimum is 5 days)");
+    if (amt < minAmount || amt > maxAmount) {
+      setRespMsg(`❌ Amount must be between ${minAmount} and ${maxAmount}`);
       setShowRepayment(true);
       return;
     }
 
-    // Rule 1: For 200, 250, 300 → max 5 days
-    const smallAmounts = [200, 250, 300];
-    if (smallAmounts.includes(amt)) {
-      if (tn > 5) {
-        setRespMsg("❌ Tenure not applicable for this amount (Max 5 days)");
-        setShowRepayment(true);
-        return;
-      }
-    }
-    // Rule 1: For 350, 400, 450, 500 → max 5 days
-    const eightDaysAmounts = [350, 400, 450, 500];
-    if (eightDaysAmounts.includes(amt)) {
-      if (tn > 8) {
-        setRespMsg("❌ Tenure not applicable for this amount (Max 8 days)");
-        setShowRepayment(true);
-        return;
-      }
+    const rule = getRuleForAmount(amt);
+    if (!rule) {
+      setRespMsg("❌ No matching tier rule for this amount");
+      setShowRepayment(true);
+      return;
     }
 
-    // Rule 2: For 350–950 → max 26 days
-    if (amt >= 350 && amt <= 950) {
-      if (tn > 26) {
-        setRespMsg("❌ Tenure not applicable for this amount (Max 26 days)");
-        setShowRepayment(true);
-        return;
-      }
+    if (tn < rule.min_term_fortnight || tn > rule.max_term_fortnight) {
+      setRespMsg(
+        `❌ Tenure must be between ${rule.min_term_fortnight} and ${rule.max_term_fortnight} days for this amount`
+      );
+      setShowRepayment(true);
+      return;
     }
 
     // If passed all rules → calculate repayment
@@ -425,9 +435,9 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                           onChange={handleChange}
                           className="form-control"
                           required
-                          min="200"
-                          max="20000"
-                          title="Amount must be between 200 and 20000"
+                          min={minAmount}
+                          max={maxAmount}
+                          title={`Amount must be between ${minAmount} and ${maxAmount}`}
                         />
                       </div>
 
@@ -441,6 +451,8 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                           onChange={handleChange}
                           className="form-control"
                           required
+                          min={minTenure}
+                          max={maxTenure}
                         />
                       </div>
                     </div>
@@ -573,19 +585,19 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
                             </button>
 
                             <div className="slider-wrapper position-relative w-75">
-                              <input
-                                type="range"
-                                min="200"
-                                max="10000"
-                                step="50"
-                                value={sliderAmount}
-                                onChange={(e) => setSliderAmount(Number(e.target.value))}
-                                className="form-range"
-                              />
+                            <input
+                              type="range"
+                              min={minAmount}
+                              max={maxAmount}
+                              step="50"
+                              value={sliderAmount}
+                              onChange={(e) => setSliderAmount(Number(e.target.value))}
+                              className="form-range"
+                            />
                               <div
   className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm"
   style={{
-    left: `${((sliderAmount - 200) / (10000 - 200)) * 100}%`,
+    left: `${maxAmount === minAmount ? 0 : ((sliderAmount - minAmount) / (maxAmount - minAmount)) * 100}%`,
     transform: "translateX(-50%)",
   }}
 >
@@ -1465,5 +1477,5 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 
       </footer>
     </div>
-  );
-};
+  )
+}
