@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Upload } from 'lucide-react';
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
+import { UploadCloud } from "lucide-react";
 
 export default function PayrollUpload({onCancel}) {
   const [file, setFile] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [meta, setMeta] = useState({
     year: "",
@@ -14,6 +15,25 @@ export default function PayrollUpload({onCancel}) {
 
   const handleFile = (e) => {
     setFile(e.target.files[0]);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      setFile(droppedFile);
+    }
   };
 
   const handlePreview = () => {
@@ -128,19 +148,49 @@ export default function PayrollUpload({onCancel}) {
 
   return (
     <div className="p-4">
-      <h4>Upload Payroll TXT</h4>
+      <h4 className="mb-3">Upload Payroll TXT</h4>
 
-      <input type="file" accept=".txt" onChange={handleFile} />
+      <label
+        htmlFor="payroll-upload"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`block cursor-pointer rounded-2xl border-2 border-dashed px-4 py-14 text-center transition-colors ${
+          isDragging
+            ? "border-blue-400 bg-blue-50"
+            : "border-sky-200 bg-slate-50 hover:border-blue-300"
+        }`}
+      >
+        <UploadCloud className="mx-auto h-8 w-8 text-blue-600" />
+        <p className="mt-4 text-2xl font-medium text-slate-700">
+          Click to browse or Drag &amp; Drop
+        </p>
+        <p className="mt-2 text-sm text-slate-400">Text (.txt) files only</p>
+      </label>
 
-      <button onClick={handlePreview} className="btn btn-primary ms-2">
+      <input
+        id="payroll-upload"
+        type="file"
+        accept=".txt"
+        onChange={handleFile}
+        className="sr-only"
+      />
+
+      {file && (
+        <p className="mt-2 text-sm text-slate-600">
+          Selected file: <span className="font-semibold">{file.name}</span>
+        </p>
+      )}
+
+      <button onClick={handlePreview} className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-2 py-2 ml-2 rounded-md shadow-sm mt-3">
         Preview
       </button>
-        <button
-            className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-2 py-2 ml-2 rounded-md shadow-sm"
-            onClick={onCancel}
+      <button
+          className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-2 py-2 ml-2 rounded-md shadow-sm"
+          onClick={onCancel}
         >
         Cancel
-        </button>
+      </button>
       {employees.length > 0 && (
         <>
           <div className="mt-4">

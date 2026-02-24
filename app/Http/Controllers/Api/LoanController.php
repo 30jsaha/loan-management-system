@@ -429,18 +429,20 @@ class LoanController extends Controller
     {
         $validated = $request->validate([
             'loan_id' => 'required|exists:loan_applications,id',
-            'video_consent' => 'required|file|mimetypes:video/mp4|max:20480', // 20MB
+            'video_consent' => 'required|file|mimes:mp4,webm|mimetypes:video/mp4,video/webm|max:20480',
         ]);
 
         try {
             $file = $request->file('video_consent');
-            $path = $file->store('uploads/video_consents', 'public');
+            $extension = $file->getClientOriginalExtension() ?: 'webm';
+            $filename = 'loan-' . $validated['loan_id'] . '-consent-' . now()->format('YmdHis') . '.' . $extension;
+            $path = $file->storeAs('recorded-consents', $filename, 'public');
 
-            $loan = Loan::find($validated['loan_id']);
+            $loan = Loan::findOrFail($validated['loan_id']);
             $loan->video_consent_path = '/storage/' . $path;
-            $loan->video_consent_file_name = $file->getClientOriginalName();
+            $loan->video_consent_file_name = $filename;
             $loan->video_consent_upload_date = now()->toDateString();
-            $loan->video_consent_uploaded_by_user_id = auth()->user()->id;
+            $loan->video_consent_uploaded_by_user_id = auth()->id();
             if ($loan->status === 'Rejected') {
                 $loan->has_fixed_temp_rejection = 1;
             }
