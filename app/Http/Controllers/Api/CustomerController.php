@@ -99,7 +99,7 @@ class CustomerController extends Controller
             'last_name' => 'required|string|max:100',
 
             'email' => [
-                'required',
+                'nullable',
                 'email',
                 'max:100',
                 Rule::unique('customers', 'email'),
@@ -195,7 +195,7 @@ class CustomerController extends Controller
 
         $rules = [
             'email' => [
-                'required',
+                'nullable',
                 'email',
                 'max:100',
                 Rule::unique('customers', 'email')->ignore($customer->id),

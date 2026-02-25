@@ -268,7 +268,7 @@ export default function DeptDatabase({ auth }) {
               <div key={field} className="flex flex-col">
                 <label className="text-xs text-gray-600 mb-1 capitalize">
                   {field.split("_").join(" ")}
-                  {["cust_name", "emp_code", "phone", "email", "gross_pay", "net_pay"].includes(field) && (
+                  {["cust_name", "emp_code", "phone", "gross_pay", "net_pay"].includes(field) && (
                     <span className="text-red-500">*</span>
                   )}
                 </label>
@@ -277,7 +277,7 @@ export default function DeptDatabase({ auth }) {
                   name={field}
                   value={formData[field] || ""}
                   onChange={handleChange}
-                  required={["cust_name", "emp_code", "phone", "email", "gross_pay", "net_pay"].includes(field)}
+                  required={["cust_name", "emp_code", "phone", "gross_pay", "net_pay"].includes(field)}
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   placeholder={`Enter ${field.split("_").join(" ")}`}
                 />

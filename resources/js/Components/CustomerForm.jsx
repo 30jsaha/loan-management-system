@@ -886,14 +886,13 @@ useEffect(() => {
                 </div>
                 <div>
                   <label>
-                    Email <ImportantField />
+                    Email
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email || ""}
                     onChange={handleChange}
-                    required
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                   />
                 </div>

@@ -279,6 +279,141 @@ export default function Create({ auth, loan_settings }) {
         return map;
     }, [customers]);
 
+    const normalizeText = (value) => (value ?? "").toString().trim();
+    const normalizeEmpCode = (value) => normalizeText(value).toLowerCase();
+
+    const setLoanBankDetails = (bankData) => {
+        setLoanFormData((prev) => ({
+            ...prev,
+            bank_name: bankData.bank_name || "",
+            bank_branch: bankData.bank_branch || "",
+            bank_account_no: bankData.bank_account_no || "",
+        }));
+    };
+
+    const extractBankDetails = (masterRecord) => {
+        if (!masterRecord) return [];
+
+        const candidates = [
+            {
+                bank_name: normalizeText(masterRecord.bank1_name),
+                bank_branch: normalizeText(masterRecord.bank1_branch),
+                bank_account_no: normalizeText(masterRecord.bank1_account_no),
+            },
+            {
+                bank_name: normalizeText(masterRecord.bank2_name),
+                bank_branch: normalizeText(masterRecord.bank2_branch),
+                bank_account_no: normalizeText(masterRecord.bank2_account_no),
+            },
+        ];
+
+        return candidates
+            .filter((bank) => bank.bank_name || bank.bank_branch || bank.bank_account_no)
+            .filter(
+                (bank, index, arr) =>
+                    index ===
+                    arr.findIndex(
+                        (item) =>
+                            item.bank_name === bank.bank_name &&
+                            item.bank_branch === bank.bank_branch &&
+                            item.bank_account_no === bank.bank_account_no
+                    )
+            );
+    };
+
+    const fetchMasterCustomerByEmpCode = async (employeeNo) => {
+        const empCode = normalizeText(employeeNo);
+        if (!empCode) return null;
+
+        if (Array.isArray(allCustMast) && allCustMast.length > 0) {
+            const matchedFromAllCustMast = allCustMast.find(
+                (row) => normalizeEmpCode(row?.emp_code) === normalizeEmpCode(empCode)
+            );
+            if (matchedFromAllCustMast) {
+                console.log("Matched customer from allCustMast for empCode", empCode, ": ", matchedFromAllCustMast);
+                return matchedFromAllCustMast;
+            }
+        }
+
+        try {
+            const res = await axios.get("/api/all-dept-cust-list", {
+                params: {
+                    searchEmpCode: empCode,
+                    perPage: 30,
+                },
+            });
+            const rows = Array.isArray(res?.data?.data) ? res.data.data : [];
+            const matchedFromApi = rows.find(
+                (row) => normalizeEmpCode(row?.emp_code) === normalizeEmpCode(empCode)
+            ) || null;
+            console.log("Matched customer from all-dept-cust-list for empCode", empCode, ": ", matchedFromApi);
+            return matchedFromApi;
+        } catch (error) {
+            console.error("Bank detail lookup failed for empCode:", empCode, error);
+            return null;
+        }
+    };
+
+    const autoFillBankDetailsFromMaster = async (employeeNo) => {
+        const empCode = normalizeText(employeeNo);
+        if (!empCode) return;
+
+        const matchedCustomer = await fetchMasterCustomerByEmpCode(empCode);
+        if (!matchedCustomer) {
+            console.log("No all_cust_master match found for empCode:", empCode);
+            return;
+        }
+        const bankOptions = extractBankDetails(matchedCustomer);
+        if (bankOptions.length === 0) return;
+
+        if (bankOptions.length === 1) {
+            setLoanBankDetails(bankOptions[0]);
+            return;
+        }
+
+        const radioOptions = bankOptions.reduce((acc, bank, index) => {
+            const bankName = bank.bank_name || "N/A";
+            const bankBranch = bank.bank_branch || "N/A";
+            const accountNo = bank.bank_account_no || "N/A";
+            acc[index] = `${bankName} | ${bankBranch} | ${accountNo}`;
+            return acc;
+        }, {});
+
+        const { value: selectedIndex, isConfirmed } = await Swal.fire({
+            title: "Select Bank Detail",
+            text: "Two bank details were found. Please select one for this loan.",
+            input: "radio",
+            inputOptions: radioOptions,
+            inputValidator: (value) => (value === undefined ? "Please select one bank detail." : undefined),
+            confirmButtonText: "Use Selected",
+            showCancelButton: true,
+            cancelButtonText: "Skip",
+        });
+
+        if (!isConfirmed || selectedIndex === undefined) return;
+
+        const selectedBank = bankOptions[Number(selectedIndex)];
+        if (selectedBank) {
+            setLoanBankDetails(selectedBank);
+        }
+    };
+
+    const getCustomerFromInput = (inputValue) => {
+        const cleanInput = normalizeText(inputValue);
+        if (!cleanInput) return null;
+
+        if (customerMap[cleanInput]) return customerMap[cleanInput];
+
+        const empCodeCandidate = cleanInput.includes(" - ")
+            ? cleanInput.split(" - ")[0]
+            : cleanInput;
+
+        return customers.find(
+            (customer) =>
+                normalizeEmpCode(customer?.employee_no) === normalizeEmpCode(empCodeCandidate)
+        ) || null;
+    };
+
     useEffect(() => {
         // Fetch Companies from the API
         fetch('/api/company-list')
@@ -1290,6 +1425,7 @@ const isSubmitDisabled =
                                                     ...prev,
                                                     customer_id: savedCustomer.id,
                                                 }));
+                                                autoFillBankDetailsFromMaster(savedCustomer.employee_no);
 
                                                 setStep(2);
                                                 setCustSelectable(false);
@@ -1320,13 +1456,14 @@ const isSubmitDisabled =
                                                         onChange={(e) => {
                                                             const inputValue = e.target.value;
                                                             setCustomerDisplayValue(inputValue);
-                                                            const selectedCustomer = customerMap[inputValue];
+                                                            const selectedCustomer = getCustomerFromInput(inputValue);
                                                             if (selectedCustomer) {
                                                                 // ✅ Set customer_id
                                                                 setLoanFormData(prev => ({
                                                                     ...prev,
                                                                     customer_id: selectedCustomer.id
                                                                 }));
+                                                                autoFillBankDetailsFromMaster(selectedCustomer.employee_no);
                                                                 console.log("selectedCustomer on loan application customer select: ",selectedCustomer);
                                                                 setSavedCustomerData(prev =>({
                                                                     ...prev,
