@@ -413,7 +413,7 @@ useEffect(() => {
         present_address: "",
         permanent_address: "",
         payroll_number: "",
-        employer_department: "",
+        employer_department: selectedEmp.department || "",
         designation: "",
         employment_type: "",
         date_joined: "",
@@ -447,7 +447,7 @@ useEffect(() => {
           </div>
           <button 
             type="button"
-            onClick={() => setIsExistingFound(false)} 
+            onClick={() => setIsExistingFound(false)}
             className="text-blue-400 hover:text-blue-600 font-bold"
           >
             ✕
@@ -886,14 +886,13 @@ useEffect(() => {
                 </div>
                 <div>
                   <label>
-                    Email <ImportantField />
+                    Email
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email || ""}
                     onChange={handleChange}
-                    required
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                   />
                 </div>

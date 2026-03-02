@@ -26,8 +26,15 @@ export default function DeptDatabase({ auth }) {
     emp_code: "",
     phone: "",
     email: "",
+    department: "",
     gross_pay: "",
     net_pay: "",
+    bank1_name: "",
+    bank1_branch: "",
+    bank1_account_no: "",
+    bank2_name: "",
+    bank2_branch: "",
+    bank2_account_no: "",
     organization_id: "",
   });
 
@@ -201,8 +208,15 @@ export default function DeptDatabase({ auth }) {
       emp_code: "",
       phone: "",
       email: "",
+      department: "",
       gross_pay: "",
       net_pay: "",
+      bank1_name: "",
+      bank1_branch: "",
+      bank1_account_no: "",
+      bank2_name: "",
+      bank2_branch: "",
+      bank2_account_no: "",
       organization_id: "",
     });
     setIsEditing(false);
@@ -236,20 +250,36 @@ export default function DeptDatabase({ auth }) {
         <div className="bg-white shadow-md rounded-lg p-6 border border-gray-200">
           <h4 className="text-lg font-semibold text-gray-700 mb-4">{isEditing ? "Edit Employee" : "Add Employee"}</h4>
           <form className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4" onSubmit={handleSubmit}>
-            {["cust_name", "emp_code", "phone", "email", "gross_pay", "net_pay"].map((field) => (
+            {[
+              "cust_name",
+              "emp_code",
+              "phone",
+              "email",
+              "department",
+              "gross_pay",
+              "net_pay",
+              "bank1_name",
+              "bank1_branch",
+              "bank1_account_no",
+              "bank2_name",
+              "bank2_branch",
+              "bank2_account_no",
+            ].map((field) => (
               <div key={field} className="flex flex-col">
                 <label className="text-xs text-gray-600 mb-1 capitalize">
-                  {field.replace("_", " ")}
-                  <span className="text-red-500">*</span>
+                  {field.split("_").join(" ")}
+                  {["cust_name", "emp_code", "phone", "gross_pay", "net_pay"].includes(field) && (
+                    <span className="text-red-500">*</span>
+                  )}
                 </label>
                 <input
                   type={field === "email" ? "email" : "text"}
                   name={field}
                   value={formData[field] || ""}
                   onChange={handleChange}
-                  required
+                  required={["cust_name", "emp_code", "phone", "gross_pay", "net_pay"].includes(field)}
                   className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  placeholder={`Enter ${field.replace("_", " ")}`}
+                  placeholder={`Enter ${field.split("_").join(" ")}`}
                 />
               </div>
             ))}

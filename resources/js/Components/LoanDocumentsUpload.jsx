@@ -338,7 +338,7 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
           <Button
             type="submit"
             variant="success"
-            className="px-5 py-2 fw-semibold rounded-pill shadow-sm w-full sm:w-auto"
+            className={`px-5 py-2 fw-semibold rounded-pill shadow-sm w-full sm:w-auto ${uploading || !loanId ? 'opacity-75 cursor-not-allowed' : ''}`}
             disabled={uploading || !loanId}
             style={{
               backgroundColor: uploading ? "#22c55ecc" : "#22c55e",

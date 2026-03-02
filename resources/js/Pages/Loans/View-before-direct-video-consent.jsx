@@ -79,11 +79,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
 
     // video steaming
     const [isRecording, setIsRecording] = useState(false);
-    const [isAutoUploadingVideo, setIsAutoUploadingVideo] = useState(false);
+    const [mediaRecorder, setMediaRecorder] = useState(null);
+    const [recordedChunks, setRecordedChunks] = useState([]);
     const videoRef = useRef(null);
-    const mediaRecorderRef = useRef(null);
-    const mediaStreamRef = useRef(null);
-    const videoPreviewUrlRef = useRef(null);
 
     axios.defaults.withCredentials = true;
 
@@ -210,159 +208,48 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
         setLoanPurposeOptions(lpo);
     }, loanPurposes);
 
-    const cleanupRecordingStream = useCallback(() => {
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
-        }
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-            mediaStreamRef.current = null;
-        }
-        mediaRecorderRef.current = null;
-    }, []);
-
-    useEffect(() => {
-        if (isRecording && videoRef.current && mediaStreamRef.current) {
-            videoRef.current.srcObject = mediaStreamRef.current;
-            videoRef.current.play().catch(() => { });
-        }
-    }, [isRecording]);
-
-    useEffect(() => {
-        return () => {
-            cleanupRecordingStream();
-            if (videoPreviewUrlRef.current) {
-                URL.revokeObjectURL(videoPreviewUrlRef.current);
-                videoPreviewUrlRef.current = null;
-            }
-        };
-    }, [cleanupRecordingStream]);
-
-    const uploadRecordedVideoConsent = async (file) => {
-        if (!file || !loan?.id) return;
-
-        const formData = new FormData();
-        formData.append("loan_id", loan.id);
-        formData.append("video_consent", file);
-
-        try {
-            setIsAutoUploadingVideo(true);
-            await axios.post("/api/loans/upload-consent-video", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                    setUploadProgress((prev) => ({ ...prev, video: percent }));
-                },
-            });
-
-            const updatedLoan = await axios.get(`/api/loans/${loanId}`);
-            setLoan(updatedLoan.data);
-            setVideoFile(null);
-            setMessage("Recorded consent video saved successfully!");
-            Swal.fire({
-                title: "Success !",
-                text: "Recorded consent video saved successfully!",
-                icon: "success",
-            });
-        } catch (error) {
-            console.error(error);
-            setMessage("Failed to save recorded consent video.");
-            Swal.fire("Error", "Failed to save recorded consent video.", "error");
-        } finally {
-            setIsAutoUploadingVideo(false);
-            setUploadProgress((prev) => ({ ...prev, video: 0 }));
-        }
-    };
-
     const startRecording = async () => {
-        if (isRecording || isAutoUploadingVideo) return;
-
         try {
-            if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-                throw new Error("Webcam recording is not supported in this browser.");
-            }
-
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: true,
                 audio: true,
             });
 
-            mediaStreamRef.current = stream;
-            setIsRecording(true);
+            videoRef.current.srcObject = stream;
+            videoRef.current.play();
 
-            const mimeType =
-                ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"].find((type) =>
-                    MediaRecorder.isTypeSupported(type)
-                ) || "";
-
-            const recorder = mimeType
-                ? new MediaRecorder(stream, { mimeType })
-                : new MediaRecorder(stream);
+            const recorder = new MediaRecorder(stream, {
+                mimeType: "video/webm",
+            });
 
             const chunks = [];
-            recorder.ondataavailable = (event) => {
-                if (event.data && event.data.size > 0) chunks.push(event.data);
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunks.push(e.data);
             };
 
-            recorder.onstop = async () => {
-                try {
-                    if (!chunks.length) {
-                        Swal.fire("Warning", "No video data was captured.", "warning");
-                        return;
-                    }
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: "video/webm" });
+                const file = new File([blob], "video-consent.webm", {
+                    type: "video/webm",
+                });
 
-                    const blobType = recorder.mimeType || "video/webm";
-                    const blob = new Blob(chunks, { type: blobType });
-                    const extension = blobType.includes("mp4") ? "mp4" : "webm";
-
-                    if (videoPreviewUrlRef.current) {
-                        URL.revokeObjectURL(videoPreviewUrlRef.current);
-                    }
-                    const previewUrl = URL.createObjectURL(blob);
-                    videoPreviewUrlRef.current = previewUrl;
-
-                    const file = new File([blob], `loan-${loan?.id || "consent"}-${Date.now()}.${extension}`, {
-                        type: blobType,
-                    });
-
-                    setVideoFile(file);
-                    setVideoPreview(previewUrl);
-                    await uploadRecordedVideoConsent(file);
-                } finally {
-                    cleanupRecordingStream();
-                }
+                setVideoFile(file); // ✅ SAME upload flow
+                setVideoPreview(URL.createObjectURL(blob));
+                setRecordedChunks([]);
             };
 
-            recorder.start(1000);
-            mediaRecorderRef.current = recorder;
-        } catch (error) {
-            console.error(error);
-            cleanupRecordingStream();
-            setIsRecording(false);
-            Swal.fire({
-                title: "Error",
-                text: "Unable to start webcam recording. Please allow camera and microphone access.",
-                icon: "error",
-            });
+            recorder.start();
+            setRecordedChunks(chunks);
+            setMediaRecorder(recorder);
+            setIsRecording(true);
+        } catch (err) {
+            alert("Camera access denied");
         }
     };
-
     const stopRecording = () => {
-        const recorder = mediaRecorderRef.current;
-
-        if (!recorder || recorder.state === "inactive") {
-            setIsRecording(false);
-            cleanupRecordingStream();
-            return;
-        }
-
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach((t) => t.stop());
         setIsRecording(false);
-        try {
-            recorder.stop();
-        } catch (error) {
-            console.error(error);
-            cleanupRecordingStream();
-        }
     };
 
     // ✅ 1. CREATE REF
@@ -609,11 +496,11 @@ const normalizeFilePath = (path) => {
         }
     };
 
-    const handleUpload = async (type) => {
-        const file = type === "video" ? videoFile : type === "pdf1" ? pdfFile1 : pdfFile;
 
+    const handleUpload = async (type) => {
+        let file = type === "video" ? videoFile : type === "pdf1" ? pdfFile1 : pdfFile;
         if (!file) {
-            setMessage(`Please select a ${type === "video" ? "video" : "PDF"} first.`);
+            setMessage(`⚠️ Please select a ${type === "video" ? "video" : "PDF"} first.`);
             Swal.fire({
                 title: "Warning !",
                 text: `Please select a ${type === "video" ? "video" : "PDF"} first.`,
@@ -622,21 +509,21 @@ const normalizeFilePath = (path) => {
             return;
         }
 
-        if (type === "video") {
-            await uploadRecordedVideoConsent(file);
-            return;
-        }
-
         const formData = new FormData();
         formData.append("loan_id", loan.id);
         formData.append(
-            type === "pdf" ? "isda_signed_upload" : "org_signed_upload",
+            type === "video"
+                ? "video_consent"
+                : type === "pdf"
+                    ? "isda_signed_upload"
+                    : "org_signed_upload",
             file
         );
 
         try {
-            await axios.post(
-                `/api/loans/upload-${type === "pdf" ? "isda-signed" : "org-signed"}`,
+            const res = await axios.post(
+                `/api/loans/upload-${type === "video" ? "consent-video" : type === "pdf" ? "isda-signed" : "org-signed"
+                }`,
                 formData,
                 {
                     headers: { "Content-Type": "multipart/form-data" },
@@ -649,18 +536,24 @@ const normalizeFilePath = (path) => {
                 }
             );
 
-            setMessage(`${type === "pdf" ? "ISDA" : "Organization"} PDF uploaded successfully!`);
+            // ✅ Success feedback
+            setMessage(`✅ ${type === "video" ? "Video" : "PDF"} uploaded successfully!`);
             Swal.fire({
                 title: "Success !",
-                text: `${type === "pdf" ? "ISDA" : "Organization"} PDF uploaded successfully!`,
+                text: `✅ ${type === "video" ? "Video" : "PDF"} uploaded successfully!`,
                 icon: "success"
             });
 
+            // ✅ Reset progress after short delay for better UX
             setTimeout(() => {
                 setUploadProgress((prev) => ({ ...prev, [type]: 0 }));
             }, 1500);
 
-            if (type === "pdf") {
+            // ✅ Clear the file and preview
+            if (type === "video") {
+                setVideoFile(null);
+                setVideoPreview(null);
+            } else if (type === "pdf") {
                 setPdfFile(null);
                 setPdfPreview(null);
             } else {
@@ -668,11 +561,14 @@ const normalizeFilePath = (path) => {
                 setPdfPreview1(null);
             }
 
+            // ✅ Refresh loan data to show updated file path
             const updatedLoan = await axios.get(`/api/loans/${loanId}`);
             setLoan(updatedLoan.data);
+
         } catch (error) {
             console.error(error);
-            setMessage(`Failed to upload ${type === "pdf" ? "ISDA" : "Organization"} PDF.`);
+            setMessage(`❌ Failed to upload ${type === "video" ? "video" : "PDF"}.`);
+            // reset progress on error
             setUploadProgress((prev) => ({ ...prev, [type]: 0 }));
         }
     };
@@ -2899,12 +2795,12 @@ const normalizeFilePath = (path) => {
 
                                                                     <Form.Group>
                                                                         <Form.Label className="font-medium">
-                                                                            Upload Consent Video (MP4/WEBM)
+                                                                            Upload Consent Video (MP4 only)
                                                                         </Form.Label>
 
                                                                         <Form.Control
                                                                             type="file"
-                                                                            accept="video/mp4,video/webm"
+                                                                            accept="video/mp4"
                                                                             key={videoFile ? videoFile.name : ""}
                                                                             disabled={loan.status === "Approved"}
                                                                             onChange={(e) => {
@@ -2923,7 +2819,7 @@ const normalizeFilePath = (path) => {
                                                                         <Button
                                                                             className="bg-blue-600 hover:bg-blue-700 text-white"
                                                                             onClick={() => handleUpload("video")}
-                                                                            disabled={!videoFile || isRecording || isAutoUploadingVideo}
+                                                                            disabled={!videoFile}
                                                                         >
                                                                             {uploadProgress.video > 0 && uploadProgress.video < 100
                                                                                 ? "Uploading..."
@@ -2936,7 +2832,6 @@ const normalizeFilePath = (path) => {
                                                                             <Button
                                                                                 variant="outline-secondary"
                                                                                 onClick={startRecording}
-                                                                                disabled={isAutoUploadingVideo}
                                                                             >
                                                                                 🎥 Record via Webcam
                                                                             </Button>
@@ -3160,12 +3055,12 @@ const normalizeFilePath = (path) => {
 
                                                                         <Form.Group>
                                                                             <Form.Label className="font-medium">
-                                                                                Upload Consent Video (MP4/WEBM)
+                                                                                Upload Consent Video (MP4 only)
                                                                             </Form.Label>
 
                                                                             <Form.Control
                                                                                 type="file"
-                                                                                accept="video/mp4,video/webm"
+                                                                                accept="video/mp4"
                                                                                 key={videoFile ? videoFile.name : ""}
                                                                                 disabled={loan.status === "Approved"}
                                                                                 onChange={(e) => {
@@ -3184,7 +3079,7 @@ const normalizeFilePath = (path) => {
                                                                             <Button
                                                                                 className="bg-blue-600 hover:bg-blue-700 text-white"
                                                                                 onClick={() => handleUpload("video")}
-                                                                                disabled={!videoFile || isRecording || isAutoUploadingVideo}
+                                                                                disabled={!videoFile}
                                                                             >
                                                                                 {uploadProgress.video > 0 && uploadProgress.video < 100
                                                                                     ? "Uploading..."
@@ -3197,7 +3092,6 @@ const normalizeFilePath = (path) => {
                                                                                 <Button
                                                                                     variant="outline-secondary"
                                                                                     onClick={startRecording}
-                                                                                    disabled={isAutoUploadingVideo}
                                                                                 >
                                                                                     🎥 Record via Webcam
                                                                                 </Button>
@@ -3420,12 +3314,12 @@ const normalizeFilePath = (path) => {
 
                                                                             <Form.Group>
                                                                                 <Form.Label className="font-medium">
-                                                                                    Upload Consent Video (MP4/WEBM)
+                                                                                    Upload Consent Video (MP4 only)
                                                                                 </Form.Label>
 
                                                                                 <Form.Control
                                                                                     type="file"
-                                                                                    accept="video/mp4,video/webm"
+                                                                                    accept="video/mp4"
                                                                                     key={videoFile ? videoFile.name : ""}
                                                                                     disabled={loan.status === "Approved"}
                                                                                     onChange={(e) => {
@@ -3444,7 +3338,7 @@ const normalizeFilePath = (path) => {
                                                                                 <Button
                                                                                     className="bg-blue-600 hover:bg-blue-700 text-white"
                                                                                     onClick={() => handleUpload("video")}
-                                                                                    disabled={!videoFile || isRecording || isAutoUploadingVideo}
+                                                                                    disabled={!videoFile}
                                                                                 >
                                                                                     {uploadProgress.video > 0 && uploadProgress.video < 100
                                                                                         ? "Uploading..."
@@ -3457,7 +3351,6 @@ const normalizeFilePath = (path) => {
                                                                                     <Button
                                                                                         variant="outline-secondary"
                                                                                         onClick={startRecording}
-                                                                                        disabled={isAutoUploadingVideo}
                                                                                     >
                                                                                         🎥 Record via Webcam
                                                                                     </Button>
@@ -3944,4 +3837,3 @@ const normalizeFilePath = (path) => {
         </AuthenticatedLayout>
     );
 }
-
