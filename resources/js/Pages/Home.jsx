@@ -26,10 +26,10 @@ import Swal from "sweetalert2";
 
 export default function Home({ auth, laravelVersion, phpVersion }) {
    const [loanSettings, setLoanSettings] = useState([]);
-   const [minAmount, setMinAmount] = useState(200);
-   const [maxAmount, setMaxAmount] = useState(20000);
-   const [minTenure, setMinTenure] = useState(5);
-   const [maxTenure, setMaxTenure] = useState(52);
+   const [minAmount, setMinAmount] = useState(20);
+   const [maxAmount, setMaxAmount] = useState(2000);
+   const [minTenure, setMinTenure] = useState(1);
+   const [maxTenure, setMaxTenure] = useState(12);
    useEffect(() => {
   fetchLoanSettings();
 }, []);
@@ -37,37 +37,37 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 const fetchLoanSettings = async () => {
   try {
     const res = await axios.get("/api/loan-settings-data");
-    setLoanSettings(res.data);
-    const first = res.data?.[0];
-    if (first) {
-      const rules = first.tier_rules || [];
-
-      // Amount bounds: use tier rules if present, else fall back to tier1_x / tier4_x fields.
-      const ruleMins = rules.map(r => Number(r.min_amount)).filter(v => !Number.isNaN(v));
-      const ruleMaxs = rules.map(r => Number(r.max_amount)).filter(v => !Number.isNaN(v));
-      const derivedMinAmount = ruleMins.length
-        ? Math.min(...ruleMins)
-        : Number(first.tier1_min_amount ?? first.min_loan_amount) || 200;
-      const derivedMaxAmount = ruleMaxs.length
-        ? Math.max(...ruleMaxs)
-        : Number(first.tier4_max_amount ?? first.max_loan_amount) || 20000;
-
-      // Tenure bounds: use tier rules if present, else fall back to tierX_min_term / max_term fields.
-      const ruleMinTerms = rules.map(r => Number(r.min_term_fortnight)).filter(v => !Number.isNaN(v));
-      const ruleMaxTerms = rules.map(r => Number(r.max_term_fortnight)).filter(v => !Number.isNaN(v));
-      const derivedMinTenure = ruleMinTerms.length
-        ? Math.min(...ruleMinTerms)
-        : Number(first.tier1_min_term ?? first.min_loan_term_months) || 5;
-      const derivedMaxTenure = ruleMaxTerms.length
-        ? Math.max(...ruleMaxTerms)
-        : Number(first.tier4_max_term ?? first.max_loan_term_months) || 52;
-
-      setMinAmount(derivedMinAmount);
-      setMaxAmount(derivedMaxAmount);
-      setMinTenure(derivedMinTenure);
-      setMaxTenure(derivedMaxTenure);
-    }
     console.log("Fetched loan settings:", res.data);
+    setLoanSettings(res.data);
+
+    if (Array.isArray(res.data) && res.data.length) {
+      // Derive global validation bounds across ALL loan settings, not just the first item
+      const minAmounts = res.data
+        .map(item => Number(item.min_loan_amount))
+        .filter(v => !Number.isNaN(v));
+      const maxAmounts = res.data
+        .map(item => Number(item.max_loan_amount))
+        .filter(v => !Number.isNaN(v));
+      const minTenures = res.data
+        .map(item => Number(item.min_loan_term_months))
+        .filter(v => !Number.isNaN(v));
+      const maxTenures = res.data
+        .map(item => Number(item.max_loan_term_months))
+        .filter(v => !Number.isNaN(v));
+
+      setMinAmount(minAmounts.length ? Math.min(...minAmounts) : 0);
+      setMaxAmount(maxAmounts.length ? Math.max(...maxAmounts) : 0);
+      setMinTenure(minTenures.length ? Math.min(...minTenures) : 0);
+      setMaxTenure(maxTenures.length ? Math.max(...maxTenures) : 0);
+
+      // console.log("Derived validation bounds:", {
+      //   minAmount: minAmounts.length ? Math.min(...minAmounts) : 0,
+      //   maxAmount: maxAmounts.length ? Math.max(...maxAmounts) : 0,
+      //   minTenure: minTenures.length ? Math.min(...minTenures) : 0,
+      //   maxTenure: maxTenures.length ? Math.max(...maxTenures) : 0,
+      // });
+    }
+
   } catch (error) {
     console.error("Loan settings fetch error:", error);
   }
@@ -165,15 +165,6 @@ const [formData, setFormData] = useState({
   const [calculatorFirstCheck, setCalculatorFirstCheck] = useState(false);
   const sliderRef = useRef(null);
 
-  // pick the tier rule that matches the entered amount
-  const getRuleForAmount = (amt) => {
-    const rules = loanSettings?.[0]?.tier_rules || [];
-    return rules.find(
-      (r) => amt >= Number(r.min_amount) && amt <= Number(r.max_amount)
-    );
-  };
-
-
   // scroll listener for scroll-to-top button
   useEffect(() => {
     function onScroll() {
@@ -197,16 +188,9 @@ const [formData, setFormData] = useState({
       return;
     }
 
-    const rule = getRuleForAmount(amt);
-    if (!rule) {
-      setSliderError("❌ No matching tier rule for this amount");
-      setSliderEMI(0);
-      return;
-    }
-
-    if (tn < rule.min_term_fortnight || tn > rule.max_term_fortnight) {
+    if (tn < minTenure || tn > maxTenure) {
       setSliderError(
-        `❌ Tenure must be between ${rule.min_term_fortnight} and ${rule.max_term_fortnight} days for this amount`
+        `❌ Tenure must be between ${minTenure} and ${maxTenure} days`
       );
       setSliderEMI(0);
       return;
@@ -216,7 +200,7 @@ const [formData, setFormData] = useState({
     const emi = calculateRepayment(amt, tn);
     setSliderEMI(emi);
 
-  }, [sliderAmount, sliderFortnight, minAmount, maxAmount, loanSettings]);
+  }, [sliderAmount, sliderFortnight, minAmount, maxAmount, minTenure, maxTenure]);
 
 
   // Loan calculation logic (shared by submit & "Check Your Loan Now")
@@ -350,16 +334,9 @@ function calculateRepayment(amountVal, tenureDaysVal) {
       return;
     }
 
-    const rule = getRuleForAmount(amt);
-    if (!rule) {
-      setRespMsg("❌ No matching tier rule for this amount");
-      setShowRepayment(true);
-      return;
-    }
-
-    if (tn < rule.min_term_fortnight || tn > rule.max_term_fortnight) {
+    if (tn < minTenure || tn > maxTenure) {
       setRespMsg(
-        `❌ Tenure must be between ${rule.min_term_fortnight} and ${rule.max_term_fortnight} days for this amount`
+        `❌ Tenure must be between ${minTenure} and ${maxTenure} days`
       );
       setShowRepayment(true);
       return;
