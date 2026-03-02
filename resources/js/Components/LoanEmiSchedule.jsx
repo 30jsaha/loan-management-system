@@ -335,32 +335,41 @@ export default function LoanEmiSchedule({ auth }) {
             );
         };
 
-        const findNearestAmount = (amount) => {
-            const points = tiers.flatMap(t => [
-                Number(t.min_amount),
-                Number(t.max_amount)
-            ]);
-            if (!points.length) return null;
+        const getTierDistanceFromAmount = (tier, amount) => {
+            const minAmount = Number(tier.min_amount);
+            const maxAmount = Number(tier.max_amount);
 
-            return points.reduce((prev, curr) =>
-                Math.abs(curr - amount) < Math.abs(prev - amount)
-                    ? curr
-                    : prev
-            );
+            if (amount < minAmount) return minAmount - amount;
+            if (amount > maxAmount) return amount - maxAmount;
+            return 0;
         };
 
-        const findNearestTerm = (term) => {
-            const points = tiers.flatMap(t => [
-                t.min_term_fortnight,
-                t.max_term_fortnight
-            ]);
-            if (!points.length) return null;
+        const getNearestTierForAmount = (amount) => {
+            if (!tiers.length) return null;
 
-            return points.reduce((prev, curr) =>
-                Math.abs(curr - term) < Math.abs(prev - term)
-                    ? curr
-                    : prev
-            );
+            return tiers.reduce((closestTier, currentTier) => {
+                const currentDistance = getTierDistanceFromAmount(currentTier, amount);
+                const closestDistance = getTierDistanceFromAmount(closestTier, amount);
+                return currentDistance < closestDistance ? currentTier : closestTier;
+            }, tiers[0]);
+        };
+
+        const findNearestAmount = (amount) => {
+            const nearestTier = getNearestTierForAmount(amount);
+            if (!nearestTier) return null;
+
+            const minAmount = Number(nearestTier.min_amount);
+            const maxAmount = Number(nearestTier.max_amount);
+            return Math.min(Math.max(amount, minAmount), maxAmount);
+        };
+
+        const findNearestTerm = (amount, term) => {
+            const nearestTier = getNearestTierForAmount(amount);
+            if (!nearestTier) return null;
+
+            const minTermInTier = Number(nearestTier.min_term_fortnight);
+            const maxTermInTier = Number(nearestTier.max_term_fortnight);
+            return Math.min(Math.max(term, minTermInTier), maxTermInTier);
         };
 
         const validateAmountAndTerm = (P, N) => {
@@ -385,7 +394,7 @@ export default function LoanEmiSchedule({ auth }) {
 
             if (!matchedTier) {
                 const nearestAmt = findNearestAmount(P);
-                const nearestTerm = findNearestTerm(N);
+                const nearestTerm = findNearestTerm(P, N);
 
                 return `Invalid combination. 
     Nearest allowed amount: ${nearestAmt ?? "-"}, 

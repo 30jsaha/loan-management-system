@@ -30,6 +30,35 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
    const [maxAmount, setMaxAmount] = useState(2000);
    const [minTenure, setMinTenure] = useState(1);
    const [maxTenure, setMaxTenure] = useState(12);
+   const [amountStep, setAmountStep] = useState(50);
+
+   const clampValue = (value, min, max) => Math.min(Math.max(value, min), max);
+
+   const isLoanSettingActive = (setting) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (setting?.effect_date) {
+      const effectDate = new Date(setting.effect_date);
+      effectDate.setHours(0, 0, 0, 0);
+      if (effectDate > today) return false;
+    }
+
+    if (setting?.end_date) {
+      const endDate = new Date(setting.end_date);
+      endDate.setHours(0, 0, 0, 0);
+      if (endDate < today) return false;
+    }
+
+    return true;
+   };
+
+   const isMultipleOf = (value, step) => {
+    if (!step || step <= 0) return true;
+    const ratio = value / step;
+    return Math.abs(ratio - Math.round(ratio)) < 1e-9;
+   };
+
    useEffect(() => {
   fetchLoanSettings();
 }, []);
@@ -37,35 +66,78 @@ export default function Home({ auth, laravelVersion, phpVersion }) {
 const fetchLoanSettings = async () => {
   try {
     const res = await axios.get("/api/loan-settings-data");
-    console.log("Fetched loan settings:", res.data);
-    setLoanSettings(res.data);
+    const settings = Array.isArray(res.data) ? res.data : [];
+    const activeSettings = settings.filter(isLoanSettingActive);
+    const settingsForCalculation = activeSettings.length ? activeSettings : settings;
 
-    if (Array.isArray(res.data) && res.data.length) {
-      // Derive global validation bounds across ALL loan settings, not just the first item
-      const minAmounts = res.data
-        .map(item => Number(item.min_loan_amount))
-        .filter(v => !Number.isNaN(v));
-      const maxAmounts = res.data
-        .map(item => Number(item.max_loan_amount))
-        .filter(v => !Number.isNaN(v));
-      const minTenures = res.data
-        .map(item => Number(item.min_loan_term_months))
-        .filter(v => !Number.isNaN(v));
-      const maxTenures = res.data
-        .map(item => Number(item.max_loan_term_months))
-        .filter(v => !Number.isNaN(v));
+    console.log("Fetched loan settings:", settingsForCalculation);
+    setLoanSettings(settingsForCalculation);
 
-      setMinAmount(minAmounts.length ? Math.min(...minAmounts) : 0);
-      setMaxAmount(maxAmounts.length ? Math.max(...maxAmounts) : 0);
-      setMinTenure(minTenures.length ? Math.min(...minTenures) : 0);
-      setMaxTenure(maxTenures.length ? Math.max(...maxTenures) : 0);
+    if (settingsForCalculation.length) {
+      const minAmounts = settingsForCalculation
+        .flatMap((item) =>
+          Array.isArray(item.tier_rules) && item.tier_rules.length
+            ? item.tier_rules.map((tier) => Number(tier.min_amount))
+            : [Number(item.min_loan_amount)]
+        )
+        .filter((v) => Number.isFinite(v));
 
-      // console.log("Derived validation bounds:", {
-      //   minAmount: minAmounts.length ? Math.min(...minAmounts) : 0,
-      //   maxAmount: maxAmounts.length ? Math.max(...maxAmounts) : 0,
-      //   minTenure: minTenures.length ? Math.min(...minTenures) : 0,
-      //   maxTenure: maxTenures.length ? Math.max(...maxTenures) : 0,
-      // });
+      const maxAmounts = settingsForCalculation
+        .flatMap((item) =>
+          Array.isArray(item.tier_rules) && item.tier_rules.length
+            ? item.tier_rules.map((tier) => Number(tier.max_amount))
+            : [Number(item.max_loan_amount)]
+        )
+        .filter((v) => Number.isFinite(v));
+
+      const minTenures = settingsForCalculation
+        .flatMap((item) =>
+          Array.isArray(item.tier_rules) && item.tier_rules.length
+            ? item.tier_rules.map((tier) => Number(tier.min_term_fortnight))
+            : [Number(item.min_loan_term_months)]
+        )
+        .filter((v) => Number.isFinite(v));
+
+      const maxTenures = settingsForCalculation
+        .flatMap((item) =>
+          Array.isArray(item.tier_rules) && item.tier_rules.length
+            ? item.tier_rules.map((tier) => Number(tier.max_term_fortnight))
+            : [Number(item.max_loan_term_months)]
+        )
+        .filter((v) => Number.isFinite(v));
+
+      const multipliers = settingsForCalculation
+        .map((item) => Number(item.amt_multiplier))
+        .filter((v) => Number.isFinite(v) && v > 0);
+
+      const nextMinAmount = minAmounts.length ? Math.min(...minAmounts) : 0;
+      const nextMaxAmount = maxAmounts.length ? Math.max(...maxAmounts) : 0;
+      const nextMinTenure = minTenures.length ? Math.min(...minTenures) : 0;
+      const nextMaxTenure = maxTenures.length ? Math.max(...maxTenures) : 0;
+      const nextAmountStep = multipliers.length ? Math.min(...multipliers) : 1;
+
+      setMinAmount(nextMinAmount);
+      setMaxAmount(nextMaxAmount);
+      setMinTenure(nextMinTenure);
+      setMaxTenure(nextMaxTenure);
+      setAmountStep(nextAmountStep);
+
+      setSliderAmount((prev) => {
+        const previous = Number(prev);
+        const baseAmount = Number.isFinite(previous) ? previous : nextMinAmount;
+        const bounded = clampValue(baseAmount, nextMinAmount, nextMaxAmount);
+        const stepped =
+          nextAmountStep > 1
+            ? Math.round(bounded / nextAmountStep) * nextAmountStep
+            : bounded;
+        return clampValue(stepped, nextMinAmount, nextMaxAmount);
+      });
+
+      setSliderFortnight((prev) => {
+        const previous = Number(prev);
+        const baseTenure = Number.isFinite(previous) ? previous : nextMinTenure;
+        return clampValue(baseTenure, nextMinTenure, nextMaxTenure);
+      });
     }
 
   } catch (error) {
@@ -124,12 +196,12 @@ const [formData, setFormData] = useState({
         service: contactFormData.service,
       });
 
-      Swal.fire({
-        icon: "success",
-        title: "Inquiry Sent",
-        text: res.data.message,
-      });
-
+      // Swal.fire({
+      //   icon: "success",
+      //   title: "Inquiry Sent",
+      //   text: res.data.message,
+      // });
+      console.log("Contact form submitted successfully:", res.data.message);
       // Reset form after success
       setContactFormData({
         nm: "",
@@ -143,13 +215,14 @@ const [formData, setFormData] = useState({
 
     }
      catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Failed",
-        text:
-          error.response?.data?.message ||
-          "Unable to send inquiry. Please try again later.",
-      });
+      console.error("Contact form submission error:", error.response?.data?.message || "Unable to send inquiry. Please try again later.");
+      // Swal.fire({
+      //   icon: "error",
+      //   title: "Failed",
+      //   text:
+      //     error.response?.data?.message ||
+      //     "Unable to send inquiry. Please try again later.",
+      // });
     } 
     finally {
       setLoading(false);
@@ -183,53 +256,92 @@ const [formData, setFormData] = useState({
     setSliderError(""); // reset
 
     if (amt < minAmount || amt > maxAmount) {
-      setSliderError(`❌ Amount must be between ${minAmount} and ${maxAmount}`);
+      setSliderError(`Amount must be between ${minAmount} and ${maxAmount}`);
       setSliderEMI(0);
       return;
     }
 
     if (tn < minTenure || tn > maxTenure) {
-      setSliderError(
-        `❌ Tenure must be between ${minTenure} and ${maxTenure} days`
-      );
+      setSliderError(`Tenure must be between ${minTenure} and ${maxTenure} FN`);
       setSliderEMI(0);
       return;
     }
 
-    // If all good → calculate EMI
-    const emi = calculateRepayment(amt, tn);
-    setSliderEMI(emi);
+    const lowestOption = getLowestEmiOption(amt, tn);
+    if (!lowestOption) {
+      setSliderError(`No loan setting found for amount ${amt} and tenure ${tn} FN.`);
+      setSliderEMI(0);
+      return;
+    }
 
-  }, [sliderAmount, sliderFortnight, minAmount, maxAmount, minTenure, maxTenure]);
+    setSliderEMI(lowestOption.emi.toFixed(2));
+
+  }, [sliderAmount, sliderFortnight, minAmount, maxAmount, minTenure, maxTenure, loanSettings]);
 
 
   // Loan calculation logic (shared by submit & "Check Your Loan Now")
-function calculateRepayment(amountVal, tenureDaysVal) {
+function getLowestEmiOption(amountVal, tenureVal) {
   const amount = Number(amountVal);
-  const tenureDays = Number(tenureDaysVal);
+  const tenure = Number(tenureVal);
 
-  if (!amount || !tenureDays) return "";
+  if (!amount || !tenure) return null;
 
-  // 🔥 Get matching setting from API
-  const matchedSetting = loanSettings.find(
-    (item) => Number(item.amount) === amount
+  const roundTwo = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
+
+  const validOptions = loanSettings
+    .filter((setting) => {
+      const minLoanAmount = Number(setting.min_loan_amount);
+      const maxLoanAmount = Number(setting.max_loan_amount);
+      const minLoanTerm = Number(setting.min_loan_term_months);
+      const maxLoanTerm = Number(setting.max_loan_term_months);
+      const multiplier = Number(setting.amt_multiplier) || 1;
+
+      const isWithinSettingRange =
+        amount >= minLoanAmount &&
+        amount <= maxLoanAmount &&
+        tenure >= minLoanTerm &&
+        tenure <= maxLoanTerm;
+
+      if (!isWithinSettingRange) return false;
+      if (!isMultipleOf(amount, multiplier)) return false;
+
+      const tiers = Array.isArray(setting.tier_rules) ? setting.tier_rules : [];
+      if (!tiers.length) return true;
+
+      return tiers.some((tier) => {
+        const minAmount = Number(tier.min_amount);
+        const maxAmount = Number(tier.max_amount);
+        const minTerm = Number(tier.min_term_fortnight);
+        const maxTerm = Number(tier.max_term_fortnight);
+
+        return (
+          amount >= minAmount &&
+          amount <= maxAmount &&
+          tenure >= minTerm &&
+          tenure <= maxTerm
+        );
+      });
+    })
+    .map((setting) => {
+      const rate = Number(setting.interest_rate) || 0;
+      const emi = roundTwo(amount * ((1 / tenure) + rate / 100));
+      return {
+        id: setting.id,
+        loanDesc: setting.loan_desc,
+        emi
+      };
+    });
+
+  if (!validOptions.length) return null;
+
+  return validOptions.reduce((lowest, current) =>
+    current.emi < lowest.emi ? current : lowest
   );
+}
 
-  if (matchedSetting && tenureDays >= Number(matchedSetting.minDays)) {
-    return Number(matchedSetting.lockedEMI).toFixed(2);
-  }
-
-  function roundTwo(num) {
-    return Math.round(num * 100 + 0.0000001) / 100;
-  }
-
-  const interestRate = 2.35;
-
-  const emi =
-    ((amount * (interestRate / 100) * tenureDays) + amount) /
-    tenureDays;
-
-  return roundTwo(emi).toFixed(2);
+function calculateRepayment(amountVal, tenureVal) {
+  const lowestOption = getLowestEmiOption(amountVal, tenureVal);
+  return lowestOption ? lowestOption.emi.toFixed(2) : "";
 }
 
 
@@ -249,24 +361,32 @@ function calculateRepayment(amountVal, tenureDaysVal) {
     }
 
     const repayment = calculateRepayment(formState.amount, formState.tenure);
+    if (!repayment) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Combination",
+        text: "No loan setting found for the entered amount and tenure.",
+      });
+      return;
+    }
     setFormState(prev => ({ ...prev, repaymentPlan: repayment }));
     //(do not auto-send here — "Check Your Loan Now" handles sending in original)
     try {
       const res = await axios.post("/api/send-loan-mail", {
         amount: Number(formState.amount),
         tenure: Number(formState.tenure),
-        repaymentPlan: formState.repaymentPlan,
+        repaymentPlan: repayment,
         name: formState.name,
         phone: formState.phone,
         email: formState.email,
         // service: formState.service,
       });
 
-      Swal.fire({
-        icon: "success",
-        title: "Inquiry Sent",
-        text: res.data.message,
-      });
+      // Swal.fire({
+      //   icon: "success",
+      //   title: "Inquiry Sent",
+      //   text: res.data.message,
+      // });
 
       // Reset form after success
       setFormState({
@@ -281,13 +401,14 @@ function calculateRepayment(amountVal, tenureDaysVal) {
 
     }
      catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Failed",
-        text:
-          error.response?.data?.message ||
-          "Unable to send inquiry. Please try again later.",
-      });
+      // Swal.fire({
+      //   icon: "error",
+      //   title: "Failed",
+      //   text:
+      //     error.response?.data?.message ||
+      //     "Unable to send inquiry. Please try again later.",
+      // });
+      console.error("Loan inquiry submission error:", error.response?.data?.message || "Unable to send inquiry. Please try again later.");
     }
      finally {
       setLoading(false);
@@ -313,40 +434,39 @@ function calculateRepayment(amountVal, tenureDaysVal) {
     setRespMsg("");
     setShowRepayment(false);
 
-    // 🔥 Trigger HTML validation (THIS WAS MISSING!!)
     const formEl = formRef.current;
     if (!formEl.checkValidity()) {
       formEl.reportValidity();
-      return;
+      return false;
     }
 
     const { amount, tenure } = formState;
-
     const amt = Number(amount);
     const tn = Number(tenure);
 
-    // ... (your existing logic continues)
-
-
     if (amt < minAmount || amt > maxAmount) {
-      setRespMsg(`❌ Amount must be between ${minAmount} and ${maxAmount}`);
+      setRespMsg(`Amount must be between ${minAmount} and ${maxAmount}`);
       setShowRepayment(true);
-      return;
+      return false;
     }
 
     if (tn < minTenure || tn > maxTenure) {
-      setRespMsg(
-        `❌ Tenure must be between ${minTenure} and ${maxTenure} days`
-      );
+      setRespMsg(`Tenure must be between ${minTenure} and ${maxTenure} FN`);
       setShowRepayment(true);
-      return;
+      return false;
     }
 
-    // If passed all rules → calculate repayment
     const repayment = calculateRepayment(amount, tenure);
-    setFormState((prev) => ({ ...prev, repaymentPlan: repayment }));
+    if (!repayment) {
+      setRespMsg(`No loan setting found for amount ${amt} and tenure ${tn} FN.`);
+      setFormState((prev) => ({ ...prev, repaymentPlan: "" }));
+      setShowRepayment(true);
+      return false;
+    }
 
+    setFormState((prev) => ({ ...prev, repaymentPlan: repayment }));
     setShowRepayment(true);
+    return true;
   };
 
   useEffect(() => {
@@ -420,7 +540,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
 
                       {/* TENURE */}
                       <div className="col-md-6 mb-3 text-left">
-                        <label className="form-label">Tenure (Days) <span style={{ color: 'red' }}>*</span></label>
+                        <label className="form-label">Tenure (FN) <span style={{ color: 'red' }}>*</span></label>
                         <input
                           type="number"
                           name="tenure"
@@ -555,7 +675,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
 
                             <button
                             type="button"
-                              onClick={() => setSliderAmount(prev => Math.max(200, prev - 50))}
+                              onClick={() => setSliderAmount(prev => Math.max(minAmount, prev - amountStep))}
                               className="small-inc-btn"
                             >
                               −
@@ -566,7 +686,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                               type="range"
                               min={minAmount}
                               max={maxAmount}
-                              step="50"
+                              step={amountStep}
                               value={sliderAmount}
                               onChange={(e) => setSliderAmount(Number(e.target.value))}
                               className="form-range"
@@ -585,7 +705,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
 
                             <button
                             type="button"
-                              onClick={() => setSliderAmount(prev => Math.min(10000, prev + 50))}
+                              onClick={() => setSliderAmount(prev => Math.min(maxAmount, prev + amountStep))}
                               className="small-inc-btn"
                             >
                               +
@@ -602,7 +722,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
 
                             <button
                             type="button"
-                              onClick={() => setSliderFortnight(prev => Math.max(5, prev - 1))}
+                              onClick={() => setSliderFortnight(prev => Math.max(minTenure, prev - 1))}
                               className="small-inc-btn"
                             >
                               −
@@ -611,8 +731,8 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                             <div className="slider-wrapper position-relative w-75">
                               <input
                                 type="range"
-                                min="5"
-                                max="52"
+                                min={minTenure}
+                                max={maxTenure}
                                 step="1"
                                 value={sliderFortnight}
                                 onChange={(e) => setSliderFortnight(Number(e.target.value))}
@@ -621,7 +741,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                              <div
   className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm"
   style={{
-    left: `${((sliderFortnight - 5) / (52 - 5)) * 100}%`,
+    left: `${(maxTenure === minTenure ? 0 : ((sliderFortnight - minTenure) / (maxTenure - minTenure))) * 100}%`,
     transform: "translateX(-50%)",
   }}
 >
@@ -632,7 +752,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
 
                             <button
                             type="button"
-                              onClick={() => setSliderFortnight(prev => Math.min(52, prev + 1))}
+                              onClick={() => setSliderFortnight(prev => Math.min(maxTenure, prev + 1))}
                               className="small-inc-btn"
                             >
                               +
@@ -678,7 +798,10 @@ function calculateRepayment(amountVal, tenureDaysVal) {
       }
 
       // Run validation logic
-      handleCheckLoan(e);
+      const isValidCombination = handleCheckLoan(e);
+      if (!isValidCombination) {
+        return;
+      }
 
       setSending(true);
 
@@ -695,20 +818,21 @@ function calculateRepayment(amountVal, tenureDaysVal) {
           email: formState.email,
         });
 
-        Swal.fire({
-          icon: "success",
-          title: "Inquiry Sent",
-          text: res.data.message,
-        });
+        // Swal.fire({
+        //   icon: "success",
+        //   title: "Inquiry Sent",
+        //   text: res.data.message,
+        // });
 
       } catch (error) {
-        Swal.fire({
-          icon: "error",
-          title: "Failed",
-          text:
-            error.response?.data?.message ||
-            "Unable to send inquiry. Please try again later.",
-        });
+        // Swal.fire({
+        //   icon: "error",
+        //   title: "Failed",
+        //   text:
+        //     error.response?.data?.message ||
+        //     "Unable to send inquiry. Please try again later.",
+        // });
+        console.error("Loan inquiry submission error:", error.response?.data?.message || "Unable to send inquiry. Please try again later.");
       } finally {
         setSending(false);
       }
@@ -758,7 +882,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                   <div className="d-flex align-items-center justify-content-center gap-3">
 
                     <button
-                      onClick={() => setSliderAmount(prev => Math.max(200, prev - 50))}
+                      onClick={() => setSliderAmount(prev => Math.max(minAmount, prev - amountStep))}
                       className="btn btn-sm btn-outline-success"
                     >
                       −
@@ -766,9 +890,9 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                     <div className="slider-wrapper position-relative w-75">
                       <input
                         type="range"
-                        min="200"
-                        max="10000"
-                        step="50"
+                        min={minAmount}
+                        max={maxAmount}
+                        step={amountStep}
                         value={sliderAmount}
                         onChange={(e) => setSliderAmount(Number(e.target.value))}
                         className="form-range"
@@ -776,17 +900,17 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                      <div
   className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm"
   style={{
-    left: `${((sliderFortnight - 5) / (52 - 5)) * 100}%`,
+    left: `${maxAmount === minAmount ? 0 : ((sliderAmount - minAmount) / (maxAmount - minAmount)) * 100}%`,
     transform: "translateX(-50%)",
   }}
 >
-  {sliderFortnight}
+  K{sliderAmount}
 </div>
 
                     </div>
 
                     <button
-                      onClick={() => setSliderAmount(prev => Math.min(10000, prev + 50))}
+                      onClick={() => setSliderAmount(prev => Math.min(maxAmount, prev + amountStep))}
                       className="small-inc-btn"
                     >
                       +
@@ -802,7 +926,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                   <div className="d-flex align-items-center justify-content-center gap-3">
 
                     <button
-                      onClick={() => setSliderFortnight(prev => Math.max(5, prev - 1))}
+                      onClick={() => setSliderFortnight(prev => Math.max(minTenure, prev - 1))}
                       className="small-inc-btn"
                     >
                       −
@@ -811,8 +935,8 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                     <div className="slider-wrapper position-relative w-75">
                       <input
                         type="range"
-                        min="5"
-                        max="52"
+                        min={minTenure}
+                        max={maxTenure}
                         step="1"
                         value={sliderFortnight}
                         onChange={(e) => setSliderFortnight(Number(e.target.value))}
@@ -821,7 +945,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                       <div
   className="slider-label bg-danger text-white px-2 py-1 rounded shadow-sm"
   style={{
-    left: `${((sliderFortnight - 5) / (52 - 5)) * 100}%`,
+    left: `${(maxTenure === minTenure ? 0 : ((sliderFortnight - minTenure) / (maxTenure - minTenure))) * 100}%`,
     transform: "translateX(-50%)",
   }}
 >
@@ -831,7 +955,7 @@ function calculateRepayment(amountVal, tenureDaysVal) {
                     </div>
 
                     <button
-                      onClick={() => setSliderFortnight(prev => Math.min(52, prev + 1))}
+                      onClick={() => setSliderFortnight(prev => Math.min(maxTenure, prev + 1))}
                       className="btn btn-sm btn-outline-success"
                     >
                       +
