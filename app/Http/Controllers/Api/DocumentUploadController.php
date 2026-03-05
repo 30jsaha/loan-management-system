@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Models\DocumentUpload;
+use App\Models\DocumentType;
 use App\Models\LoanApplication;
 
 class DocumentUploadController extends Controller
@@ -24,8 +25,26 @@ class DocumentUploadController extends Controller
                 'required',
                 Rule::exists('document_types', 'doc_key')->where('active', 1),
             ],
-            'file' => 'required|file|mimes:pdf|max:5120', // max 5MB, only PDF
+            'file' => 'required|file|mimes:pdf,docx,txt',
             'notes' => 'nullable|string|max:500'
+        ]);
+
+        $docType = DocumentType::where('doc_key', $validated['doc_type'])
+            ->where('active', 1)
+            ->first();
+
+        if (!$docType) {
+            return response()->json([
+                'message' => 'Invalid document type selected.',
+            ], 422);
+        }
+
+        $request->validate([
+            'file' => "required|file|mimes:pdf,docx,txt|min:{$docType->min_size_kb}|max:{$docType->max_size_kb}",
+        ], [
+            'file.min' => "File too small (min {$docType->min_size_kb} KB).",
+            'file.max' => "Max allowed " . ($docType->max_size_kb / 1024) . " MB.",
+            'file.mimes' => 'Only PDF, DOCX, and TXT files are allowed.',
         ]);
 
         try {

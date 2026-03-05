@@ -32,7 +32,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [message, setMessage] = useState("");
     const [allDocVerivied, setAllDocVerified] = useState(false);
     const [isSentApproval, setIsSentApproval] = useState(false);
-    const [isSentForApproval, setIsSentForApproval] = useState(false);
+    const isSentForApproval = loan?.is_sent_for_approval == 1;
 
     const [videoFile, setVideoFile] = useState(null);
     const [pdfFile, setPdfFile] = useState(null);
@@ -101,6 +101,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [loanPurposeOptions, setLoanPurposeOptions] = useState([]);
     const [isFetchingPurpose, setIsFetchingPurpose] = useState(false);
 
+    const hasFetchedLoanTypesRef = useRef(false);
     const [loanFormData, setLoanFormData] = useState({
         id: loan ? loan.id : null,
         loan_type: 0,
@@ -208,7 +209,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
                 }))
             : [];
         setLoanPurposeOptions(lpo);
-    }, loanPurposes);
+    }, [loanPurposes]);
 
     const cleanupRecordingStream = useCallback(() => {
         if (videoRef.current) {
@@ -1224,34 +1225,6 @@ const normalizeFilePath = (path) => {
     const isRejectDisabled =
         (!approvalBlockers.canReject) || missingMandatoryUploads;
 
-    //fetch loan types and settings on component mount
-    useEffect(() => {
-        //fetch loan settings
-        axios
-            .get("/api/loan-settings-data")
-            .then((res) => {
-                setLoanSettings(res.data);
-                // setLoanTypes(res.data);
-            })
-            .catch((error) => {
-                console.error("Error fetching loan settings:", error);
-            });
-        // 🔥 Fetch loan types based on salary and organisation
-        console.log("filtered-loan-types loan data: ",loan);
-        axios.get(`/api/filtered-loan-types-from-loan/${loan?.customer.id}`)
-        .then((res) => {
-            // if (res.data.length === 0) {
-            //      setIsEligible(false);
-            //      setMessage("❌ Customer is not eligible for any loan types based on their salary and organisation.");
-            // } else {
-            //      setIsEligible(true);
-            // }
-            if (res.data.length != 0) {
-                setLoanTypes(res.data);
-            }
-        })
-        .catch((err) => console.error("Error fetching loan types:", err));        
-    }, [loan]);
     const fetchFnRange = async (amount) => {
         console.log("fetchFnRange entered");
         if (!loanFormData.loan_type || !amount) {
@@ -1330,6 +1303,33 @@ const normalizeFilePath = (path) => {
         }
         return loanSetting.min_loan_term_months;
     };
+    // Fetch loan settings once on mount.
+    useEffect(() => {
+        axios
+            .get("/api/loan-settings-data")
+            .then((res) => {
+                setLoanSettings(res.data);
+            })
+            .catch((error) => {
+                console.error("Error fetching loan settings:", error);
+            });
+    }, []);
+
+    // Fetch filtered loan types once after loan customer id is available.
+    useEffect(() => {
+        const customerId = loan?.customer?.id;
+        if (!customerId || hasFetchedLoanTypesRef.current) return;
+
+        hasFetchedLoanTypesRef.current = true;
+        axios
+            .get(`/api/filtered-loan-types-from-loan/${customerId}`)
+            .then((res) => {
+                if (res.data.length !== 0) {
+                    setLoanTypes(res.data);
+                }
+            })
+            .catch((err) => console.error("Error fetching loan types:", err));
+    }, [loan?.customer?.id]);
     useEffect(() => {
         if (!loanFormData.loan_type || !loanFormData.loan_amount_applied) return;
         if (!Array.isArray(loanSettings)) return;
@@ -1371,14 +1371,11 @@ const normalizeFilePath = (path) => {
             calculateRepaymentDetails();
         }
     }, [
-        loanFormData.loan_type,           // 👈 loan type selection
-        loanFormData.loan_amount_applied, // 👈 already present
-        loanFormData.tenure_fortnight,    // 👈 auto-filled
-        loanFormData.interest_rate        // 👈 auto-filled
+        loanFormData.loan_type,
+        loanFormData.loan_amount_applied,
+        loanFormData.tenure_fortnight,
+        loanFormData.interest_rate
     ]);
-    if (loan?.is_sent_for_approval == 1) {
-        setIsSentForApproval(true);
-    }
     return (
         <AuthenticatedLayout
             user={auth.user}

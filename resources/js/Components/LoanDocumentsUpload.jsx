@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { X, Upload, Eye } from "lucide-react";
 import { Button, ProgressBar, Modal } from "react-bootstrap";
@@ -32,6 +32,16 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
       setDocTypes(res.data);
     });
   }, []);
+
+  const requiredDocs = useMemo(
+    () => docTypes.filter((doc) => Number(doc.is_required) === 1),
+    [docTypes]
+  );
+
+  const missingRequiredDocs = useMemo(
+    () => requiredDocs.filter((doc) => !files[doc.doc_key]),
+    [requiredDocs, files]
+  );
 
   const handleViewDocument = (doc) => {
     setSelectedDoc(doc);
@@ -145,6 +155,15 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
 
   const handleUploadAll = async (e) => {
     e.preventDefault();
+
+    if (missingRequiredDocs.length > 0) {
+      toast.error(
+        `Please upload mandatory documents: ${missingRequiredDocs
+          .map((doc) => doc.doc_name)
+          .join(", ")}`
+      );
+      return;
+    }
 
     if (Object.keys(files).length === 0) {
       toast.error("Please select files first!");
@@ -335,11 +354,27 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
         </div>
         
         <div className="text-center mt-5">
+          {missingRequiredDocs.length > 0 && (
+            <div className="mb-4 flex justify-center">
+              <div
+                className="max-w-xl w-full bg-red-50 border border-red-300
+                text-red-700 px-4 py-3 rounded-md text-sm
+                flex items-start gap-2 justify-center"
+              >
+                <span className="text-red-600 font-bold mt-0.5">&#9888;</span>
+                <span>
+                  <strong>Blocked:</strong> Upload mandatory documents:
+                  {" "}
+                  {missingRequiredDocs.map((doc) => doc.doc_name).join(", ")}
+                </span>
+              </div>
+            </div>
+          )}
           <Button
             type="submit"
             variant="success"
-            className={`px-5 py-2 fw-semibold rounded-pill shadow-sm w-full sm:w-auto ${uploading || !loanId ? 'opacity-75 cursor-not-allowed' : ''}`}
-            disabled={uploading || !loanId}
+            className={`px-5 py-2 fw-semibold rounded-pill shadow-sm w-full sm:w-auto ${uploading || !loanId || missingRequiredDocs.length > 0 ? 'opacity-75 cursor-not-allowed' : ''}`}
+            disabled={uploading || !loanId || missingRequiredDocs.length > 0}
             style={{
               backgroundColor: uploading ? "#22c55ecc" : "#22c55e",
               border: "none",

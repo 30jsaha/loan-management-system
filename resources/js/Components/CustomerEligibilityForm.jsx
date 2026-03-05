@@ -414,7 +414,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
               name="gross_salary_amt"
               value={formData.gross_salary_amt}
               onChange={handleChange}
-              className="w-full border border-gray-300 px-2 py-1 text-right focus:outline-none"
+              className="w-full border border-gray-300 px-2 py-1 text-right focus:outline-none bg-violet-100"
             />
           </div>
         </div>
@@ -451,7 +451,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
                 name={field.name}
                 value={formData[field.name]}
                 onChange={handleChange}
-                className="w-full border border-gray-300 px-2 py-1 text-right focus:outline-none"
+                className={`w-full border border-gray-300 px-2 py-1 text-right focus:outline-none ${field.name === "current_net_pay_amt" ? "bg-violet-100" : "bg-white"}`}
               />
             </div>
           </div>

@@ -125,6 +125,7 @@ export default function Create({ auth, loan_settings }) {
     const [step, setStep] = useState(1);
     const [tempCustomerId, setTempCustomerId] = useState(null);
     const [isChecking, setIsChecking] = useState(false);
+    const bankSelectionTriggeredCustomerRef = useRef(null);
     const isEmpty = (obj) => Object.keys(obj).length === 0;
 
     useBeforeUnload(isFormDirty, formData);
@@ -396,6 +397,25 @@ export default function Create({ auth, loan_settings }) {
         if (selectedBank) {
             setLoanBankDetails(selectedBank);
         }
+    };
+
+    const triggerBankSelectionForEligibleCustomer = async (customerId, fallbackEmployeeNo = "") => {
+        const numericCustomerId = Number(customerId);
+        if (!numericCustomerId) return;
+        if (bankSelectionTriggeredCustomerRef.current === numericCustomerId) return;
+
+        const selectedCustomer = customers.find(
+            (customer) => Number(customer.id) === numericCustomerId
+        );
+        const employeeNo =
+            selectedCustomer?.employee_no ||
+            normalizeText(fallbackEmployeeNo) ||
+            normalizeText(savedCustomerData?.employee_no);
+
+        if (!normalizeText(employeeNo)) return;
+
+        bankSelectionTriggeredCustomerRef.current = numericCustomerId;
+        await autoFillBankDetailsFromMaster(employeeNo);
     };
 
     const getCustomerFromInput = (inputValue) => {
@@ -1425,7 +1445,7 @@ const isSubmitDisabled =
                                                     ...prev,
                                                     customer_id: savedCustomer.id,
                                                 }));
-                                                autoFillBankDetailsFromMaster(savedCustomer.employee_no);
+                                                bankSelectionTriggeredCustomerRef.current = null;
 
                                                 setStep(2);
                                                 setCustSelectable(false);
@@ -1463,10 +1483,13 @@ const isSubmitDisabled =
                                                                     ...prev,
                                                                     customer_id: selectedCustomer.id
                                                                 }));
-                                                                autoFillBankDetailsFromMaster(selectedCustomer.employee_no);
+                                                                if (Number(loanFormData.customer_id) !== Number(selectedCustomer.id)) {
+                                                                    bankSelectionTriggeredCustomerRef.current = null;
+                                                                }
                                                                 console.log("selectedCustomer on loan application customer select: ",selectedCustomer);
                                                                 setSavedCustomerData(prev =>({
                                                                     ...prev,
+                                                                    employee_no: selectedCustomer.employee_no,
                                                                     monthly_salary: parseFloat(selectedCustomer.monthly_salary),
                                                                     net_salary: parseFloat(selectedCustomer.net_salary)
                                                                 }));
@@ -1482,6 +1505,7 @@ const isSubmitDisabled =
                                                                     .catch(err => console.error(err));
                                                             } else {
                                                                 // Reset if invalid text
+                                                                bankSelectionTriggeredCustomerRef.current = null;
                                                                 setLoanFormData(prev => ({
                                                                     ...prev,
                                                                     customer_id: 0
@@ -1516,6 +1540,14 @@ const isSubmitDisabled =
                                                         onEligibilityChangeTruely={(isTruelyEligible) => {
                                                             setIsTruelyEligible(isTruelyEligible);
                                                             console.log("isTruelyEligible on CustomerEligibilityCheck", isTruelyEligible);
+                                                            if (isTruelyEligible) {
+                                                                triggerBankSelectionForEligibleCustomer(
+                                                                    loanFormData.customer_id,
+                                                                    savedCustomerData?.employee_no
+                                                                );
+                                                            } else {
+                                                                bankSelectionTriggeredCustomerRef.current = null;
+                                                            }
                                                         }}
                                                         proposedPvaAmt={(recProposedPvaAmt) => {
                                                             setRecProposedPvaAmt(recProposedPvaAmt);

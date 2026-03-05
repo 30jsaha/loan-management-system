@@ -1420,6 +1420,7 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
                     <tr>
                       <th
                         colSpan="4"
+                        className="text-black"
                         style={{
                           backgroundColor: "#d9d9d9",
                           fontWeight: "bold",

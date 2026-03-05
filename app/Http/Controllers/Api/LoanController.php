@@ -1273,6 +1273,9 @@ class LoanController extends Controller
     }
     public function getEligibleLoanTypesFromLoan($loanId)
     {
+        if ($loanId === "undefined") {
+            return response()->json([], 200);
+        }
         try {
             // fetch customer id from loan id
             $loan = Loan::findOrFail($loanId);
