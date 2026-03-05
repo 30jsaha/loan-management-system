@@ -121,7 +121,10 @@ useEffect(() => {
     setIsDataSaving(true);
 
     try {
-      const payload = sanitizeFormData(formData);
+      const payload = sanitizeFormData({
+        ...formData,
+        employee_no: resolveEmployeeNoForSave(formData),
+      });
 
       // console.log("payload: ", payload);
       // return;
@@ -219,18 +222,47 @@ useEffect(() => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleEmpSearchInputChange = (e) => {
+    const value = e.target.value;
+    setEmpSearch(value);
+    setDropdownOpen(true);
+    setIsFormDirty(false);
+    setIsExistingFound(false);
+    setIsAutoFilled(false);
+    setOrgSelectable(true);
+    setFormData((prev) => ({
+      ...prev,
+      cus_id: 0,
+      employee_no: value,
+    }));
+  };
+
+  const resolveEmployeeNoForSave = (data) => {
+    const typedValue = (empSearch || "").trim();
+    const currentValue = (data?.employee_no || "").trim();
+
+    if (!typedValue) return currentValue;
+    if (isExistingFound && isAutoFilled) return currentValue || typedValue;
+    if (currentValue && currentValue !== typedValue) return currentValue;
+    return typedValue;
+  };
+
   const handleNext = async (e) => {
     e.preventDefault();
     setMessage("");
     setIsDataSaving(true);
     try {
       let res, savedCustomer;
+      const payload = {
+        ...formData,
+        employee_no: resolveEmployeeNoForSave(formData),
+      };
 
-      if (formData.cus_id && formData.cus_id !== 0) {
+      if (payload.cus_id && payload.cus_id !== 0) {
         // Update existing customer
         res = await axios.post(
-          `/api/edit-new-customer-for-new-loan/${formData.cus_id}`,
-          formData
+          `/api/edit-new-customer-for-new-loan/${payload.cus_id}`,
+          payload
         );
         savedCustomer = res.data.customer;
         setMessage("✅ Customer updated successfully. Proceed to next step.");
@@ -241,7 +273,7 @@ useEffect(() => {
         });
       } else {
         // Create new customer
-        res = await axios.post("/api/save-new-customer-for-new-loan", formData);
+        res = await axios.post("/api/save-new-customer-for-new-loan", payload);
         savedCustomer = res.data.customer;
         setFormData((prev) => ({
           ...prev,
@@ -488,7 +520,7 @@ useEffect(() => {
                   <input
                     type="text"
                     value={empSearch}
-                    onChange={(e) => setEmpSearch(e.target.value)}
+                    onChange={handleEmpSearchInputChange}
                     onFocus={handleFocus}
                     placeholder="Search EMP Code / Name..."
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm px-3 py-2"
