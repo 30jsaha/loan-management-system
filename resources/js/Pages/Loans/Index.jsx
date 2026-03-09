@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Link, Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -15,9 +15,12 @@ export default function Index({ auth }) {
 
   // 🔍 Filters
   const [searchName, setSearchName] = useState("");
+  const [searchCustomerRefNo, setSearchCustomerRefNo] = useState("");
+  const [customerRefDropdownOpen, setCustomerRefDropdownOpen] = useState(false);
   const [searchAmount, setSearchAmount] = useState("");
   const [searchOrg, setSearchOrg] = useState("");
   const [eligibilityFilter, setEligibilityFilter] = useState("All");
+  const customerRefAreaRef = useRef(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,6 +31,49 @@ export default function Index({ auth }) {
   useEffect(() => {
     fetchLoans();
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (customerRefAreaRef.current && !customerRefAreaRef.current.contains(event.target)) {
+        setCustomerRefDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const customerRefOptions = useMemo(() => {
+    const seen = new Set();
+    const options = [];
+
+    loans.forEach((loan) => {
+      const refNo = String(loan.customer?.customer_ref_no || "").trim();
+      if (!refNo) return;
+
+      const key = refNo.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const name = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.trim();
+      options.push({ refNo, name });
+    });
+
+    return options;
+  }, [loans]);
+
+  const filteredCustomerRefOptions = useMemo(() => {
+    const term = searchCustomerRefNo.toLowerCase().trim();
+    if (!term) return customerRefOptions.slice(0, 30);
+
+    return customerRefOptions
+      .filter(
+        (opt) =>
+          opt.refNo.toLowerCase().includes(term) ||
+          opt.name.toLowerCase().includes(term)
+      )
+      .slice(0, 30);
+  }, [customerRefOptions, searchCustomerRefNo]);
 
   const fetchLoans = async () => {
     try {
@@ -51,6 +97,9 @@ export default function Index({ auth }) {
     const filtered = loans.filter((loan) => {
       const fullName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
       const matchesName = fullName.includes(searchName.toLowerCase());
+      const customerRefNo = String(loan.customer?.customer_ref_no || "").toLowerCase();
+      const customerRefNoTerm = searchCustomerRefNo.toLowerCase().trim();
+      const matchesCustomerRefNo = customerRefNoTerm ? customerRefNo.includes(customerRefNoTerm) : true;
 
       const matchesAmount = searchAmount
         ? String(loan.loan_amount_applied || "")
@@ -70,12 +119,19 @@ export default function Index({ auth }) {
           ? loan.is_elegible === 1
           : loan.is_elegible !== 1;
 
-      return matchesName && matchesAmount && matchesOrg && matchesEligibility;
+      return matchesName && matchesCustomerRefNo && matchesAmount && matchesOrg && matchesEligibility;
     });
 
     setFilteredLoans(filtered);
     setCurrentPage(1);
-  }, [searchName, searchAmount, searchOrg, eligibilityFilter, loans]);
+  }, [
+    searchName,
+    searchCustomerRefNo,
+    searchAmount,
+    searchOrg,
+    eligibilityFilter,
+    loans,
+  ]);
 
   // ↕️ Sorting logic
   const handleSort = (key) => {
@@ -202,6 +258,43 @@ export default function Index({ auth }) {
                 onChange={(e) => setSearchName(e.target.value)}
                 className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               />
+            </div>
+
+            {/* Search by Customer Ref. No. */}
+            <div className="relative flex-1 w-full" ref={customerRefAreaRef}>
+              <Search size={16} className="absolute left-3 top-3 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search Customer Ref. No. / Name..."
+                value={searchCustomerRefNo}
+                onChange={(e) => {
+                  setSearchCustomerRefNo(e.target.value);
+                  setCustomerRefDropdownOpen(true);
+                }}
+                onFocus={() => setCustomerRefDropdownOpen(true)}
+                className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+
+              {customerRefDropdownOpen && (
+                <div className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto">
+                  {filteredCustomerRefOptions.length > 0 ? (
+                    filteredCustomerRefOptions.map((opt, idx) => (
+                      <div
+                        key={`${opt.refNo}-${idx}`}
+                        onClick={() => {
+                          setSearchCustomerRefNo(opt.refNo);
+                          setCustomerRefDropdownOpen(false);
+                        }}
+                        className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                      >
+                        <b>{opt.refNo}</b> {opt.name ? `- ${opt.name}` : ""}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-2 text-sm text-gray-500">No results found</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Search by Loan Amount */}
@@ -376,10 +469,17 @@ export default function Index({ auth }) {
                       {/* Customers - CENTERED */}
                       <td className="px-4 py-3 text-gray-800 text-sm border border-gray-700 text-center align-middle">
                         <div className="flex flex-col items-center justify-center">
+                          {loan.customer?.customer_ref_no && (
+                            <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
+                              <b>Ref. No.: </b>{loan.customer?.customer_ref_no || "-"}
+                            </span>
+                          )}
                           <strong>{loan.customer? loan.customer.first_name+" "+loan.customer.last_name : "-"}</strong>
-                          <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
-                            {loan.customer?.employee_no || "-"}
-                          </span>
+                          {loan.customer?.employee_no && (
+                            <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
+                              <b>EMP.: </b>{loan.customer?.employee_no || "-"}
+                            </span>
+                          )}
                           <span className="break-words whitespace-normal text-gray-700 text-xs leading-snug">
                             {loan.customer?.designation || "-"}
                           </span>

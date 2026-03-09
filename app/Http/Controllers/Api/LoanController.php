@@ -352,19 +352,46 @@ class LoanController extends Controller
 
     public function approve($id)
     {
-        $loan = Loan::findOrFail($id);
-        $loan->loan_amount_approved = $loan->loan_amount_applied;
-        $loan->total_no_emi = $loan->tenure_fortnight;
-        $loan->next_due_date = now()->addDays(14)->toDateString();
-        $loan->min_repay_amt_for_next_loan = $loan->total_repay_amt !== null ? (float) ($loan->total_repay_amt * 0.8) : null;
-        $loan->status = 'Approved';
-        $loan->approved_by = auth()->user()->name;
-        $loan->approved_by_id = auth()->user()->id;
-        $loan->disbursement_date = now()->toDateString();
-        $loan->approved_date = now();
-        $loan->save();
+        return DB::transaction(function () use ($id) {
+            $loan = Loan::lockForUpdate()->findOrFail($id);
+            $loan->loan_amount_approved = $loan->loan_amount_applied;
+            $loan->total_no_emi = $loan->tenure_fortnight;
+            $loan->next_due_date = now()->addDays(14)->toDateString();
+            $loan->min_repay_amt_for_next_loan = $loan->total_repay_amt !== null ? (float) ($loan->total_repay_amt * 0.8) : null;
+            $loan->status = 'Approved';
+            $loan->approved_by = auth()->user()->name;
+            $loan->approved_by_id = auth()->user()->id;
+            $loan->disbursement_date = now()->toDateString();
+            $loan->approved_date = now();
+            $loan->save();
 
-        return response()->json(['message' => 'Loan approved successfully.']);
+            $this->assignCustomerRefNoIfEligible($loan);
+
+            return response()->json(['message' => 'Loan approved successfully.']);
+        });
+    }
+
+    private function assignCustomerRefNoIfEligible(Loan $loan): void
+    {
+        $customer = Customer::lockForUpdate()->find($loan->customer_id);
+        if (!$customer || !is_null($customer->customer_ref_no)) {
+            return;
+        }
+
+        $hasOtherLoans = Loan::where('customer_id', $loan->customer_id)
+            ->where('id', '!=', $loan->id)
+            ->exists();
+
+        if ($hasOtherLoans) {
+            return;
+        }
+
+        $maxRefNo = Customer::whereNotNull('customer_ref_no')
+            ->lockForUpdate()
+            ->max('customer_ref_no');
+
+        $customer->customer_ref_no = ((int) ($maxRefNo ?? 100000)) + 1;
+        $customer->save();
     }
 
     // public function reject($id)

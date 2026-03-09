@@ -33,6 +33,9 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [allDocVerivied, setAllDocVerified] = useState(false);
     const [isSentApproval, setIsSentApproval] = useState(false);
     const isSentForApproval = loan?.is_sent_for_approval == 1;
+    const canShowVideoSignedDocs =
+        auth.user.is_admin == 1 ||
+        (auth.user.is_admin != 1 && (loan?.status == "Approved" || loan?.status == "Rejected"));
 
     const [videoFile, setVideoFile] = useState(null);
     const [pdfFile, setPdfFile] = useState(null);
@@ -259,7 +262,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
             const updatedLoan = await axios.get(`/api/loans/${loanId}`);
             setLoan(updatedLoan.data);
             setVideoFile(null);
-            setMessage("Recorded consent video saved successfully!");
+            setMessage("✅ Recorded consent video saved successfully!");
             Swal.fire({
                 title: "Success !",
                 text: "Recorded consent video saved successfully!",
@@ -1225,6 +1228,15 @@ const normalizeFilePath = (path) => {
     const isRejectDisabled =
         (!approvalBlockers.canReject) || missingMandatoryUploads;
 
+    const hasConsentVideo = Boolean(videoPreview || loan?.video_consent_path);
+    const hasSignedIsda = Boolean(pdfPreview || loan?.isda_signed_upload_path);
+    const hasSignedOrgStandard = Boolean(pdfPreview1 || loan?.org_signed_upload_path);
+    const isSendForApprovalDisabled =
+        Number(loan?.is_ack_downloaded) !== 1 ||
+        !hasConsentVideo ||
+        !hasSignedIsda ||
+        !hasSignedOrgStandard;
+
     const fetchFnRange = async (amount) => {
         console.log("fetchFnRange entered");
         if (!loanFormData.loan_type || !amount) {
@@ -1625,6 +1637,7 @@ const normalizeFilePath = (path) => {
                                                 <div className="fldScroll">
                                                     <table className="w-full border-collapse border border-gray-300 text-sm">
                                                         <tbody>
+                                                            <tr><td className="border p-2" colSpan={2}><span className="font-bold text-md">Customer Ref. No.: </span> {loan.customer.customer_ref_no}</td></tr>
                                                             <tr><td className="border p-2 font-semibold">Name</td><td className="border p-2">{loan.customer.first_name} {loan.customer.last_name}</td></tr>
                                                             <tr>
                                                                 <td className="border p-2 font-semibold">Details</td>
@@ -2251,295 +2264,6 @@ const normalizeFilePath = (path) => {
                                                                 </tr>
 
                                                             ))}
-                                                            {auth.user.is_admin == 1 ? (
-                                                                <>
-                                                                    {loan.video_consent_path && (
-                                                                        <tr key="video-consent" className="hover:bg-gray-50 transition">
-                                                                            <td className="border p-2">Video Consent</td>
-                                                                            <td className="border p-2">{loan.video_consent_file_name.split("/").pop()}</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2">-</td>
-
-                                                                            {/* 👁️ View Button - opens custom video modal */}
-                                                                            <td className="border p-2 text-center">
-                                                                                <button
-                                                                                    onClick={() => handleOpenVideoModal(loan.video_consent_path)}
-                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                                >
-                                                                                    <Eye size={16} /> View
-                                                                                </button>
-                                                                            </td>
-
-                                                                            {/* ⬇️ Download Button */}
-                                                                            <td className="border p-2 text-center">
-                                                                                <a
-                                                                                    href={loan.video_consent_path}
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                                >
-                                                                                    Download <Download size={16} />
-                                                                                </a>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">-</td>
-                                                                        </tr>
-                                                                    )}
-                                                                    {/* 🎥 Video Player Modal */}
-                                                                    <Modal
-                                                                        show={showVideoModal}
-                                                                        onHide={closeVideoModal}
-                                                                        size="lg"
-                                                                        centered
-                                                                        dialogClassName="max-w-[800px]"
-                                                                    >
-                                                                        <Modal.Header closeButton className="bg-gray-100">
-                                                                            <Modal.Title className="text-lg font-semibold text-gray-800">
-                                                                                🎬 Video Consent Preview
-                                                                            </Modal.Title>
-                                                                        </Modal.Header>
-
-                                                                        <Modal.Body className="bg-black p-2">
-                                                                            {videoSrc ? (
-                                                                                <video
-                                                                                    controls
-                                                                                    autoPlay
-                                                                                    className="w-100 rounded shadow-sm border border-gray-300"
-                                                                                    style={{ maxHeight: "70vh", display: "block", margin: "0 auto" }}
-                                                                                >
-                                                                                    <source src={videoSrc} type="video/mp4" />
-                                                                                    Your browser does not support the video tag.
-                                                                                </video>
-                                                                            ) : (
-                                                                                <p className="text-gray-500 text-center">No video available for preview.</p>
-                                                                            )}
-                                                                        </Modal.Body>
-
-                                                                        <Modal.Footer className="bg-gray-50">
-                                                                            <Button variant="secondary" onClick={closeVideoModal}>
-                                                                                Close
-                                                                            </Button>
-                                                                        </Modal.Footer>
-                                                                    </Modal>
-                                                                    {loan.isda_signed_upload_path && (
-                                                                        <tr key="isda-signed" className="hover:bg-gray-50 transition">
-                                                                            <td className="border p-2">ISDA Signed Document</td>
-                                                                            <td className="border p-2">{loan.isda_signed_upload_path.split("/").pop()}</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2 text-center">
-                                                                                <button
-                                                                                    onClick={() =>
-                                                                                        // openDocModal({
-                                                                                        //      file_path: loan.isda_signed_upload_path,
-                                                                                        //      file_name: loan.isda_signed_upload_path.split("/").pop(),
-                                                                                        //      doc_type: "ISDA Signed Document",
-                                                                                        // })
-                                                                                        openDocModal({
-                                                                                            id: loan.id,
-                                                                                            doc_type: "ISDA Signed Document",
-                                                                                            file_name: "ISDA_signed_document.pdf",
-                                                                                            file_path: loan.isda_signed_upload_path.replace('public/', '')
-                                                                                        })
-                                                                                    }
-                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                                >
-                                                                                    <Eye size={16} /> View
-                                                                                </button>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">
-                                                                                <a
-                                                                                    href={loan.isda_signed_upload_path}
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                                >
-                                                                                    Download <Download size={16} />
-                                                                                </a>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">-</td>
-                                                                        </tr>
-                                                                    )}
-
-                                                                    {loan.org_signed_upload_path && (
-                                                                        <tr key="org-signed" className="hover:bg-gray-50 transition">
-                                                                            <td className="border p-2">Organisation Standard Document</td>
-                                                                            <td className="border p-2">{loan.org_signed_upload_path.split("/").pop()}</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2 text-center">
-                                                                                <button
-                                                                                    onClick={() =>
-                                                                                        openDocModal({
-                                                                                            id: loan.id,
-                                                                                            doc_type: "Organisation Document",
-                                                                                            file_name: "organisation_document.pdf",
-                                                                                            file_path: loan.org_signed_upload_path
-                                                                                        })
-                                                                                    }
-                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                                >
-                                                                                    <Eye size={16} /> View
-                                                                                </button>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">
-                                                                                <a
-                                                                                    href={loan.org_signed_upload_path}
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                                >
-                                                                                    Download <Download size={16} />
-                                                                                </a>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">-</td>
-                                                                        </tr>
-                                                                    )}
-                                                                </>
-                                                            ) : ((auth.user.is_admin != 1 && (loan?.status == 'Approved' || loan?.status == 'Rejected') && (
-                                                                <>
-                                                                    {loan.video_consent_path && (
-                                                                        <tr key="video-consent" className="hover:bg-gray-50 transition">
-                                                                            <td className="border p-2">Video Consent</td>
-                                                                            <td className="border p-2">{loan.video_consent_file_name.split("/").pop()}</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2">-</td>
-
-                                                                            {/* 👁️ View Button - opens custom video modal */}
-                                                                            <td className="border p-2 text-center">
-                                                                                <button
-                                                                                    onClick={() => handleOpenVideoModal(loan.video_consent_path)}
-                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                                >
-                                                                                    <Eye size={16} /> View
-                                                                                </button>
-                                                                            </td>
-
-                                                                            {/* ⬇️ Download Button */}
-                                                                            <td className="border p-2 text-center">
-                                                                                <a
-                                                                                    href={loan.video_consent_path}
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                                >
-                                                                                    Download <Download size={16} />
-                                                                                </a>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">-</td>
-                                                                        </tr>
-                                                                    )}
-                                                                    {/* 🎥 Video Player Modal */}
-                                                                    <Modal
-                                                                        show={showVideoModal}
-                                                                        onHide={closeVideoModal}
-                                                                        size="lg"
-                                                                        centered
-                                                                        dialogClassName="max-w-[800px]"
-                                                                    >
-                                                                        <Modal.Header closeButton className="bg-gray-100">
-                                                                            <Modal.Title className="text-lg font-semibold text-gray-800">
-                                                                                🎬 Video Consent Preview
-                                                                            </Modal.Title>
-                                                                        </Modal.Header>
-
-                                                                        <Modal.Body className="bg-black p-2">
-                                                                            {videoSrc ? (
-                                                                                <video
-                                                                                    controls
-                                                                                    autoPlay
-                                                                                    className="w-100 rounded shadow-sm border border-gray-300"
-                                                                                    style={{ maxHeight: "70vh", display: "block", margin: "0 auto" }}
-                                                                                >
-                                                                                    <source src={videoSrc} type="video/mp4" />
-                                                                                    Your browser does not support the video tag.
-                                                                                </video>
-                                                                            ) : (
-                                                                                <p className="text-gray-500 text-center">No video available for preview.</p>
-                                                                            )}
-                                                                        </Modal.Body>
-
-                                                                        <Modal.Footer className="bg-gray-50">
-                                                                            <Button variant="secondary" onClick={closeVideoModal}>
-                                                                                Close
-                                                                            </Button>
-                                                                        </Modal.Footer>
-                                                                    </Modal>
-                                                                    {loan.isda_signed_upload_path && (
-                                                                        <tr key="isda-signed" className="hover:bg-gray-50 transition">
-                                                                            <td className="border p-2">ISDA Signed Document</td>
-                                                                            <td className="border p-2">{loan.isda_signed_upload_path.split("/").pop()}</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2 text-center">
-                                                                                <button
-                                                                                    onClick={() =>
-                                                                                        // openDocModal({
-                                                                                        //      file_path: loan.isda_signed_upload_path,
-                                                                                        //      file_name: loan.isda_signed_upload_path.split("/").pop(),
-                                                                                        //      doc_type: "ISDA Signed Document",
-                                                                                        // })
-                                                                                        openDocModal({
-                                                                                            id: loan.id,
-                                                                                            doc_type: "ISDA Signed Document",
-                                                                                            file_name: "ISDA_signed_document.pdf",
-                                                                                            file_path: loan.isda_signed_upload_path.replace('public/', '')
-                                                                                        })
-                                                                                    }
-                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                                >
-                                                                                    <Eye size={16} /> View
-                                                                                </button>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">
-                                                                                <a
-                                                                                    href={loan.isda_signed_upload_path}
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                                >
-                                                                                    Download <Download size={16} />
-                                                                                </a>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">-</td>
-                                                                        </tr>
-                                                                    )}
-
-                                                                    {loan.org_signed_upload_path && (
-                                                                        <tr key="org-signed" className="hover:bg-gray-50 transition">
-                                                                            <td className="border p-2">Organisation Standard Document</td>
-                                                                            <td className="border p-2">{loan.org_signed_upload_path.split("/").pop()}</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2">-</td>
-                                                                            <td className="border p-2 text-center">
-                                                                                <button
-                                                                                    onClick={() =>
-                                                                                        openDocModal({
-                                                                                            id: loan.id,
-                                                                                            doc_type: "Organisation Document",
-                                                                                            file_name: "Organisation_Document.pdf",
-                                                                                            file_path: loan.org_signed_upload_path
-                                                                                        })
-                                                                                    }
-                                                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
-                                                                                >
-                                                                                    <Eye size={16} /> View
-                                                                                </button>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">
-                                                                                <a
-                                                                                    href={loan.org_signed_upload_path}
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    className="text-blue-600 hover:underline flex items-center justify-center gap-1"
-                                                                                >
-                                                                                    Download <Download size={16} />
-                                                                                </a>
-                                                                            </td>
-                                                                            <td className="border p-2 text-center">-</td>
-                                                                        </tr>
-                                                                    )}
-                                                                </>
-                                                            )))}
                                                         </tbody>
                                                     </table>
                                                 ) : (
@@ -2700,6 +2424,152 @@ const normalizeFilePath = (path) => {
                                                 )}
                                             </fieldset>
                                         </Col>
+                                        {canShowVideoSignedDocs && (
+                                            <fieldset className="fldset mb-4">
+                                                <legend className="font-semibold mb-2">Video & signed Docs</legend>
+                                                <table className="w-full border-collapse border border-gray-300 text-sm">
+                                                    <thead className="bg-gray-100 text-center">
+                                                        <tr>
+                                                            <th className="border p-2">Doc Type</th>
+                                                            <th className="border p-2">Doc Name</th>
+                                                            <th className="border p-2">View</th>
+                                                            <th className="border p-2">Download</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {loan.video_consent_path && (
+                                                            <tr key="video-consent" className="hover:bg-gray-50 transition">
+                                                                <td className="border p-2">Video Consent</td>
+                                                                <td className="border p-2">{(loan.video_consent_file_name || loan.video_consent_path).split("/").pop()}</td>
+                                                                <td className="border p-2 text-center">
+                                                                    <button
+                                                                        onClick={() => handleOpenVideoModal(loan.video_consent_path)}
+                                                                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                    >
+                                                                        <Eye size={16} /> View
+                                                                    </button>
+                                                                </td>
+                                                                <td className="border p-2 text-center">
+                                                                    <a
+                                                                        href={loan.video_consent_path}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                    >
+                                                                        Download <Download size={16} />
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                        {loan.isda_signed_upload_path && (
+                                                            <tr key="isda-signed" className="hover:bg-gray-50 transition">
+                                                                <td className="border p-2">ISDA Signed Document</td>
+                                                                <td className="border p-2">{loan.isda_signed_upload_path.split("/").pop()}</td>
+                                                                <td className="border p-2 text-center">
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            openDocModal({
+                                                                                id: loan.id,
+                                                                                doc_type: "ISDA Signed Document",
+                                                                                file_name: "ISDA_signed_document.pdf",
+                                                                                file_path: loan.isda_signed_upload_path.replace("public/", ""),
+                                                                            })
+                                                                        }
+                                                                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                    >
+                                                                        <Eye size={16} /> View
+                                                                    </button>
+                                                                </td>
+                                                                <td className="border p-2 text-center">
+                                                                    <a
+                                                                        href={loan.isda_signed_upload_path}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                    >
+                                                                        Download <Download size={16} />
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                        {loan.org_signed_upload_path && (
+                                                            <tr key="org-signed" className="hover:bg-gray-50 transition">
+                                                                <td className="border p-2">Organisation Standard Document</td>
+                                                                <td className="border p-2">{loan.org_signed_upload_path.split("/").pop()}</td>
+                                                                <td className="border p-2 text-center">
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            openDocModal({
+                                                                                id: loan.id,
+                                                                                doc_type: "Organisation Document",
+                                                                                file_name: "organisation_document.pdf",
+                                                                                file_path: loan.org_signed_upload_path,
+                                                                            })
+                                                                        }
+                                                                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md flex items-center justify-center gap-1 mx-auto"
+                                                                    >
+                                                                        <Eye size={16} /> View
+                                                                    </button>
+                                                                </td>
+                                                                <td className="border p-2 text-center">
+                                                                    <a
+                                                                        href={loan.org_signed_upload_path}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 hover:underline flex items-center justify-center gap-1"
+                                                                    >
+                                                                        Download <Download size={16} />
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                        {!loan.video_consent_path && !loan.isda_signed_upload_path && !loan.org_signed_upload_path && (
+                                                            <tr>
+                                                                <td colSpan={4} className="border p-3 text-center text-gray-500">
+                                                                    No video or signed documents available.
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+
+                                                <Modal
+                                                    show={showVideoModal}
+                                                    onHide={closeVideoModal}
+                                                    size="lg"
+                                                    centered
+                                                    dialogClassName="max-w-[800px]"
+                                                >
+                                                    <Modal.Header closeButton className="bg-gray-100">
+                                                        <Modal.Title className="text-lg font-semibold text-gray-800">
+                                                            Video Consent Preview
+                                                        </Modal.Title>
+                                                    </Modal.Header>
+
+                                                    <Modal.Body className="bg-black p-2">
+                                                        {videoSrc ? (
+                                                            <video
+                                                                controls
+                                                                autoPlay
+                                                                className="w-100 rounded shadow-sm border border-gray-300"
+                                                                style={{ maxHeight: "70vh", display: "block", margin: "0 auto" }}
+                                                            >
+                                                                <source src={videoSrc} type="video/mp4" />
+                                                                Your browser does not support the video tag.
+                                                            </video>
+                                                        ) : (
+                                                            <p className="text-gray-500 text-center">No video available for preview.</p>
+                                                        )}
+                                                    </Modal.Body>
+
+                                                    <Modal.Footer className="bg-gray-50">
+                                                        <Button variant="secondary" onClick={closeVideoModal}>
+                                                            Close
+                                                        </Button>
+                                                    </Modal.Footer>
+                                                </Modal>
+                                            </fieldset>
+                                        )}
                                         {/* documents section */}
                                         <fieldset className="fldset mb-2">
                                             <legend className="font-semibold mb-2">📑 Documents</legend>
@@ -3769,17 +3639,8 @@ const normalizeFilePath = (path) => {
                                                                 href={route("loans")}
                                                             >
                                                                 <button
-                                                                    className={`${loan?.is_ack_downloaded == 0 ||
-                                                                    ((!videoPreview ) || 
-                                                                    (!pdfPreview ) || 
-                                                                    (!pdfPreview1 )
-                                                                    ) ? "bg-green-600 hover:bg-green-700 cursor-not-allowed opacity-50" : "bg-green-600 hover:bg-green-700"} text-white px-4 py-2 rounded-md`}
-                                                                    disabled={
-                                                                    loan?.is_ack_downloaded == 0 ||
-                                                                    ((!videoPreview ) || 
-                                                                    (!pdfPreview ) || 
-                                                                    (!pdfPreview1 )
-                                                                    )}
+                                                                    className={`${isSendForApprovalDisabled ? "bg-green-600 hover:bg-green-700 cursor-not-allowed opacity-50" : "bg-green-600 hover:bg-green-700"} text-white px-4 py-2 rounded-md`}
+                                                                    disabled={isSendForApprovalDisabled}
                                                                     onClick={markSentApproval}
                                                                 >
                                                                     {loan?.is_sent_for_approval == 1 
