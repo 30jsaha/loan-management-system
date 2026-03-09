@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\AllCustMaster;
 use App\Models\Customer;
 use App\Models\CustomerEligibilityHistory;
 use App\Models\LoanApplication as Loan;
@@ -171,8 +172,11 @@ class CustomerController extends Controller
         $validated['company_id'] = $validated['company_id'] ?? 1;
         $validated['user_id'] = $request->user()->id ?? 0;
 
-        // ✅ Directly create customer without duplicate check
-        $customer = Customer::create($validated);
+        $customer = DB::transaction(function () use ($validated) {
+            $customer = Customer::create($validated);
+            $this->syncOutsiderToAllCustMaster($customer);
+            return $customer;
+        });
 
         // ✅ Return success response
         return response()->json([
@@ -261,11 +265,35 @@ class CustomerController extends Controller
         $validated = $request->validate($rules, $messages);
 
         $customer->update($validated);
+        $this->syncOutsiderToAllCustMaster($customer);
 
         return response()->json([
             'message' => 'Customer info updated successfully.',
             'customer' => $customer
         ], 200);
+    }
+
+    private function syncOutsiderToAllCustMaster(Customer $customer): void
+    {
+        $empCode = trim((string) $customer->employee_no);
+        if ($empCode === '') {
+            return;
+        }
+
+        AllCustMaster::firstOrCreate(
+            ['emp_code' => $empCode],
+            [
+                'cust_name' => trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')),
+                'phone' => $customer->phone,
+                'email' => $customer->email,
+                'organization_id' => (int) ($customer->organisation_id ?? 0),
+                'department' => $customer->employer_department,
+                'company_id' => (int) ($customer->company_id ?? 0),
+                'gross_pay' => (float) ($customer->monthly_salary ?? 0),
+                'net_pay' => (float) ($customer->net_salary ?? 0),
+                'is_outsider' => 1,
+            ]
+        );
     }
 
     //function to check customer eligibility

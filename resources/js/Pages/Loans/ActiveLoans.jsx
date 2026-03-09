@@ -1,5 +1,5 @@
 // resources/js/Pages/Loans/EmiCollection.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link } from "@inertiajs/react";
 import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -56,8 +56,10 @@ export default function EmiCollection({ auth, approved_loans = null }) {
   const [expandedRows, setExpandedRows] = useState({});
   const [accordionOpen, setAccordionOpen] = useState({});
   const [searchEmpId, setSearchEmpId] = useState("");
+  const [nameRefDropdownOpen, setNameRefDropdownOpen] = useState(false);
   const [orgTypeFilter, setOrgTypeFilter] = useState("");  
   const [summaryBase, setSummaryBase] = useState([]);
+  const nameRefAreaRef = useRef(null);
 
   const itemsPerPage = 8;
 
@@ -104,6 +106,17 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     };
 
     fetchCollections();
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (nameRefAreaRef.current && !nameRefAreaRef.current.contains(event.target)) {
+        setNameRefDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Fetch loans if not provided as prop
@@ -168,9 +181,13 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     const matchesFrom = !fromDate || (loanDate && loanDate >= new Date(fromDate + "T00:00:00"));
     const matchesTo = !toDate || (loanDate && loanDate <= toDateEnd);
 
-    // 🔍 EMPLOYEE ID FILTER
-      const empId = loan.customer?.employee_no?.toString() || "";
-      const matchesEmpId = searchEmpId.trim() === "" || empId.includes(searchEmpId.trim());
+    // 🔍 NAME / CUSTOMER REF FILTER
+      const customerRefNo = (loan.customer?.customer_ref_no?.toString() || "").toLowerCase();
+      const nameOrRefTerm = searchEmpId.trim().toLowerCase();
+      const matchesEmpId =
+        nameOrRefTerm === "" ||
+        custFull.includes(nameOrRefTerm) ||
+        customerRefNo.includes(nameOrRefTerm);
 
 
     // 🏢 ORG TYPE FILTER (Health, Education)
@@ -190,6 +207,39 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     );
   });
   }, [loans, searchName, searchLoanAmt, orgFilter, eligibilityFilter, fromDate, toDate, searchEmpId, orgTypeFilter]);
+
+  const nameRefOptions = useMemo(() => {
+    const seen = new Set();
+    const options = [];
+
+    loans.forEach((loan) => {
+      const customer = loan.customer || {};
+      const refNo = String(customer.customer_ref_no || "").trim();
+      const fullName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+      if (!refNo && !fullName) return;
+
+      const key = `${refNo.toLowerCase()}|${fullName.toLowerCase()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      options.push({ refNo, fullName });
+    });
+
+    return options;
+  }, [loans]);
+
+  const filteredNameRefOptions = useMemo(() => {
+    const term = searchEmpId.trim().toLowerCase();
+    if (!term) return nameRefOptions.slice(0, 30);
+
+    return nameRefOptions
+      .filter(
+        (opt) =>
+          opt.refNo.toLowerCase().includes(term) ||
+          opt.fullName.toLowerCase().includes(term)
+      )
+      .slice(0, 30);
+  }, [nameRefOptions, searchEmpId]);
 
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
@@ -260,10 +310,13 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         const custFull = `${customer?.first_name || ""} ${customer?.last_name || ""}`.toLowerCase();
         const matchesName = !searchName || custFull.includes(searchName.trim().toLowerCase());
 
-        // --- Employee ID Search (Case Insensitive) ---
-        // Convert both the database value and search input to lowercase
-        const empId = (customer?.employee_no?.toString() || "").toLowerCase();
-        const matchesEmpId = !searchEmpId || empId.includes(searchEmpId.trim().toLowerCase());
+        // --- Name / Customer Ref Search (Case Insensitive) ---
+        const customerRefNo = (customer?.customer_ref_no?.toString() || "").toLowerCase();
+        const nameOrRefTerm = searchEmpId.trim().toLowerCase();
+        const matchesEmpId =
+          !searchEmpId ||
+          custFull.includes(nameOrRefTerm) ||
+          customerRefNo.includes(nameOrRefTerm);
 
         // --- Loan Amount Filter ---
         const appliedAmt = (loan?.loan_amount_applied ?? "").toString();
@@ -496,14 +549,37 @@ export default function EmiCollection({ auth, approved_loans = null }) {
               className="border p-2 rounded w-full text-sm"
             />
 
-            {/* Search Employee ID */}
-            <input
-              type="text"
-              placeholder="Search Employee ID"
-              value={searchEmpId}
-              onChange={(e) => setSearchEmpId(e.target.value)}
-              className="border p-2 rounded w-full text-sm"
-            />
+            {/* Search by Name / Customer Ref. No. */}
+            <div className="relative" ref={nameRefAreaRef}>
+              <input
+                type="text"
+                placeholder="Search by Name / Customer Ref. No."
+                value={searchEmpId}
+                onChange={(e) => {
+                  setSearchEmpId(e.target.value);
+                  setNameRefDropdownOpen(true);
+                }}
+                onFocus={() => setNameRefDropdownOpen(true)}
+                className="border p-2 rounded w-full text-sm"
+              />
+
+              {nameRefDropdownOpen && filteredNameRefOptions.length > 0 && (
+                <div className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto">
+                  {filteredNameRefOptions.map((opt, idx) => (
+                    <div
+                      key={`${opt.refNo || "no-ref"}-${opt.fullName || "no-name"}-${idx}`}
+                      onClick={() => {
+                        setSearchEmpId(opt.refNo || opt.fullName);
+                        setNameRefDropdownOpen(false);
+                      }}
+                      className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                    >
+                      {opt.refNo ? <b>{opt.refNo}</b> : <b>-</b>} {opt.fullName ? `- ${opt.fullName}` : ""}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Select Organisation */}
             <select

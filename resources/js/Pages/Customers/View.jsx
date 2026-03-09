@@ -115,6 +115,7 @@ export default function View({ auth, customerId }) {
                   <h2 className="text-xl font-bold text-gray-800">{fullName}</h2>
                   <p className="text-gray-500 text-sm font-medium">
                     {customer.employee_no || "—"}
+                    {customer.customer_ref_no ? ` | Ref: ${customer.customer_ref_no}` : ""}
                   </p>
                 </div>
               </div>

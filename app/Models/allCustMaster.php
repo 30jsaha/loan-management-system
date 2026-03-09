@@ -27,6 +27,7 @@ class AllCustMaster extends Model
         'bank2_name',
         'bank2_branch',
         'bank2_account_no',
+        'is_outsider', 
         'created_at',
         'updated_at',
     ];

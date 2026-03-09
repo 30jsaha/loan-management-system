@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import axios from "axios";
 import { Link, Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
@@ -14,10 +14,14 @@ export default function Index({ auth }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "first_name", direction: "asc" });
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchName, setSearchName] = useState("");
+  const [searchCustomerRefNo, setSearchCustomerRefNo] = useState("");
+  const [customerRefDropdownOpen, setCustomerRefDropdownOpen] = useState(false);
   const [searchEmp, setSearchEmp] = useState("");
   const [searchOrg, setSearchOrg] = useState("");
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
   const [organisations, setOrganisations] = useState([]);
+  const customerRefAreaRef = useRef(null);
+  const orgAreaRef = useRef(null);
 
   const itemsPerPage = 15; // Now shows 10 items per page
 const fetchOrganisations = async () => {
@@ -33,6 +37,20 @@ useEffect(() => {
   fetchCustomers();
   fetchOrganisations();
 }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (customerRefAreaRef.current && !customerRefAreaRef.current.contains(event.target)) {
+        setCustomerRefDropdownOpen(false);
+      }
+      if (orgAreaRef.current && !orgAreaRef.current.contains(event.target)) {
+        setOrgDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
 
   useEffect(() => {
@@ -113,17 +131,89 @@ useEffect(() => {
     return sorted;
   }, [customers, sortConfig]);
 
+ const customerRefOptions = useMemo(() => {
+  const seen = new Set();
+  const options = [];
+
+  customers.forEach((c) => {
+    const refNo = String(c.customer_ref_no || "").trim();
+    if (!refNo) return;
+
+    const key = refNo.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    const name = `${c.first_name || ""} ${c.last_name || ""}`.trim();
+    options.push({ refNo, name });
+  });
+
+  return options;
+}, [customers]);
+
+const filteredCustomerRefOptions = useMemo(() => {
+  const term = searchCustomerRefNo.toLowerCase().trim();
+  if (!term) return customerRefOptions.slice(0, 30);
+
+  return customerRefOptions
+    .filter(
+      (opt) =>
+        opt.refNo.toLowerCase().includes(term) ||
+        opt.name.toLowerCase().includes(term)
+    )
+    .slice(0, 30);
+}, [customerRefOptions, searchCustomerRefNo]);
+
+const organisationOptions = useMemo(() => {
+  const seen = new Set();
+  const options = [];
+
+  organisations.forEach((org) => {
+    const orgName = String(org.organisation_name || "").trim();
+    if (!orgName) return;
+    const key = orgName.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    options.push({ orgName });
+  });
+
+  if (options.length === 0) {
+    customers.forEach((c) => {
+      const orgName = String(c.organisation_name || "").trim();
+      if (!orgName) return;
+      const key = orgName.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      options.push({ orgName });
+    });
+  }
+
+  return options;
+}, [organisations, customers]);
+
+const filteredOrganisationOptions = useMemo(() => {
+  const term = searchOrg.toLowerCase().trim();
+  if (!term) return organisationOptions.slice(0, 30);
+  return organisationOptions
+    .filter((opt) => opt.orgName.toLowerCase().includes(term))
+    .slice(0, 30);
+}, [organisationOptions, searchOrg]);
+
  const filteredData = useMemo(() => {
   return sortedData.filter((c) => {
     const fullName = `${c.first_name} ${c.last_name}`.toLowerCase();
+    const customerRefNo = String(c.customer_ref_no || "").toLowerCase();
+    const customerRefTerm = searchCustomerRefNo.toLowerCase().trim();
+    const matchesNameOrRef = customerRefTerm
+      ? fullName.includes(customerRefTerm) || customerRefNo.includes(customerRefTerm)
+      : true;
 
     return (
-      fullName.includes(searchName.toLowerCase()) &&
-      c.employee_no?.toLowerCase().includes(searchEmp.toLowerCase()) &&
-      (searchOrg === "" || String(c.organisation_id) === String(searchOrg))
+      matchesNameOrRef &&
+      String(c.employee_no || "").toLowerCase().includes(searchEmp.toLowerCase()) &&
+      (searchOrg === "" || String(c.organisation_name || "").toLowerCase().includes(searchOrg.toLowerCase()))
     );
   });
-}, [sortedData, searchName, searchEmp, searchOrg]);
+}, [sortedData, searchCustomerRefNo, searchEmp, searchOrg]);
 
 
   const paginatedCustomers = filteredData.slice(
@@ -168,19 +258,42 @@ useEffect(() => {
         {/* 🔍 Search Filters */}
         <div className="bg-white shadow-md  p-3 border border-gray-100 flex flex-wrap md:flex-nowrap items-center justify-between gap-3 -mb-2">
           
-          {/* Search by Name */}
-          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+          {/* Search by Name / Customer Ref. No. */}
+          <div
+            className="relative flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all"
+            ref={customerRefAreaRef}
+          >
             <Search size={18} className="text-gray-500 mr-2" />
             <input
               type="text"
-              placeholder="Search by Name"
-              value={searchName}
+              placeholder="Search by Name / Customer Ref. No."
+              value={searchCustomerRefNo}
               onChange={(e) => {
-                setSearchName(e.target.value);
+                setSearchCustomerRefNo(e.target.value);
+                setCustomerRefDropdownOpen(true);
                 setCurrentPage(1);
               }}
+              onFocus={() => setCustomerRefDropdownOpen(true)}
               className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
             />
+
+            {customerRefDropdownOpen && filteredCustomerRefOptions.length > 0 && (
+              <div className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto top-full left-0">
+                {filteredCustomerRefOptions.map((opt, idx) => (
+                  <div
+                    key={`${opt.refNo}-${idx}`}
+                    onClick={() => {
+                      setSearchCustomerRefNo(opt.refNo);
+                      setCustomerRefDropdownOpen(false);
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-2 cursor-pointer hover:bg-emerald-100 text-sm"
+                  >
+                    <b>{opt.refNo}</b> {opt.name ? `- ${opt.name}` : ""}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Search by Employee No */}
@@ -198,24 +311,46 @@ useEffect(() => {
             />
           </div>
 
-        {/* Filter by Organisation */}
-        <div className="flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
+        {/* Search by Organisation */}
+        <div
+          className="relative flex items-center bg-gray-50 rounded-lg px-3 py-1 flex-1 border border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 transition-all"
+          ref={orgAreaRef}
+        >
           <Building2 size={18} className="text-gray-500 mr-2" />
-          <select
+          <input
+            type="text"
+            placeholder="Search Organisation..."
             value={searchOrg}
             onChange={(e) => {
               setSearchOrg(e.target.value);
+              setOrgDropdownOpen(true);
               setCurrentPage(1);
             }}
-            className="bg-transparent w-full outline-none text-gray-700 border-none focus:ring-0"
-          >
-            <option value="">All Organisations</option>
-            {organisations.map((org) => (
-              <option key={org.id} value={org.id}>
-                {org.organisation_name}
-              </option>
-            ))}
-          </select>
+            onFocus={() => setOrgDropdownOpen(true)}
+            className="bg-transparent w-full outline-none text-gray-700 placeholder-gray-500 border-none focus:ring-0"
+          />
+
+          {orgDropdownOpen && (
+            <div className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto top-full left-0">
+              {filteredOrganisationOptions.length > 0 ? (
+                filteredOrganisationOptions.map((opt, idx) => (
+                  <div
+                    key={`${opt.orgName}-${idx}`}
+                    onClick={() => {
+                      setSearchOrg(opt.orgName);
+                      setOrgDropdownOpen(false);
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-2 cursor-pointer hover:bg-emerald-100 text-sm"
+                  >
+                    <b>{opt.orgName}</b>
+                  </div>
+                ))
+              ) : (
+                <div className="p-2 text-sm text-gray-500">No results found</div>
+              )}
+            </div>
+          )}
         </div>
 
 

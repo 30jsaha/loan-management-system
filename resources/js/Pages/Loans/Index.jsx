@@ -14,13 +14,14 @@ export default function Index({ auth }) {
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
 
   // 🔍 Filters
-  const [searchName, setSearchName] = useState("");
   const [searchCustomerRefNo, setSearchCustomerRefNo] = useState("");
   const [customerRefDropdownOpen, setCustomerRefDropdownOpen] = useState(false);
   const [searchAmount, setSearchAmount] = useState("");
   const [searchOrg, setSearchOrg] = useState("");
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
   const [eligibilityFilter, setEligibilityFilter] = useState("All");
   const customerRefAreaRef = useRef(null);
+  const orgAreaRef = useRef(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -36,6 +37,9 @@ export default function Index({ auth }) {
     function handleClickOutside(event) {
       if (customerRefAreaRef.current && !customerRefAreaRef.current.contains(event.target)) {
         setCustomerRefDropdownOpen(false);
+      }
+      if (orgAreaRef.current && !orgAreaRef.current.contains(event.target)) {
+        setOrgDropdownOpen(false);
       }
     }
 
@@ -75,6 +79,38 @@ export default function Index({ auth }) {
       .slice(0, 30);
   }, [customerRefOptions, searchCustomerRefNo]);
 
+  const organisationOptions = useMemo(() => {
+    const seen = new Set();
+    const options = [];
+
+    loans.forEach((loan) => {
+      const orgName = String(loan.organisation?.organisation_name || "").trim();
+      if (!orgName) return;
+
+      const key = orgName.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const sector = String(loan.organisation?.sector_type || "").trim();
+      options.push({ orgName, sector });
+    });
+
+    return options;
+  }, [loans]);
+
+  const filteredOrganisationOptions = useMemo(() => {
+    const term = searchOrg.toLowerCase().trim();
+    if (!term) return organisationOptions.slice(0, 30);
+
+    return organisationOptions
+      .filter(
+        (opt) =>
+          opt.orgName.toLowerCase().includes(term) ||
+          opt.sector.toLowerCase().includes(term)
+      )
+      .slice(0, 30);
+  }, [organisationOptions, searchOrg]);
+
   const fetchLoans = async () => {
     try {
       const res = await axios.get("/api/loans");
@@ -96,10 +132,11 @@ export default function Index({ auth }) {
   useEffect(() => {
     const filtered = loans.filter((loan) => {
       const fullName = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
-      const matchesName = fullName.includes(searchName.toLowerCase());
       const customerRefNo = String(loan.customer?.customer_ref_no || "").toLowerCase();
       const customerRefNoTerm = searchCustomerRefNo.toLowerCase().trim();
-      const matchesCustomerRefNo = customerRefNoTerm ? customerRefNo.includes(customerRefNoTerm) : true;
+      const matchesCustomerRefNo = customerRefNoTerm
+        ? customerRefNo.includes(customerRefNoTerm) || fullName.includes(customerRefNoTerm)
+        : true;
 
       const matchesAmount = searchAmount
         ? String(loan.loan_amount_applied || "")
@@ -119,13 +156,12 @@ export default function Index({ auth }) {
           ? loan.is_elegible === 1
           : loan.is_elegible !== 1;
 
-      return matchesName && matchesCustomerRefNo && matchesAmount && matchesOrg && matchesEligibility;
+      return matchesCustomerRefNo && matchesAmount && matchesOrg && matchesEligibility;
     });
 
     setFilteredLoans(filtered);
     setCurrentPage(1);
   }, [
-    searchName,
     searchCustomerRefNo,
     searchAmount,
     searchOrg,
@@ -248,24 +284,12 @@ export default function Index({ auth }) {
 
           {/* 🔍 Filter Bar */}
           <div className="bg-white border border-gray-200 shadow-sm  p-4 flex flex-col lg:flex-row gap-4 items-center">
-            {/* Search by Name */}
-            <div className="relative flex-1 w-full">
-              <Search size={16} className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by Name"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-                className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
-            </div>
-
-            {/* Search by Customer Ref. No. */}
+            {/* Search by Customer Ref. No. / Name */}
             <div className="relative flex-1 w-full" ref={customerRefAreaRef}>
               <Search size={16} className="absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search Customer Ref. No. / Name..."
+                placeholder="Search by Name / Customer Ref. No."
                 value={searchCustomerRefNo}
                 onChange={(e) => {
                   setSearchCustomerRefNo(e.target.value);
@@ -275,24 +299,20 @@ export default function Index({ auth }) {
                 className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               />
 
-              {customerRefDropdownOpen && (
+              {customerRefDropdownOpen && filteredCustomerRefOptions.length > 0 && (
                 <div className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto">
-                  {filteredCustomerRefOptions.length > 0 ? (
-                    filteredCustomerRefOptions.map((opt, idx) => (
-                      <div
-                        key={`${opt.refNo}-${idx}`}
-                        onClick={() => {
-                          setSearchCustomerRefNo(opt.refNo);
-                          setCustomerRefDropdownOpen(false);
-                        }}
-                        className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
-                      >
-                        <b>{opt.refNo}</b> {opt.name ? `- ${opt.name}` : ""}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-2 text-sm text-gray-500">No results found</div>
-                  )}
+                  {filteredCustomerRefOptions.map((opt, idx) => (
+                    <div
+                      key={`${opt.refNo}-${idx}`}
+                      onClick={() => {
+                        setSearchCustomerRefNo(opt.refNo);
+                        setCustomerRefDropdownOpen(false);
+                      }}
+                      className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                    >
+                      <b>{opt.refNo}</b> {opt.name ? `- ${opt.name}` : ""}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -310,15 +330,40 @@ export default function Index({ auth }) {
             </div>
 
             {/* Search by Organisation */}
-            <div className="relative flex-1 w-full">
+            <div className="relative flex-1 w-full" ref={orgAreaRef}>
               <Building2 size={16} className="absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by Organisation"
+                placeholder="Search Organisation / Sector..."
                 value={searchOrg}
-                onChange={(e) => setSearchOrg(e.target.value)}
+                onChange={(e) => {
+                  setSearchOrg(e.target.value);
+                  setOrgDropdownOpen(true);
+                }}
+                onFocus={() => setOrgDropdownOpen(true)}
                 className="pl-9 pr-3 py-2 w-full bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               />
+
+              {orgDropdownOpen && (
+                <div className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto">
+                  {filteredOrganisationOptions.length > 0 ? (
+                    filteredOrganisationOptions.map((opt, idx) => (
+                      <div
+                        key={`${opt.orgName}-${idx}`}
+                        onClick={() => {
+                          setSearchOrg(opt.orgName);
+                          setOrgDropdownOpen(false);
+                        }}
+                        className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                      >
+                        <b>{opt.orgName}</b> {opt.sector ? `- ${opt.sector}` : ""}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-2 text-sm text-gray-500">No results found</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Filter by Eligibility */}

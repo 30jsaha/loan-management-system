@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link } from "@inertiajs/react";
 import { ArrowLeft, Search, Loader2, X, Upload } from "lucide-react";
@@ -57,6 +57,7 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   const [selectedLoanIds, setSelectedLoanIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [nameRefDropdownOpen, setNameRefDropdownOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState("");
   const [orgFilter, setOrgFilter] = useState("");
   const [orgs, setOrgs] = useState([]);
@@ -66,12 +67,24 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   const [totalPendingAmount, setTotalPendingAmount] = useState(0);
   const [totalCollectedAmount, setTotalCollectedAmount] = useState(0);
   const [uploadDeducSheet, setUploadDeducSheet] = useState(false);
+  const nameRefAreaRef = useRef(null);
 
   // Generate once and keep fixed for entire page session
   const collectionUniqueIdRef = React.useRef(`COL${Date.now()}`);
   //const collectionUniqueIdRef = React.useRef(`COL${Date.now().toString().slice(-6)}`);
 
   const collectionUniqueId = collectionUniqueIdRef.current;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (nameRefAreaRef.current && !nameRefAreaRef.current.contains(event.target)) {
+        setNameRefDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   
   // counter
@@ -128,23 +141,16 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
         .toLowerCase()
         .trim();
 
-      const searchLower = searchQuery.toLowerCase();
-
-      // Search name
-      const matchesName = fullName.includes(searchLower);
-
-      // Search loan ID
-      const matchesLoanId = loan.id.toString().includes(searchLower);
-
-      // Search employee ID
-      const empNo = loan.customer?.employee_no
-        ? loan.customer.employee_no.toString().toLowerCase()
+      const searchLower = searchQuery.toLowerCase().trim();
+      const customerRefNo = loan.customer?.customer_ref_no
+        ? loan.customer.customer_ref_no.toString().toLowerCase()
         : "";
-      const matchesEmployeeNo = empNo.includes(searchLower);
 
-      // Combine all 3
+      // Search by Name / Customer Ref No
       const matchesSearch =
-        matchesName || matchesLoanId || matchesEmployeeNo;
+        searchLower === "" ||
+        fullName.includes(searchLower) ||
+        customerRefNo.includes(searchLower);
 
       const matchesDate =
         dateFilter && loan.created_at
@@ -158,6 +164,38 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
       return matchesSearch && matchesDate && matchesOrg;
     });
   }, [loans, searchQuery, dateFilter, selectedOrgs]);
+
+  const nameRefOptions = useMemo(() => {
+    const seen = new Set();
+    const options = [];
+
+    loans.forEach((loan) => {
+      const customer = loan.customer || {};
+      const refNo = String(customer.customer_ref_no || "").trim();
+      const fullName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+      if (!refNo && !fullName) return;
+
+      const key = `${refNo.toLowerCase()}|${fullName.toLowerCase()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      options.push({ refNo, fullName });
+    });
+
+    return options;
+  }, [loans]);
+
+  const filteredNameRefOptions = useMemo(() => {
+    const term = searchQuery.trim().toLowerCase();
+    if (!term) return nameRefOptions.slice(0, 30);
+
+    return nameRefOptions
+      .filter(
+        (opt) =>
+          opt.refNo.toLowerCase().includes(term) ||
+          opt.fullName.toLowerCase().includes(term)
+      )
+      .slice(0, 30);
+  }, [nameRefOptions, searchQuery]);
 
   // --- Selected loans summary (must be after filteredLoans) ---
 const updateSelectedSummary = () => {
@@ -520,16 +558,37 @@ const handleCollectEMI = async () => {
             </div>
           </div>
 
-          {/* Search */}
-          <div className="relative">
+          {/* Search by Name / Customer Ref No */}
+          <div className="relative" ref={nameRefAreaRef}>
             <input
               type="text"
-              placeholder="Search by name..."
+              placeholder="Search by Name / Customer Ref. No."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setNameRefDropdownOpen(true);
+              }}
+              onFocus={() => setNameRefDropdownOpen(true)}
               className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-1.5 text-sm"
             />
             <Search className="absolute left-3 top-2 text-gray-400" size={14} />
+
+            {nameRefDropdownOpen && filteredNameRefOptions.length > 0 && (
+              <div className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto">
+                {filteredNameRefOptions.map((opt, idx) => (
+                  <div
+                    key={`${opt.refNo || "no-ref"}-${opt.fullName || "no-name"}-${idx}`}
+                    onClick={() => {
+                      setSearchQuery(opt.refNo || opt.fullName);
+                      setNameRefDropdownOpen(false);
+                    }}
+                    className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                  >
+                    {opt.refNo ? <b>{opt.refNo}</b> : <b>-</b>} {opt.fullName ? `- ${opt.fullName}` : ""}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Organisation Filter */}
