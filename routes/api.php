@@ -58,6 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/loan-slab-modify/{id}', [LoanController::class, 'modify_loan_slab']); // UPDATE
     Route::delete('/loan-slab-remove/{id}', [LoanController::class, 'remove_loan_slab']); // DELETE
     Route::post('loans/collect-emi', [LoanController::class, 'collectEMI']);
+    Route::post('loans/collect-emi-payroll', [LoanController::class, 'collectEmiFromPayroll']);
+    Route::get('loans/emi-payroll-preview/{collectionUid}', [LoanController::class, 'emiPayrollPreview']);
     // Route::get('loans/emi-collection-list', [LoanController::class, 'loan_emi_list']);
     Route::put('/loans/{id}', [LoanController::class, 'update']);
     Route::post('/loans/upload-document', [LoanController::class, 'uploadDocument']);

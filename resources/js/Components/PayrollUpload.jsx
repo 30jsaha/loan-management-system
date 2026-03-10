@@ -3,18 +3,32 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { UploadCloud } from "lucide-react";
 
-export default function PayrollUpload({onCancel}) {
+const parseNumber = (value) => {
+  if (value === null || value === undefined || value === "") return 0;
+  return parseFloat(String(value).replace(/,/g, "")) || 0;
+};
+
+const normalizeEmpCode = (value) => String(value ?? "").trim().toUpperCase();
+
+export default function PayrollUpload({
+  onCancel,
+  selectedLoans = [],
+  paymentDate,
+  collectionUid,
+  onCollectionComplete,
+}) {
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [employees, setEmployees] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [meta, setMeta] = useState({
     year: "",
     period: "",
-    paycode: ""
+    paycode: "",
   });
 
   const handleFile = (e) => {
-    setFile(e.target.files[0]);
+    setFile(e.target.files?.[0] ?? null);
   };
 
   const handleDragOver = (e) => {
@@ -37,72 +51,56 @@ export default function PayrollUpload({onCancel}) {
   };
 
   const handlePreview = () => {
-    if (!file) return alert("Please select a file");
+    if (!file) {
+      alert("Please select a file");
+      return;
+    }
 
     const reader = new FileReader();
 
     reader.onload = (event) => {
       const text = event.target.result;
-      const lines = text.split("\n");
+      const lines = String(text).split(/\r?\n/);
 
       let year = "";
       let period = "";
       let paycode = "";
       const parsedEmployees = [];
 
-      // Extract Year & Period
-      const headerLine = lines.find(line =>
-        line.includes("Pay Group")
-      );
-
+      const headerLine = lines.find((line) => line.includes("Pay Group"));
       if (headerLine) {
-        const yearMatch = headerLine.match(/Year\s+(\d{4})/);
-        const periodMatch = headerLine.match(/Period\s+(\d+)/);
+        const yearMatch = headerLine.match(/Year\s+(\d{4})/i);
+        const periodMatch = headerLine.match(/Period\s+(\d+)/i);
 
         year = yearMatch ? yearMatch[1] : "";
         period = periodMatch ? periodMatch[1] : "";
       }
 
-      // Extract Paycode
-      const paycodeLine = lines.find(line => {
-            line.includes("Paycode:");
-        });
-
+      const paycodeLine = lines.find((line) => line.includes("Paycode:"));
       if (paycodeLine) {
-        const match = paycodeLine.match(/Paycode:\s+(\w+)/);
-        paycode = match ? match[1] : "";
+        const paycodeMatch = paycodeLine.match(/Paycode:\s*([^\s]+)/i);
+        paycode = paycodeMatch ? paycodeMatch[1] : "";
       }
 
-      const parseNumber = (value) => {
-        if (!value) return 0;
-        return parseFloat(String(value).replace(/,/g, "")) || 0;
-    };
+      lines.forEach((line) => {
+        const rowRegex =
+          /^\s*([A-Za-z0-9]+)\s+(\d+)\s+(.+?)\s{2,}([-\d,]+(?:\.\d+)?)\s*([-\d,]+(?:\.\d+)?)?\s*([-\d,]+(?:\.\d+)?)?\s*([-\d,]+(?:\.\d+)?)?\s*$/;
+        const match = line.match(rowRegex);
 
+        if (!match) return;
 
-      // Extract employee rows
-      lines.forEach(line => {
-        const regex = /^\s*(\w+)\s+(\d+)\s+(.+?)\s+([\d,.\-]+)?\s*([\d,.\-]+)?\s*([\d,.\-]+)?\s*([\d,.\-]+)?$/;
+        const empCode = normalizeEmpCode(match[1]);
+        if (!empCode || line.includes("Total") || line.includes("Employees")) return;
 
-        const match = line.match(regex);
-
-        if (
-        match &&
-        match[1] &&                 // employee code exists
-        /^\d/.test(match[1]) &&     // starts with number
-        !line.includes("Total") &&
-        !line.includes("Employees")
-        ) {
-            parsedEmployees.push({
-                emp_code: match[1],
-                job: match[2],
-                name: match[3].trim(),
-                this_period: parseNumber(match[4]),
-                last_period: parseNumber(match[5]),
-                variance: parseNumber(match[6]),
-                arrears: parseNumber(match[7]),
-            });
-        }
-
+        parsedEmployees.push({
+          emp_code: empCode,
+          job: String(match[2] ?? "").trim(),
+          name: String(match[3] ?? "").trim(),
+          this_period: parseNumber(match[4]),
+          last_period: parseNumber(match[5]),
+          variance: parseNumber(match[6]),
+          arrears: parseNumber(match[7]),
+        });
       });
 
       setMeta({ year, period, paycode });
@@ -113,42 +111,76 @@ export default function PayrollUpload({onCancel}) {
   };
 
   const handleFinalSubmit = async () => {
-    if (!employees.length) return alert("No data to submit");
+    if (!employees.length) {
+      alert("No parsed data found. Please preview a TXT file first.");
+      return;
+    }
 
-    // await axios.post("/api/payroll-import", {
-    //   ...meta,
-    //   employees
-    // });
+    if (!selectedLoans.length) {
+      alert("No selected EMI rows found.");
+      return;
+    }
+    if (!file) {
+      alert("Please select a TXT file.");
+      return;
+    }
 
-    // toast.success("Payroll Imported Successfully");
-    let ttt = toast.custom((t) => (
-        <div
-            className={`bg-white border-l-4 border-amber-500 px-5 py-3 rounded-md shadow-md
-            flex items-center gap-3 ${t.visible ? "opacity-100" : "opacity-0"}`}
-        >
-            <span className="text-amber-600 font-medium">
-            Only for preview. Submit not allowed
-            </span>
+    try {
+      setIsSubmitting(true);
 
-            <button
-            onClick={() => toast.dismiss(t.id)}
-            className="ml-auto text-gray-400 hover:text-gray-600"
-            >
-            ✕
-            </button>
-        </div>
-    ));
-    setTimeout(() => {
-        toast.dismiss(ttt);
-    }, 2000);
+      const loanIds = selectedLoans.map((item) => item.loan_id);
+      const emiCounter = selectedLoans.reduce((acc, item) => {
+        acc[item.loan_id] = Number(item.counter) || 1;
+        return acc;
+      }, {});
 
-    // setEmployees([]);
-    // setFile(null);
+      const formData = new FormData();
+      formData.append("payroll_file", file);
+      formData.append("loan_ids", JSON.stringify(loanIds));
+      formData.append("emi_counter", JSON.stringify(emiCounter));
+      formData.append("payment_date", paymentDate || "");
+      formData.append("collection_uid", collectionUid || "");
+      formData.append("payroll_meta", JSON.stringify(meta));
+      formData.append("payroll_employees", JSON.stringify(employees));
+
+      const response = await axios.post("/api/loans/collect-emi-payroll", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      const summary = response?.data?.summary ?? {};
+
+      if ((summary.matched_emp_codes ?? 0) === 0) {
+        toast.error(response?.data?.message || "No selected employee code matched the TXT file.");
+        return;
+      }
+
+      if (typeof onCollectionComplete === "function") {
+        onCollectionComplete(response.data);
+      } else if ((summary.successful_emis ?? 0) > 0) {
+        toast.success(
+          `Payroll submit complete. Success: ${summary.successful_emis}, Failed: ${summary.failed_rows ?? 0}`
+        );
+      } else {
+        toast.error(response?.data?.message || "No EMI could be collected from payroll data.");
+      }
+    } catch (error) {
+      const msg =
+        error?.response?.data?.message ||
+        "Payroll EMI submission failed. Please check the file and selected loans.";
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="p-4">
       <h4 className="mb-3">Upload Payroll TXT</h4>
+
+      <div className="mb-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+        Selected EMIs for validation: <b>{selectedLoans.length}</b>
+      </div>
 
       <label
         htmlFor="payroll-upload"
@@ -182,96 +214,122 @@ export default function PayrollUpload({onCancel}) {
         </p>
       )}
 
-      <button onClick={handlePreview} className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-2 py-2 ml-2 rounded-md shadow-sm mt-3">
+      <button
+        onClick={handlePreview}
+        className="mt-3 ml-2 rounded-md bg-blue-600 px-2 py-2 text-sm text-white shadow-sm hover:bg-blue-700"
+      >
         Preview
       </button>
       <button
-          className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-2 py-2 ml-2 rounded-md shadow-sm"
-          onClick={onCancel}
-        >
+        className="ml-2 rounded-md bg-gray-600 px-2 py-2 text-sm text-white shadow-sm hover:bg-gray-700"
+        onClick={onCancel}
+      >
         Cancel
       </button>
+
       {employees.length > 0 && (
-        <>
-          <div className="mt-4">
-            {/* <h5>
-              Preview - Paycode: {meta.paycode} | Year: {meta.year} | Period: {meta.period}
-            </h5> */}
-            <div className="mt-3 border rounded-lg bg-slate-50 p-3">
-                <div className="text-xs font-semibold text-slate-500 mb-1">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-1">
-                    <span>Preview of the uploaded file</span>
-                    {/* <span>ℹ️</span> */}
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 text-sm">
-                    <div>
-                        <span className="text-slate-500">Paycode</span>
-                        <div className="font-semibold text-slate-800">
-                            {meta.paycode}
-                        </div>
-                    </div>
-
-                    <div>
-                        <span className="text-slate-500">Year</span>
-                        <div className="font-semibold text-slate-800">
-                            {meta.year}
-                        </div>
-                    </div>
-                    <div>
-                        <span className="text-slate-500">Period</span>
-                        <div className="font-semibold text-slate-800">
-                            {meta.period}
-                        </div>
-                    </div>
-                </div>
+        <div className="mt-4">
+          <div className="mt-3 rounded-lg border bg-slate-50 p-3">
+            <div className="mb-1 text-xs font-semibold text-slate-500">
+              <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <span>Preview of the uploaded file</span>
+              </div>
             </div>
 
-            <div className="mt-3" style={{ maxHeight: "400px", overflowY: "auto" }}>
-              <table className="border-collapse text-sm text-left w-full">
-                <thead className="table-dark">
-                  <tr>
-                    <th className="sticky left-0 top-0 z-50 bg-gray-900 text-white font-semibold p-3 border-r border-b border-gray-700 shadow-lg">Emp Code</th>
-                    <th className="sticky left-0 top-0 z-50 bg-gray-900 text-white font-semibold p-3 border-r border-b border-gray-700 shadow-lg">Job</th>
-                    <th className="sticky left-0 top-0 z-50 bg-gray-900 text-white font-semibold p-3 border-r border-b border-gray-700 shadow-lg">Name</th>
-                    <th className="sticky left-0 top-0 z-50 bg-gray-900 text-white font-semibold p-3 border-r border-b border-gray-700 shadow-lg">This Period</th>
-                    <th className="sticky left-0 top-0 z-50 bg-gray-900 text-white font-semibold p-3 border-r border-b border-gray-700 shadow-lg">Last Period</th>
-                    <th className="sticky left-0 top-0 z-50 bg-gray-900 text-white font-semibold p-3 border-r border-b border-gray-700 shadow-lg">Variance</th>
-                    <th className="sticky left-0 top-0 z-50 bg-gray-900 text-white font-semibold p-3 border-r border-b border-gray-700 shadow-lg">Arrears</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-400">
-                  {employees.map((emp, index) => (
-                    <tr key={index} className="hover:bg-blue-50 transition-colors">
-                      <td className="text-gray-600 border-r border-gray-50 group-hover:text-blue-700 tabular-nums whitespace-nowrap px-6">{emp.emp_code}</td>
-                      <td className="text-gray-600 border-r border-gray-50 group-hover:text-blue-700 tabular-nums whitespace-nowrap px-6">{emp.job}</td>
-                      <td className="text-gray-600 border-r border-gray-50 group-hover:text-blue-700 tabular-nums whitespace-nowrap px-6">{emp.name}</td>
-                      <td className="text-gray-600 border-r border-gray-50 group-hover:text-blue-700 tabular-nums whitespace-nowrap px-6">{emp.this_period}</td>
-                      <td className="text-gray-600 border-r border-gray-50 group-hover:text-blue-700 tabular-nums whitespace-nowrap px-6">{emp.last_period}</td>
-                      <td className="text-gray-600 border-r border-gray-50 group-hover:text-blue-700 tabular-nums whitespace-nowrap px-6">{emp.variance}</td>
-                      <td className="text-gray-600 border-r border-gray-50 group-hover:text-blue-700 tabular-nums whitespace-nowrap px-6">{emp.arrears}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex justify-start gap-2 mt-3">
-                <button
-                    className="bg-green-600 hover:bg-green-700 text-white text-sm px-2 py-2 rounded-md shadow-sm flex items-center gap-1"
-                    onClick={handleFinalSubmit}
-                >
-                    Final Submit
-                </button>
-                <button
-                className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-2 rounded-md shadow-sm flex items-center gap-1"
-                onClick={onCancel}
-                >
-                Cancel
-                </button>
+            <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+              <div>
+                <span className="text-slate-500">Paycode</span>
+                <div className="font-semibold text-slate-800">{meta.paycode}</div>
+              </div>
+
+              <div>
+                <span className="text-slate-500">Year</span>
+                <div className="font-semibold text-slate-800">{meta.year}</div>
+              </div>
+              <div>
+                <span className="text-slate-500">Period</span>
+                <div className="font-semibold text-slate-800">{meta.period}</div>
+              </div>
+              <div>
+                <span className="text-slate-500">Row Count</span>
+                <div className="font-semibold text-slate-800">{employees.length}</div>
+              </div>
             </div>
           </div>
-        </>
+
+          <div className="mt-3" style={{ maxHeight: "400px", overflowY: "auto" }}>
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="table-dark">
+                <tr>
+                  <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                    Emp Code
+                  </th>
+                  <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                    Job
+                  </th>
+                  <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                    Name
+                  </th>
+                  <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                    This Period
+                  </th>
+                  <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                    Last Period
+                  </th>
+                  <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                    Variance
+                  </th>
+                  <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                    Arrears
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-400">
+                {employees.map((emp, index) => (
+                  <tr key={`${emp.emp_code}-${index}`} className="transition-colors hover:bg-blue-50">
+                    <td className="whitespace-nowrap border-r border-gray-50 px-6 tabular-nums text-gray-600">
+                      {emp.emp_code}
+                    </td>
+                    <td className="whitespace-nowrap border-r border-gray-50 px-6 tabular-nums text-gray-600">
+                      {emp.job}
+                    </td>
+                    <td className="whitespace-nowrap border-r border-gray-50 px-6 tabular-nums text-gray-600">
+                      {emp.name}
+                    </td>
+                    <td className="whitespace-nowrap border-r border-gray-50 px-6 tabular-nums text-gray-600">
+                      {emp.this_period}
+                    </td>
+                    <td className="whitespace-nowrap border-r border-gray-50 px-6 tabular-nums text-gray-600">
+                      {emp.last_period}
+                    </td>
+                    <td className="whitespace-nowrap border-r border-gray-50 px-6 tabular-nums text-gray-600">
+                      {emp.variance}
+                    </td>
+                    <td className="whitespace-nowrap border-r border-gray-50 px-6 tabular-nums text-gray-600">
+                      {emp.arrears}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-3 flex justify-start gap-2">
+            <button
+              className="flex items-center gap-1 rounded-md bg-green-600 px-2 py-2 text-sm text-white shadow-sm hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-70"
+              onClick={handleFinalSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Final Submit"}
+            </button>
+            <button
+              className="flex items-center gap-1 rounded-md bg-gray-600 px-2 text-sm text-white shadow-sm hover:bg-gray-700"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

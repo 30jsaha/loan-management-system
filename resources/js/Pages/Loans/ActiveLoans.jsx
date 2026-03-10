@@ -1,9 +1,9 @@
-// resources/js/Pages/Loans/EmiCollection.jsx
+﻿// resources/js/Pages/Loans/EmiCollection.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Head, Link } from "@inertiajs/react";
 import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Eye, Trash2, Search, X, ArrowLeft } from "lucide-react";
+import { Eye, Trash2, Search, X, ArrowLeft, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import Swal from "sweetalert2";
 import { currencyPrefix } from "@/config";
 
@@ -42,9 +42,210 @@ function DocumentViewerModal({ open, onClose, documentUrl, title }) {
   );
 }
 
+function PayrollTxtPreviewModal({ open, onClose, data, loading }) {
+  const [transactionsExpanded, setTransactionsExpanded] = useState(false);
+  useEffect(() => {
+    if (open) {
+      setTransactionsExpanded(false);
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const employees = Array.isArray(data?.employees) ? data.employees : [];
+  const matchedRows = Array.isArray(data?.matched_rows) ? data.matched_rows : [];
+  const sortedMatchedRows = [...matchedRows].sort((a, b) => {
+    const aFailed = String(a?.status || "").toLowerCase() === "failed";
+    const bFailed = String(b?.status || "").toLowerCase() === "failed";
+    if (aFailed !== bFailed) return aFailed ? 1 : -1;
+    return Number(a?.id || 0) - Number(b?.id || 0);
+  });
+  const meta = data?.meta || {};
+  const uploadedAt = (() => {
+    if (!data?.file?.uploaded_at) return "-";
+    const normalized = String(data.file.uploaded_at).replace(" ", "T");
+    const d = new Date(normalized);
+    return Number.isNaN(d.getTime()) ? "-" : d.toLocaleString("en-GB");
+  })();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">Payroll TXT Preview</h3>
+            <p className="text-xs text-gray-500">
+              Collection ID: <span className="font-semibold">{data?.collection_uid || "-"}</span>
+            </p>
+          </div>
+          <button onClick={onClose} className="rounded p-2 hover:bg-gray-100" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4">
+          {loading ? (
+            <div className="flex h-full min-h-[260px] flex-col items-center justify-center gap-2 text-center text-gray-600">
+              <Loader2 className="animate-spin" size={24} />
+              <span>Loading payroll preview...</span>
+            </div>
+          ) : (
+            <>
+              <div className="mb-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+                TXT File: <span className="font-semibold">{data?.file?.name || "-"}</span>
+              </div>
+
+              <div className="mb-3 rounded-lg border border-gray-200 bg-white p-3">
+                <div className="mb-2 flex items-start justify-between">
+                  <div className="text-xs font-semibold text-slate-500">Payroll EMI Transactions</div>
+                  <div className="flex items-center gap-2">
+                    {!transactionsExpanded && (
+                      <span className="text-xs text-slate-500">expand to view the details</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setTransactionsExpanded((prev) => !prev)}
+                      className="rounded border border-gray-200 p-1 text-slate-600 hover:bg-gray-50"
+                      aria-label={transactionsExpanded ? "Collapse transactions" : "Expand transactions"}
+                    >
+                      {transactionsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {transactionsExpanded && (
+                  <div style={{ maxHeight: "220px", overflowY: "auto" }}>
+                    <table className="w-full border-collapse text-left text-sm">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="border border-gray-300 px-2 py-2">Loan ID</th>
+                          <th className="border border-gray-300 px-2 py-2">Emp Code</th>
+                          <th className="border border-gray-300 px-2 py-2">Required EMI</th>
+                          <th className="border border-gray-300 px-2 py-2">TXT This Period</th>
+                          <th className="border border-gray-300 px-2 py-2">Status</th>
+                          <th className="border border-gray-300 px-2 py-2">Reason</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedMatchedRows.length === 0 ? (
+                          <tr>
+                            <td className="border border-gray-200 px-2 py-2 text-center text-gray-500" colSpan={6}>
+                              No success/failure transaction rows found.
+                            </td>
+                          </tr>
+                        ) : (
+                          sortedMatchedRows.map((txn) => {
+                            const isSuccess = String(txn.status || "").toLowerCase() === "success";
+                            return (
+                              <tr key={txn.id} className={isSuccess ? "bg-green-50" : "bg-red-50"}>
+                                <td className="border border-gray-200 px-2 py-2">{txn.loan_id ?? "-"}</td>
+                                <td className="border border-gray-200 px-2 py-2">{txn.payroll_emp_code || txn.emp_code || "-"}</td>
+                                <td className="border border-gray-200 px-2 py-2">{txn.required_emi_amount ?? "-"}</td>
+                                <td className="border border-gray-200 px-2 py-2">{txn.payroll_this_period ?? "-"}</td>
+                                <td className="border border-gray-200 px-2 py-2">
+                                  <span className={isSuccess ? "font-semibold text-green-700" : "font-semibold text-red-700"}>
+                                    {txn.status || "-"}
+                                  </span>
+                                </td>
+                                <td className="border border-gray-200 px-2 py-2">{txn.failure_reason || "-"}</td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-slate-50 p-3">
+                <div className="mb-1 text-xs font-semibold text-slate-500">Preview of the uploaded file</div>
+                <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-5">
+                  <div>
+                    <span className="text-slate-500">Paycode</span>
+                    <div className="font-semibold text-slate-800">{meta.paycode || "-"}</div>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Year</span>
+                    <div className="font-semibold text-slate-800">{meta.year || "-"}</div>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Period</span>
+                    <div className="font-semibold text-slate-800">{meta.period || "-"}</div>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Row Count</span>
+                    <div className="font-semibold text-slate-800">{employees.length}</div>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Upload Date</span>
+                    <div className="font-semibold text-slate-800">{uploadedAt}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+                <table className="w-full border-collapse text-left text-sm">
+                  <thead className="table-dark">
+                    <tr>
+                      <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                        Emp Code
+                      </th>
+                      <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                        Job
+                      </th>
+                      <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                        Name
+                      </th>
+                      <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                        This Period
+                      </th>
+                      <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                        Last Period
+                      </th>
+                      <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                        Variance
+                      </th>
+                      <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
+                        Arrears
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-300">
+                    {employees.length === 0 ? (
+                      <tr>
+                        <td className="p-3 text-center text-gray-500" colSpan={7}>
+                          No employee rows found in TXT.
+                        </td>
+                      </tr>
+                    ) : (
+                      employees.map((emp, index) => (
+                        <tr key={`${emp.emp_code || "emp"}-${index}`} className="hover:bg-blue-50 transition-colors">
+                          <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.emp_code}</td>
+                          <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.job}</td>
+                          <td className="border-r border-gray-50 px-4 py-2 text-gray-700">{emp.name}</td>
+                          <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.this_period}</td>
+                          <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.last_period}</td>
+                          <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.variance}</td>
+                          <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.arrears}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EmiCollection({ auth, approved_loans = null }) {
   const [loans, setLoans] = useState(Array.isArray(approved_loans) ? approved_loans : []);
   const [collections, setCollections] = useState({});
+  const [payrollCollections, setPayrollCollections] = useState({});
   const [filterCollectionId, setFilterCollectionId] = useState("");
   const [loading, setLoading] = useState(true);
   const [orgs, setOrgs] = useState([]);
@@ -73,6 +274,9 @@ export default function EmiCollection({ auth, approved_loans = null }) {
   const [docModalOpen, setDocModalOpen] = useState(false);
   const [docUrl, setDocUrl] = useState("");
   const [docTitle, setDocTitle] = useState("");
+  const [payrollPreviewOpen, setPayrollPreviewOpen] = useState(false);
+  const [payrollPreviewLoading, setPayrollPreviewLoading] = useState(false);
+  const [payrollPreviewData, setPayrollPreviewData] = useState(null);
 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -98,6 +302,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         setLoading(true);
         const res = await axios.get("/api/loans/emi-collections");
         setCollections(res.data.collections || {});
+        setPayrollCollections(res.data.payroll_collections || {});
         setLoading(false);
       } catch (err) {
         console.error(err);
@@ -181,7 +386,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     const matchesFrom = !fromDate || (loanDate && loanDate >= new Date(fromDate + "T00:00:00"));
     const matchesTo = !toDate || (loanDate && loanDate <= toDateEnd);
 
-    // 🔍 NAME / CUSTOMER REF FILTER
+    // ðŸ” NAME / CUSTOMER REF FILTER
       const customerRefNo = (loan.customer?.customer_ref_no?.toString() || "").toLowerCase();
       const nameOrRefTerm = searchEmpId.trim().toLowerCase();
       const matchesEmpId =
@@ -190,7 +395,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
         customerRefNo.includes(nameOrRefTerm);
 
 
-    // 🏢 ORG TYPE FILTER (Health, Education)
+    // ðŸ¢ ORG TYPE FILTER (Health, Education)
     const orgType = loan.organisation?.sector_type || "";
     const matchesOrgType =
       !orgTypeFilter || orgType.toLowerCase() === orgTypeFilter.toLowerCase();
@@ -274,7 +479,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
   // nice date display
   const fmtDate = (d) => {
-    if (!d) return "—";
+    if (!d) return "â€”";
     try {
       const dt = new Date(d);
       if (isNaN(dt.getTime())) return d;
@@ -350,13 +555,15 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
       // 3. Show row if Collection ID matches AND items match filters
       if (matchesId && matchingItems.length > 0) {
+        const payrollInfo = payrollCollections?.[cid] || null;
         list.push({
           collection_id: cid,
           count: matchingItems.length,
           total_amount: matchingItems.reduce((t, r) => t + Number(r.emi_amount), 0),
           date: matchingItems[0].payment_date,
           orgName: matchingItems[0].loan?.organisation?.organisation_name,
-          items: matchingItems 
+          items: matchingItems,
+          payrollInfo,
         });
       }
     });
@@ -378,7 +585,8 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     searchLoanAmt,
     eligibilityFilter,
     fromDate,
-    toDate
+    toDate,
+    payrollCollections,
   ]);
   
 
@@ -481,7 +689,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
 
   // Next Due Date
   const getNextDueDate = (loan) => {
-    if (!loan?.next_due_date) return "—";
+    if (!loan?.next_due_date) return "â€”";
 
     const d = new Date(loan.next_due_date);
     return d.toLocaleDateString("en-GB");
@@ -502,6 +710,22 @@ export default function EmiCollection({ auth, approved_loans = null }) {
     const firstLoanId = items[0]?.loan_id ?? items[0]?.loan?.id ?? null;
     if (firstLoanId) {
       setAccordionOpen((prev) => ({ ...prev, [firstLoanId]: true }));
+    }
+  };
+
+  const openPayrollPreview = async (collectionId) => {
+    try {
+      setPayrollPreviewOpen(true);
+      setPayrollPreviewLoading(true);
+      const res = await axios.get(`/api/loans/emi-payroll-preview/${collectionId}`);
+      setPayrollPreviewData(res.data || null);
+    } catch (error) {
+      console.error("Failed to fetch payroll TXT preview:", error);
+      setPayrollPreviewData(null);
+      Swal.fire("Error", error?.response?.data?.message || "Unable to load payroll TXT preview.", "error");
+      setPayrollPreviewOpen(false);
+    } finally {
+      setPayrollPreviewLoading(false);
     }
   };
 
@@ -835,16 +1059,29 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                       </td>
                       <td className="p-2 border">{row.date}</td>
                       <td className="p-2 border">
-                        <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleExpand(row.collection_id);  // ✅ OPEN SUB TABLE ONLY
-                        }}
-                        className="bg-gray-300 text-black px-3 py-1 rounded"
-                      >
-                        View Details
-                      </button>
-
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpand(row.collection_id); // open sub table only
+                            }}
+                            className="bg-gray-300 text-black px-3 py-1 rounded"
+                          >
+                            View Details
+                          </button>
+                          {row.payrollInfo?.is_from_payroll && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPayrollPreview(row.collection_id);
+                              }}
+                              className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-200"
+                              title="View TXT payroll preview"
+                            >
+                              TXT
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
 
@@ -901,7 +1138,7 @@ export default function EmiCollection({ auth, approved_loans = null }) {
                                     {currencyPrefix}
                                     {Number(it.emi_amount).toFixed(2)}
                                   </td>
-                                  {/* <td className="p-2 border">{it.payment_date ? new Date(it.payment_date).toLocaleDateString() : "—"}</td> */}
+                                  {/* <td className="p-2 border">{it.payment_date ? new Date(it.payment_date).toLocaleDateString() : "â€”"}</td> */}
                                   <td className="p-2 border">
                                     <span
                                       className={
@@ -953,23 +1190,31 @@ export default function EmiCollection({ auth, approved_loans = null }) {
           </div>
 
           <div className="flex items-center gap-1">
-            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50 hover:bg-gray-50">
-              ← Prev
+            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50 hover:bg-gray-50 d-flex items-center gap-1">
+              <ChevronLeft className="w-4 h-4" />
+              Prev
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <button key={p} onClick={() => setCurrentPage(p)} className={`px-3 py-1 rounded-md ${p === currentPage ? "bg-indigo-600 text-white" : "bg-white border border-gray-200 hover:bg-gray-50"}`}>
                 {p}
               </button>
             ))}
-            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50 hover:bg-gray-50">
-              Next →
+            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-white border border-gray-200 rounded-md shadow-sm disabled:opacity-50 hover:bg-gray-50 d-flex items-center gap-1">
+              Next
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-
-        {/* Document Viewer Modal
-        <DocumentViewerModal open={docModalOpen} onClose={() => setDocModalOpen(false)} documentUrl={docUrl} title={docTitle} /> */}
+        <PayrollTxtPreviewModal
+          open={payrollPreviewOpen}
+          onClose={() => {
+            setPayrollPreviewOpen(false);
+            setPayrollPreviewData(null);
+          }}
+          data={payrollPreviewData}
+          loading={payrollPreviewLoading}
+        />
 
       </div>
     </AuthenticatedLayout>

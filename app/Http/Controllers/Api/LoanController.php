@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\LoanSetting;
 use App\Models\LoanTierRule;
 use App\Models\InstallmentDetail;
+use App\Models\EmiPayrollTxnData;
 use App\Models\LoanPurpose;
 use Illuminate\Support\Facades\Validator;
 //newly added -- edit document upload
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class LoanController extends Controller
 {
@@ -1141,6 +1143,420 @@ class LoanController extends Controller
             'collection_uid' => $collectionUid,
         ]);
     }
+
+    public function collectEmiFromPayroll(Request $request)
+    {
+        $loanIdsInput = $request->input('loan_ids');
+        $emiCounterInput = $request->input('emi_counter');
+        $payrollMetaInput = $request->input('payroll_meta');
+        $payrollEmployeesInput = $request->input('payroll_employees');
+
+        if (is_string($loanIdsInput)) {
+            $loanIdsInput = json_decode($loanIdsInput, true);
+        }
+        if (is_string($emiCounterInput)) {
+            $emiCounterInput = json_decode($emiCounterInput, true);
+        }
+        if (is_string($payrollMetaInput)) {
+            $payrollMetaInput = json_decode($payrollMetaInput, true);
+        }
+        if (is_string($payrollEmployeesInput)) {
+            $payrollEmployeesInput = json_decode($payrollEmployeesInput, true);
+        }
+
+        $request->merge([
+            'loan_ids' => $loanIdsInput,
+            'emi_counter' => $emiCounterInput,
+            'payroll_meta' => $payrollMetaInput,
+            'payroll_employees' => $payrollEmployeesInput,
+        ]);
+
+        $validated = $request->validate([
+            'loan_ids' => 'required|array|min:1',
+            'loan_ids.*' => 'exists:loan_applications,id',
+            'emi_counter' => 'required|array',
+            'emi_counter.*' => 'integer|min:1',
+            'payment_date' => 'nullable|date',
+            'collection_uid' => 'nullable|string|max:20',
+            'payroll_file' => 'required|file|mimes:txt|max:10240',
+            'payroll_meta' => 'nullable|array',
+            'payroll_meta.year' => 'nullable',
+            'payroll_meta.period' => 'nullable',
+            'payroll_meta.paycode' => 'nullable|string|max:100',
+            'payroll_employees' => 'required|array|min:1',
+            'payroll_employees.*.emp_code' => 'required',
+            'payroll_employees.*.this_period' => 'nullable',
+            'payroll_employees.*.last_period' => 'nullable',
+            'payroll_employees.*.variance' => 'nullable',
+            'payroll_employees.*.arrears' => 'nullable',
+            'payroll_employees.*.job' => 'nullable|string|max:50',
+            'payroll_employees.*.name' => 'nullable|string|max:255',
+        ]);
+
+        $collectionUid = $validated['collection_uid']
+            ?? strtoupper(substr(md5(now() . rand()), 0, 7));
+
+        $paymentDate = $validated['payment_date'] ?? now()->toDateString();
+        $emiCounters = $validated['emi_counter'];
+        $payrollMeta = $validated['payroll_meta'] ?? [];
+        $payrollYear = isset($payrollMeta['year']) && is_numeric($payrollMeta['year'])
+            ? (int) $payrollMeta['year']
+            : null;
+        $payrollPeriod = isset($payrollMeta['period']) && is_numeric($payrollMeta['period'])
+            ? (int) $payrollMeta['period']
+            : null;
+        $paycode = $payrollMeta['paycode'] ?? null;
+        $storedFile = $request->file('payroll_file');
+        $storedFileName = time() . '_' . preg_replace('/[^A-Za-z0-9._-]/', '_', $storedFile->getClientOriginalName());
+        $storedFilePath = $storedFile->storeAs('uploads/payroll-emi', $storedFileName, 'public');
+        $storedFileUrl = '/storage/' . $storedFilePath;
+
+        $payrollMap = [];
+        foreach ($validated['payroll_employees'] as $payrollRow) {
+            $normalizedCode = $this->normalizeEmpCode($payrollRow['emp_code'] ?? '');
+            if ($normalizedCode === '') {
+                continue;
+            }
+
+            $normalizedRow = [
+                'emp_code' => $normalizedCode,
+                'job' => $payrollRow['job'] ?? null,
+                'name' => $payrollRow['name'] ?? null,
+                'this_period' => $this->toAmount($payrollRow['this_period'] ?? 0),
+                'last_period' => $this->toAmount($payrollRow['last_period'] ?? 0),
+                'variance' => $this->toAmount($payrollRow['variance'] ?? 0),
+                'arrears' => $this->toAmount($payrollRow['arrears'] ?? 0),
+            ];
+
+            if (!isset($payrollMap[$normalizedCode])) {
+                $payrollMap[$normalizedCode] = $normalizedRow;
+            }
+
+            $altCode = $this->normalizeAltEmpCode($normalizedCode);
+            if ($altCode !== '' && !isset($payrollMap[$altCode])) {
+                $payrollMap[$altCode] = $normalizedRow;
+            }
+        }
+
+        $loans = Loan::with(['customer'])
+            ->whereIn('id', $validated['loan_ids'])
+            ->get()
+            ->keyBy('id');
+
+        $matchedEmpCodeCount = 0;
+        $successfulEmis = 0;
+        $failedRows = 0;
+        $successResult = [];
+        $failedResult = [];
+
+        DB::transaction(function () use (
+            $validated,
+            $emiCounters,
+            $collectionUid,
+            $paymentDate,
+            $payrollMap,
+            $loans,
+            $payrollYear,
+            $payrollPeriod,
+            $paycode,
+            $storedFileName,
+            $storedFilePath,
+            $storedFileUrl,
+            &$matchedEmpCodeCount,
+            &$successfulEmis,
+            &$failedRows,
+            &$successResult,
+            &$failedResult
+        ) {
+            foreach ($validated['loan_ids'] as $loanId) {
+                $loan = $loans->get($loanId);
+
+                if (!$loan) {
+                    continue;
+                }
+
+                $requestedEmiCount = max(1, (int) ($emiCounters[$loanId] ?? 1));
+                $totalNoEmi = (int) ($loan->total_no_emi ?? $loan->tenure_fortnight ?? 0);
+
+                $paidCount = InstallmentDetail::where('loan_id', $loanId)
+                    ->where('status', 'Paid')
+                    ->count();
+
+                $remaining = max(0, $totalNoEmi - $paidCount);
+                $emiCount = $requestedEmiCount;
+
+                $customerEmpCode = $this->normalizeEmpCode($loan->customer?->employee_no ?? '');
+                $requiredAmount = round($this->toAmount($loan->emi_amount) * $requestedEmiCount, 2);
+
+                $basePayload = [
+                    'loan_id' => $loan->id,
+                    'customer_id' => $loan->customer_id,
+                    'collection_uid' => $collectionUid,
+                    'payment_date' => $paymentDate,
+                    'emp_code' => $customerEmpCode ?: null,
+                    'required_emi_amount' => $requiredAmount,
+                    'requested_emi_count' => $requestedEmiCount,
+                    'paycode' => $paycode,
+                    'payroll_year' => $payrollYear,
+                    'payroll_period' => $payrollPeriod,
+                    'payroll_file_name' => $storedFileName,
+                    'payroll_file_path' => $storedFilePath,
+                    'processed_by_id' => auth()->id(),
+                ];
+
+                if ($customerEmpCode === '') {
+                    EmiPayrollTxnData::create(array_merge($basePayload, [
+                        'status' => 'Failed',
+                        'processed_emi_count' => 0,
+                        'failure_reason' => 'Employee code is missing for the selected loan.',
+                    ]));
+
+                    $failedRows++;
+                    $failedResult[] = [
+                        'loan_id' => $loan->id,
+                        'reason' => 'Employee code is missing for the selected loan.',
+                    ];
+                    continue;
+                }
+
+                $altEmpCode = $this->normalizeAltEmpCode($customerEmpCode);
+                $payrollRow = $payrollMap[$customerEmpCode] ?? $payrollMap[$altEmpCode] ?? null;
+
+                if (!$payrollRow) {
+                    EmiPayrollTxnData::create(array_merge($basePayload, [
+                        'status' => 'Failed',
+                        'processed_emi_count' => 0,
+                        'failure_reason' => 'Employee code not found in uploaded payroll TXT.',
+                    ]));
+
+                    $failedRows++;
+                    $failedResult[] = [
+                        'loan_id' => $loan->id,
+                        'emp_code' => $customerEmpCode,
+                        'reason' => 'Employee code not found in uploaded payroll TXT.',
+                    ];
+                    continue;
+                }
+
+                $matchedEmpCodeCount++;
+
+                $payrollThisPeriod = $this->toAmount($payrollRow['this_period'] ?? 0);
+                $payrollLastPeriod = $this->toAmount($payrollRow['last_period'] ?? 0);
+                $payrollVariance = $this->toAmount($payrollRow['variance'] ?? 0);
+                $payrollArrears = $this->toAmount($payrollRow['arrears'] ?? 0);
+
+                $basePayload = array_merge($basePayload, [
+                    'payroll_emp_code' => $payrollRow['emp_code'] ?? null,
+                    'job' => $payrollRow['job'] ?? null,
+                    'employee_name' => $payrollRow['name'] ?? null,
+                    'payroll_this_period' => $payrollThisPeriod,
+                    'payroll_last_period' => $payrollLastPeriod,
+                    'payroll_variance' => $payrollVariance,
+                    'payroll_arrears' => $payrollArrears,
+                ]);
+
+                if ($remaining <= 0) {
+                    EmiPayrollTxnData::create(array_merge($basePayload, [
+                        'status' => 'Failed',
+                        'processed_emi_count' => 0,
+                        'failure_reason' => 'No pending EMI available for collection.',
+                    ]));
+
+                    $failedRows++;
+                    $failedResult[] = [
+                        'loan_id' => $loan->id,
+                        'emp_code' => $customerEmpCode,
+                        'reason' => 'No pending EMI available for collection.',
+                    ];
+                    continue;
+                }
+
+                if ($requestedEmiCount > $remaining) {
+                    EmiPayrollTxnData::create(array_merge($basePayload, [
+                        'status' => 'Failed',
+                        'processed_emi_count' => 0,
+                        'failure_reason' => "Requested EMI count {$requestedEmiCount} exceeds pending EMI count {$remaining}.",
+                    ]));
+
+                    $failedRows++;
+                    $failedResult[] = [
+                        'loan_id' => $loan->id,
+                        'emp_code' => $customerEmpCode,
+                        'reason' => 'Requested EMI count exceeds pending EMI count.',
+                    ];
+                    continue;
+                }
+
+                if (($payrollThisPeriod + 0.00001) < $requiredAmount) {
+                    EmiPayrollTxnData::create(array_merge($basePayload, [
+                        'status' => 'Failed',
+                        'processed_emi_count' => 0,
+                        'failure_reason' => "Payroll amount {$payrollThisPeriod} is less than required EMI amount {$requiredAmount}.",
+                    ]));
+
+                    $failedRows++;
+                    $failedResult[] = [
+                        'loan_id' => $loan->id,
+                        'emp_code' => $customerEmpCode,
+                        'required_emi_amount' => $requiredAmount,
+                        'payroll_this_period' => $payrollThisPeriod,
+                        'reason' => 'Payroll amount is less than required EMI amount.',
+                    ];
+                    continue;
+                }
+
+                $emiFreq = LoanSetting::where('id', $loan->loan_type)
+                    ->value('installment_frequency_in_days');
+                $emiFreq = (is_numeric($emiFreq) && $emiFreq > 0) ? (int) $emiFreq : 14;
+
+                for ($i = 1; $i <= $emiCount; $i++) {
+                    $installment = InstallmentDetail::create([
+                        'loan_id' => $loanId,
+                        'collection_uid' => $collectionUid,
+                        'installment_no' => $paidCount + $i,
+                        'due_date' => now()->toDateString(),
+                        'emi_amount' => $loan->emi_amount,
+                        'payment_date' => $paymentDate,
+                        'status' => 'Paid',
+                        'emi_collected_by_id' => auth()->id(),
+                        'emi_collected_date' => now(),
+                    ]);
+
+                    EmiPayrollTxnData::create(array_merge($basePayload, [
+                        'installment_detail_id' => $installment->id,
+                        'expected_emi_amount' => $this->toAmount($loan->emi_amount),
+                        'processed_emi_count' => 1,
+                        'status' => 'Success',
+                    ]));
+
+                    $successfulEmis++;
+                }
+
+                $newPaidCount = InstallmentDetail::where('loan_id', $loanId)
+                    ->where('status', 'Paid')
+                    ->count();
+
+                if ($totalNoEmi > 0 && $newPaidCount >= $totalNoEmi) {
+                    $loan->status = 'Closed';
+                    $loan->next_due_date = null;
+                } else {
+                    $loan->next_due_date = now()->addDays($emiFreq)->toDateString();
+                }
+                $loan->save();
+
+                $successResult[] = [
+                    'loan_id' => $loan->id,
+                    'emp_code' => $customerEmpCode,
+                    'requested_emi_count' => $requestedEmiCount,
+                    'processed_emi_count' => $emiCount,
+                    'required_emi_amount' => $requiredAmount,
+                    'payroll_this_period' => $payrollThisPeriod,
+                    'payroll_file_path' => $storedFilePath,
+                    'payroll_file_url' => $storedFileUrl,
+                ];
+            }
+        });
+
+        $message = 'Payroll EMI processing completed.';
+        if ($matchedEmpCodeCount === 0) {
+            $message = 'No employee code from selected EMIs matched in the uploaded payroll TXT file.';
+        } elseif ($successfulEmis === 0) {
+            $message = 'Employee code matched, but no EMI was collected because amounts did not satisfy selected EMI values.';
+        }
+
+        return response()->json([
+            'message' => $message,
+            'collection_uid' => $collectionUid,
+            'summary' => [
+                'selected_rows' => count($validated['loan_ids']),
+                'matched_emp_codes' => $matchedEmpCodeCount,
+                'successful_emis' => $successfulEmis,
+                'failed_rows' => $failedRows,
+            ],
+            'payroll_file' => [
+                'name' => $storedFileName,
+                'path' => $storedFilePath,
+                'url' => $storedFileUrl,
+            ],
+            'results' => [
+                'success' => $successResult,
+                'failed' => $failedResult,
+            ],
+        ]);
+    }
+
+    private function normalizeEmpCode($value): string
+    {
+        return strtoupper(trim((string) $value));
+    }
+
+    private function normalizeAltEmpCode(string $value): string
+    {
+        $trimmed = ltrim($value, '0');
+        return $trimmed === '' ? '0' : $trimmed;
+    }
+
+    private function toAmount($value): float
+    {
+        $normalized = str_replace(',', '', (string) ($value ?? 0));
+        return round((float) $normalized, 2);
+    }
+
+    private function parsePayrollTxtPreview(string $txtContent): array
+    {
+        $meta = [
+            'year' => '',
+            'period' => '',
+            'paycode' => '',
+        ];
+        $employees = [];
+
+        $lines = preg_split('/\r\n|\r|\n/', $txtContent) ?: [];
+
+        foreach ($lines as $line) {
+            if ($meta['year'] === '' || $meta['period'] === '') {
+                if (stripos($line, 'Pay Group') !== false) {
+                    if (preg_match('/Year\s+(\d{4})/i', $line, $yearMatch)) {
+                        $meta['year'] = $yearMatch[1];
+                    }
+                    if (preg_match('/Period\s+(\d+)/i', $line, $periodMatch)) {
+                        $meta['period'] = $periodMatch[1];
+                    }
+                }
+            }
+
+            if ($meta['paycode'] === '' && stripos($line, 'Paycode:') !== false) {
+                if (preg_match('/Paycode:\s*([^\s]+)/i', $line, $paycodeMatch)) {
+                    $meta['paycode'] = $paycodeMatch[1];
+                }
+            }
+
+            if (!preg_match('/^\s*([A-Za-z0-9]+)\s+(\d+)\s+(.+?)\s{2,}([-\d,]+(?:\.\d+)?)\s*([-\d,]+(?:\.\d+)?)?\s*([-\d,]+(?:\.\d+)?)?\s*([-\d,]+(?:\.\d+)?)?\s*$/', $line, $row)) {
+                continue;
+            }
+
+            $empCode = $this->normalizeEmpCode($row[1] ?? '');
+            if ($empCode === '' || stripos($line, 'Total') !== false || stripos($line, 'Employees') !== false) {
+                continue;
+            }
+
+            $employees[] = [
+                'emp_code' => $empCode,
+                'job' => trim((string) ($row[2] ?? '')),
+                'name' => trim((string) ($row[3] ?? '')),
+                'this_period' => $this->toAmount($row[4] ?? 0),
+                'last_period' => $this->toAmount($row[5] ?? 0),
+                'variance' => $this->toAmount($row[6] ?? 0),
+                'arrears' => $this->toAmount($row[7] ?? 0),
+            ];
+        }
+
+        return [
+            'meta' => $meta,
+            'employees' => $employees,
+        ];
+    }
+
     //new update function
     public function update(Request $request, string $id)
     {
@@ -1450,8 +1866,97 @@ class LoanController extends Controller
         ->get()
         ->groupBy('collection_uid');
 
+        $payrollCollections = EmiPayrollTxnData::query()
+            ->where('status', 'Success')
+            ->whereNotNull('collection_uid')
+            ->whereNotNull('payroll_file_path')
+            ->select([
+                'collection_uid',
+                DB::raw('MAX(payroll_file_name) as payroll_file_name'),
+                DB::raw('MAX(payroll_file_path) as payroll_file_path'),
+                DB::raw('MAX(paycode) as paycode'),
+                DB::raw('MAX(payroll_year) as payroll_year'),
+                DB::raw('MAX(payroll_period) as payroll_period'),
+                DB::raw('COUNT(*) as payroll_success_count'),
+            ])
+            ->groupBy('collection_uid')
+            ->get()
+            ->mapWithKeys(function ($row) {
+                return [
+                    $row->collection_uid => [
+                        'is_from_payroll' => true,
+                        'payroll_file_name' => $row->payroll_file_name,
+                        'payroll_file_path' => $row->payroll_file_path,
+                        'payroll_file_url' => '/storage/' . ltrim($row->payroll_file_path, '/'),
+                        'paycode' => $row->paycode,
+                        'year' => $row->payroll_year,
+                        'period' => $row->payroll_period,
+                        'success_rows' => (int) $row->payroll_success_count,
+                    ]
+                ];
+            });
+
         return response()->json([
-            'collections' => $collections
+            'collections' => $collections,
+            'payroll_collections' => $payrollCollections,
+        ]);
+    }
+
+    public function emiPayrollPreview($collectionUid)
+    {
+        $payrollRow = EmiPayrollTxnData::query()
+            ->where('collection_uid', $collectionUid)
+            ->whereNotNull('payroll_file_path')
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$payrollRow) {
+            return response()->json([
+                'message' => 'No payroll TXT file found for this collection ID.'
+            ], 404);
+        }
+
+        $filePath = ltrim((string) $payrollRow->payroll_file_path, '/');
+        if (!Storage::disk('public')->exists($filePath)) {
+            return response()->json([
+                'message' => 'Payroll TXT file path exists in DB, but file is missing in storage.'
+            ], 404);
+        }
+
+        $txtContent = Storage::disk('public')->get($filePath);
+        $parsedPreview = $this->parsePayrollTxtPreview($txtContent);
+
+        $matchedRows = EmiPayrollTxnData::query()
+            ->where('collection_uid', $collectionUid)
+            ->orderBy('id')
+            ->get([
+                'id',
+                'loan_id',
+                'installment_detail_id',
+                'emp_code',
+                'payroll_emp_code',
+                'employee_name',
+                'required_emi_amount',
+                'payroll_this_period',
+                'status',
+                'failure_reason',
+            ]);
+
+        return response()->json([
+            'collection_uid' => $collectionUid,
+            'file' => [
+                'name' => $payrollRow->payroll_file_name,
+                'path' => $payrollRow->payroll_file_path,
+                'url' => '/storage/' . $filePath,
+                'uploaded_at' => optional($payrollRow->created_at)->toDateTimeString(),
+            ],
+            'meta' => [
+                'paycode' => $parsedPreview['meta']['paycode'] ?: $payrollRow->paycode,
+                'year' => $parsedPreview['meta']['year'] ?: $payrollRow->payroll_year,
+                'period' => $parsedPreview['meta']['period'] ?: $payrollRow->payroll_period,
+            ],
+            'employees' => $parsedPreview['employees'],
+            'matched_rows' => $matchedRows,
         ]);
     }
 

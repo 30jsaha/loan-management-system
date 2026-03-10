@@ -90,7 +90,7 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
   // counter
   const [emiCounter, setEmiCounter] = useState({});
   const [collectionId, setCollectionId] = useState(collectionUniqueId);
-  const [emiPayDate, setEmiPayDate] = useState({});
+  const [emiPayDate, setEmiPayDate] = useState("");
   useEffect(() => {
     // initialize emiPayDate as YYYY-MM-DD string (date input value)
     const today = new Date().toISOString().split("T")[0];
@@ -101,6 +101,22 @@ export default function LoanEmiCollection({ auth, approved_loans, summary }) {
     pending: 0,
     collected: 0,
   });
+
+  const refreshLoanCollectionList = async () => {
+    const res = await axios.get("/api/loans/emi-collection-list");
+    if (Array.isArray(res.data)) {
+      setLoans(res.data);
+    } else {
+      setLoans(res.data?.approved_loans ?? []);
+    }
+  };
+
+  const resetSelectionAfterCollection = () => {
+    setSelectedLoanIds([]);
+    setSelectedLoan(null);
+    setSearchQuery("");
+    setDateFilter("");
+  };
 
   
   const increaseCounter = (loan) => {
@@ -362,20 +378,8 @@ const handleCollectEMI = async () => {
     Swal.fire("✅ Success", response.data.message || "EMI collected successfully!", "success");
 
     // 🔄 Refresh the loan list after successful collection
-    const res = await axios.get("/api/loans/emi-collection-list");
-
-    // 🧹 Clear selection and filters
-    setSelectedLoanIds([]);
-    setSelectedLoan(null);
-    setSearchQuery("");
-    setDateFilter("");
-
-    // Update loan list safely
-    if (Array.isArray(res.data)) {
-      setLoans(res.data);
-    } else {
-      setLoans(res.data?.approved_loans ?? []);
-    }
+    await refreshLoanCollectionList();
+    resetSelectionAfterCollection();
 
   } catch (error) {
     console.log("422 ERROR DETAILS:", error.response?.data);
@@ -471,6 +475,39 @@ const handleCollectEMI = async () => {
         };
       });
   }, [filteredLoans, selectedLoanIds, emiCounter]);
+
+  const selectedPayrollRows = useMemo(() => {
+    return selectedLoanRows.map((row) => ({
+      loan_id: row.loan.id,
+      counter: row.counter,
+      collect_emi: row.collectEmi,
+      employee_no: row.loan.customer?.employee_no || "",
+      customer_name: `${row.loan.customer?.first_name || ""} ${row.loan.customer?.last_name || ""}`.trim(),
+    }));
+  }, [selectedLoanRows]);
+
+  const handlePayrollCollectionComplete = async (result) => {
+    const successCount = result?.summary?.successful_emis ?? 0;
+    const failedCount = result?.summary?.failed_rows ?? 0;
+
+    if (successCount > 0) {
+      await refreshLoanCollectionList();
+      resetSelectionAfterCollection();
+      setUploadDeducSheet(false);
+      Swal.fire(
+        "Payroll Collection Completed",
+        `Successful EMI rows: ${successCount}\nFailed rows: ${failedCount}`,
+        "success"
+      );
+      return;
+    }
+
+    Swal.fire(
+      "Payroll Collection Completed",
+      result?.message || "No EMI was collected from the uploaded payroll file.",
+      "warning"
+    );
+  };
 
   const summaryData = React.useMemo(() => {
     let totalCount = 0;
@@ -752,7 +789,7 @@ const handleCollectEMI = async () => {
                           type="date"
                           name="payment_date"
                           className="border border-gray-300 rounded px-2 py-1 text-sm"
-                          value={new Date().toISOString().split("T")[0]} // Default to today
+                          value={emiPayDate}
                           onChange={(e)=>setEmiPayDate(e.target.value)}
                         />
                       </div>
@@ -766,7 +803,7 @@ const handleCollectEMI = async () => {
                           name="collection_uid"
                           className="border border-gray-300 rounded px-2 py-1 text-sm cursor-not-allowed bg-gray-100"
                           readOnly={true}
-                          value={collectionUniqueId} // Example: auto-generate ID
+                          value={collectionId}
                           onChange={(e)=>setCollectionId(e.target.value)}
                         />
                       </div>
@@ -891,7 +928,13 @@ const handleCollectEMI = async () => {
                 </table>
               </div>
               {uploadDeducSheet && (
-                <PayrollUpload onCancel={closeUploadDeducSheetArea}/>
+                <PayrollUpload
+                  onCancel={closeUploadDeducSheetArea}
+                  selectedLoans={selectedPayrollRows}
+                  paymentDate={emiPayDate}
+                  collectionUid={collectionId}
+                  onCollectionComplete={handlePayrollCollectionComplete}
+                />
               )}
               </>
             ) : (

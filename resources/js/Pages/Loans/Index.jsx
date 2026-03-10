@@ -487,7 +487,8 @@ export default function Index({ auth }) {
                     >
                       {/* # */}
                       <td className="px-4 py-3 text-center text-gray-700 border border-gray-700">
-                        {(currentPage - 1) * itemsPerPage + index + 1}
+                        {/* {(currentPage - 1) * itemsPerPage + index + 1} */}
+                        {loan?.id || (currentPage - 1) * itemsPerPage + index + 1}
                       </td>
 
                       {/* Details - CENTERED */}

@@ -3,6 +3,7 @@ import MainLogo from "@/Components/MainLogo";
 import { useEffect, useState } from "react";
 import { Row, Col } from "react-bootstrap";
 import { formatCurrency } from "@/Utils/formatters";
+import { Loader2 } from "lucide-react";
 
 // All your print CSS
 const printStyles = `
@@ -232,7 +233,8 @@ const AppF = React.forwardRef(function AppF({ loan: initialLoan, auth }, ref) {
 
   if (loading || !loan) {
     return (
-      <div ref={ref} className="p-4 text-center">
+      <div ref={ref} className="p-4 d-flex align-items-center justify-content-center">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         Loading data...
       </div>
     );
