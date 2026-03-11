@@ -58,6 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/loan-slab-modify/{id}', [LoanController::class, 'modify_loan_slab']); // UPDATE
     Route::delete('/loan-slab-remove/{id}', [LoanController::class, 'remove_loan_slab']); // DELETE
     Route::post('loans/collect-emi', [LoanController::class, 'collectEMI']);
+    Route::post('loans/validate-payroll-upload', [LoanController::class, 'validatePayrollUpload']);
     Route::post('loans/collect-emi-payroll', [LoanController::class, 'collectEmiFromPayroll']);
     Route::get('loans/emi-payroll-preview/{collectionUid}', [LoanController::class, 'emiPayrollPreview']);
     // Route::get('loans/emi-collection-list', [LoanController::class, 'loan_emi_list']);
@@ -72,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/loans/{loanId}/mark-sent-approval', [LoanController::class, 'markSentApproval']);
     Route::post('/loans/send-completion-mail', [LoanController::class, 'sendCompletionMail']);
     Route::post('/loans/send-approval-mail', [LoanController::class, 'sendApprovalMail']);
+    Route::get('/customers/{customerId}/latest-application-data', [LoanController::class, 'getLatestEligibilityAndLoanData']);
     Route::post('/loan-fn-range', [LoanController::class, 'getFnRangeByAmount']);
     Route::get('/loan-purposes-list', [LoanController::class, 'getLoanPurposes']);
     Route::get('/get-loan-purposes/{loanTypeId}', [LoanController::class, 'getLoanPurposesPerType']);
@@ -109,6 +111,7 @@ Route::get('/customers', [CustomerController::class, 'index']);
 Route::post('/customers', [CustomerController::class, 'store']); //handled in save-new-customer-for-new-loan route above
 Route::get('/customers/{id}', [CustomerController::class, 'show']);
 Route::get('/customers/by-emp/{empCode}', [CustomerController::class, 'getByEmpCode']); // avoid 404
+Route::get('/customers/by-ref/{refNo}', [CustomerController::class, 'getByCustomerRefNo']);
 Route::get('/customers-history/{id}', [CustomerController::class, 'customerLoanHistory']);
 Route::post('/customers/{id}', [CustomerController::class, 'update']);
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy']);

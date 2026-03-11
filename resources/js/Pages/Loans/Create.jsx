@@ -10,7 +10,7 @@ import LoanDocumentsUpload from '@/Components/LoanDocumentsUpload';
 import CustomerEligibilityForm from '@/Components/CustomerEligibilityForm';
 import CustomerForm from '@/Components/CustomerForm';
 //icon pack
-import { ArrowLeft, LucideNavigation, Check, Download, Printer, Eye } from "lucide-react";
+import { ArrowLeft, LucideNavigation, Check, Download, Printer, Eye, Loader2 } from "lucide-react";
 import Swal from 'sweetalert2';
 import { formatCurrency } from "@/Utils/formatters";
 import { currencyPrefix } from "@/config";
@@ -51,6 +51,10 @@ export default function Create({ auth, loan_settings }) {
 
     const [loanPurposeOptions, setLoanPurposeOptions] = useState([]);
     const [isFetchingPurpose, setIsFetchingPurpose] = useState(false);
+    const [eligibilityPrefillData, setEligibilityPrefillData] = useState(null);
+    const [eligibilityAutoCheckKey, setEligibilityAutoCheckKey] = useState(0);
+    const [isStepTwoDataLoading, setIsStepTwoDataLoading] = useState(false);
+    const [isStepTwoCalcLoading, setIsStepTwoCalcLoading] = useState(false);
 
 
     const [customerDisplayValue, setCustomerDisplayValue] = useState("");
@@ -230,6 +234,120 @@ export default function Create({ auth, loan_settings }) {
             console.error('There was an error fetching the LoanPurposes!', error);
         }
     };
+
+    const mapPurposeOptions = useCallback((purposeRows) => (
+        Array.isArray(purposeRows)
+            ? purposeRows
+                .filter((p) => Number(p.status) === 1)
+                .map((p) => ({
+                    value: p.id,
+                    label: p.purpose_name,
+                }))
+            : []
+    ), []);
+
+    const loadLoanPurposeOptions = useCallback(async (loanTypeId, preferredPurposeId = null) => {
+        if (!loanTypeId) {
+            setLoanPurposeOptions(mapPurposeOptions(loanPurposes));
+            return;
+        }
+
+        setLoanPurposeOptions([]);
+        setIsFetchingPurpose(true);
+
+        try {
+            const res = await axios.get(`/api/get-loan-purposes/${loanTypeId}`);
+            let purposes = mapPurposeOptions(res.data);
+
+            if (purposes.length === 0) {
+                purposes = mapPurposeOptions(loanPurposes);
+            }
+
+            setLoanPurposeOptions(purposes);
+
+            if (preferredPurposeId) {
+                const preferredId = Number(preferredPurposeId);
+                const hasPreferred = purposes.some((p) => Number(p.value) === preferredId);
+                setSelectedLoanPurposeId(hasPreferred ? preferredId : null);
+            }
+        } catch (error) {
+            console.error("Error fetching loan purposes:", error);
+        } finally {
+            setIsFetchingPurpose(false);
+        }
+    }, [loanPurposes, mapPurposeOptions]);
+
+    const loadLatestCustomerStepTwoData = useCallback(async (customerId) => {
+        const numericCustomerId = Number(customerId);
+        if (!numericCustomerId) {
+            setEligibilityPrefillData(null);
+            return;
+        }
+
+        setIsStepTwoDataLoading(true);
+        try {
+            const res = await axios.get(`/api/customers/${numericCustomerId}/latest-application-data`);
+            const latestEligibility = res?.data?.eligibility_history || null;
+            const latestLoan = res?.data?.loan_application || null;
+
+            if (latestEligibility) {
+                setEligibilityPrefillData({
+                    ...latestEligibility,
+                    customer_id: numericCustomerId,
+                });
+                setEligibilityAutoCheckKey((prev) => prev + 1);
+            } else {
+                setEligibilityPrefillData(null);
+            }
+
+            if (!latestLoan) {
+                setSelectedLoanPurposeId(null);
+                setLoanFormData((prev) => ({
+                    ...prev,
+                    customer_id: numericCustomerId,
+                    loan_type: 0,
+                    purpose: "",
+                    purpose_id: 0,
+                    other_purpose_text: "",
+                    interest_rate: 0,
+                    processing_fee: 0,
+                    bank_name: "",
+                    bank_branch: "",
+                    bank_account_no: "",
+                    remarks: "",
+                }));
+                return;
+            }
+
+            const prefilledLoanTypeId = Number(latestLoan.loan_type || 0);
+            const prefilledPurposeId = Number(latestLoan.purpose_id || 0);
+
+            setLoanFormData((prev) => ({
+                ...prev,
+                customer_id: numericCustomerId,
+                loan_type: prefilledLoanTypeId,
+                purpose: latestLoan.purpose || "",
+                purpose_id: prefilledPurposeId,
+                other_purpose_text: latestLoan.other_purpose_text || "",
+                interest_rate: parseFloat(latestLoan.interest_rate) || 0,
+                processing_fee: parseFloat(latestLoan.processing_fee) || 0,
+                bank_name: latestLoan.bank_name || "",
+                bank_branch: latestLoan.bank_branch || "",
+                bank_account_no: latestLoan.bank_account_no || "",
+                remarks: latestLoan.remarks || "",
+                elegible_amount: parseFloat(latestLoan.elegible_amount) || prev.elegible_amount || 0,
+            }));
+
+            setSelectedLoanPurposeId(prefilledPurposeId || null);
+            if (prefilledLoanTypeId) {
+                await loadLoanPurposeOptions(prefilledLoanTypeId, prefilledPurposeId || null);
+            }
+        } catch (error) {
+            console.error("Failed to load latest eligibility/loan data:", error);
+        } finally {
+            setIsStepTwoDataLoading(false);
+        }
+    }, [loadLoanPurposeOptions]);
 
     const resetCustomerForm = () => {
         setFormData({
@@ -823,16 +941,9 @@ export default function Create({ auth, loan_settings }) {
 
     };
     useEffect(() => {
-        const lpo = Array.isArray(loanPurposes)
-            ? loanPurposes
-                .filter(p => Number(p.status) === 1)
-                .map(p => ({
-                    value: p.id,
-                    label: p.purpose_name
-                }))
-            : [];
+        const lpo = mapPurposeOptions(loanPurposes);
         setLoanPurposeOptions(lpo);
-    }, loanPurposes);
+    }, [loanPurposes, mapPurposeOptions]);
     useEffect(() => {
         axios.get("/api/fetch-loan-temp-customer", { withCredentials: true })
 
@@ -1416,7 +1527,7 @@ const isSubmitDisabled =
                                             allCustMast={allCustMast}
                                             setMessage={setMessage}
                                             setIsFormDirty={setIsFormDirty}
-                                            onNext={(savedCustomer) => {
+                                            onNext={async (savedCustomer) => {
                                                 //toast.dismiss();
                                                 setStep(2);
                                                 const infoMsg = '✅ customer data saved. You can continue filling the loan application.';
@@ -1445,22 +1556,35 @@ const isSubmitDisabled =
                                                     ...prev,
                                                     customer_id: savedCustomer.id,
                                                 }));
+                                                setEligibilityPrefillData(null);
                                                 bankSelectionTriggeredCustomerRef.current = null;
 
                                                 setStep(2);
                                                 setCustSelectable(false);
                                                 // 🔥 Fetch loan types based on salary and organisation
-                                                axios.get(`/api/filtered-loan-types/${savedCustomer.id}`)
-                                                    .then((res) => {
-                                                        setLoanTypes(res.data);
-                                                    })
-                                                    .catch((err) => console.error("Error fetching loan types:", err));
+                                                try {
+                                                    const loanTypeRes = await axios.get(`/api/filtered-loan-types/${savedCustomer.id}`);
+                                                    setLoanTypes(loanTypeRes.data);
+                                                } catch (err) {
+                                                    console.error("Error fetching loan types:", err);
+                                                }
+
+                                                loadLatestCustomerStepTwoData(savedCustomer.id);
                                             }}
                                             resetForm={resetCustomerForm}
                                         />
                                     )}
 
                                     {step === 2 && (
+                                        <>
+                                        {(isStepTwoDataLoading || isStepTwoCalcLoading) && (
+                                            <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center">
+                                                <div className="bg-white px-6 py-4 rounded-md shadow-lg text-lg font-semibold text-gray-800 flex items-center">
+                                                    <Loader2 className="animate-spin mr-2" />
+                                                    Fetching Details...
+                                                </div>
+                                            </div>
+                                        )}
                                         <form onSubmit={handleSubmit}> {/* Loan application form here */}
                                             <div className="row mb-3">
                                                 <div className="col-md-4">
@@ -1503,9 +1627,12 @@ const isSubmitDisabled =
                                                                 axios.get(`/api/filtered-loan-types/${selectedCustomer.id}`)
                                                                     .then(res => setLoanTypes(res.data))
                                                                     .catch(err => console.error(err));
+
+                                                                loadLatestCustomerStepTwoData(selectedCustomer.id);
                                                             } else {
                                                                 // Reset if invalid text
                                                                 bankSelectionTriggeredCustomerRef.current = null;
+                                                                setEligibilityPrefillData(null);
                                                                 setLoanFormData(prev => ({
                                                                     ...prev,
                                                                     customer_id: 0
@@ -1533,6 +1660,9 @@ const isSubmitDisabled =
                                                         customerId={loanFormData.customer_id}
                                                         grossSalary={parseFloat(savedCustomerData?.monthly_salary)}
                                                         netSalary={parseFloat(savedCustomerData?.net_salary)}
+                                                        initialFormData={eligibilityPrefillData}
+                                                        autoCheckKey={eligibilityAutoCheckKey}
+                                                        onCheckingStateChange={(state) => setIsStepTwoCalcLoading(state)}
                                                         onEligibilityChange={(eligible) => {
                                                             setIsEligible(eligible);
                                                             console.log("isEligible on CustomerEligibilityCheck", isEligible);
@@ -1619,43 +1749,8 @@ const isSubmitDisabled =
                                                                         }
 
                                                                         // 🔄 Reset purpose state first
-                                                                        setLoanPurposeOptions([]);
                                                                         setSelectedLoanPurposeId(null);
-                                                                        setIsFetchingPurpose(true);
-
-                                                                        axios
-                                                                            .get(`/api/get-loan-purposes/${selectedLoanSetting.id}`)
-                                                                            .then((res) => {
-                                                                                const purposes = Array.isArray(res.data)
-                                                                                    ? res.data
-                                                                                        .filter(p => Number(p.status) === 1)
-                                                                                        .map(p => ({
-                                                                                            value: p.id,
-                                                                                            label: p.purpose_name,
-                                                                                        }))
-                                                                                    : [];
-
-                                                                                if (purposes.length === 0) {
-                                                                                    const lpo = Array.isArray(loanPurposes)
-                                                                                        ? loanPurposes  
-                                                                                            .filter(p => Number(p.status) === 1)
-                                                                                            .map(p => ({
-                                                                                                value: p.id,
-                                                                                                label: p.purpose_name
-                                                                                            }))
-                                                                                        : [];
-                                                                                    setLoanPurposeOptions(lpo);
-                                                                                } else {
-                                                                                    setLoanPurposeOptions(purposes);
-                                                                                }
-                                                                            })
-                                                                            .catch((err) => {
-                                                                                console.error("Error fetching loan purposes:", err);
-                                                                                // setLoanPurposeOptions([]);
-                                                                            })
-                                                                            .finally(() => {
-                                                                                setIsFetchingPurpose(false);
-                                                                            });
+                                                                        loadLoanPurposeOptions(selectedLoanSetting.id, null);
                                                                     }
                                                                 }
                                                             }}
@@ -1966,6 +2061,7 @@ const isSubmitDisabled =
                                                 </Col>
                                             </Row>
                                         </form>
+                                        </>
                                     )}
                                     {step === 3 && (
                                         <LoanDocumentsUpload

@@ -10,6 +10,74 @@ const parseNumber = (value) => {
 
 const normalizeEmpCode = (value) => String(value ?? "").trim().toUpperCase();
 
+const readTextFile = (selectedFile) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(String(event?.target?.result ?? ""));
+    reader.onerror = () => reject(new Error("Unable to read TXT file."));
+    reader.readAsText(selectedFile);
+  });
+
+const parsePayrollTxtContent = (text) => {
+  const lines = String(text).split(/\r?\n/);
+  const meta = {
+    year: "",
+    period: "",
+    paycode: "",
+    generated_on: "",
+    period_end: "",
+  };
+  const parsedEmployees = [];
+
+  lines.forEach((line) => {
+    if (!meta.generated_on) {
+      const generatedMatch = line.match(
+        /^\s*(\d{2}-[A-Za-z]{3}-\d{4})\s*,\s*\d{1,2}:\d{2}\s*(?:am|pm)\s*$/i
+      );
+      if (generatedMatch) {
+        meta.generated_on = generatedMatch[1].toUpperCase();
+      }
+    }
+
+    if (!meta.year || !meta.period) {
+      if (/Pay Group/i.test(line)) {
+        const yearMatch = line.match(/Year\s+(\d{4})/i);
+        const periodMatch = line.match(/Period\s+(\d+)/i);
+        const periodEndMatch = line.match(/Period\s+End\s+(\d{2}-[A-Za-z]{3}-\d{4})/i);
+
+        meta.year = yearMatch ? yearMatch[1] : meta.year;
+        meta.period = periodMatch ? periodMatch[1] : meta.period;
+        meta.period_end = periodEndMatch ? periodEndMatch[1].toUpperCase() : meta.period_end;
+      }
+    }
+
+    if (!meta.paycode && /Paycode:/i.test(line)) {
+      const paycodeMatch = line.match(/Paycode:\s*([^\s]+)/i);
+      meta.paycode = paycodeMatch ? paycodeMatch[1] : meta.paycode;
+    }
+
+    const rowRegex =
+      /^\s*([A-Za-z0-9]+)\s+(\d+)\s+(.+?)\s{2,}([-\d,]+(?:\.\d+)?)\s*([-\d,]+(?:\.\d+)?)?\s*([-\d,]+(?:\.\d+)?)?\s*([-\d,]+(?:\.\d+)?)?\s*$/;
+    const match = line.match(rowRegex);
+    if (!match) return;
+
+    const empCode = normalizeEmpCode(match[1]);
+    if (!empCode || /Total/i.test(line) || /Employees/i.test(line)) return;
+
+    parsedEmployees.push({
+      emp_code: empCode,
+      job: String(match[2] ?? "").trim(),
+      name: String(match[3] ?? "").trim(),
+      this_period: parseNumber(match[4]),
+      last_period: parseNumber(match[5]),
+      variance: parseNumber(match[6]),
+      arrears: parseNumber(match[7]),
+    });
+  });
+
+  return { meta, employees: parsedEmployees };
+};
+
 export default function PayrollUpload({
   onCancel,
   selectedLoans = [],
@@ -21,14 +89,25 @@ export default function PayrollUpload({
   const [isDragging, setIsDragging] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const [meta, setMeta] = useState({
     year: "",
     period: "",
     paycode: "",
+    generated_on: "",
+    period_end: "",
   });
 
   const handleFile = (e) => {
     setFile(e.target.files?.[0] ?? null);
+    setEmployees([]);
+    setMeta({
+      year: "",
+      period: "",
+      paycode: "",
+      generated_on: "",
+      period_end: "",
+    });
   };
 
   const handleDragOver = (e) => {
@@ -47,67 +126,45 @@ export default function PayrollUpload({
     const droppedFile = e.dataTransfer.files?.[0];
     if (droppedFile) {
       setFile(droppedFile);
+      setEmployees([]);
+      setMeta({
+        year: "",
+        period: "",
+        paycode: "",
+        generated_on: "",
+        period_end: "",
+      });
     }
   };
 
-  const handlePreview = () => {
+  const handlePreview = async () => {
     if (!file) {
-      alert("Please select a file");
+      toast.error("Please select a file.");
       return;
     }
 
-    const reader = new FileReader();
+    try {
+      setIsPreviewing(true);
+      setEmployees([]);
+      const text = await readTextFile(file);
+      const parsed = parsePayrollTxtContent(text);
 
-    reader.onload = (event) => {
-      const text = event.target.result;
-      const lines = String(text).split(/\r?\n/);
-
-      let year = "";
-      let period = "";
-      let paycode = "";
-      const parsedEmployees = [];
-
-      const headerLine = lines.find((line) => line.includes("Pay Group"));
-      if (headerLine) {
-        const yearMatch = headerLine.match(/Year\s+(\d{4})/i);
-        const periodMatch = headerLine.match(/Period\s+(\d+)/i);
-
-        year = yearMatch ? yearMatch[1] : "";
-        period = periodMatch ? periodMatch[1] : "";
+      if (!parsed.employees.length) {
+        setEmployees([]);
+        toast.error("No employee rows found in this TXT file.");
+        return;
       }
 
-      const paycodeLine = lines.find((line) => line.includes("Paycode:"));
-      if (paycodeLine) {
-        const paycodeMatch = paycodeLine.match(/Paycode:\s*([^\s]+)/i);
-        paycode = paycodeMatch ? paycodeMatch[1] : "";
-      }
-
-      lines.forEach((line) => {
-        const rowRegex =
-          /^\s*([A-Za-z0-9]+)\s+(\d+)\s+(.+?)\s{2,}([-\d,]+(?:\.\d+)?)\s*([-\d,]+(?:\.\d+)?)?\s*([-\d,]+(?:\.\d+)?)?\s*([-\d,]+(?:\.\d+)?)?\s*$/;
-        const match = line.match(rowRegex);
-
-        if (!match) return;
-
-        const empCode = normalizeEmpCode(match[1]);
-        if (!empCode || line.includes("Total") || line.includes("Employees")) return;
-
-        parsedEmployees.push({
-          emp_code: empCode,
-          job: String(match[2] ?? "").trim(),
-          name: String(match[3] ?? "").trim(),
-          this_period: parseNumber(match[4]),
-          last_period: parseNumber(match[5]),
-          variance: parseNumber(match[6]),
-          arrears: parseNumber(match[7]),
-        });
-      });
-
-      setMeta({ year, period, paycode });
-      setEmployees(parsedEmployees);
-    };
-
-    reader.readAsText(file);
+      setMeta(parsed.meta);
+      setEmployees(parsed.employees);
+      toast.success("TXT file preview is ready.");
+    } catch (error) {
+      const msg = "TXT file preview failed. Please check the file format.";
+      setEmployees([]);
+      toast.error(msg);
+    } finally {
+      setIsPreviewing(false);
+    }
   };
 
   const handleFinalSubmit = async () => {
@@ -216,9 +273,10 @@ export default function PayrollUpload({
 
       <button
         onClick={handlePreview}
-        className="mt-3 ml-2 rounded-md bg-blue-600 px-2 py-2 text-sm text-white shadow-sm hover:bg-blue-700"
+        className="mt-3 ml-2 rounded-md bg-blue-600 px-2 py-2 text-sm text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+        disabled={isPreviewing || isSubmitting}
       >
-        Preview
+        {isPreviewing ? "Previewing..." : "Preview"}
       </button>
       <button
         className="ml-2 rounded-md bg-gray-600 px-2 py-2 text-sm text-white shadow-sm hover:bg-gray-700"

@@ -53,6 +53,21 @@ class CustomerController extends Controller
             'customer' => $customer
         ], 200);
     }
+    public function getByCustomerRefNo($refNo)
+    {
+        $customer = Customer::where('customer_ref_no', $refNo)->first();
+
+        if (!$customer) {
+            return response()->json([
+                'exists' => false
+            ], 200);
+        }
+
+        return response()->json([
+            'exists' => true,
+            'customer' => $customer
+        ], 200);
+    }
     //function to save new customer for new loan
     public function store(Request $request)
     {

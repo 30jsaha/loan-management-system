@@ -44,16 +44,49 @@ function DocumentViewerModal({ open, onClose, documentUrl, title }) {
 
 function PayrollTxtPreviewModal({ open, onClose, data, loading }) {
   const [transactionsExpanded, setTransactionsExpanded] = useState(false);
+  const [matchFilter, setMatchFilter] = useState("all");
   useEffect(() => {
     if (open) {
       setTransactionsExpanded(false);
+      setMatchFilter("all");
     }
   }, [open]);
 
-  if (!open) return null;
-
   const employees = Array.isArray(data?.employees) ? data.employees : [];
   const matchedRows = Array.isArray(data?.matched_rows) ? data.matched_rows : [];
+  const normalizeCode = (value) => String(value ?? "").trim().toUpperCase();
+  const matchedEmpCodeSet = useMemo(() => {
+    const set = new Set();
+    matchedRows.forEach((txn) => {
+      const isSuccess = String(txn?.status || "").toLowerCase() === "success";
+      if (!isSuccess) return;
+      const payrollCode = normalizeCode(txn?.payroll_emp_code);
+      const empCode = normalizeCode(txn?.emp_code);
+      if (payrollCode) set.add(payrollCode);
+      if (empCode) set.add(empCode);
+    });
+    return set;
+  }, [matchedRows]);
+
+  const previewRows = useMemo(() => {
+    const mapped = employees.map((emp) => {
+      const rowCode = normalizeCode(emp?.emp_code);
+      const isMatched = matchedEmpCodeSet.has(rowCode);
+      return {
+        ...emp,
+        __isMatched: isMatched,
+      };
+    });
+
+    if (matchFilter === "matched") {
+      return mapped.filter((row) => row.__isMatched);
+    }
+    if (matchFilter === "un-matched") {
+      return mapped.filter((row) => !row.__isMatched);
+    }
+    return mapped;
+  }, [employees, matchedEmpCodeSet, matchFilter]);
+
   const sortedMatchedRows = [...matchedRows].sort((a, b) => {
     const aFailed = String(a?.status || "").toLowerCase() === "failed";
     const bFailed = String(b?.status || "").toLowerCase() === "failed";
@@ -67,6 +100,8 @@ function PayrollTxtPreviewModal({ open, onClose, data, loading }) {
     const d = new Date(normalized);
     return Number.isNaN(d.getTime()) ? "-" : d.toLocaleString("en-GB");
   })();
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -209,17 +244,31 @@ function PayrollTxtPreviewModal({ open, onClose, data, loading }) {
                       <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-3 font-semibold text-white shadow-lg">
                         Arrears
                       </th>
+                      <th className="sticky left-0 top-0 z-50 border-b border-r border-gray-700 bg-gray-900 p-2 font-semibold text-white shadow-lg">
+                        <div className="flex flex-col gap-1">
+                          <span>Status</span>
+                          <select
+                            value={matchFilter}
+                            onChange={(e) => setMatchFilter(e.target.value)}
+                            className="rounded border border-slate-500 bg-slate-800 px-1 py-0.5 text-xs text-white"
+                          >
+                            <option value="all">all</option>
+                            <option value="matched">matched</option>
+                            <option value="un-matched">un-matched</option>
+                          </select>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-300">
-                    {employees.length === 0 ? (
+                    {previewRows.length === 0 ? (
                       <tr>
-                        <td className="p-3 text-center text-gray-500" colSpan={7}>
+                        <td className="p-3 text-center text-gray-500" colSpan={8}>
                           No employee rows found in TXT.
                         </td>
                       </tr>
                     ) : (
-                      employees.map((emp, index) => (
+                      previewRows.map((emp, index) => (
                         <tr key={`${emp.emp_code || "emp"}-${index}`} className="hover:bg-blue-50 transition-colors">
                           <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.emp_code}</td>
                           <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.job}</td>
@@ -228,6 +277,17 @@ function PayrollTxtPreviewModal({ open, onClose, data, loading }) {
                           <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.last_period}</td>
                           <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.variance}</td>
                           <td className="border-r border-gray-50 px-4 py-2 tabular-nums text-gray-700">{emp.arrears}</td>
+                          <td className="border-r border-gray-50 px-4 py-2">
+                            {emp.__isMatched ? (
+                              <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                                Matched
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
+                                Un-matched
+                              </span>
+                            )}
+                          </td>
                         </tr>
                       ))
                     )}

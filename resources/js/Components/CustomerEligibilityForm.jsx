@@ -5,49 +5,51 @@ import { ChevronUp, ChevronDown } from "lucide-react";
 //swal
 import Swal from "sweetalert2";
 
-export default function CustomerEligibilityForm({ customerId, grossSalary, netSalary, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, maxAllowedPvaAmt, eleigibleAmount }) {
+const toNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const normalizeEligibilityFormData = (payload = {}, fallbackCustomerId = 0) => ({
+  customer_id: toNumber(payload.customer_id || fallbackCustomerId),
+  gross_salary_amt: toNumber(payload.gross_salary_amt),
+  temp_allowances_amt: toNumber(payload.temp_allowances_amt),
+  overtime_amt: toNumber(payload.overtime_amt),
+  tax_amt: toNumber(payload.tax_amt),
+  superannuation_amt: toNumber(payload.superannuation_amt),
+  current_net_pay_amt: toNumber(payload.current_net_pay_amt),
+  bank_2_amt: toNumber(payload.bank_2_amt),
+  total_other_deductions_amt: toNumber(payload.total_other_deductions_amt),
+  current_fincorp_deduction_amt: toNumber(payload.current_fincorp_deduction_amt),
+  other_deductions_amt: toNumber(payload.other_deductions_amt),
+  proposed_pva_amt: toNumber(payload.proposed_pva_amt),
+});
+
+export default function CustomerEligibilityForm({ customerId, grossSalary, netSalary, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, maxAllowedPvaAmt, eleigibleAmount, initialFormData = null, autoCheckKey = 0, onCheckingStateChange }) {
   const [isChecking, setIsChecking] = useState(false);
   const [showCalcDetails, setShowCalcDetails] = useState(false);
 
-  const [formData, setFormData] = useState({
-    customer_id: customerId || 0,
-    gross_salary_amt: 0,
-    temp_allowances_amt: 0,
-    overtime_amt: 0,
-    tax_amt: 0,
-    superannuation_amt: 0,
-    current_net_pay_amt: 0,
-    bank_2_amt: 0,
-    total_other_deductions_amt: 0,
-    current_fincorp_deduction_amt: 0,
-    other_deductions_amt: 0,
-    proposed_pva_amt: 0
-  });
-
-  // 🧠 Keep formData.customer_id in sync with the parent prop
+  const [formData, setFormData] = useState(() =>
+    normalizeEligibilityFormData({
+      customer_id: customerId || 0,
+      gross_salary_amt: grossSalary || 0,
+      current_net_pay_amt: netSalary || 0,
+    })
+  );
   useEffect(() => {
-    if (customerId && customerId !== formData.customer_id) {
-      setFormData((prev) => ({
+    const normalizedCustomerId = toNumber(customerId);
+    setFormData((prev) =>
+      normalizeEligibilityFormData({
         ...prev,
-        customer_id: customerId,
-      }));
-      console.log("✅ Updated customer_id in Eligibility Form:", customerId);
-    }
-    if (grossSalary && grossSalary !== formData.gross_salary_amt) {
-      setFormData((prev) => ({
-        ...prev,
-        gross_salary_amt: grossSalary,
-      }));
-      console.log("✅ Updated gross_salary_amt in Eligibility Form:", grossSalary);
-    }
-    if (netSalary && netSalary !== formData.current_net_pay_amt) {
-      setFormData((prev) => ({
-        ...prev,
-        current_net_pay_amt: netSalary,
-      }));
-      console.log("✅ Updated current_net_pay_amt in Eligibility Form:", netSalary);
-    }
-  }, [customerId, grossSalary, netSalary]);
+        customer_id: normalizedCustomerId,
+        gross_salary_amt: grossSalary || 0,
+        current_net_pay_amt: netSalary || 0,
+      }, normalizedCustomerId)
+    );
+    setResult(null);
+    setMessage("");
+    setShowCalcDetails(false);
+  }, [customerId]);
 
   const grossSalaryRef = useRef(null);
   const netSalaryRef = useRef(null);
@@ -58,9 +60,16 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
   const otherDeductionsRef = useRef(null);
   const currentFincorpDeductionRef = useRef(null);
   const proposedPvaRef = useRef(null);
+  const lastAutoCheckKeyRef = useRef(0);
 
   const [result, setResult] = useState(null);
   const [message, setMessage] = useState("");
+  const setCheckingState = (state) => {
+    setIsChecking(state);
+    if (typeof onCheckingStateChange === "function") {
+      onCheckingStateChange(state);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -113,15 +122,16 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
       ref: proposedPvaRef,
     },
   ];
+  const runEligibilityCheck = async (payloadOverride = null) => {
+    const payloadToValidate = normalizeEligibilityFormData(
+      payloadOverride || formData,
+      customerId || 0
+    );
 
-  const handleCheckEligibility = async (e) => {
-    e.preventDefault();
-    setIsChecking(true);
+    setCheckingState(true);
     try {
-      //implement validations to all fields
-      // ✅ Smart validation
       for (const field of validationRules) {
-        const value = formData[field.name];
+        const value = payloadToValidate[field.name];
 
         if (value === "" || isNaN(value) || Number(value) < 0) {
           const msg = `Please enter a valid ${field.label} amount.`;
@@ -135,30 +145,29 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
             confirmButtonText: "OK",
           }).then((result) => {
             if (result.isConfirmed) {
-              // 🎯 Focus the invalid field
               field.ref?.current?.focus();
             }
           });
-          setIsChecking(false);
-          return; // ❌ stop execution
+          setCheckingState(false);
+          return;
         }
+
         if (field.name === "current_net_pay_amt") {
-          const net = Number(formData.current_net_pay_amt);
-          const gross = Number(formData.gross_salary_amt);
+          const net = Number(payloadToValidate.current_net_pay_amt);
+          const gross = Number(payloadToValidate.gross_salary_amt);
 
           if (gross > 0 && net >= gross) {
             Swal.fire({
               title: "Warning!",
-              text: `Net salary amount cannot be ${net === gross ? "same as" : "greater than"
-                } the gross salary amount.`,
+              text: `Net salary amount cannot be ${net === gross ? "same as" : "greater than"} the gross salary amount.`, 
               icon: "warning",
             });
-            setIsChecking(false);
+            setCheckingState(false);
             return;
           }
         }
 
-        if (field.name == "proposed_pva_amt" && (value == 0 || value == null)) {
+        if (field.name === "proposed_pva_amt" && (value == 0 || value == null)) {
           Swal.fire({
             title: "Warning!",
             text: `Proposed PVA amount cannot be zero`,
@@ -169,29 +178,30 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
               field.ref?.current?.focus();
             }
           });
-          setIsChecking(false);
+          setCheckingState(false);
           return;
         }
       }
 
-      const formDataToSend = { ...formData };
-      // Convert all numeric fields to float
+      const formDataToSend = { ...payloadToValidate };
       Object.keys(formDataToSend).forEach((key) => {
         if (key !== "customer_id") {
           formDataToSend[key] = parseFloat(formDataToSend[key]) || 0;
         }
       });
+
       const formDatas = new FormData();
       Object.entries(formDataToSend).forEach(([key, value]) => {
         formDatas.append(key, value);
       });
+
       const res = await axios.post("/api/check-eligibility", formDatas);
-      setResult(res.data.data); // expect backend to return calculated values
-      console.log("res.data: ", res.data);
-      console.log("is_eligible_for_loan: ", res.data.data.is_eligible_for_loan);
+      setResult(res.data.data);
       setMessage("✅ Eligibility calculated successfully!");
-      const isEligible = res.data.data.is_eligible_for_loan === 1 && formData.customer_id !== 0;
+
+      const isEligible = res.data.data.is_eligible_for_loan === 1 && payloadToValidate.customer_id !== 0;
       const isTruelyEligible = res.data.data.is_eligible_for_loan === 1;
+
       if (typeof onEligibilityChange === "function") {
         onEligibilityChange(isEligible);
       }
@@ -199,7 +209,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
         onEligibilityChangeTruely(isTruelyEligible);
       }
       if (typeof proposedPvaAmt === "function") {
-        proposedPvaAmt(formData.proposed_pva_amt);
+        proposedPvaAmt(payloadToValidate.proposed_pva_amt);
       }
       if (typeof maxAllowedPvaAmt === "function") {
         maxAllowedPvaAmt(parseFloat(res.data.data.max_allowable_pva_amt));
@@ -207,7 +217,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
       if (typeof eleigibleAmount === "function") {
         eleigibleAmount(parseFloat(res.data.data.max_allowable_pva_amt));
       }
-      setIsChecking(false);
+      setCheckingState(false);
     } catch (error) {
       console.error(error);
       setMessage("❌ Error calculating eligibility.");
@@ -218,14 +228,59 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
         onEligibilityChangeTruely(false);
       }
       if (typeof proposedPvaAmt === "function") {
-        proposedPvaAmt(formData.proposed_pva_amt);
+        proposedPvaAmt(payloadToValidate.proposed_pva_amt);
       }
       if (typeof eleigibleAmount === "function") {
-        eleigibleAmount(parseFloat(res.data.data.max_allowable_pva_amt));
+        eleigibleAmount(0);
       }
+      setCheckingState(false);
     }
   };
 
+  const handleCheckEligibility = async (e) => {
+    e.preventDefault();
+    await runEligibilityCheck(formData);
+  };
+
+  useEffect(() => {
+    setFormData((prev) => {
+      const next = { ...prev };
+      if (toNumber(grossSalary) > 0 && toNumber(next.gross_salary_amt) === 0) {
+        next.gross_salary_amt = toNumber(grossSalary);
+      }
+      if (toNumber(netSalary) > 0 && toNumber(next.current_net_pay_amt) === 0) {
+        next.current_net_pay_amt = toNumber(netSalary);
+      }
+      return next;
+    });
+  }, [grossSalary, netSalary]);
+
+  useEffect(() => {
+    if (!initialFormData || typeof initialFormData !== "object") return;
+
+    const prefilled = normalizeEligibilityFormData(initialFormData, customerId || 0);
+    setFormData((prev) => ({
+      ...prev,
+      ...prefilled,
+    }));
+  }, [initialFormData, customerId]);
+
+  useEffect(() => {
+    if (!autoCheckKey || autoCheckKey === lastAutoCheckKeyRef.current) return;
+    if (!initialFormData || typeof initialFormData !== "object") return;
+    lastAutoCheckKeyRef.current = autoCheckKey;
+
+    const payloadForAutoCheck = normalizeEligibilityFormData(
+      initialFormData || formData,
+      customerId || 0
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      ...payloadForAutoCheck,
+    }));
+    runEligibilityCheck(payloadForAutoCheck);
+  }, [autoCheckKey, initialFormData, customerId]);
 
   const CalcRow = ({ label, formula, result, highlightNegative }) => {
     const isNegative = Number(result) < 0;
@@ -679,3 +734,4 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
     </div>
   );
 }
+

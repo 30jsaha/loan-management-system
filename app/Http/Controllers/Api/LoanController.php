@@ -12,6 +12,7 @@ use App\Models\LoanTierRule;
 use App\Models\InstallmentDetail;
 use App\Models\EmiPayrollTxnData;
 use App\Models\LoanPurpose;
+use App\Models\CustomerEligibilityHistory;
 use Illuminate\Support\Facades\Validator;
 //newly added -- edit document upload
 use App\Models\DocumentUpload;
@@ -22,6 +23,7 @@ use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class LoanController extends Controller
 {
@@ -1144,6 +1146,56 @@ class LoanController extends Controller
         ]);
     }
 
+    public function validatePayrollUpload(Request $request)
+    {
+        $payrollMetaInput = $request->input('payroll_meta');
+        if (is_string($payrollMetaInput)) {
+            $payrollMetaInput = json_decode($payrollMetaInput, true);
+        }
+        $request->merge([
+            'payroll_meta' => $payrollMetaInput,
+        ]);
+
+        $validated = $request->validate([
+            'payment_date' => 'required|date',
+            'collection_uid' => 'nullable|string|max:20',
+            'payroll_file' => 'required|file|mimes:txt|max:10240',
+            'payroll_meta' => 'nullable|array',
+        ]);
+
+        $txtContent = (string) $request->file('payroll_file')->get();
+        $parsed = $this->parsePayrollTxtPreview($txtContent);
+        $mergedMeta = $validated['payroll_meta'] ?? [];
+        $fileMeta = $parsed['meta'] ?? [];
+        foreach (['year', 'period', 'paycode', 'generated_on', 'period_end'] as $key) {
+            if (!empty($fileMeta[$key])) {
+                $mergedMeta[$key] = $fileMeta[$key];
+            }
+        }
+
+        $ruleCheck = $this->validatePayrollPeriodRules(
+            $mergedMeta,
+            $validated['payment_date']
+        );
+
+        if (!$ruleCheck['ok']) {
+            return response()->json([
+                'message' => $ruleCheck['message'],
+                'errors' => [
+                    'payroll_file' => [$ruleCheck['message']],
+                ],
+                'validation' => $ruleCheck,
+            ], 422);
+        }
+
+        return response()->json([
+            'message' => 'Payroll TXT validation passed.',
+            'meta' => $mergedMeta,
+            'employees_count' => count($parsed['employees'] ?? []),
+            'validation' => $ruleCheck,
+        ]);
+    }
+
     public function collectEmiFromPayroll(Request $request)
     {
         $loanIdsInput = $request->input('loan_ids');
@@ -1183,7 +1235,7 @@ class LoanController extends Controller
             'payroll_meta.year' => 'nullable',
             'payroll_meta.period' => 'nullable',
             'payroll_meta.paycode' => 'nullable|string|max:100',
-            'payroll_employees' => 'required|array|min:1',
+            'payroll_employees' => 'nullable|array',
             'payroll_employees.*.emp_code' => 'required',
             'payroll_employees.*.this_period' => 'nullable',
             'payroll_employees.*.last_period' => 'nullable',
@@ -1199,6 +1251,43 @@ class LoanController extends Controller
         $paymentDate = $validated['payment_date'] ?? now()->toDateString();
         $emiCounters = $validated['emi_counter'];
         $payrollMeta = $validated['payroll_meta'] ?? [];
+        $storedFile = $request->file('payroll_file');
+        $txtContent = (string) $storedFile->get();
+        $parsedFromFile = $this->parsePayrollTxtPreview($txtContent);
+        $fileMeta = $parsedFromFile['meta'] ?? [];
+        foreach (['year', 'period', 'paycode', 'generated_on', 'period_end'] as $key) {
+            if (!empty($fileMeta[$key])) {
+                $payrollMeta[$key] = $fileMeta[$key];
+            }
+        }
+
+        $periodCheck = $this->validatePayrollPeriodRules(
+            $payrollMeta,
+            $paymentDate
+        );
+        if (!$periodCheck['ok']) {
+            return response()->json([
+                'message' => $periodCheck['message'],
+                'errors' => [
+                    'payroll_file' => [$periodCheck['message']],
+                ],
+                'validation' => $periodCheck,
+            ], 422);
+        }
+
+        $payrollEmployees = $parsedFromFile['employees'] ?? [];
+        if (empty($payrollEmployees)) {
+            $payrollEmployees = $validated['payroll_employees'] ?? [];
+        }
+        if (empty($payrollEmployees)) {
+            return response()->json([
+                'message' => 'No employee rows were parsed from the uploaded payroll TXT file.',
+                'errors' => [
+                    'payroll_file' => ['No employee rows were parsed from the uploaded payroll TXT file.'],
+                ],
+            ], 422);
+        }
+
         $payrollYear = isset($payrollMeta['year']) && is_numeric($payrollMeta['year'])
             ? (int) $payrollMeta['year']
             : null;
@@ -1206,13 +1295,12 @@ class LoanController extends Controller
             ? (int) $payrollMeta['period']
             : null;
         $paycode = $payrollMeta['paycode'] ?? null;
-        $storedFile = $request->file('payroll_file');
         $storedFileName = time() . '_' . preg_replace('/[^A-Za-z0-9._-]/', '_', $storedFile->getClientOriginalName());
         $storedFilePath = $storedFile->storeAs('uploads/payroll-emi', $storedFileName, 'public');
         $storedFileUrl = '/storage/' . $storedFilePath;
 
         $payrollMap = [];
-        foreach ($validated['payroll_employees'] as $payrollRow) {
+        foreach ($payrollEmployees as $payrollRow) {
             $normalizedCode = $this->normalizeEmpCode($payrollRow['emp_code'] ?? '');
             if ($normalizedCode === '') {
                 continue;
@@ -1502,18 +1590,141 @@ class LoanController extends Controller
         return round((float) $normalized, 2);
     }
 
+    private function parsePayrollDateString(?string $date): ?Carbon
+    {
+        $normalized = strtoupper(trim((string) ($date ?? '')));
+        if ($normalized === '') {
+            return null;
+        }
+
+        $normalized = str_replace('/', '-', $normalized);
+        foreach (['d-M-Y', 'd-M-y'] as $format) {
+            try {
+                return Carbon::createFromFormat($format, $normalized)->startOfDay();
+            } catch (\Throwable $e) {
+                // Try next format.
+            }
+        }
+
+        return null;
+    }
+
+    private function validatePayrollPeriodRules(array $payrollMeta, string $paymentDate): array
+    {
+        $payrollYear = isset($payrollMeta['year']) && is_numeric($payrollMeta['year'])
+            ? (int) $payrollMeta['year']
+            : null;
+        $payrollPeriod = isset($payrollMeta['period']) && is_numeric($payrollMeta['period'])
+            ? (int) $payrollMeta['period']
+            : null;
+
+        if (!$payrollYear || !$payrollPeriod) {
+            return [
+                'ok' => false,
+                'message' => 'Payroll TXT must contain valid Year and Period values.',
+            ];
+        }
+
+        $paymentDateObj = Carbon::parse($paymentDate)->startOfDay();
+        if ((int) $paymentDateObj->year !== $payrollYear) {
+            return [
+                'ok' => false,
+                'message' => "Payment Date year {$paymentDateObj->year} does not match payroll file year {$payrollYear}.",
+            ];
+        }
+
+        $filePeriodEnd = $this->parsePayrollDateString($payrollMeta['period_end'] ?? null);
+        $fileGeneratedOn = $this->parsePayrollDateString($payrollMeta['generated_on'] ?? null);
+        $fileReferenceDate = $filePeriodEnd ?: $fileGeneratedOn;
+        if ($fileReferenceDate) {
+            $sameYear = (int) $fileReferenceDate->year === (int) $paymentDateObj->year;
+            $sameMonth = (int) $fileReferenceDate->month === (int) $paymentDateObj->month;
+            if (!$sameYear || !$sameMonth) {
+                return [
+                    'ok' => false,
+                    'message' => sprintf(
+                        'Payment Date (%s) expects payroll data for %s %d, but uploaded TXT is for %s %d.',
+                        $paymentDateObj->format('d-M-Y'),
+                        $paymentDateObj->format('F'),
+                        $paymentDateObj->year,
+                        $fileReferenceDate->format('F'),
+                        $fileReferenceDate->year
+                    ),
+                ];
+            }
+        }
+
+        $samePeriodQuery = EmiPayrollTxnData::query()
+            ->where('payroll_year', $payrollYear)
+            ->where('payroll_period', $payrollPeriod)
+            ->whereNotNull('payroll_file_path');
+
+        $alreadyUploaded = $samePeriodQuery->orderByDesc('id')->first();
+        if ($alreadyUploaded) {
+            return [
+                'ok' => false,
+                'message' => "Payroll file for Year {$payrollYear} Period {$payrollPeriod} is already uploaded (Collection ID: {$alreadyUploaded->collection_uid}).",
+            ];
+        }
+
+        $yearPeriods = EmiPayrollTxnData::query()
+            ->where('payroll_year', $payrollYear)
+            ->whereNotNull('payroll_period')
+            ->whereNotNull('payroll_file_path')
+            ->distinct()
+            ->pluck('payroll_period')
+            ->filter(fn ($p) => is_numeric($p))
+            ->map(fn ($p) => (int) $p)
+            ->values();
+
+        $maxUploadedPeriod = $yearPeriods->isEmpty() ? null : $yearPeriods->max();
+        $expectedNextPeriod = is_null($maxUploadedPeriod) ? 1 : ($maxUploadedPeriod + 1);
+
+        if ($payrollPeriod > $expectedNextPeriod) {
+            return [
+                'ok' => false,
+                'message' => "Missing previous payroll file. Please upload Year {$payrollYear} Period {$expectedNextPeriod} before Period {$payrollPeriod}.",
+                'expected_period' => $expectedNextPeriod,
+            ];
+        }
+
+        if ($payrollPeriod < $expectedNextPeriod) {
+            return [
+                'ok' => false,
+                'message' => "Payroll Period {$payrollPeriod} is older than expected next period {$expectedNextPeriod} for year {$payrollYear}.",
+                'expected_period' => $expectedNextPeriod,
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'payroll_year' => $payrollYear,
+            'payroll_period' => $payrollPeriod,
+            'expected_period' => $expectedNextPeriod,
+            'reference_month' => $fileReferenceDate ? $fileReferenceDate->format('F') : null,
+        ];
+    }
+
     private function parsePayrollTxtPreview(string $txtContent): array
     {
         $meta = [
             'year' => '',
             'period' => '',
             'paycode' => '',
+            'generated_on' => '',
+            'period_end' => '',
         ];
         $employees = [];
 
         $lines = preg_split('/\r\n|\r|\n/', $txtContent) ?: [];
 
         foreach ($lines as $line) {
+            if ($meta['generated_on'] === '') {
+                if (preg_match('/^\s*(\d{2}-[A-Za-z]{3}-\d{4})\s*,\s*\d{1,2}:\d{2}\s*(?:am|pm)\s*$/i', $line, $dateLineMatch)) {
+                    $meta['generated_on'] = strtoupper($dateLineMatch[1]);
+                }
+            }
+
             if ($meta['year'] === '' || $meta['period'] === '') {
                 if (stripos($line, 'Pay Group') !== false) {
                     if (preg_match('/Year\s+(\d{4})/i', $line, $yearMatch)) {
@@ -1523,6 +1734,10 @@ class LoanController extends Controller
                         $meta['period'] = $periodMatch[1];
                     }
                 }
+            }
+
+            if ($meta['period_end'] === '' && preg_match('/Period\s+End\s+(\d{2}-[A-Za-z]{3}-\d{4})/i', $line, $periodEndMatch)) {
+                $meta['period_end'] = strtoupper($periodEndMatch[1]);
             }
 
             if ($meta['paycode'] === '' && stripos($line, 'Paycode:') !== false) {
@@ -1666,6 +1881,59 @@ class LoanController extends Controller
         $loan->save();
 
         return response()->json(['message' => 'Documents finalized', 'loan' => $loan], 200);
+    }
+
+    public function getLatestEligibilityAndLoanData($customerId)
+    {
+        $customerId = (int) $customerId;
+        if ($customerId <= 0) {
+            return response()->json([
+                'customer_id' => $customerId,
+                'eligibility_history' => null,
+                'loan_application' => null,
+            ], 200);
+        }
+
+        $latestEligibility = CustomerEligibilityHistory::where('customer_id', $customerId)
+            ->orderByDesc('id')
+            ->first([
+                'id',
+                'customer_id',
+                'gross_salary_amt',
+                'temp_allowances_amt',
+                'overtime_amt',
+                'tax_amt',
+                'superannuation_amt',
+                'current_net_pay_amt',
+                'bank_2_amt',
+                'current_fincorp_deduction_amt',
+                'other_deductions_amt',
+                'proposed_pva_amt',
+            ]);
+
+        $latestLoan = Loan::where('customer_id', $customerId)
+            ->orderByDesc('id')
+            ->first([
+                'id',
+                'customer_id',
+                'loan_type',
+                'purpose',
+                'purpose_id',
+                'other_purpose_text',
+                'interest_rate',
+                'processing_fee',
+                'bank_name',
+                'bank_branch',
+                'bank_account_no',
+                'remarks',
+                'elegible_amount',
+            ]);
+
+        return response()->json([
+            'customer_id' => $customerId,
+            'eligibility_history' => $latestEligibility,
+            'loan_application' => $latestLoan,
+        ], 200);
     }
 
     public function getEligibleLoanTypes($customerId)
@@ -1999,14 +2267,20 @@ class LoanController extends Controller
         ]);
 
         $loan = Loan::with('customer')->findOrFail($request->loan_id);
+        $recipientEmail = trim((string) ($loan->customer?->email ?? ''));
 
-        Mail::raw($request->body, function ($msg) use ($loan) {
-            // $msg->to($loan->customer->email)
-            $msg->to("jsaha.adzguru@gmail.com")
-                ->subject('Loan Application Completed');
+        if ($recipientEmail === '') {
+            return response()->json([
+                'message' => 'Customer email is missing for this loan.',
+            ], 422);
+        }
+
+        Mail::raw($request->body, function ($msg) use ($recipientEmail) {
+            $msg->to($recipientEmail)
+                ->subject('Loan Notification');
         });
 
-        return response()->json(['message' => 'Mail sent']);
+        return response()->json(['message' => 'Mail sent', 'email' => $recipientEmail]);
     }
     public function sendApprovalMail(Request $request)
     {

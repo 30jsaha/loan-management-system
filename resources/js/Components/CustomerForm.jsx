@@ -3,7 +3,7 @@ import { Row, Col } from "react-bootstrap";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { router } from "@inertiajs/react";
-import { SaveAll, RotateCcw } from 'lucide-react';
+import { SaveAll, RotateCcw, Loader2 } from 'lucide-react';
 
 
 export default function CustomerForm({
@@ -20,6 +20,8 @@ export default function CustomerForm({
 }) {
   const dropdownRef = useRef(null);
   const empAreaRef = useRef(null);
+  const refAreaRef = useRef(null);
+  const refDropdownRef = useRef(null);
 
   const [isOrgSelectable, setOrgSelectable] = useState(true);
   const ImportantField = () => <span className="text-danger">*</span>;
@@ -27,6 +29,13 @@ export default function CustomerForm({
   const [isSearching, setIsSearching] = useState(false);
   const [isExistingFound, setIsExistingFound] = useState(false);
   const [isAutoFilled, setIsAutoFilled] = useState(false);
+  const [customerRefSearch, setCustomerRefSearch] = useState("");
+  const [refOptions, setRefOptions] = useState([]);
+  const [allRefCustomers, setAllRefCustomers] = useState([]);
+  const [hasLoadedRefCustomers, setHasLoadedRefCustomers] = useState(false);
+  const [isRefSearching, setIsRefSearching] = useState(false);
+  const [refDropdownOpen, setRefDropdownOpen] = useState(false);
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [empOptions, setEmpOptions] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -69,6 +78,7 @@ const fetchCustomerDraft = async () => {
         setIsExistingFound(true);
         setIsAutoFilled(true);
         setOrgSelectable(false);
+        setCustomerRefSearch(draft.customer_ref_no ? String(draft.customer_ref_no) : "");
         if (onExistingCustomerLoaded) onExistingCustomerLoaded(draft);
       } else if (draft.employee_no) {
         // If draft has an employee_no but not a cus_id, prefill the search input
@@ -176,7 +186,13 @@ useEffect(() => {
         return [...prev, ...filtered];
       });
 
-      setHasMore(Boolean(res.data.next_page_url));
+      const hasMoreFromNextUrl =
+        typeof res.data.next_page_url !== "undefined"
+          ? Boolean(res.data.next_page_url)
+          : false;
+      const hasMoreFromPages =
+        Number(res.data.current_page || 1) < Number(res.data.last_page || 1);
+      setHasMore(hasMoreFromNextUrl || hasMoreFromPages);
     } catch (err) {
       console.error("Employee fetch failed:", err);
     } finally {
@@ -185,10 +201,23 @@ useEffect(() => {
     }
   };
 
+  const handleEmpDropdownScroll = (e) => {
+    const el = e.currentTarget;
+    const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 24;
+
+    if (nearBottom && hasMore && !isLoadingMore && !isSearching) {
+      setIsLoadingMore(true);
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchEmployees(empSearch, nextPage);
+    }
+  };
+
   // On focus: load first results
   const handleFocus = () => {
     setPage(1);
     fetchEmployees("", 1);
+    setRefDropdownOpen(false);
     setDropdownOpen(true);
   };
 
@@ -197,6 +226,9 @@ useEffect(() => {
     function handleClickOutside(event) {
       if (empAreaRef.current && !empAreaRef.current.contains(event.target)) {
         setDropdownOpen(false);
+      }
+      if (refAreaRef.current && !refAreaRef.current.contains(event.target)) {
+        setRefDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -225,6 +257,8 @@ useEffect(() => {
   const handleEmpSearchInputChange = (e) => {
     const value = e.target.value;
     setEmpSearch(value);
+    setCustomerRefSearch("");
+    setRefDropdownOpen(false);
     setDropdownOpen(true);
     setIsFormDirty(false);
     setIsExistingFound(false);
@@ -334,6 +368,142 @@ useEffect(() => {
     }
   };
 
+  const fetchCustomerByRefNo = async (refNo) => {
+    try {
+      const res = await axios.get(`/api/customers/by-ref/${encodeURIComponent(refNo)}`);
+
+      if (!res.data.exists) {
+        return null;
+      }
+      return res.data.customer;
+    } catch (err) {
+      console.error("Fetch customer by ref no failed", err);
+      return null;
+    }
+  };
+
+  const loadRefCustomers = async () => {
+    if (hasLoadedRefCustomers) return allRefCustomers;
+    setIsRefSearching(true);
+    try {
+      const res = await axios.get("/api/customer-list", { withCredentials: true });
+      const rows = Array.isArray(res.data) ? res.data : [];
+      const withRef = rows.filter((c) => c.customer_ref_no !== null && c.customer_ref_no !== undefined && String(c.customer_ref_no).trim() !== "");
+      setAllRefCustomers(withRef);
+      setHasLoadedRefCustomers(true);
+      return withRef;
+    } catch (error) {
+      console.error("Failed to load customer ref list", error);
+      return [];
+    } finally {
+      setIsRefSearching(false);
+    }
+  };
+
+  const filterRefOptions = (rows, query) => {
+    const q = String(query || "").trim().toLowerCase();
+    const filtered = q
+      ? rows.filter((c) => {
+          const refNo = String(c.customer_ref_no || "").toLowerCase();
+          const empNo = String(c.employee_no || "").toLowerCase();
+          const name = `${c.first_name || ""} ${c.last_name || ""}`.toLowerCase();
+          return refNo.includes(q) || empNo.includes(q) || name.includes(q);
+        })
+      : rows;
+
+    return filtered.slice(0, 30);
+  };
+
+  const handleRefFocus = async () => {
+    const rows = await loadRefCustomers();
+    setRefOptions(filterRefOptions(rows, customerRefSearch));
+    setRefDropdownOpen(true);
+  };
+
+  const applyExistingCustomerData = (existingCustomer) => {
+    setIsAutoFilled(true);
+    const baseCompany = formData?.company_id || 1;
+    const newObj = {
+      cus_id: existingCustomer.id,
+      employee_no: existingCustomer.employee_no || "",
+      company_id: existingCustomer.company_id || baseCompany,
+      organisation_id: existingCustomer.organisation_id || "",
+      first_name: existingCustomer.first_name || "",
+      last_name: existingCustomer.last_name || "",
+      gender: existingCustomer.gender || "",
+      dob: existingCustomer.dob || "",
+      marital_status: existingCustomer.marital_status || "",
+      no_of_dependents: existingCustomer.no_of_dependents || "",
+      spouse_full_name: existingCustomer.spouse_full_name || "",
+      spouse_contact: existingCustomer.spouse_contact || "",
+      phone: existingCustomer.phone || "",
+      email: existingCustomer.email || "",
+      home_province: existingCustomer.home_province || "",
+      district_village: existingCustomer.district_village || "",
+      present_address: existingCustomer.present_address || "",
+      permanent_address: existingCustomer.permanent_address || "",
+      payroll_number: existingCustomer.payroll_number || "",
+      employer_department: existingCustomer.employer_department || "",
+      designation: existingCustomer.designation || "",
+      employment_type: existingCustomer.employment_type || "",
+      date_joined: existingCustomer.date_joined || "",
+      monthly_salary: existingCustomer.monthly_salary || 0.00,
+      net_salary: existingCustomer.net_salary || 0.00,
+      immediate_supervisor: existingCustomer.immediate_supervisor || "",
+      years_at_current_employer: existingCustomer.years_at_current_employer || "",
+      work_district: existingCustomer.work_district || "",
+      work_province: existingCustomer.work_province || "",
+      employer_address: existingCustomer.employer_address || "",
+      work_location: existingCustomer.work_location || "",
+    };
+    setFormData(newObj);
+
+    if (onExistingCustomerLoaded) {
+      onExistingCustomerLoaded(existingCustomer);
+    }
+
+    setOrgSelectable(false);
+    setIsExistingFound(true);
+    setCustomerRefSearch(existingCustomer.customer_ref_no ? String(existingCustomer.customer_ref_no) : "");
+  };
+
+  const handleCustomerRefSearchInputChange = async (e) => {
+    const value = e.target.value;
+    setCustomerRefSearch(value);
+    setIsFormDirty(false);
+    setDropdownOpen(false);
+    setRefDropdownOpen(true);
+    const rows = hasLoadedRefCustomers ? allRefCustomers : await loadRefCustomers();
+    setRefOptions(filterRefOptions(rows, value));
+  };
+
+  const handleCustomerRefSelect = async (refNo) => {
+    if (!refNo) return;
+    setIsFetchingDetails(true);
+    try {
+      const existingCustomer = await fetchCustomerByRefNo(String(refNo).trim());
+      if (!existingCustomer) {
+        setIsExistingFound(false);
+        return;
+      }
+
+      applyExistingCustomerData(existingCustomer);
+      setEmpSearch(
+        `${existingCustomer.employee_no || ""}${existingCustomer.first_name || existingCustomer.last_name ? ` - ${existingCustomer.first_name || ""} ${existingCustomer.last_name || ""}` : ""}`.trim()
+      );
+      setCustomerRefSearch(String(existingCustomer.customer_ref_no || refNo));
+      setDropdownOpen(false);
+      setRefDropdownOpen(false);
+
+      toast.success("Existing customer loaded", {
+        id: "existing-customer",
+        duration: 2000,
+      });
+    } finally {
+      setIsFetchingDetails(false);
+    }
+  };
+
   const custList = useMemo(() => {
     return Array.isArray(allCustMast) ? allCustMast : [];
   }, [allCustMast]);
@@ -346,127 +516,93 @@ useEffect(() => {
   const handleEmployeeChange = async (e) => {
     const empCode = e.target.value;
     setIsSelecting(true);
+    setIsFetchingDetails(true);
+    try {
+      // Step 1: check customer table first
+      const existingCustomer = await fetchCustomerByEmpCode(empCode);
 
-    // 🔹 Step 1: Check customer table first
-    const existingCustomer = await fetchCustomerByEmpCode(empCode);
+      if (existingCustomer) {
+        applyExistingCustomerData(existingCustomer);
+        toast.success("Existing customer loaded", {
+          id: "existing-customer",
+          duration: 2000,
+        });
+        return;
+      } else {
+        setIsExistingFound(false);
+        setIsAutoFilled(false);
+      }
 
-    if (existingCustomer) {
-      // ✅ CUSTOMER EXISTS → Autofill EVERYTHING
-      // FIX: Added || "" to handle nulls from DB
-      // FIX: Added missing fields (no_of_dependents, spouse details)
-      setIsAutoFilled(true);
-      const baseCompany = formData?.company_id || 1;
-      const newObj = {
-        cus_id: existingCustomer.id,
-        employee_no: existingCustomer.employee_no || "",
-        company_id: existingCustomer.company_id || baseCompany,
-        organisation_id: existingCustomer.organisation_id || "",
-        first_name: existingCustomer.first_name || "",
-        last_name: existingCustomer.last_name || "",
-        gender: existingCustomer.gender || "",
-        dob: existingCustomer.dob || "",
-        marital_status: existingCustomer.marital_status || "",
-        no_of_dependents: existingCustomer.no_of_dependents || "",
-        spouse_full_name: existingCustomer.spouse_full_name || "",
-        spouse_contact: existingCustomer.spouse_contact || "",
-        phone: existingCustomer.phone || "",
-        email: existingCustomer.email || "",
-        home_province: existingCustomer.home_province || "",
-        district_village: existingCustomer.district_village || "",
-        present_address: existingCustomer.present_address || "",
-        permanent_address: existingCustomer.permanent_address || "",
-        payroll_number: existingCustomer.payroll_number || "",
-        employer_department: existingCustomer.employer_department || "",
-        designation: existingCustomer.designation || "",
-        employment_type: existingCustomer.employment_type || "",
-        date_joined: existingCustomer.date_joined || "",
-        monthly_salary: existingCustomer.monthly_salary || 0.00,
-        net_salary: existingCustomer.net_salary || 0.00,
-        immediate_supervisor: existingCustomer.immediate_supervisor || "",
-        years_at_current_employer: existingCustomer.years_at_current_employer || "",
-        work_district: existingCustomer.work_district || "",
-        work_province: existingCustomer.work_province || "",
-        employer_address: existingCustomer.employer_address || "",
-        work_location: existingCustomer.work_location || "",
-      };
-      setFormData(newObj);
-      
-       if (onExistingCustomerLoaded) {
-          onExistingCustomerLoaded(existingCustomer);
-        }
-      setOrgSelectable(false);
-      toast.success("Existing customer loaded",{
-        id: "existing-customer",
-        duration: 2000,
-      });
-      setIsSelecting(false);
-      setIsExistingFound(true);
-      return;
-    }else{
-      setIsExistingFound(false);
-      setIsAutoFilled(false);
-    }
-
-    // 🔹 Step 2: Fallback → API employee list (your existing logic)
-    let selectedEmp = empOptions.find(
-      (emp) => String(emp.emp_code) === String(empCode)
-    );
-
-    if (!selectedEmp) {
-      selectedEmp = custList.find(
+      // Step 2: fallback to employee list
+      let selectedEmp = empOptions.find(
         (emp) => String(emp.emp_code) === String(empCode)
       );
+
+      if (!selectedEmp) {
+        selectedEmp = custList.find(
+          (emp) => String(emp.emp_code) === String(empCode)
+        );
+      }
+
+      if (selectedEmp) {
+        const cleanFullName = cleanName(selectedEmp.cust_name);
+        const parts = cleanFullName.split(" ");
+
+        const baseCompany = formData?.company_id || 1;
+        const newObj = {
+          cus_id: null,
+          employee_no: selectedEmp.emp_code || "",
+          company_id: selectedEmp.company_id || baseCompany,
+          organisation_id: selectedEmp.organization_id || "",
+          first_name: parts[0] || "",
+          last_name: parts.slice(1).join(" ") || "",
+          phone: selectedEmp.phone || "",
+          email: selectedEmp.email || "",
+          monthly_salary: selectedEmp.gross_pay || "",
+          net_salary: selectedEmp.net_pay || "",
+          no_of_dependents: "",
+          spouse_full_name: "",
+          spouse_contact: "",
+          gender: "",
+          dob: "",
+          marital_status: "",
+          home_province: "",
+          district_village: "",
+          present_address: "",
+          permanent_address: "",
+          payroll_number: "",
+          employer_department: selectedEmp.department || "",
+          designation: "",
+          employment_type: "",
+          date_joined: "",
+          immediate_supervisor: "",
+          years_at_current_employer: "",
+          work_district: "",
+          work_province: "",
+          employer_address: "",
+          work_location: "",
+        };
+
+        setFormData(newObj);
+        setCustomerRefSearch("");
+        setOrgSelectable(false);
+      }
+    } finally {
+      setIsFetchingDetails(false);
+      setIsSelecting(false);
     }
-
-    if (selectedEmp) {
-      const cleanFullName = cleanName(selectedEmp.cust_name);
-      const parts = cleanFullName.split(" ");
-
-      const baseCompany = formData?.company_id || 1;
-      const newObj = {
-        cus_id: null,
-        employee_no: selectedEmp.emp_code || "",
-        company_id: selectedEmp.company_id || baseCompany,
-        organisation_id: selectedEmp.organization_id || "",
-        first_name: parts[0] || "",
-        last_name: parts.slice(1).join(" ") || "",
-        phone: selectedEmp.phone || "",
-        email: selectedEmp.email || "",
-        monthly_salary: selectedEmp.gross_pay || "",
-        net_salary: selectedEmp.net_pay || "",
-        no_of_dependents: "",
-        spouse_full_name: "",
-        spouse_contact: "",
-        gender: "",
-        dob: "",
-        marital_status: "",
-        home_province: "",
-        district_village: "",
-        present_address: "",
-        permanent_address: "",
-        payroll_number: "",
-        employer_department: selectedEmp.department || "",
-        designation: "",
-        employment_type: "",
-        date_joined: "",
-        immediate_supervisor: "",
-        years_at_current_employer: "",
-        work_district: "",
-        work_province: "",
-        employer_address: "",
-        work_location: "",
-      };
-
-      setFormData(newObj);
-
-      setOrgSelectable(false);
-    }
-
-    setIsSelecting(false);
   };
 
   return (
     <>
+      {isFetchingDetails && (
+        <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center">
+          <div className="bg-white px-6 py-4 rounded-md shadow-lg text-lg font-semibold text-gray-800 flex items-center">
+            <Loader2 className="animate-spin mr-2" />
+            Fetching Details...
+          </div>
+        </div>
+      )}
       {/* Flash message for existing customer */}
       {isExistingFound && (
         <div className="mb-4 p-3 bg-green-100 border-l-4 border-blue-500 text-blue-700 shadow-sm rounded flex items-center justify-between ">
@@ -492,7 +628,7 @@ useEffect(() => {
           <Col md={12}>
             <fieldset className="fldset mt-2">
               <legend className="legend">Identification</legend>
-              <div className="grid grid-cols-2 gap-4 mt-3">
+              <div className="grid grid-cols-3 gap-4 mt-3">
                 <div style={{ display: "none" }}>
                   <label className="block text-gray-700 font-medium">
                     Company <ImportantField />
@@ -512,6 +648,50 @@ useEffect(() => {
                     ))}
                   </select>
                 </div>
+                <div className="relative" ref={refAreaRef}>
+                  <label className="block text-gray-700 font-medium">
+                    Customer Ref No
+                  </label>
+                  <input
+                    type="text"
+                    value={customerRefSearch}
+                    onChange={handleCustomerRefSearchInputChange}
+                    onFocus={handleRefFocus}
+                    placeholder="Search Customer Ref No..."
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm px-3 py-2"
+                  />
+
+                  {refDropdownOpen && (
+                    <div
+                      ref={refDropdownRef}
+                      className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto"
+                    >
+                      {isRefSearching ? (
+                        <div className="p-2 text-sm text-gray-500">
+                          Searching...
+                        </div>
+                      ) : refOptions.length > 0 ? (
+                        refOptions.map((customer, idx) => {
+                          const fullName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+                          return (
+                            <div
+                              key={`${customer.customer_ref_no}-${idx}`}
+                              onClick={() => handleCustomerRefSelect(customer.customer_ref_no)}
+                              className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                            >
+                              <b>{customer.customer_ref_no}</b> {fullName ? `- ${fullName}` : ""}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-2 text-sm text-gray-500">
+                          No results found
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="relative" ref={empAreaRef}>
                   <label className="block text-gray-700 font-medium">
                     EMP Code <ImportantField />
@@ -533,17 +713,7 @@ useEffect(() => {
                       onBlur={() => {
                         setTimeout(() => setDropdownOpen(false), 150);
                       }}
-                      onScroll={(e) => {
-                        const bottom =
-                          e.target.scrollHeight - e.target.scrollTop ===
-                          e.target.clientHeight;
-                        if (bottom && hasMore && !isLoadingMore) {
-                          setIsLoadingMore(true);
-                          const nextPage = page + 1;
-                          setPage(nextPage);
-                          fetchEmployees(empSearch, nextPage);
-                        }
-                      }}
+                      onScroll={handleEmpDropdownScroll}
                     >
                       {isSearching ? (
                         <div className="p-2 text-sm text-gray-500">
@@ -553,14 +723,12 @@ useEffect(() => {
                         empOptions.map((emp, idx) => (
                           <div
                             key={`${emp.emp_code}-${idx}`}
-                            onClick={(e) => {
-                              setIsSelecting(true);
+                            onClick={() => {
                               handleEmployeeChange({
                                 target: { value: emp.emp_code },
                               });
                               setEmpSearch(`${emp.emp_code} - ${emp.cust_name}`);
                               setDropdownOpen(false);
-                              setTimeout(() => setIsSelecting(false), 300);
                             }}
                             className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
                           >
@@ -990,6 +1158,11 @@ useEffect(() => {
               setEmpSearch("");
               setIsExistingFound(false);
               setIsAutoFilled(false);
+              setCustomerRefSearch("");
+              setDropdownOpen(false);
+              setRefDropdownOpen(false);
+              setIsFetchingDetails(false);
+              setIsSelecting(false);
             }}
             className={`${isDataSaving ? "cursor-not-allowed opacity-50" : ""}
               bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-all`}
@@ -1027,3 +1200,4 @@ useEffect(() => {
     </>
   );
 }
+

@@ -1637,7 +1637,16 @@ const normalizeFilePath = (path) => {
                                                 <div className="fldScroll">
                                                     <table className="w-full border-collapse border border-gray-300 text-sm">
                                                         <tbody>
-                                                            <tr><td className="border p-2"><span className="font-bold text-md">Customer Ref. No.: </span></td> <td className="border p-2">{loan.customer.customer_ref_no || loan.status != "Approved" ? "Not approved yet" : "-"}</td></tr>
+                                                            <tr>
+                                                                <td className="border p-2"><span className="font-bold text-md">Customer Ref. No.: </span></td> 
+                                                                <td className="border p-2">
+                                                                    {loan?.customer?.customer_ref_no
+                                                                    ? loan.customer.customer_ref_no
+                                                                    : loan?.status !== "Approved"
+                                                                        ? "Not approved yet"
+                                                                        : "-"}
+                                                                </td>
+                                                            </tr>
                                                             <tr><td className="border p-2 font-semibold">Name</td><td className="border p-2">{loan.customer.first_name} {loan.customer.last_name}</td></tr>
                                                             <tr>
                                                                 <td className="border p-2 font-semibold">Details</td>
