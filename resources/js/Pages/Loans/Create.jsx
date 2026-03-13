@@ -1455,7 +1455,9 @@ const isSubmitDisabled =
             <p>max_loan_amount: {`${loan_settings.max_loan_amount}`}</p> */}
             <Head title="New Loan Application" />
             <Alert key="primary" variant="primary">
-                Please go through the steps to complete the loan application.
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 custPadding">
+                    Please go through the steps to complete the loan application.
+                </div>
             </Alert>
             <div
                 ref={ackPrintRef}

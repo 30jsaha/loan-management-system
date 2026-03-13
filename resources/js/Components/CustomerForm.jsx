@@ -622,11 +622,73 @@ useEffect(() => {
           </button>
         </div>
       )}
-      <form onSubmit={handleNext}>
-        <Row className="align-items-stretch">
+      <form onSubmit={handleNext} className="mt-2">
+        <Row className="align-items-stretch mt-2">
           {/* ========== IDENTIFICATION ========== */}
           <Col md={12}>
-            <fieldset className="fldset mt-2">
+            <div className="mb-3 relative" ref={refAreaRef}>
+              <label className="block text-gray-700 font-medium">
+                Customer Ref No
+              </label>
+              <div className="mt-1 relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z"
+                    />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  value={customerRefSearch}
+                  onChange={handleCustomerRefSearchInputChange}
+                  onFocus={handleRefFocus}
+                  placeholder="Search Customer Ref No..."
+                  className="block w-full border-gray-300 rounded-md shadow-sm pl-9 pr-3 py-2"
+                />
+              </div>
+
+              {refDropdownOpen && (
+                <div
+                  ref={refDropdownRef}
+                  className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto"
+                >
+                  {isRefSearching ? (
+                    <div className="p-2 text-sm text-gray-500">
+                      Searching...
+                    </div>
+                  ) : refOptions.length > 0 ? (
+                    refOptions.map((customer, idx) => {
+                      const fullName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+                      return (
+                        <div
+                          key={`${customer.customer_ref_no}-${idx}`}
+                          onClick={() => handleCustomerRefSelect(customer.customer_ref_no)}
+                          className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                        >
+                          <b>{customer.customer_ref_no}</b> {fullName ? `- ${fullName}` : ""}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-2 text-sm text-gray-500">
+                      No results found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <fieldset className="fldset mt-4">
               <legend className="legend">Identification</legend>
               <div className="grid grid-cols-3 gap-4 mt-3">
                 <div style={{ display: "none" }}>
@@ -648,50 +710,6 @@ useEffect(() => {
                     ))}
                   </select>
                 </div>
-                <div className="relative" ref={refAreaRef}>
-                  <label className="block text-gray-700 font-medium">
-                    Customer Ref No
-                  </label>
-                  <input
-                    type="text"
-                    value={customerRefSearch}
-                    onChange={handleCustomerRefSearchInputChange}
-                    onFocus={handleRefFocus}
-                    placeholder="Search Customer Ref No..."
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm px-3 py-2"
-                  />
-
-                  {refDropdownOpen && (
-                    <div
-                      ref={refDropdownRef}
-                      className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto"
-                    >
-                      {isRefSearching ? (
-                        <div className="p-2 text-sm text-gray-500">
-                          Searching...
-                        </div>
-                      ) : refOptions.length > 0 ? (
-                        refOptions.map((customer, idx) => {
-                          const fullName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
-                          return (
-                            <div
-                              key={`${customer.customer_ref_no}-${idx}`}
-                              onClick={() => handleCustomerRefSelect(customer.customer_ref_no)}
-                              className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
-                            >
-                              <b>{customer.customer_ref_no}</b> {fullName ? `- ${fullName}` : ""}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="p-2 text-sm text-gray-500">
-                          No results found
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
                 <div className="relative" ref={empAreaRef}>
                   <label className="block text-gray-700 font-medium">
                     EMP Code <ImportantField />
@@ -1200,4 +1218,3 @@ useEffect(() => {
     </>
   );
 }
-
