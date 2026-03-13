@@ -40,11 +40,17 @@ class LoansController extends Controller
 
         $loans = Loan::with([
             'customer',
+            'customer.salaryHistories' => function ($query) {
+                $query->orderByDesc('created_at');
+            },
             'organisation',
             'installments',
             'loan_settings',
             'company',
             'purpose',
+            'salaryHistories' => function ($query) {
+                $query->orderByDesc('created_at');
+            },
             'documents' => function ($q) {
                 $q->leftJoin(
                     'document_types',
@@ -72,7 +78,21 @@ class LoansController extends Controller
     }
     public function loanPrintDetailsView($id)
     {
-        $loans = Loan::with(['customer','organisation','documents','installments','loan_settings','company', 'purpose'])
+        $loans = Loan::with([
+            'customer',
+            'customer.salaryHistories' => function ($query) {
+                $query->orderByDesc('created_at');
+            },
+            'organisation',
+            'documents',
+            'installments',
+            'loan_settings',
+            'company',
+            'purpose',
+            'salaryHistories' => function ($query) {
+                $query->orderByDesc('created_at');
+            }
+        ])
         ->where('id',$id)
         ->orderBy('created_at','desc')->get();
 

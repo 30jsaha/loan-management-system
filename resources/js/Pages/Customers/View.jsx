@@ -1,5 +1,5 @@
 // resources/js/Pages/customers/View.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { router, Head, Link } from "@inertiajs/react";
 import axios from "axios";
 import jsPDF from "jspdf";
@@ -26,6 +26,7 @@ import {
   Download, 
   IdCard,
   Briefcase,
+  Info,
 } from "lucide-react";
 
 axios.defaults.withCredentials = true;
@@ -35,6 +36,7 @@ export default function View({ auth, customerId }) {
   const [history, setHistory] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("company");
+  const [showSalaryHistoryModal, setShowSalaryHistoryModal] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -59,6 +61,16 @@ export default function View({ auth, customerId }) {
 
     return () => (mounted = false);
   }, [customerId]);
+
+  const salaryHistories = useMemo(() => {
+    if (!Array.isArray(customer?.salary_histories)) {
+      return [];
+    }
+
+    return [...customer.salary_histories].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+  }, [customer?.salary_histories]);
 
   if (loading) {
     return (
@@ -216,7 +228,10 @@ export default function View({ auth, customerId }) {
               <div className="p-6 md:p-8 flex-1 bg-white overflow-y-auto">
                 {activeTab === "company" && (
                   <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                     <CompanyTab customer={customer} />
+                     <CompanyTab
+                       customer={customer}
+                       onOpenSalaryHistory={() => setShowSalaryHistoryModal(true)}
+                     />
                   </div>
                 )}
 
@@ -268,6 +283,63 @@ export default function View({ auth, customerId }) {
           </div>
         </div>
       </div>
+
+      {showSalaryHistoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-3xl rounded-xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <h4 className="text-base font-semibold text-gray-800">Salary Change History</h4>
+              <button
+                type="button"
+                className="rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"
+                onClick={() => setShowSalaryHistoryModal(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="max-h-[420px] overflow-auto p-4">
+              {salaryHistories.length === 0 ? (
+                <div className="text-sm text-gray-500">No salary history found for this customer.</div>
+              ) : (
+                <table className="w-full border-collapse text-sm">
+                  <thead className="sticky top-0 bg-green-500 text-white">
+                    <tr>
+                      <th className="border px-3 py-2 text-left">Date</th>
+                      <th className="border px-3 py-2 text-left">Previous Gross</th>
+                      <th className="border px-3 py-2 text-left">Previous Net</th>
+                      <th className="border px-3 py-2 text-left">Gross Salary</th>
+                      <th className="border px-3 py-2 text-left">Net Salary</th>
+                      <th className="border px-3 py-2 text-left">Source</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salaryHistories.map((historyRow) => (
+                      <tr key={historyRow.id}>
+                        <td className="border px-3 py-2">
+                          {historyRow.created_at ? new Date(historyRow.created_at).toLocaleString() : "—"}
+                        </td>
+                        <td className="border px-3 py-2">
+                          {historyRow.previous_monthly_salary != null ? `PGK ${formatCurrency(historyRow.previous_monthly_salary)}` : "—"}
+                        </td>
+                        <td className="border px-3 py-2">
+                          {historyRow.previous_net_salary != null ? `PGK ${formatCurrency(historyRow.previous_net_salary)}` : "—"}
+                        </td>
+                        <td className="border px-3 py-2">
+                          {historyRow.monthly_salary != null ? `PGK ${formatCurrency(historyRow.monthly_salary)}` : "—"}
+                        </td>
+                        <td className="border px-3 py-2">
+                          {historyRow.net_salary != null ? `PGK ${formatCurrency(historyRow.net_salary)}` : "—"}
+                        </td>
+                        <td className="border px-3 py-2">{historyRow.change_source || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </AuthenticatedLayout>
   );
 }
@@ -313,7 +385,7 @@ const InfoTable = ({ rows }) => (
         COMPANY TAB
 -------------------------------------- */
 
-const CompanyTab = ({ customer }) => {
+const CompanyTab = ({ customer, onOpenSalaryHistory }) => {
   const org = customer.organisation || {};
 
   return (
@@ -342,8 +414,34 @@ const CompanyTab = ({ customer }) => {
           ["Work Province", customer.work_province || "—"],
           ["Immediate Supervisor", customer.immediate_supervisor || "—"],
           ["Date Joined", customer.date_joined || "—"],
-          ["Monthly Salary", customer.monthly_salary ? `PGK ${formatCurrency(customer.monthly_salary)}` : "—"],
-          ["Net Salary", customer.net_salary ? `PGK ${formatCurrency(customer.net_salary)}` : "—"],
+          [
+            "Gross Salary",
+            <span className="inline-flex items-center gap-1" key="gross_salary">
+              {customer.monthly_salary ? `PGK ${formatCurrency(customer.monthly_salary)}` : "—"}
+              <button
+                type="button"
+                className="text-indigo-600 hover:text-indigo-800"
+                onClick={onOpenSalaryHistory}
+                title="View salary history"
+              >
+                <Info size={14} />
+              </button>
+            </span>,
+          ],
+          [
+            "Net Salary",
+            <span className="inline-flex items-center gap-1" key="net_salary">
+              {customer.net_salary ? `PGK ${formatCurrency(customer.net_salary)}` : "—"}
+              <button
+                type="button"
+                className="text-indigo-600 hover:text-indigo-800"
+                onClick={onOpenSalaryHistory}
+                title="View salary history"
+              >
+                <Info size={14} />
+              </button>
+            </span>,
+          ],
         ]}
       />
     </div>
@@ -1595,7 +1693,4 @@ const EmiScheduleCard = ({ loan, collections, customer, defaultOpen }) => {
 /* -----------------------------------
       END OF FILE
 -------------------------------------- */
-
-
-
 

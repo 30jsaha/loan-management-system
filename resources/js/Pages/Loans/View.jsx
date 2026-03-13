@@ -8,7 +8,7 @@ import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import LoanDocumentsUpload from '@/Components/LoanDocumentsUpload';
 //icon pack
-import { ArrowLeft, Download, Eye, Printer } from "lucide-react";
+import { ArrowLeft, Download, Eye, Printer, Info } from "lucide-react";
 import Swal from "sweetalert2";
 import { MultiSelect } from 'primereact/multiselect';
 import AppF from "@/Components/AppF";
@@ -48,6 +48,7 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     const [showModal, setShowModal] = useState(false);
     const [showModal1, setShowModal1] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState(null);
+    const [showSalaryHistoryModal, setShowSalaryHistoryModal] = useState(false);
 
     const [showVideoModal, setShowVideoModal] = useState(false);
     const [videoSrc, setVideoSrc] = useState(null);
@@ -103,6 +104,16 @@ export default function View({ auth, loans, loanId, rejectionReasons }) {
     
     const [loanPurposeOptions, setLoanPurposeOptions] = useState([]);
     const [isFetchingPurpose, setIsFetchingPurpose] = useState(false);
+
+    const salaryHistories = useMemo(() => {
+        if (!Array.isArray(loan?.customer?.salary_histories)) {
+            return [];
+        }
+
+        return [...loan.customer.salary_histories].sort((a, b) =>
+            new Date(b.created_at) - new Date(a.created_at)
+        );
+    }, [loan?.customer?.salary_histories]);
 
     const hasFetchedLoanTypesRef = useRef(false);
     const [loanFormData, setLoanFormData] = useState({
@@ -1658,9 +1669,25 @@ const normalizeFilePath = (path) => {
                                                                     <strong>Immediate Supervisor:</strong> {loan.customer.immediate_supervisor} <br />
                                                                     <strong>Payroll Number:</strong> {loan.customer.payroll_number} <br />
                                                                     <strong>Joinning Date:</strong> {(loan.customer.date_joined != null) ? new Date(loan.customer.date_joined).toLocaleDateString() : ""}<br />
-                                                                    <strong>Gross Salary:</strong> {(loan.customer.monthly_salary != null) ? `${currencyPrefix} ${formatCurrency(loan.customer.monthly_salary)}` : ""}
+                                                                    <strong>Gross Salary:</strong> {((loan.monthly_salary ?? loan.customer.monthly_salary) != null) ? `${currencyPrefix} ${formatCurrency(loan.monthly_salary ?? loan.customer.monthly_salary)}` : ""}
+                                                                    <button
+                                                                        type="button"
+                                                                        className="ms-1 text-blue-600 align-middle"
+                                                                        onClick={() => setShowSalaryHistoryModal(true)}
+                                                                        title="View salary history"
+                                                                    >
+                                                                        <Info size={14} />
+                                                                    </button>
                                                                     <br />
-                                                                    <strong>Net Salary:</strong> {(loan.customer.net_salary != null) ? `${currencyPrefix} ${formatCurrency(loan.customer.net_salary)}` : ""}
+                                                                    <strong>Net Salary:</strong> {((loan.net_salary ?? loan.customer.net_salary) != null) ? `${currencyPrefix} ${formatCurrency(loan.net_salary ?? loan.customer.net_salary)}` : ""}
+                                                                    <button
+                                                                        type="button"
+                                                                        className="ms-1 text-blue-600 align-middle"
+                                                                        onClick={() => setShowSalaryHistoryModal(true)}
+                                                                        title="View salary history"
+                                                                    >
+                                                                        <Info size={14} />
+                                                                    </button>
                                                                     <br />
                                                                     <strong>Work Location:</strong> {loan.customer.work_location}
                                                                     <br />
@@ -3680,6 +3707,55 @@ const normalizeFilePath = (path) => {
                             </div>
                         </div>
                     </div>
+                    {/* --- Salary History Modal --- */}
+                    <Modal
+                        show={showSalaryHistoryModal}
+                        onHide={() => setShowSalaryHistoryModal(false)}
+                        centered
+                        size="lg"
+                    >
+                        <Modal.Header closeButton>
+                            <Modal.Title>Salary Change History</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                            {salaryHistories.length === 0 ? (
+                                <div className="text-muted">No salary history found for this customer.</div>
+                            ) : (
+                                <div className="table-responsive max-h-[420px] overflow-auto">
+                                    <table className="w-full border-collapse text-sm mb-0">
+                                        <thead className="sticky top-0 bg-green-500 text-white">
+                                            <tr>
+                                                <th className="border px-3 py-2 text-left">Date</th>
+                                                <th className="border px-3 py-2 text-left">Previous Gross</th>
+                                                <th className="border px-3 py-2 text-left">Previous Net</th>
+                                                <th className="border px-3 py-2 text-left">Gross Salary</th>
+                                                <th className="border px-3 py-2 text-left">Net Salary</th>
+                                                <th className="border px-3 py-2 text-left">Source</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {salaryHistories.map((history) => (
+                                                <tr key={history.id}>
+                                                    <td className="border px-3 py-2">{history.created_at ? new Date(history.created_at).toLocaleString() : "-"}</td>
+                                                    <td className="border px-3 py-2">{history.previous_monthly_salary != null ? `${currencyPrefix} ${formatCurrency(history.previous_monthly_salary)}` : "-"}</td>
+                                                    <td className="border px-3 py-2">{history.previous_net_salary != null ? `${currencyPrefix} ${formatCurrency(history.previous_net_salary)}` : "-"}</td>
+                                                    <td className="border px-3 py-2">{history.monthly_salary != null ? `${currencyPrefix} ${formatCurrency(history.monthly_salary)}` : "-"}</td>
+                                                    <td className="border px-3 py-2">{history.net_salary != null ? `${currencyPrefix} ${formatCurrency(history.net_salary)}` : "-"}</td>
+                                                    <td className="border px-3 py-2">{history.change_source || "-"}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button variant="secondary" onClick={() => setShowSalaryHistoryModal(false)}>
+                                Close
+                            </Button>
+                        </Modal.Footer>
+                    </Modal>
+
                     {/* --- Re-upload Modal --- */}
                     <Modal
                         show={showReuploadModal}

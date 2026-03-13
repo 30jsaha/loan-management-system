@@ -52,6 +52,8 @@ export default function Create({ auth, loan_settings }) {
     const [loanPurposeOptions, setLoanPurposeOptions] = useState([]);
     const [isFetchingPurpose, setIsFetchingPurpose] = useState(false);
     const [eligibilityPrefillData, setEligibilityPrefillData] = useState(null);
+    const [eligibilityHistoryList, setEligibilityHistoryList] = useState([]);
+    const [salaryHistoryList, setSalaryHistoryList] = useState([]);
     const [eligibilityAutoCheckKey, setEligibilityAutoCheckKey] = useState(0);
     const [isStepTwoDataLoading, setIsStepTwoDataLoading] = useState(false);
     const [isStepTwoCalcLoading, setIsStepTwoCalcLoading] = useState(false);
@@ -281,6 +283,8 @@ export default function Create({ auth, loan_settings }) {
         const numericCustomerId = Number(customerId);
         if (!numericCustomerId) {
             setEligibilityPrefillData(null);
+            setEligibilityHistoryList([]);
+            setSalaryHistoryList([]);
             return;
         }
 
@@ -288,7 +292,15 @@ export default function Create({ auth, loan_settings }) {
         try {
             const res = await axios.get(`/api/customers/${numericCustomerId}/latest-application-data`);
             const latestEligibility = res?.data?.eligibility_history || null;
+            const eligibilityHistories = Array.isArray(res?.data?.eligibility_histories)
+                ? res.data.eligibility_histories
+                : [];
+            const salaryHistories = Array.isArray(res?.data?.salary_histories)
+                ? res.data.salary_histories
+                : [];
             const latestLoan = res?.data?.loan_application || null;
+            setEligibilityHistoryList(eligibilityHistories);
+            setSalaryHistoryList(salaryHistories);
 
             if (latestEligibility) {
                 setEligibilityPrefillData({
@@ -1611,12 +1623,7 @@ const isSubmitDisabled =
                                                                     bankSelectionTriggeredCustomerRef.current = null;
                                                                 }
                                                                 console.log("selectedCustomer on loan application customer select: ",selectedCustomer);
-                                                                setSavedCustomerData(prev =>({
-                                                                    ...prev,
-                                                                    employee_no: selectedCustomer.employee_no,
-                                                                    monthly_salary: parseFloat(selectedCustomer.monthly_salary),
-                                                                    net_salary: parseFloat(selectedCustomer.net_salary)
-                                                                }));
+                                                                setSavedCustomerData(selectedCustomer);
 
                                                                 // Eligibility logic (unchanged)
                                                                 if (isTruelyEligible) {
@@ -1633,6 +1640,8 @@ const isSubmitDisabled =
                                                                 // Reset if invalid text
                                                                 bankSelectionTriggeredCustomerRef.current = null;
                                                                 setEligibilityPrefillData(null);
+                                                                setEligibilityHistoryList([]);
+                                                                setSalaryHistoryList([]);
                                                                 setLoanFormData(prev => ({
                                                                     ...prev,
                                                                     customer_id: 0
@@ -1661,6 +1670,8 @@ const isSubmitDisabled =
                                                         grossSalary={parseFloat(savedCustomerData?.monthly_salary)}
                                                         netSalary={parseFloat(savedCustomerData?.net_salary)}
                                                         initialFormData={eligibilityPrefillData}
+                                                        eligibilityHistoryList={eligibilityHistoryList}
+                                                        salaryHistoryList={salaryHistoryList}
                                                         autoCheckKey={eligibilityAutoCheckKey}
                                                         onCheckingStateChange={(state) => setIsStepTwoCalcLoading(state)}
                                                         onEligibilityChange={(eligible) => {

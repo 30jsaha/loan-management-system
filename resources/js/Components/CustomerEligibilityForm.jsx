@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { Row, Col, Form, Button } from "react-bootstrap";
+import { Row, Col, Form, Button, Modal } from "react-bootstrap";
 import axios from "axios";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Info } from "lucide-react";
 //swal
 import Swal from "sweetalert2";
 
@@ -25,9 +25,11 @@ const normalizeEligibilityFormData = (payload = {}, fallbackCustomerId = 0) => (
   proposed_pva_amt: toNumber(payload.proposed_pva_amt),
 });
 
-export default function CustomerEligibilityForm({ customerId, grossSalary, netSalary, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, maxAllowedPvaAmt, eleigibleAmount, initialFormData = null, autoCheckKey = 0, onCheckingStateChange }) {
+export default function CustomerEligibilityForm({ customerId, grossSalary, netSalary, onEligibilityChange, onEligibilityChangeTruely, proposedPvaAmt, maxAllowedPvaAmt, eleigibleAmount, initialFormData = null, eligibilityHistoryList = [], salaryHistoryList = [], autoCheckKey = 0, onCheckingStateChange }) {
   const [isChecking, setIsChecking] = useState(false);
   const [showCalcDetails, setShowCalcDetails] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showSalaryHistoryModal, setShowSalaryHistoryModal] = useState(false);
 
   const [formData, setFormData] = useState(() =>
     normalizeEligibilityFormData({
@@ -262,8 +264,11 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
     setFormData((prev) => ({
       ...prev,
       ...prefilled,
+      // Always source these two from current customer model.
+      gross_salary_amt: toNumber(grossSalary),
+      current_net_pay_amt: toNumber(netSalary),
     }));
-  }, [initialFormData, customerId]);
+  }, [initialFormData, customerId, grossSalary, netSalary]);
 
   useEffect(() => {
     if (!autoCheckKey || autoCheckKey === lastAutoCheckKeyRef.current) return;
@@ -274,13 +279,15 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
       initialFormData || formData,
       customerId || 0
     );
+    payloadForAutoCheck.gross_salary_amt = toNumber(grossSalary);
+    payloadForAutoCheck.current_net_pay_amt = toNumber(netSalary);
 
     setFormData((prev) => ({
       ...prev,
       ...payloadForAutoCheck,
     }));
     runEligibilityCheck(payloadForAutoCheck);
-  }, [autoCheckKey, initialFormData, customerId]);
+  }, [autoCheckKey, initialFormData, customerId, grossSalary, netSalary]);
 
   const CalcRow = ({ label, formula, result, highlightNegative }) => {
     const isNegative = Number(result) < 0;
@@ -305,6 +312,19 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
   return (
     <div className="bg-white rounded-lg p-6">
       <h3 className="text-lg font-semibold mb-4">Customer Eligibility Check</h3>
+      {Array.isArray(eligibilityHistoryList) && eligibilityHistoryList.length > 0 && (
+        <div className="mb-3">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+            onClick={() => setShowHistoryModal(true)}
+            title="View eligibility history"
+          >
+            <Info size={14} />
+            View Eligibility History
+          </button>
+        </div>
+      )}
 
       {message && (
         <div
@@ -454,7 +474,19 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
         {/* Gross Salary Row */}
         <div className="grid grid-cols-12 border-b border-gray-300">
           <div className="col-span-4 px-3 py-2 border-r border-gray-300 font-medium">
-            Gross Salary
+            <span className="inline-flex items-center gap-1">
+              Gross Salary
+              {Array.isArray(salaryHistoryList) && salaryHistoryList.length > 0 && (
+                <button
+                  type="button"
+                  className="text-blue-600 hover:text-blue-800 text-xs"
+                  title="Salary Change History"
+                  onClick={() => setShowSalaryHistoryModal(true)}
+                >
+                  <Info size={13} />
+                </button>
+              )}
+            </span>
           </div>
 
           <div className="col-span-3 px-3 py-2 border-r border-gray-300 text-blue-600 font-semibold text-md">
@@ -479,7 +511,7 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
           Deductions
         </div>
 
-        {[
+        {[ 
           { label: "Temporary Allowances", name: "temp_allowances_amt", ref: tempAllowancesRef, formula: "b" },
           { label: "Overtime", name: "overtime_amt", ref: overtimeRef, formula: "c" },
           { label: "Tax", name: "tax_amt", ref: taxRef, formula: "d" },
@@ -491,7 +523,19 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
         ].map((field) => (
           <div key={field.name} className="grid grid-cols-12 border-b border-gray-300">
             <div className="col-span-4 px-3 py-2 border-r border-gray-300 font-medium">
-              {field.label}
+              <span className="inline-flex items-center gap-1">
+                {field.label}
+                {field.name === "current_net_pay_amt" && Array.isArray(salaryHistoryList) && salaryHistoryList.length > 0 && (
+                  <button
+                    type="button"
+                    className="text-blue-600 hover:text-blue-800 text-xs"
+                    title="Salary Change History"
+                    onClick={() => setShowSalaryHistoryModal(true)}
+                  >
+                    <Info size={13} />
+                  </button>
+                )}
+              </span>
             </div>
 
             <div className="col-span-3 px-3 py-2 border-r border-gray-300 text-md text-blue-600 font-semibold">
@@ -731,6 +775,106 @@ export default function CustomerEligibilityForm({ customerId, grossSalary, netSa
           )}          
         </div>
       )}
+
+      <Modal
+        show={showSalaryHistoryModal}
+        onHide={() => setShowSalaryHistoryModal(false)}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Salary Change History</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {!Array.isArray(salaryHistoryList) || salaryHistoryList.length === 0 ? (
+            <div className="text-muted">No salary history found.</div>
+          ) : (
+            <div className="table-responsive max-h-[420px] overflow-auto">
+              <table className="w-full border-collapse text-sm mb-0">
+                <thead className="sticky top-0 bg-green-500 text-white">
+                  <tr>
+                    <th className="border px-3 py-2 text-left">Date</th>
+                    <th className="border px-3 py-2 text-left">Previous Gross</th>
+                    <th className="border px-3 py-2 text-left">Previous Net</th>
+                    <th className="border px-3 py-2 text-left">Gross Salary</th>
+                    <th className="border px-3 py-2 text-left">Net Salary</th>
+                    <th className="border px-3 py-2 text-left">Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...salaryHistoryList]
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .map((item) => (
+                      <tr key={item.id}>
+                        <td className="border px-3 py-2">{item.created_at ? new Date(item.created_at).toLocaleString() : "-"}</td>
+                        <td className="border px-3 py-2">{item.previous_monthly_salary != null ? `PGK ${toNumber(item.previous_monthly_salary).toFixed(2)}` : "-"}</td>
+                        <td className="border px-3 py-2">{item.previous_net_salary != null ? `PGK ${toNumber(item.previous_net_salary).toFixed(2)}` : "-"}</td>
+                        <td className="border px-3 py-2">{item.monthly_salary != null ? `PGK ${toNumber(item.monthly_salary).toFixed(2)}` : "-"}</td>
+                        <td className="border px-3 py-2">{item.net_salary != null ? `PGK ${toNumber(item.net_salary).toFixed(2)}` : "-"}</td>
+                        <td className="border px-3 py-2">{item.change_source || "-"}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSalaryHistoryModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={showHistoryModal}
+        onHide={() => setShowHistoryModal(false)}
+        centered
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Eligibility History</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {!Array.isArray(eligibilityHistoryList) || eligibilityHistoryList.length === 0 ? (
+            <div className="text-muted">No eligibility history found.</div>
+          ) : (
+            <div className="table-responsive max-h-[420px] overflow-auto">
+              <table className="w-full border-collapse text-sm mb-0">
+                <thead className="sticky top-0 bg-green-500 text-white">
+                  <tr>
+                    <th className="border px-3 py-2 text-left">Date</th>
+                    <th className="border px-3 py-2 text-left">Gross Salary</th>
+                    <th className="border px-3 py-2 text-left">Current Net Pay</th>
+                    <th className="border px-3 py-2 text-left">Proposed PVA</th>
+                    <th className="border px-3 py-2 text-left">Max PVA</th>
+                    <th className="border px-3 py-2 text-left">Eligible</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...eligibilityHistoryList]
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .map((item) => (
+                      <tr key={item.id}>
+                        <td className="border px-3 py-2">{item.created_at ? new Date(item.created_at).toLocaleString() : "-"}</td>
+                        <td className="border px-3 py-2">PGK {toNumber(item.gross_salary_amt).toFixed(2)}</td>
+                        <td className="border px-3 py-2">PGK {toNumber(item.current_net_pay_amt).toFixed(2)}</td>
+                        <td className="border px-3 py-2">PGK {toNumber(item.proposed_pva_amt).toFixed(2)}</td>
+                        <td className="border px-3 py-2">PGK {toNumber(item.max_allowable_pva_amt).toFixed(2)}</td>
+                        <td className="border px-3 py-2">{toNumber(item.is_eligible_for_loan) === 1 ? "Yes" : "No"}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowHistoryModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

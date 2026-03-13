@@ -13,6 +13,7 @@ use App\Models\InstallmentDetail;
 use App\Models\EmiPayrollTxnData;
 use App\Models\LoanPurpose;
 use App\Models\CustomerEligibilityHistory;
+use App\Models\CustomerSalaryHistory;
 use Illuminate\Support\Facades\Validator;
 //newly added -- edit document upload
 use App\Models\DocumentUpload;
@@ -203,6 +204,8 @@ class LoanController extends Controller
             $customer = Customer::find($validated['customer_id']);
             $validated['company_id'] = $customer->company_id;
             $validated['organisation_id'] = $customer->organisation_id;
+            $validated['monthly_salary'] = $customer->monthly_salary;
+            $validated['net_salary'] = $customer->net_salary;
 
             // Normalize purpose_id: treat 0 or empty as null to avoid FK errors
             if (array_key_exists('purpose_id', $validated) && ((int)$validated['purpose_id'] === 0)) {
@@ -221,6 +224,20 @@ class LoanController extends Controller
             // exit;
             // Create loan application
             $loan = Loan::create($validated);
+            $latestSalaryHistory = CustomerSalaryHistory::where('customer_id', $loan->customer_id)
+                ->orderByDesc('id')
+                ->first();
+
+            CustomerSalaryHistory::create([
+                'customer_id' => $loan->customer_id,
+                'loan_application_id' => $loan->id,
+                'previous_monthly_salary' => $latestSalaryHistory?->monthly_salary,
+                'previous_net_salary' => $latestSalaryHistory?->net_salary,
+                'monthly_salary' => $loan->monthly_salary,
+                'net_salary' => $loan->net_salary,
+                'change_source' => 'loan_application_create',
+                'changed_by_user_id' => Auth::id(),
+            ]);
 
             return response()->json([
                 'message' => 'Loan application created successfully.',
@@ -292,6 +309,8 @@ class LoanController extends Controller
             $customer = Customer::find($validated['customer_id']);
             $validated['company_id'] = $customer->company_id;
             $validated['organisation_id'] = $customer->organisation_id;
+            $validated['monthly_salary'] = $customer->monthly_salary;
+            $validated['net_salary'] = $customer->net_salary;
 
             // Normalize purpose_id: treat 0 or empty as null to avoid FK errors
             if (array_key_exists('purpose_id', $validated) && ((int)$validated['purpose_id'] === 0)) {
@@ -309,6 +328,20 @@ class LoanController extends Controller
             // exit;
             // Create loan application
             $loan = Loan::create($validated);
+            $latestSalaryHistory = CustomerSalaryHistory::where('customer_id', $loan->customer_id)
+                ->orderByDesc('id')
+                ->first();
+
+            CustomerSalaryHistory::create([
+                'customer_id' => $loan->customer_id,
+                'loan_application_id' => $loan->id,
+                'previous_monthly_salary' => $latestSalaryHistory?->monthly_salary,
+                'previous_net_salary' => $latestSalaryHistory?->net_salary,
+                'monthly_salary' => $loan->monthly_salary,
+                'net_salary' => $loan->net_salary,
+                'change_source' => 'loan_application_create',
+                'changed_by_user_id' => Auth::id(),
+            ]);
 
             return response()->json([
                 'message' => 'Loan application created successfully.',
@@ -331,11 +364,17 @@ class LoanController extends Controller
 
         $loan = Loan::with([
             'customer',
+            'customer.salaryHistories' => function ($query) {
+                $query->orderByDesc('created_at');
+            },
             'organisation',
             'installments',
             'loan_settings',
             'company',
             'purpose',
+            'salaryHistories' => function ($query) {
+                $query->orderByDesc('created_at');
+            },
             'documents' => function ($q) {
                 $q->leftJoin(
                     'document_types',
@@ -1890,6 +1929,7 @@ class LoanController extends Controller
             return response()->json([
                 'customer_id' => $customerId,
                 'eligibility_history' => null,
+                'eligibility_histories' => [],
                 'loan_application' => null,
             ], 200);
         }
@@ -1928,10 +1968,46 @@ class LoanController extends Controller
                 'remarks',
                 'elegible_amount',
             ]);
+        $salaryHistories = CustomerSalaryHistory::where('customer_id', $customerId)
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get([
+                'id',
+                'customer_id',
+                'previous_monthly_salary',
+                'previous_net_salary',
+                'monthly_salary',
+                'net_salary',
+                'change_source',
+                'created_at',
+            ]);
+
+        $eligibilityHistories = CustomerEligibilityHistory::where('customer_id', $customerId)
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get([
+                'id',
+                'customer_id',
+                'gross_salary_amt',
+                'temp_allowances_amt',
+                'overtime_amt',
+                'tax_amt',
+                'superannuation_amt',
+                'current_net_pay_amt',
+                'bank_2_amt',
+                'current_fincorp_deduction_amt',
+                'other_deductions_amt',
+                'proposed_pva_amt',
+                'max_allowable_pva_amt',
+                'is_eligible_for_loan',
+                'created_at',
+            ]);
 
         return response()->json([
             'customer_id' => $customerId,
             'eligibility_history' => $latestEligibility,
+            'eligibility_histories' => $eligibilityHistories,
+            'salary_histories' => $salaryHistories,
             'loan_application' => $latestLoan,
         ], 200);
     }

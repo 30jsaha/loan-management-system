@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\AllCustMaster;
 use App\Models\Customer;
 use App\Models\CustomerEligibilityHistory;
+use App\Models\CustomerSalaryHistory;
 use App\Models\LoanApplication as Loan;
 use App\Models\InstallmentDetail;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,13 @@ class CustomerController extends Controller
     public function show($id)
     {
         //show customer details along with company and organisation details
-        $customer = Customer::with(['company', 'organisation'])->find($id);
+        $customer = Customer::with([
+            'company',
+            'organisation',
+            'salaryHistories' => function ($query) {
+                $query->orderByDesc('created_at');
+            },
+        ])->find($id);
         if (!$customer) {
             return response()->json([
                 'message' => 'Customer not found.',
@@ -190,6 +197,15 @@ class CustomerController extends Controller
         $customer = DB::transaction(function () use ($validated) {
             $customer = Customer::create($validated);
             $this->syncOutsiderToAllCustMaster($customer);
+            CustomerSalaryHistory::create([
+                'customer_id' => $customer->id,
+                'previous_monthly_salary' => null,
+                'previous_net_salary' => null,
+                'monthly_salary' => $customer->monthly_salary,
+                'net_salary' => $customer->net_salary,
+                'change_source' => 'customer_create',
+                'changed_by_user_id' => Auth::id(),
+            ]);
             return $customer;
         });
 
@@ -279,8 +295,27 @@ class CustomerController extends Controller
 
         $validated = $request->validate($rules, $messages);
 
+        $oldMonthlySalary = $customer->monthly_salary;
+        $oldNetSalary = $customer->net_salary;
+
         $customer->update($validated);
         $this->syncOutsiderToAllCustMaster($customer);
+
+        $isSalaryChanged =
+            (float) ($oldMonthlySalary ?? 0) !== (float) ($customer->monthly_salary ?? 0) ||
+            (float) ($oldNetSalary ?? 0) !== (float) ($customer->net_salary ?? 0);
+
+        if ($isSalaryChanged) {
+            CustomerSalaryHistory::create([
+                'customer_id' => $customer->id,
+                'previous_monthly_salary' => $oldMonthlySalary,
+                'previous_net_salary' => $oldNetSalary,
+                'monthly_salary' => $customer->monthly_salary,
+                'net_salary' => $customer->net_salary,
+                'change_source' => 'customer_update',
+                'changed_by_user_id' => Auth::id(),
+            ]);
+        }
 
         return response()->json([
             'message' => 'Customer info updated successfully.',

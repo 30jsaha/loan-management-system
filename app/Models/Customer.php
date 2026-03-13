@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 use App\Models\OrganisationMaster;
 use App\Models\CompanyMaster;
+use App\Models\CustomerSalaryHistory;
 
 class Customer extends Model
 {
@@ -58,5 +59,10 @@ class Customer extends Model
     public function company()
     {
         return $this->belongsTo(CompanyMaster::class, 'company_id');
+    }
+
+    public function salaryHistories()
+    {
+        return $this->hasMany(CustomerSalaryHistory::class, 'customer_id');
     }
 }

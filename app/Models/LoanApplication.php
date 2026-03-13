@@ -12,6 +12,7 @@ use App\Models\DocumentUpload;
 use App\Models\LoanSetting;
 use App\Models\LoanPurpose;
 use App\Models\CompanyMaster as Company;
+use App\Models\CustomerSalaryHistory;
 
 class LoanApplication extends Model
 {
@@ -25,6 +26,7 @@ class LoanApplication extends Model
         'elegible_amount','total_repay_amt','total_interest_amt',
         'processing_fee','grace_period_days','disbursement_date',
         'bank_name','bank_branch','bank_account_no',
+        'monthly_salary','net_salary',
         'status','approved_by','approved_date',
         'higher_approved_by','higher_approved_date',
         'isda_generated_path','isda_signed_upload_path','isada_upload_date',
@@ -44,6 +46,11 @@ class LoanApplication extends Model
     public function purpose()
     {
         return $this->belongsTo(LoanPurpose::class, 'purpose_id');
+    }
+
+    public function salaryHistories()
+    {
+        return $this->hasMany(CustomerSalaryHistory::class, 'loan_application_id');
     }
 
 }
