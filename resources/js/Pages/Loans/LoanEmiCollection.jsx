@@ -1271,18 +1271,30 @@ const handleCollectEMI = async () => {
               </>
             ) : (
               <div className="text-gray-500 text-sm text-center mt-10">
-                No loans selected.
+                {/* No loans selected. */}
               </div>
             )}
           </div>
 
           {selectedLoan ? (
-            <>
-              {/* Company Info */}
-              <div className="border-b border-gray-200 mb-2">
-                <h3 className="text-lg font-bold text-white bg-green-500 px-4 py-2 rounded">
-                  {selectedLoan.company?.company_name || "N/A"}
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-bold text-gray-800">
+                  Selected Loan & Company Details
                 </h3>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLoan(null)}
+                  className="text-sm px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+                >
+                  ✕ Close
+                </button>
+              </div>
+
+              <div className="border-b border-gray-200 mb-2">
+                <h4 className="text-md font-semibold text-white bg-green-500 px-4 py-2 rounded">
+                  {selectedLoan.company?.company_name || "N/A"}
+                </h4>
                 <p className="text-sm text-gray-600 mt-2">{selectedLoan.company?.address}</p>
                 <p className="text-sm text-gray-600 -mt-3">
                   {selectedLoan.company?.contact_no} | {selectedLoan.company?.email}
@@ -1457,7 +1469,7 @@ const handleCollectEMI = async () => {
                   <p className="text-sm text-gray-500">No documents uploaded.</p>
                 )}
               </div>
-            </>
+            </div>
           ) : (
             <div className="flex justify-center items-center h-full text-gray-500 text-lg">
               Select a loan from the left panel 👈
