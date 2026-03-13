@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { X, Upload, Eye } from "lucide-react";
-import { Button, ProgressBar, Modal } from "react-bootstrap";
+import { Button, Modal } from "react-bootstrap";
 import toast, { Toaster } from "react-hot-toast";
 
 const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
@@ -24,8 +24,9 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
   const [uploadedFiles, setUploadedFiles] = useState({});
 
   // Safely access IDs
-  const loanId = loanFormData?.id || "";
+  const loanId = loanFormData?.id || loanFormData?.loan_id || "";
   const customerId = loanFormData?.customer_id || "";
+  const hasUploadContext = Boolean(loanId || customerId);
 
   useEffect(() => {
     axios.get("/api/document-types").then(res => {
@@ -33,14 +34,32 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
     });
   }, []);
 
+  const existingUploadedDocKeys = useMemo(() => {
+    if (!Array.isArray(loanFormData?.documents)) {
+      return new Set();
+    }
+
+    return new Set(
+      loanFormData.documents
+        .filter((doc) => doc?.doc_type)
+        .map((doc) => doc.doc_type)
+    );
+  }, [loanFormData?.documents]);
+
   const requiredDocs = useMemo(
     () => docTypes.filter((doc) => Number(doc.is_required) === 1),
     [docTypes]
   );
 
   const missingRequiredDocs = useMemo(
-    () => requiredDocs.filter((doc) => !files[doc.doc_key]),
-    [requiredDocs, files]
+    () =>
+      requiredDocs.filter(
+        (doc) =>
+          !files[doc.doc_key] &&
+          !uploadedFiles[doc.doc_key] &&
+          !existingUploadedDocKeys.has(doc.doc_key)
+      ),
+    [requiredDocs, files, uploadedFiles, existingUploadedDocKeys]
   );
 
   const handleViewDocument = (doc) => {
@@ -103,11 +122,6 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
     setMessage(prev => ({
     ...prev,
     [doc.doc_key]: ""
-  }));
-
-  setFiles(prev => ({
-    ...prev,
-    [doc.doc_key]: file
   }));
 
     setFiles(prev => ({ ...prev, [doc.doc_key]: file }));
@@ -184,7 +198,6 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
     // Clear only NEWLY uploaded files, not all
     setFiles({});
     setProgress({});
-    setUploadedFiles({});
 
     if (onUploadComplete) onUploadComplete();
         toast.success("All documents uploaded successfully!", {
@@ -370,18 +383,26 @@ const LoanDocumentsUpload = ({ loanFormData = {}, onUploadComplete }) => {
               </div>
             </div>
           )}
-          <Button
+          {!hasUploadContext && (
+            <div className="mb-4 flex justify-center">
+              <div
+                className="max-w-xl w-full rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-700"
+              >
+                <strong>Blocked:</strong> Save customer and loan details before uploading documents.
+              </div>
+            </div>
+          )}
+          <button
             type="submit"
-            variant="success"
-            className={`px-5 py-2 fw-semibold rounded-pill shadow-sm w-full sm:w-auto ${uploading || !loanId || missingRequiredDocs.length > 0 ? 'opacity-75 cursor-not-allowed' : ''}`}
-            disabled={uploading || !loanId || missingRequiredDocs.length > 0}
-            style={{
-              backgroundColor: uploading ? "#22c55ecc" : "#22c55e",
-              border: "none",
-            }}
+            className={`inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all sm:w-auto ${
+              uploading || !hasUploadContext || missingRequiredDocs.length > 0
+                ? "cursor-not-allowed bg-green-400 opacity-70"
+                : "cursor-pointer bg-green-500 hover:bg-green-600"
+            }`}
+            disabled={uploading || !hasUploadContext || missingRequiredDocs.length > 0}
           >
             {uploading ? "Uploading..." : "Upload All Documents & Finish"}
-          </Button>
+          </button>
         </div>
       </form>
 
