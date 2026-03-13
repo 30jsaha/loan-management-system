@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, Link as HrefLink } from "@inertiajs/react";
 import axios from "axios";
@@ -15,8 +15,10 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
 
     const [loans, setLoans] = useState(Array.isArray(approved_loans) ? approved_loans : []);
     const [searchQuery, setSearchQuery] = useState("");
+    const [nameRefDropdownOpen, setNameRefDropdownOpen] = useState(false);
     const [orgs, setOrgs] = useState([]);
     const [selectedOrgs, setSelectedOrgs] = useState([]);
+    const nameRefAreaRef = useRef(null);
     console.log("Approved Loans:", loans);
     // Fetch organisations
 
@@ -36,6 +38,17 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
         axios.get("/api/organisation-list").then((res) => {
             setOrgs(Array.isArray(res.data) ? res.data : []);
         });
+    }, []);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (nameRefAreaRef.current && !nameRefAreaRef.current.contains(event.target)) {
+                setNameRefDropdownOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const organisationOptions = useMemo(() => {
@@ -97,11 +110,46 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
         });
     }, [loans, sortConfig]);
 
+    const nameRefOptions = useMemo(() => {
+        const seen = new Set();
+        const options = [];
+
+        loans.forEach((loan) => {
+            const customer = loan.customer || {};
+            const refNo = String(customer.customer_ref_no || "").trim();
+            const fullName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+            if (!refNo && !fullName) return;
+
+            const key = `${refNo.toLowerCase()}|${fullName.toLowerCase()}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+
+            options.push({ refNo, fullName });
+        });
+
+        return options;
+    }, [loans]);
+
+    const filteredNameRefOptions = useMemo(() => {
+        const term = searchQuery.toLowerCase().trim();
+        if (!term) return nameRefOptions.slice(0, 30);
+
+        return nameRefOptions
+            .filter(
+                (opt) =>
+                    opt.refNo.toLowerCase().includes(term) ||
+                    opt.fullName.toLowerCase().includes(term)
+            )
+            .slice(0, 30);
+    }, [nameRefOptions, searchQuery]);
+
      // ✅ FILTER ONLY FULLY PAID LOANS
     const filteredLoans = useMemo(() => {
         return sortedLoans.filter(loan => {
             const name = `${loan.customer?.first_name || ""} ${loan.customer?.last_name || ""}`.toLowerCase();
-            const matchesName = name.includes(searchQuery.toLowerCase());
+            const customerRefNo = String(loan.customer?.customer_ref_no || "").toLowerCase();
+            const searchLower = searchQuery.toLowerCase().trim();
+            const matchesName = !searchLower || name.includes(searchLower) || customerRefNo.includes(searchLower);
 
             const orgId = loan.organisation?.id;
             const matchesOrg = selectedOrgs.length === 0 || selectedOrgs.includes(orgId);
@@ -173,7 +221,7 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
                 <div className="flex flex-wrap items-center gap-4 mb-3 bg-gray-50 p-3 rounded-xl border border-gray-200 shadow-sm">
 
                     {/* Search */}
-                    <div className="relative w-full md:w-1/3">
+                    <div className="relative w-full md:w-1/3" ref={nameRefAreaRef}>
                         <Search
                             size={18}
                             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -181,12 +229,33 @@ export default function CompletedLoansWithEmiCollection({ auth, approved_loans }
 
                         <input
                             type="text"
-                            placeholder="Search customer..."
+                            placeholder="Search by Name / Customer Ref. No."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setNameRefDropdownOpen(true);
+                            }}
+                            onFocus={() => setNameRefDropdownOpen(true)}
                             className="border border-gray-300 rounded-lg pl-10 pr-3 py-3 w-full text-sm 
                                     transition focus:ring-2 focus:ring-indigo-400 shadow-sm h-[46px]"
                         />
+
+                        {nameRefDropdownOpen && filteredNameRefOptions.length > 0 && (
+                            <div className="absolute z-30 bg-white border w-full mt-1 rounded shadow max-h-64 overflow-y-auto">
+                                {filteredNameRefOptions.map((opt, idx) => (
+                                    <div
+                                        key={`${opt.refNo || "no-ref"}-${opt.fullName || "no-name"}-${idx}`}
+                                        onClick={() => {
+                                            setSearchQuery(opt.refNo || opt.fullName);
+                                            setNameRefDropdownOpen(false);
+                                        }}
+                                        className="px-3 py-2 cursor-pointer hover:bg-indigo-100 text-sm"
+                                    >
+                                        {opt.refNo ? <b>{opt.refNo}</b> : <b>-</b>} {opt.fullName ? `- ${opt.fullName}` : ""}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
 

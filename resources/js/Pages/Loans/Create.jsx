@@ -1979,17 +1979,17 @@ const isSubmitDisabled =
                                                     <div className="row mt-3">
                                                         <div className="col-md-3">
                                                         <label className="form-label fw-bold">Total Interest (PGK)</label>
-                                                        <div>{loanFormData.total_interest_amt.toFixed(2)}</div>
+                                                        <div>{formatCurrency(loanFormData.total_interest_amt)}</div>
                                                         </div>
 
                                                         <div className="col-md-3">
                                                         <label className="form-label fw-bold">Total Repay (PGK)</label>
-                                                        <div>{loanFormData.total_repay_amt.toFixed(2)}</div>
+                                                        <div>{formatCurrency(loanFormData.total_repay_amt)}</div>
                                                         </div>
 
                                                         <div className="col-md-3">
                                                         <label className="form-label fw-bold">Repay per FN (PGK)</label>
-                                                        <div>{loanFormData.emi_amount.toFixed(2)}</div>
+                                                        <div>{formatCurrency(loanFormData.emi_amount)}</div>
                                                         </div>
                                                     </div>
                                                     </fieldset>

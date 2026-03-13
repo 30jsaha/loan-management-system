@@ -422,7 +422,7 @@ export default function Authenticated({ user, header, children }) {
                 dialogClassName="max-w-[900px]"
             >
                 <Modal.Header closeButton>
-                    <Modal.Title>Loan Tools</Modal.Title>
+                    <Modal.Title>Loan & EMI Scheduler</Modal.Title>
                 </Modal.Header>
 
                 <Modal.Body className="p-0">
